@@ -1,0 +1,153 @@
+{
+  "auditedAt": "2026-08-23",
+  "sourceUrl": "https://app.uysot.uz/showroom/",
+  "rules": {
+    "allowedMethods": [
+      "GET"
+    ],
+    "storeCredentialsInRepository": false,
+    "exposeCredentialsToBrowser": false
+  },
+  "origins": {
+    "api": "https://service.app.uysot.uz",
+    "media": [
+      "https://src.service.app.uysot.uz",
+      "https://src.srv.showroom.app.uysot.uz"
+    ]
+  },
+  "project": {
+    "name": "AVALON RESIDENCE",
+    "houseId": 1074,
+    "companyId": 504,
+    "totalUnitsObserved": 268,
+    "buildings": [
+      {
+        "name": "B1",
+        "entranceLabel": "1 - подъезд",
+        "unitCountObserved": 80
+      },
+      {
+        "name": "A",
+        "entranceLabel": "2 - подъезд",
+        "unitCountObserved": 108
+      },
+      {
+        "name": "B2",
+        "entranceLabel": "3 - подъезд",
+        "unitCountObserved": 80
+      }
+    ]
+  },
+  "showroomRoutes": [
+    "/showroom",
+    "/showroom/shaxmatka",
+    "/showroom/shaxmatka-plus",
+    "/showroom/visual/"
+  ],
+  "filtersObserved": {
+    "rooms": [
+      2,
+      3
+    ],
+    "repair": [
+      "С ремонтом",
+      "Без ремонта"
+    ],
+    "contractStatus": [
+      "В продаже",
+      "Занятый",
+      "Распроданный",
+      "Резерв",
+      "Ключи переданы",
+      "Оформлено на клиента"
+    ],
+    "propertyType": [
+      "Жилые",
+      "Нежилые"
+    ],
+    "visualWeather": [
+      "Солнечно",
+      "Дождливо",
+      "Снежно"
+    ]
+  },
+  "getAllowlist": [
+    {
+      "key": "houses",
+      "pathTemplate": "/v1/smart-catalog/house",
+      "purpose": "Projects available to the showroom user"
+    },
+    {
+      "key": "buildings",
+      "pathTemplate": "/v1/smart-catalog/building/{houseId}",
+      "purpose": "Buildings for a project"
+    },
+    {
+      "key": "filterProperties",
+      "pathTemplate": "/v1/smart-catalog/filter-properties/{houseId}",
+      "purpose": "Filter values and ranges"
+    },
+    {
+      "key": "chessboard",
+      "pathTemplate": "/v1/smart-catalog/showroom?realtorBookingCount=false",
+      "purpose": "Units grouped for the chessboard"
+    },
+    {
+      "key": "catalogTable",
+      "pathTemplate": "/v1/smart-catalog/table",
+      "purpose": "Unit list used by the catalog table"
+    },
+    {
+      "key": "flat",
+      "pathTemplate": "/v1/smart-catalog/flat/{flatId}",
+      "purpose": "Single-unit card"
+    },
+    {
+      "key": "blockStatistics",
+      "pathTemplate": "/v2/website/block-statistic/{houseId}",
+      "purpose": "Block and availability statistics"
+    },
+    {
+      "key": "flatMore",
+      "pathTemplate": "/v1/flat/more?flats={flatId}",
+      "purpose": "Optional extended flat data"
+    },
+    {
+      "key": "showroomFlatData",
+      "pathTemplate": "/v1/shourum/flat-data?flatIds={flatId}",
+      "purpose": "Optional showroom flat data; upstream spelling is shourum"
+    },
+    {
+      "key": "flatFields",
+      "pathTemplate": "/v1/flat/field",
+      "purpose": "Optional flat field definitions"
+    },
+    {
+      "key": "currency",
+      "pathTemplate": "/v1/currency/{companyId}",
+      "purpose": "Optional currency metadata"
+    }
+  ],
+  "mediaPathTemplates": [
+    "https://src.service.app.uysot.uz/files/com-{companyId}/thumbnail/{file}",
+    "https://src.service.app.uysot.uz/files/com-{companyId}/image/{file}",
+    "https://src.srv.showroom.app.uysot.uz/v1/public/files/image/{file}"
+  ],
+  "sampleFlat": {
+    "flatId": 483372,
+    "number": "70",
+    "buildingName": "B1",
+    "floor": 11,
+    "rooms": 2,
+    "areaM2": 55.3,
+    "priceUzs": 812910000,
+    "pricePerM2Uzs": 14700000,
+    "status": "Свободно"
+  },
+  "authFinding": {
+    "basicAuthWithSuppliedCredentialsWorked": false,
+    "customLoginPasswordHeadersWorked": false,
+    "requiresServerSideReadOnlyCredential": true,
+    "note": "The authenticated CRM session works, but the supplied username/password are not directly accepted as Basic API credentials. Obtain a long-lived read-only token or public GET feed before production integration."
+  }
+}

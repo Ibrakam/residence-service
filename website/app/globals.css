@@ -541,7 +541,10 @@ section { scroll-margin-top:0; }
 .modal-unit-card>div:last-child>strong,.modal-unit-card>div:last-child>small { display:block; }
 .modal-unit-card>div:last-child>strong { font-size:23px; }
 .modal-unit-card>div:last-child>small { margin-top:6px; color:#147f73; font-size:9px; }
-.payment-title { margin:28px 0 12px; font-size:11px; letter-spacing:.08em; text-transform:uppercase; }
+.payment-heading { display:flex; justify-content:space-between; align-items:end; gap:14px; margin:28px 0 12px; }
+.payment-title { margin:0; font-size:11px; letter-spacing:.08em; text-transform:uppercase; }
+.payment-heading>span { display:none; color:#087b6f; font-size:8px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+.payment-heading>span b { display:inline-block; margin-left:4px; font-size:13px; transition:transform .2s ease; }
 .payment-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
 .payment-grid article { display:grid; gap:8px; min-height:120px; padding:17px; border:1px solid rgba(16,32,34,.12); border-radius:14px; background:rgba(255,255,255,.55); }
 .payment-grid article>span { display:grid; place-items:center; width:30px; height:30px; border:1px solid rgba(16,32,34,.2); border-radius:50%; }
@@ -1053,15 +1056,24 @@ body.is-lead-locked { overflow:hidden; }
   .modal-unit-card { grid-template-columns:1fr; gap:15px; margin-top:18px; padding:13px; }
   .modal-plan { height:190px; }
   .modal-unit-card h3 { margin-top:12px; font-size:25px; }
-  .payment-title { margin-top:23px; line-height:1.45; }
+  .payment-heading { align-items:center; margin-top:23px; }
+  .payment-title { line-height:1.45; }
+  .payment-heading>span { display:flex; align-items:center; white-space:nowrap; }
   .payment-grid {
-    grid-template-columns:repeat(3,minmax(218px,1fr));
+    grid-template-columns:none;
+    grid-auto-flow:column;
+    grid-auto-columns:calc(100% - 38px);
     gap:9px;
+    padding:1px 1px 7px;
     overflow-x:auto;
     scroll-snap-type:x mandatory;
+    scroll-padding-inline:1px;
+    overscroll-behavior-x:contain;
+    -webkit-overflow-scrolling:touch;
     scrollbar-width:none;
   }
-  .payment-grid article { min-height:108px; scroll-snap-align:start; }
+  .payment-grid:focus-visible { outline:2px solid rgba(17,156,140,.45); outline-offset:4px; border-radius:14px; }
+  .payment-grid article { min-height:108px; scroll-snap-align:start; box-shadow:0 7px 18px rgba(16,32,34,.04); }
   .installment-calculator { grid-template-columns:1fr; padding:14px; }
   .calculator-controls { padding-right:0; padding-bottom:15px; border-right:0; border-bottom:1px solid rgba(16,32,34,.12); }
   .calculator-controls input[type='number'] { min-height:46px; font-size:16px; }

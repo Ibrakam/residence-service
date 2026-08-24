@@ -5,6 +5,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import crmSnapshot from '@/data/avalon-units.json';
 import { floorLayouts } from '@/data/floor-layouts';
+import { LeadModal, rememberLastViewedApartment } from '@/app/lead-modal';
 
 type View = 'city' | 'complex' | 'facade' | 'showroom';
 type HotspotId = 'metro' | 'mall' | 'avalon';
@@ -101,6 +102,9 @@ export default function Home() {
   const [projectInfoOpen, setProjectInfoOpen] = useState(false);
   const [activeAmenity, setActiveAmenity] = useState<AmenityId | null>(null);
   const [amenitySlide, setAmenitySlide] = useState(0);
+  const [leadOpen, setLeadOpen] = useState(false);
+  const [leadContext, setLeadContext] = useState('Консультация AVALON RESIDENCE');
+  const [leadAutoPrompt, setLeadAutoPrompt] = useState(false);
   const t = ui[language];
   const active = hotspots[activeHotspot][language];
 
@@ -120,6 +124,62 @@ export default function Home() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [view]);
+
+  useEffect(() => {
+    const storageKey = 'avalon-lead-prompt-seen-v1';
+    try {
+      if (sessionStorage.getItem(storageKey)) return;
+    } catch {
+      // Continue without session persistence when storage is unavailable.
+    }
+
+    let elapsed = 0;
+    let visibleSince = document.visibilityState === 'visible' ? Date.now() : null;
+    let timeoutId: number | null = null;
+
+    const markSeen = () => {
+      try { sessionStorage.setItem(storageKey, '1'); } catch { /* no-op */ }
+    };
+    const showPrompt = () => {
+      try {
+        if (sessionStorage.getItem(storageKey)) return;
+      } catch {
+        // Continue when storage is unavailable.
+      }
+      markSeen();
+      setLeadContext('Автоматическая консультация после 60 секунд на сайте AVALON RESIDENCE');
+      setLeadAutoPrompt(true);
+      setLeadOpen(true);
+    };
+    const schedule = () => {
+      if (document.visibilityState !== 'visible') return;
+      visibleSince = Date.now();
+      timeoutId = window.setTimeout(showPrompt, Math.max(0, 60_000 - elapsed));
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        if (visibleSince !== null) elapsed += Date.now() - visibleSince;
+        visibleSince = null;
+        if (timeoutId !== null) window.clearTimeout(timeoutId);
+      } else {
+        schedule();
+      }
+    };
+
+    schedule();
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      if (timeoutId !== null) window.clearTimeout(timeoutId);
+    };
+  }, []);
+
+  const openLeadForm = (context: string, autoPrompt = false) => {
+    try { sessionStorage.setItem('avalon-lead-prompt-seen-v1', '1'); } catch { /* no-op */ }
+    setLeadContext(context);
+    setLeadAutoPrompt(autoPrompt);
+    setLeadOpen(true);
+  };
 
   const chooseBuilding = (building: BuildingId, openFacade = false) => {
     const availableFloors = floorList(building);
@@ -146,6 +206,23 @@ export default function Home() {
     if (window.innerWidth <= 850) {
       window.setTimeout(() => document.querySelector('.unit-detail--visual')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
     }
+  };
+
+  const openApartmentDetails = () => {
+    if (!selectedUnit) return;
+    rememberLastViewedApartment({
+      uuid: selectedUnit.id,
+      number: String(selectedUnit.number),
+      rooms: selectedUnit.rooms,
+      area: selectedUnit.area,
+      floor: selectedUnit.floor,
+      maxFloor: Math.max(...floorList(selectedUnit.building)),
+      entrance: 1,
+      blockName: `Корпус ${selectedUnit.building}`,
+      blockId: selectedUnit.building,
+      price: selectedUnit.price ?? 0,
+    });
+    setDetailsOpen(true);
   };
 
   const matchesFilter = (unit: Apartment) => (roomFilter === 'all' || unit.rooms === roomFilter) && (!onlyFree || unit.status === 'free');
@@ -179,7 +256,7 @@ export default function Home() {
           <button className="map-label map-label--mall" type="button" onMouseEnter={() => setActiveHotspot('mall')} onClick={() => setActiveHotspot('mall')}><span>02</span> {t.mall}</button>
           <button className="map-label map-label--avalon" type="button" onMouseEnter={() => setActiveHotspot('avalon')} onClick={() => setView('complex')}><span>03</span> Avalon Residence ↘</button>
           <aside className="location-card" aria-live="polite"><div className="location-card__count">0{(['metro', 'mall', 'avalon'] as HotspotId[]).indexOf(activeHotspot) + 1}</div><p>{active.eyebrow}</p><h2>{active.title}</h2><span>{active.description}</span>{activeHotspot === 'avalon' ? <button type="button" onClick={() => setView('complex')}>{t.openComplex} <span>↘</span></button> : null}</aside>
-          <div className="hero-contact-rail"><span>{t.contact}</span><a href="tel:+998781137712">+998 78 113 77 12</a><a href="mailto:tencorp.uzb@gmail.com">tencorp.uzb@gmail.com</a><address>{language === 'ru' ? 'Ташкент, ул. Ойбек, 20' : 'Toshkent, Oybek ko‘chasi, 20'}</address><a href="https://form.tencorp.uz/tencorp/#contact" target="_blank" rel="noreferrer">{t.consultation} ↗</a></div>
+          <div className="hero-contact-rail"><span>{t.contact}</span><a href="tel:+998781137712">+998 78 113 77 12</a><a href="mailto:tencorp.uzb@gmail.com">tencorp.uzb@gmail.com</a><address>{language === 'ru' ? 'Ташкент, ул. Ойбек, 20' : 'Toshkent, Oybek ko‘chasi, 20'}</address><button type="button" onClick={() => openLeadForm('Консультация из контактной панели AVALON RESIDENCE')}>{t.consultation} ↗</button></div>
         </section>
       ) : null}
 
@@ -241,14 +318,14 @@ export default function Home() {
                 <nav className="floor-rail" aria-label={t.chooseFloor}><span>{t.floor}</span>{floors.map((floor) => <button key={floor} type="button" className={selectedFloor === floor ? 'is-active' : ''} onClick={() => chooseFloor(floor)}><strong>{floor}</strong><i /></button>)}</nav>
                 <div className="floor-plan-canvas"><div className="floor-plan-caption"><span>{t.courtyardView}</span><small>{floorUnits.length} {t.apartments.toLowerCase()} · {floorUnits.filter((unit) => unit.status === 'free').length} {t.available.toLowerCase()}</small></div><div className="floor-plan-image-wrap"><picture><source media="(max-width: 850px)" srcSet={assetPath(floorImagesMobile[selectedBuilding])} /><img src={assetPath(floorLayout.image)} alt={`${t.floorPlan} ${selectedFloor}, ${t.building} ${selectedBuilding}`} decoding="async" /></picture><svg className="floor-unit-overlay" viewBox="0 0 4961 3508" preserveAspectRatio="xMidYMid meet" aria-label={`${t.apartments} · ${selectedFloor} ${t.floor.toLowerCase()}`}>{floorLayout.zones.map((zone, zoneIndex) => { const unit = floorUnits[floorLayout.order[zoneIndex]]; if (!unit) return null; return <g key={unit.id} className={`floor-unit-zone floor-unit-zone--${unit.status} ${selectedUnit?.id === unit.id ? 'is-selected' : ''}`} role="button" tabIndex={0} aria-label={`${t.apartment} №${unit.number}, ${t.statuses[unit.status]}`} onClick={() => chooseUnit(unit)} onKeyDown={(event) => event.key === 'Enter' && chooseUnit(unit)}><polygon points={zone.points} /><text x={zone.x} y={zone.y - 32}>№{unit.number}</text><text className="floor-unit-zone__rooms" x={zone.x} y={zone.y + 48}>{unit.rooms}к · {unit.area} м²</text></g>; })}</svg></div></div>
                 <section className="mobile-unit-picker" aria-label={`${t.apartments} · ${selectedFloor} ${t.floor.toLowerCase()}`}><header><div><small>{t.floorPlan}</small><strong>{language === 'ru' ? `Квартиры на ${selectedFloor} этаже` : `${selectedFloor}-qavatdagi kvartiralar`}</strong></div><span>{floorUnits.filter((unit) => unit.status === 'free').length} {t.available.toLowerCase()}</span></header><div>{floorUnits.map((unit) => <button key={unit.id} type="button" className={`mobile-unit-card mobile-unit-card--${unit.status} ${selectedUnit?.id === unit.id ? 'is-active' : ''}`} onClick={() => chooseUnit(unit)}><span><small>№</small>{unit.number}</span><div><strong>{unit.rooms} {language === 'ru' ? 'комн.' : 'xona'} · {unit.area} m²</strong><small>{formatMoney(unit.price)}</small></div><i>{t.statuses[unit.status]}</i></button>)}</div></section>
-                {selectedUnit ? <ApartmentDetail unit={selectedUnit} language={language} onDetails={() => setDetailsOpen(true)} /> : null}
+                {selectedUnit ? <ApartmentDetail unit={selectedUnit} language={language} onDetails={openApartmentDetails} /> : null}
               </div>
             ) : (
               <div className="crm-layout crm-layout--screen crm-layout--catalog">
                 <div className="crm-board"><div className="crm-board__head"><div><strong>{catalogMode === 'chess' ? `${t.chess} · ${t.building} ${selectedBuilding}` : `${filteredUnits.length} ${t.apartments.toLowerCase()}`}</strong><span>{freeCount} / {buildingUnits.length} · {t.available.toLowerCase()}</span></div><div className="status-legend"><span className="free">{t.statuses.free}</span><span className="occupied">{t.statuses.occupied}</span><span className="sold">{t.statuses.sold}</span></div></div>
                   {catalogMode === 'chess' ? <div className="floor-scroll"><div className="floor-grid" style={{ '--unit-columns': maxUnitsOnFloor } as React.CSSProperties}>{floors.map((floor) => <div className="floor-row" key={floor}><div className="floor-number"><strong>{floor}</strong><span>{t.floor.toLowerCase()}</span></div>{buildingUnits.filter((unit) => unit.floor === floor).sort((a, b) => a.number - b.number).map((unit) => <button key={unit.id} type="button" className={`unit-cell unit-cell--${unit.status} ${selectedUnit?.id === unit.id ? 'is-selected' : ''} ${matchesFilter(unit) ? '' : 'is-filtered'}`} onClick={() => chooseUnit(unit)}><span><small>№</small>{unit.number}</span><strong>{unit.rooms}к · {unit.area} м²</strong><em>{unit.status === 'free' && unit.price ? `${Math.round(unit.price / 1_000_000)} mln` : t.statuses[unit.status]}</em></button>)}</div>)}</div></div> : <div className="unit-table-wrap"><table className="unit-table"><thead><tr><th>№</th><th>{t.floor}</th><th>{t.rooms}</th><th>m²</th><th>{t.priceM2}</th><th>{t.cost}</th><th>{t.repair}</th><th>{t.status}</th></tr></thead><tbody>{filteredUnits.map((unit) => <tr key={unit.id} className={selectedUnit?.id === unit.id ? 'is-selected' : ''} onClick={() => chooseUnit(unit)}><td>{unit.number}</td><td>{unit.floor}</td><td>{unit.rooms}</td><td>{unit.area} m²</td><td>{formatMoney(unit.pricePerM2)}</td><td>{formatMoney(unit.price)}</td><td>{repairLabel(unit.repair, language)}</td><td><span className={`table-status table-status--${unit.status}`}>{t.statuses[unit.status]}</span></td></tr>)}</tbody></table></div>}
                 </div>
-                {selectedUnit ? <ApartmentDetail unit={selectedUnit} language={language} onDetails={() => setDetailsOpen(true)} /> : null}
+                {selectedUnit ? <ApartmentDetail unit={selectedUnit} language={language} onDetails={openApartmentDetails} /> : null}
               </div>
             )}
           </div>
@@ -257,8 +334,9 @@ export default function Home() {
 
       {activeAmenity ? <AmenityModal amenity={amenities.find((item) => item.id === activeAmenity) ?? amenities[0]} language={language} slide={amenitySlide} onSlide={setAmenitySlide} onClose={() => setActiveAmenity(null)} /> : null}
       {projectInfoOpen ? <ProjectModal language={language} onClose={() => setProjectInfoOpen(false)} /> : null}
-      {detailsOpen && selectedUnit ? <ApartmentModal unit={selectedUnit} language={language} onClose={() => setDetailsOpen(false)} onPrint={() => setPrintOpen(true)} /> : null}
+      {detailsOpen && selectedUnit ? <ApartmentModal unit={selectedUnit} language={language} onClose={() => setDetailsOpen(false)} onPrint={() => setPrintOpen(true)} onLead={() => openLeadForm(`Заявка из карточки квартиры №${selectedUnit.number} · корпус ${selectedUnit.building}`)} /> : null}
       {printOpen && selectedUnit ? <PrintProposal unit={selectedUnit} language={language} onClose={() => setPrintOpen(false)} /> : null}
+      {leadOpen ? <LeadModal open language={language} context={leadContext} autoPrompt={leadAutoPrompt} onClose={() => setLeadOpen(false)} /> : null}
     </main>
   );
 }
@@ -279,7 +357,7 @@ function ApartmentDetail({ unit, language, onDetails }: { unit: Apartment; langu
   return <aside className="unit-detail unit-detail--visual" aria-live="polite"><div className="unit-detail__top"><p>{t.apartment} №{unit.number}</p><span className={`status-chip status-chip--${unit.status}`}>{t.statuses[unit.status]}</span></div><div className="unit-plan-preview"><picture><source media="(max-width: 850px)" srcSet={assetPath('/avalon-apartment-plan-mobile.webp')} /><img src={assetPath('/avalon-apartment-plan.png')} alt={`${t.floorPlan} №${unit.number}`} loading="lazy" decoding="async" /></picture></div><div className="plan-format-label">▦ {t.layout2d}</div><h3>{unit.rooms} {t.rooms.toLowerCase()} · {unit.area} m²</h3><dl><div><dt>{t.building}</dt><dd>{unit.building}</dd></div><div><dt>{t.floor}</dt><dd>{unit.floor}</dd></div><div><dt>{t.condition}</dt><dd>{repairLabel(unit.repair, language)}</dd></div><div><dt>{t.status}</dt><dd>{t.statuses[unit.status]}</dd></div></dl><div className="unit-price"><span>{t.price}</span><strong>{formatMoney(unit.price)}</strong><small>{formatMoney(unit.pricePerM2)} / m²</small></div><button className="unit-detail__details" type="button" onClick={onDetails}>{t.details} <span>↗</span></button><small className="unit-detail__source">{t.statusSource}</small></aside>;
 }
 
-function ApartmentModal({ unit, language, onClose, onPrint }: { unit: Apartment; language: Language; onClose: () => void; onPrint: () => void }) {
+function ApartmentModal({ unit, language, onClose, onPrint, onLead }: { unit: Apartment; language: Language; onClose: () => void; onPrint: () => void; onLead: () => void }) {
   const [downPaymentInput, setDownPaymentInput] = useState('0');
   const [term, setTerm] = useState(24);
   const t = ui[language];
@@ -289,7 +367,7 @@ function ApartmentModal({ unit, language, onClose, onPrint }: { unit: Apartment;
   const monthly = balance === null ? null : Math.ceil(balance / term);
   const downPaymentPercent = price ? Math.round((downPayment / price) * 1000) / 10 : 0;
 
-  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}><section className="apartment-modal" role="dialog" aria-modal="true" aria-labelledby="detail-title"><button className="modal-close" type="button" aria-label="Close" onClick={onClose}>×</button><div className="modal-heading"><div><p>{t.apartmentInfo}</p><h2 id="detail-title">{t.apartment} №{unit.number}</h2></div><span className={`status-chip status-chip--${unit.status}`}>{t.statuses[unit.status]}</span></div><div className="modal-unit-card"><div className="modal-plan"><picture><source media="(max-width: 850px)" srcSet={assetPath('/avalon-apartment-plan-mobile.webp')} /><img src={assetPath('/avalon-apartment-plan.png')} alt={`${t.floorPlan} №${unit.number}`} loading="lazy" decoding="async" /></picture></div><div><span className="room-badge">{unit.rooms}к</span><h3>AVALON RESIDENCE · {unit.building}</h3><p>{unit.floor} {t.floor.toLowerCase()} · № {unit.number}</p><strong>{formatMoney(unit.price)}</strong><small>{unit.area} m² · {formatMoney(unit.pricePerM2)} / m²</small></div></div><h3 className="payment-title">{t.installment}</h3><div className="payment-grid"><article><span>₿</span><small>{t.total}</small><strong>{formatMoney(unit.price)}</strong></article><article><span>◫</span><small>{t.downPayment} · {downPaymentPercent}%</small><strong>{formatMoney(downPayment)}</strong></article><article><span>◇</span><small>{t.monthly} · {term} {t.months}</small><strong>{formatMoney(monthly)}</strong></article></div><div className="installment-calculator"><div className="calculator-controls"><label><span>{t.downPaymentUzs}</span><input type="number" min="0" max={price || undefined} step="1000000" value={downPaymentInput} onChange={(event) => setDownPaymentInput(event.target.value)} /></label><label><span>{t.installmentTerm}: <strong>{term} {t.months}</strong></span><input type="range" min="24" max="36" step="1" value={term} onChange={(event) => setTerm(Number(event.target.value))} /></label><div className="term-presets">{[24, 30, 36].map((months) => <button key={months} type="button" className={term === months ? 'is-active' : ''} onClick={() => setTerm(months)}>{months} {language === 'ru' ? 'мес.' : 'oy'}</button>)}</div></div><div className="calculator-result"><span>{t.saleAmount}</span><strong>{formatMoney(balance)}</strong><span>{t.installmentTerm}</span><strong>{term} {t.months}</strong><span>{t.monthly}</span><strong>{formatMoney(monthly)}</strong></div></div><div className="modal-actions"><button type="button" onClick={onPrint}>{t.printOffer}</button><a href="https://form.tencorp.uz/tencorp/#contact" target="_blank" rel="noreferrer">{t.contactTencorp} ↗</a></div><small className="calculation-disclaimer">{t.disclaimer}</small></section></div>;
+  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}><section className="apartment-modal" role="dialog" aria-modal="true" aria-labelledby="detail-title"><button className="modal-close" type="button" aria-label="Close" onClick={onClose}>×</button><div className="modal-heading"><div><p>{t.apartmentInfo}</p><h2 id="detail-title">{t.apartment} №{unit.number}</h2></div><span className={`status-chip status-chip--${unit.status}`}>{t.statuses[unit.status]}</span></div><div className="modal-unit-card"><div className="modal-plan"><picture><source media="(max-width: 850px)" srcSet={assetPath('/avalon-apartment-plan-mobile.webp')} /><img src={assetPath('/avalon-apartment-plan.png')} alt={`${t.floorPlan} №${unit.number}`} loading="lazy" decoding="async" /></picture></div><div><span className="room-badge">{unit.rooms}к</span><h3>AVALON RESIDENCE · {unit.building}</h3><p>{unit.floor} {t.floor.toLowerCase()} · № {unit.number}</p><strong>{formatMoney(unit.price)}</strong><small>{unit.area} m² · {formatMoney(unit.pricePerM2)} / m²</small></div></div><h3 className="payment-title">{t.installment}</h3><div className="payment-grid"><article><span>₿</span><small>{t.total}</small><strong>{formatMoney(unit.price)}</strong></article><article><span>◫</span><small>{t.downPayment} · {downPaymentPercent}%</small><strong>{formatMoney(downPayment)}</strong></article><article><span>◇</span><small>{t.monthly} · {term} {t.months}</small><strong>{formatMoney(monthly)}</strong></article></div><div className="installment-calculator"><div className="calculator-controls"><label><span>{t.downPaymentUzs}</span><input type="number" min="0" max={price || undefined} step="1000000" value={downPaymentInput} onChange={(event) => setDownPaymentInput(event.target.value)} /></label><label><span>{t.installmentTerm}: <strong>{term} {t.months}</strong></span><input type="range" min="24" max="36" step="1" value={term} onChange={(event) => setTerm(Number(event.target.value))} /></label><div className="term-presets">{[24, 30, 36].map((months) => <button key={months} type="button" className={term === months ? 'is-active' : ''} onClick={() => setTerm(months)}>{months} {language === 'ru' ? 'мес.' : 'oy'}</button>)}</div></div><div className="calculator-result"><span>{t.saleAmount}</span><strong>{formatMoney(balance)}</strong><span>{t.installmentTerm}</span><strong>{term} {t.months}</strong><span>{t.monthly}</span><strong>{formatMoney(monthly)}</strong></div></div><div className="modal-actions"><button type="button" onClick={onPrint}>{t.printOffer}</button><button className="modal-actions__lead" type="button" onClick={onLead}>{t.contactTencorp} ↗</button></div><small className="calculation-disclaimer">{t.disclaimer}</small></section></div>;
 }
 
 function PrintProposal({ unit, language, onClose }: { unit: Apartment; language: Language; onClose: () => void }) {

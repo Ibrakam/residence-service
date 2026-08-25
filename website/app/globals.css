@@ -511,8 +511,13 @@ section { scroll-margin-top:0; }
 .plan-unit--sold { background:rgba(171,168,161,.86); color:#4d4a45; }
 .plan-unit:hover,.plan-unit.is-selected { z-index:8; background:var(--ink); color:white; box-shadow:0 0 0 3px var(--mint),0 15px 30px rgba(16,32,34,.26); transform:translate(-50%,-50%) scale(1.08); }
 .unit-detail.unit-detail--visual { position:relative; top:auto; height:100%; padding:18px; overflow:auto; border-left:1px solid rgba(16,32,34,.13); border-radius:0; background:#102022; scrollbar-width:thin; }
-.unit-plan-preview { display:grid; place-items:center; height:184px; margin:15px 0 6px; overflow:hidden; border-radius:12px; background:white; transition:transform 260ms ease; }
+.unit-plan-preview { position:relative; display:grid; width:100%; height:184px; place-items:center; margin:15px 0 6px; padding:0; overflow:hidden; border:0; border-radius:12px; background:white; cursor:zoom-in; transition:box-shadow 180ms ease,transform 180ms ease; }
 .unit-plan-preview picture,.unit-plan-preview img { display:block; width:100%; height:100%; object-fit:contain; }
+.unit-plan-preview img,.modal-plan--button img { transition:transform 220ms ease; }
+.unit-plan-preview:hover,.unit-plan-preview:focus-visible,.modal-plan--button:hover,.modal-plan--button:focus-visible { outline:none; box-shadow:0 0 0 3px var(--mint),0 12px 28px rgba(0,0,0,.18); }
+.unit-plan-preview:hover img,.unit-plan-preview:focus-visible img,.modal-plan--button:hover img,.modal-plan--button:focus-visible img { transform:scale(1.035); }
+.plan-zoom-hint { position:absolute; right:10px; bottom:10px; display:flex; align-items:center; gap:6px; padding:8px 10px; border-radius:999px; background:rgba(10,31,33,.9); color:white; font-size:7px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; box-shadow:0 7px 20px rgba(0,0,0,.2); opacity:0; transform:translateY(5px); transition:opacity 160ms ease,transform 160ms ease; backdrop-filter:blur(8px); }
+.unit-plan-preview:hover .plan-zoom-hint,.unit-plan-preview:focus-visible .plan-zoom-hint,.modal-plan--button:hover .plan-zoom-hint,.modal-plan--button:focus-visible .plan-zoom-hint { opacity:1; transform:none; }
 .plan-format-label { width:max-content; margin-inline:auto; padding:6px 11px; border-radius:999px; background:var(--mint); color:var(--ink); font-size:8px; font-weight:800; }
 .unit-detail--visual h3 { margin:12px 0; font-size:26px; }
 .unit-detail--visual dl { gap:8px; margin:10px 0; }
@@ -535,6 +540,7 @@ section { scroll-margin-top:0; }
 .modal-unit-card { display:grid; grid-template-columns:310px 1fr; gap:28px; align-items:center; margin-top:24px; padding:18px; border:1px solid rgba(16,32,34,.13); border-radius:17px; background:white; }
 .modal-plan { height:220px; overflow:hidden; border-radius:12px; background:#fafafa; }
 .modal-plan picture,.modal-plan img { display:block; width:100%; height:100%; object-fit:contain; }
+.modal-plan--button { position:relative; width:100%; padding:0; border:0; cursor:zoom-in; }
 .room-badge { display:inline-flex; padding:8px 12px; border-radius:999px; background:#159d8d; color:white; font-size:11px; font-weight:800; }
 .modal-unit-card h3 { margin:17px 0 5px; font-family:var(--font-display),serif; font-size:29px; }
 .modal-unit-card p { margin:0 0 18px; color:rgba(16,32,34,.5); font-size:10px; }
@@ -695,6 +701,7 @@ body.is-lead-locked { overflow:hidden; }
   .unit-detail.unit-detail--visual { grid-column:1/-1; height:auto; border-top:1px solid rgba(16,32,34,.13); }
   .unit-plan-preview { height:260px; }
   .modal-unit-card { grid-template-columns:1fr; }
+  .plan-zoom-hint { opacity:1; transform:none; }
   .payment-grid { grid-template-columns:1fr; }
   .installment-calculator { grid-template-columns:1fr; }
   .calculator-controls { padding-right:0; padding-bottom:16px; border-right:0; border-bottom:1px solid rgba(16,32,34,.12); }

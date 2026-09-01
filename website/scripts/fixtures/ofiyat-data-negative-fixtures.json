@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 2,
+  "projectSlug": "ofiyat",
+  "cases": [
+    { "id": "capture-duplicate-full-tuple", "scope": "capture-audit", "expectedError": "duplicate full tuple" },
+    { "id": "capture-summary-status-mismatch", "scope": "capture-audit", "expectedError": "summary does not equal its full rows" },
+    { "id": "capture-invented-nonavailable-price", "scope": "capture-audit", "expectedError": "invents a price for a non-available unit" },
+    { "id": "catalog-remote-representative-regression", "scope": "deploy", "expectedError": "missing its local representative asset" },
+    { "id": "catalog-invented-exact-plan", "scope": "deploy", "expectedError": "exact plan must remain absent" },
+    { "id": "catalog-status-mismatch", "scope": "deploy", "expectedError": "normalized status counts differ" },
+    { "id": "catalog-remote-phase-regression", "scope": "deploy", "expectedError": "is stale or remote" },
+    { "id": "catalog-ofiyat-project-timestamp", "scope": "deploy", "expectedError": "project timestamp/counts do not identify" },
+    { "id": "mask-white-rect-restored", "scope": "deploy", "expectedError": "changed source geometry, mapping, or canonical bytes" },
+    { "id": "mask-block-mapping-changed", "scope": "deploy", "expectedError": "changed source geometry, mapping, or canonical bytes" },
+    { "id": "sidecar-wrong-capture-status", "scope": "deploy", "expectedError": "differs from the audited schemaVersion 3 zero contract" },
+    { "id": "sidecar-nonzero-schemes", "scope": "deploy", "expectedError": "differs from the audited schemaVersion 3 zero contract" },
+    { "id": "sidecar-missing-audited-exclusion", "scope": "deploy", "expectedError": "differs from the audited schemaVersion 3 zero contract" },
+    { "id": "sync-exact-plan-tuple-drift", "scope": "deploy", "expectedError": "changed full tuple" },
+    { "id": "sync-duplicate-full-tuple", "scope": "deploy", "expectedError": "duplicate full unit tuple" },
+    { "id": "sync-incomplete-layout-universe", "scope": "deploy", "expectedError": "260 layouts, expected 261" },
+    { "id": "privacy-macos-users-path", "scope": "deploy", "expectedError": "forbidden public provenance macos-users-path" },
+    { "id": "privacy-linux-home-path", "scope": "deploy", "expectedError": "forbidden public provenance linux-home-path" },
+    { "id": "privacy-windows-drive-path", "scope": "deploy", "expectedError": "forbidden public provenance windows-drive-path" },
+    { "id": "privacy-file-url", "scope": "deploy", "expectedError": "forbidden public provenance file-url" },
+    { "id": "privacy-telegram-containers-path", "scope": "deploy", "expectedError": "forbidden public provenance telegram-containers-path" },
+    { "id": "deploy-missing-manifest", "scope": "deploy", "expectedError": "catalog/manifest is missing" },
+    { "id": "deploy-tampered-manifest", "scope": "deploy", "expectedError": "manifest capture provenance is invalid" },
+    { "id": "deploy-missing-sidecar", "scope": "deploy", "expectedError": "differs from the audited schemaVersion 3 zero contract" },
+    { "id": "deploy-missing-asset", "scope": "deploy", "expectedError": "fixture asset is missing" },
+    { "id": "deploy-tampered-asset", "scope": "deploy", "expectedError": "fixture asset byte size/SHA-256 mismatch" }
+  ]
+}

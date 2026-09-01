@@ -1,0 +1,25 @@
+:is(.rp-site,.rpc-site) .lead-modal { z-index:680; }
+:is(.rp-site,.rpc-site) .lead-modal__backdrop { background:rgba(13,14,13,.82); }
+:is(.rp-site,.rpc-site) .lead-modal__panel { border-radius:0; background:#f4ede1; color:#1f2221; }
+:is(.rp-site,.rpc-site) .lead-modal__visual { background:linear-gradient(145deg,#713f2f,#242725 74%); }
+:is(.rp-site,.rpc-site) .lead-modal__visual::before { right:-70px; bottom:-150px; width:310px; height:540px; border:0; border-left:2px solid rgba(203,142,81,.58); border-radius:0; box-shadow:-52px 0 0 -51px rgba(203,142,81,.3),-105px 0 0 -104px rgba(203,142,81,.2); transform:rotate(10deg); }
+:is(.rp-site,.rpc-site) .lead-modal__index,:is(.rp-site,.rpc-site) .lead-modal__visual>div small,:is(.rp-site,.rpc-site) .lead-modal__eyebrow,:is(.rp-site,.rpc-site) .lead-success>small { color:#cb8e51; }
+:is(.rp-site,.rpc-site) .lead-modal__visual>p { color:#ead7c0; }
+:is(.rp-site,.rpc-site) .lead-modal__close { min-width:44px; min-height:44px; border-radius:0; background:rgba(244,237,225,.9); color:#1f2221; }
+:is(.rp-site,.rpc-site) .lead-modal__content h2 { font-family:var(--font-display),Georgia,serif; }
+:is(.rp-site,.rpc-site) .lead-form input,:is(.rp-site,.rpc-site) .lead-phone { min-height:54px; border-radius:0; }
+:is(.rp-site,.rpc-site) .lead-goals label { min-height:46px; border-radius:0; }
+:is(.rp-site,.rpc-site) .lead-goals label.is-active { background:#1f2221; }
+:is(.rp-site,.rpc-site) .lead-form__submit,:is(.rp-site,.rpc-site) .lead-success__icon { min-height:54px; border-radius:0; background:#cb8e51; color:#1f2221; }
+:is(.rp-site,.rpc-site) .lead-consent { grid-column:1/-1; grid-template-columns:22px 1fr!important; align-items:start; min-height:44px; cursor:pointer; }
+:is(.rp-site,.rpc-site) .lead-consent input { width:22px; height:22px; min-height:22px; padding:0; accent-color:#9b5338; }
+:is(.rp-site,.rpc-site) .lead-consent span { align-self:center; color:rgba(31,34,33,.7); font-size:9px; line-height:1.45; text-transform:none; }
+:is(.rp-site,.rpc-site) .lead-form__privacy a { min-height:44px; padding-block:12px; }
+:is(.rp-site,.rpc-site) .lead-modal :focus-visible { outline:2px solid #cb8e51; outline-offset:3px; }
+
+@media (max-width:760px) {
+  :is(.rp-site,.rpc-site) .lead-modal__panel { border-radius:0; }
+  :is(.rp-site,.rpc-site) .lead-modal__visual { min-height:138px; }
+  :is(.rp-site,.rpc-site) .lead-modal__content { padding-top:27px; }
+  :is(.rp-site,.rpc-site) .lead-modal__content h2 { font-size:37px; }
+}

@@ -28,11 +28,27 @@ yarn-error.log*
 
 # local environment
 .env*
+!.env.example
 
 # deployment and generated files
 .vercel
 next-env.d.ts
+tsconfig.tsbuildinfo
 /dist/
 /.wrangler/
 /outputs/
 /work/
+
+# SUN raw captures contain server-only CRM provenance and signed source URLs.
+# The sanitized runtime artefacts live in /data/sun-client.json and /public/sun.
+/source/sun/
+/tmp/pdfs/sun-*/
+
+# local research captures and temporary extraction artifacts
+/source/
+/tmp/
+
+# Build-only official API captures and provenance maps. Keep these locally for
+# deterministic rebuilds, but publish only the normalized runtime catalogues.
+/data/*-raw.json
+/data/*-sources.json

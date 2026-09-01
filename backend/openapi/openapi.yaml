@@ -1,0 +1,694 @@
+openapi: 3.1.0
+info:
+  title: Tencorp Real Estate Catalog API
+  version: 1.0.0
+  description: Единый API каталога жилых комплексов и заявок клиентов.
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: System
+  - name: Catalog
+  - name: Sync
+  - name: Leads
+paths:
+  /healthz:
+    get:
+      tags: [System]
+      operationId: health
+      responses:
+        '200':
+          description: Процесс API жив. Зависимости проверяются через /readyz.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: { type: string, const: ok }
+        '503': { $ref: '#/components/responses/Error' }
+  /readyz:
+    get:
+      tags: [System]
+      operationId: readiness
+      responses:
+        '200':
+          description: PostgreSQL доступен, каталог непуст и общий import завершался успешно.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Readiness' }
+        '503':
+          description: API запущен, но каталог ещё не готов.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Readiness' }
+  /v1/developers:
+    get:
+      tags: [Catalog]
+      operationId: listDevelopers
+      responses:
+        '200':
+          description: Список застройщиков.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Developer' }
+  /v1/projects:
+    get:
+      tags: [Catalog]
+      operationId: listProjects
+      responses:
+        '200':
+          description: Проекты с агрегатами наличия.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/ProjectSummary' }
+  /v1/projects/{slug}:
+    parameters:
+      - $ref: '#/components/parameters/ProjectSlug'
+    get:
+      tags: [Catalog]
+      operationId: getProject
+      responses:
+        '200':
+          description: Проект и его очереди.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Project' }
+        '404': { $ref: '#/components/responses/Error' }
+  /v1/projects/{slug}/units:
+    parameters:
+      - $ref: '#/components/parameters/ProjectSlug'
+      - name: phase
+        in: query
+        schema: { type: string }
+      - name: status
+        in: query
+        schema: { $ref: '#/components/schemas/UnitStatus' }
+      - name: propertyType
+        in: query
+        schema:
+          type: string
+          enum: [apartment, parking, commercial, storage, other]
+      - name: rooms
+        in: query
+        schema: { type: integer }
+      - name: floorFrom
+        in: query
+        schema: { type: integer }
+      - name: floorTo
+        in: query
+        schema: { type: integer }
+      - name: priceFrom
+        in: query
+        schema: { type: integer, format: int64 }
+      - name: priceTo
+        in: query
+        schema: { type: integer, format: int64 }
+      - name: limit
+        in: query
+        schema: { type: integer, minimum: 1, maximum: 500, default: 50 }
+      - name: offset
+        in: query
+        schema: { type: integer, minimum: 0, default: 0 }
+    get:
+      tags: [Catalog]
+      operationId: listUnits
+      responses:
+        '200':
+          description: Страница помещений.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UnitPage' }
+        '400': { $ref: '#/components/responses/Error' }
+  /v1/projects/{slug}/layouts:
+    parameters:
+      - $ref: '#/components/parameters/ProjectSlug'
+      - name: phase
+        in: query
+        schema: { type: string }
+    get:
+      tags: [Catalog]
+      operationId: listLayouts
+      responses:
+        '200':
+          description: Доступные планировки проекта.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Layout' }
+  /v1/projects/{slug}/availability:
+    parameters:
+      - $ref: '#/components/parameters/ProjectSlug'
+      - name: phase
+        in: query
+        schema: { type: string }
+    get:
+      tags: [Catalog]
+      operationId: getAvailability
+      responses:
+        '200':
+          description: Число помещений по нормализованным статусам.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Availability' }
+  /v1/projects/{slug}/floor-schemes:
+    parameters:
+      - $ref: '#/components/parameters/ProjectSlug'
+    get:
+      tags: [Catalog]
+      operationId: getFloorSchemeArtifact
+      security: []
+      description: >-
+        Безопасная versioned-проекция официальных поэтажных схем. CRM routes,
+        tenant/account/house IDs и credentials не публикуются. Официальный capture содержит
+        34 схемы по ключу entrance/floor и не доказывает соответствие семи визуальных блоков
+        подъездам; поэтому blockEntranceMapping всегда null, а visual block остаётся только UI-контекстом.
+      responses:
+        '200':
+          description: Артефакт схем; честный blocked-by-authentication ответ может содержать ноль схем.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FloorSchemeArtifact' }
+        '404': { $ref: '#/components/responses/Error' }
+  /v1/units/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer, format: int64, minimum: 1 }
+    get:
+      tags: [Catalog]
+      operationId: getUnit
+      responses:
+        '200':
+          description: Помещение.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Unit' }
+        '400': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+  /v1/sync/status:
+    get:
+      tags: [Sync]
+      operationId: getSyncStatus
+      responses:
+        '200':
+          description: Последний запуск каждого источника.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/SyncStatus' }
+  /v1/leads:
+    post:
+      tags: [Leads]
+      operationId: createLead
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateLeadRequest' }
+      responses:
+        '201':
+          description: Заявка сохранена в PostgreSQL.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, lead]
+                properties:
+                  success: { type: boolean, const: true }
+                  lead: { $ref: '#/components/schemas/Lead' }
+        '400': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '413': { $ref: '#/components/responses/Error' }
+        '415': { $ref: '#/components/responses/Error' }
+        '422': { $ref: '#/components/responses/Error' }
+        '429':
+          description: Повторная заявка в cooldown-окне либо исчерпан лимит одновременно обрабатываемых заявок. Ответ содержит Retry-After.
+          headers:
+            Retry-After:
+              schema: { type: integer, minimum: 1 }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '503': { $ref: '#/components/responses/Error' }
+        '504': { $ref: '#/components/responses/Error' }
+components:
+  parameters:
+    ProjectSlug:
+      name: slug
+      in: path
+      required: true
+      schema: { type: string, examples: [mirador, ofiyat] }
+  responses:
+    Error:
+      description: Ошибка API.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+  schemas:
+    Developer:
+      type: object
+      required: [id, slug, name]
+      properties:
+        id: { type: integer, format: int64 }
+        slug: { type: string }
+        name: { type: string }
+    ProjectSummary:
+      type: object
+      required: [id, developerSlug, slug, name, totalUnits, availableUnits]
+      properties:
+        id: { type: integer, format: int64 }
+        developerSlug: { type: string }
+        slug: { type: string }
+        name: { type: string }
+        totalUnits: { type: integer, format: int64 }
+        availableUnits: { type: integer, format: int64 }
+        updatedAt: { type: string, format: date-time }
+    Project:
+      allOf:
+        - $ref: '#/components/schemas/ProjectSummary'
+        - type: object
+          required: [phases]
+          properties:
+            phases:
+              type: array
+              items: { $ref: '#/components/schemas/Phase' }
+    Phase:
+      type: object
+      required: [id, slug, name, sourceId, propertyType, sortOrder, floorsTotal, totalUnits, availableUnits]
+      properties:
+        id: { type: integer, format: int64 }
+        slug: { type: string }
+        name: { type: string }
+        sourceId: { type: string, description: Публичный ключ очереди; raw source ID не раскрывается. }
+        propertyType: { type: string }
+        sortOrder: { type: integer }
+        address: { type: string }
+        imageUrl: { type: string, format: uri }
+        floorsTotal: { type: integer }
+        totalUnits: { type: integer, format: int64 }
+        availableUnits: { type: integer, format: int64 }
+        updatedAt: { type: string, format: date-time }
+    UnitStatus:
+      type: string
+      enum: [available, reserved, sold, unavailable]
+    Unit:
+      type: object
+      required: [id, sourceKey, projectSlug, phaseSlug, phaseName, propertyType, rawPropertyType, status, rawStatus, number, floor, area, currency, isActive, sourceUpdatedAt, updatedAt]
+      properties:
+        id: { type: integer, format: int64 }
+        sourceKey: { type: string, description: Стабильный непрозрачный ключ; raw CRM ID не раскрывается. }
+        projectSlug: { type: string }
+        phaseSlug: { type: string }
+        phaseName: { type: string }
+        propertyType: { type: string }
+        rawPropertyType: { type: string }
+        status: { $ref: '#/components/schemas/UnitStatus' }
+        rawStatus: { type: string }
+        number: { type: string }
+        entrance: { type: string }
+        floor: { type: integer }
+        area: { type: number, format: double }
+        rooms: { type: integer }
+        price: { type: integer, format: int64, description: Цена в UZS. }
+        pricePerM2: { type: number, format: double }
+        currency: { type: string, const: UZS }
+        planImageUrl: { type: string, format: uri }
+        isActive: { type: boolean }
+        sourceUpdatedAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    UnitPage:
+      type: object
+      required: [items, total, limit, offset]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/Unit' }
+        total: { type: integer, format: int64 }
+        limit: { type: integer }
+        offset: { type: integer }
+    Layout:
+      type: object
+      required: [id, sourceId, projectSlug, phaseSlug, availableCount, title, imageUrl]
+      properties:
+        id: { type: integer, format: int64 }
+        sourceId: { type: string, description: Публичный непрозрачный ключ; raw layout source ID не раскрывается. }
+        projectSlug: { type: string }
+        phaseSlug: { type: string }
+        rooms: { type: integer }
+        availableCount: { type: integer }
+        title: { type: string }
+        address: { type: string }
+        priceText: { type: string }
+        imageUrl: { type: string, format: uri }
+        thumbnailUrl: { type: string, format: uri }
+    Availability:
+      type: object
+      required: [status, count]
+      properties:
+        status: { $ref: '#/components/schemas/UnitStatus' }
+        count: { type: integer, format: int64 }
+    FloorSchemeArtifact:
+      type: object
+      description: >-
+        Sanitized floor-scheme capture. Legacy schema v2 remains the immutable
+        Mirador 34-scheme/209-hotspot contract; schema v3 adds phase-aware identity
+        and the audited not-published-by-source zero-capture state. CRM IDs, routes,
+        tenant metadata, credentials and tokens are never returned.
+      required: [schemaVersion, projectSlug, capturedAt, captureStatus, captureScope, sourceStatus, sourceObservedAt, floorSchemeCount, hotspotCount, blockEntranceMapping, schemes, expectedUniverse, companionEvidence, backendApiArtifactSha256]
+      properties:
+        schemaVersion: { type: integer, enum: [2, 3] }
+        projectSlug: { type: string, pattern: '^[a-z0-9][a-z0-9-]*$' }
+        capturedAt:
+          type: [string, 'null']
+          format: date-time
+        captureStatus:
+          type: string
+          enum: [blocked-by-authentication, not-published-by-source, captured-complete, captured-partial]
+        captureScope: { $ref: '#/components/schemas/FloorSchemeCaptureScope' }
+        sourceStatus: { type: string, enum: [blocked-by-authentication, captured-read-only] }
+        sourceObservedAt: { type: string, format: date-time }
+        floorSchemeCount: { type: integer, minimum: 0 }
+        hotspotCount: { type: integer, minimum: 0 }
+        blockEntranceMapping:
+          type: 'null'
+          description: Неизменно null — официальный источник не публикует visual block → entrance mapping.
+        schemes:
+          type: array
+          items: { $ref: '#/components/schemas/FloorScheme' }
+        expectedUniverse:
+          oneOf:
+            - { $ref: '#/components/schemas/FloorSchemeExpectedUniverse' }
+            - { type: 'null' }
+        companionEvidence:
+          oneOf:
+            - { $ref: '#/components/schemas/FloorSchemeCompanionEvidence' }
+            - { type: 'null' }
+        sidecarByteSha256:
+          type: string
+          pattern: '^[a-f0-9]{64}$'
+          description: SHA-256 точных bytes sanitized sidecar, вычисленный importer вне самого sidecar.
+        backendApiArtifactSha256:
+          type: string
+          pattern: '^[a-f0-9]{64}$'
+          description: SHA-256 канонической backend/API-проекции после UTC microsecond normalization; не равен transport checksum sidecar.
+    FloorSchemeExpectedUniverse:
+      type: object
+      description: >-
+        Sanitized projection независимого official manifest. Обязательна только для
+        captured-complete и однозначно закрепляет каждый eligible unitKey за одним
+        phaseSlug/entrance/floor/unitNumber. Для legacy Mirador v2 это неизменно
+        199 strict snapshot matches плюс 10 companion-only записей; v3 использует
+        project-specific проверенный universe без глобальной уникальности unitNumber.
+      required: [sourceObservedAt, expectedManifestByteSha256, schemeCount, unitCount, companionUnitCount, assignments]
+      properties:
+        sourceObservedAt: { type: string, format: date-time }
+        expectedManifestByteSha256:
+          type: string
+          pattern: '^[a-f0-9]{64}$'
+          description: SHA-256 точных bytes независимого official capture manifest, не transport hash sanitized sidecar.
+        schemeCount: { type: integer, minimum: 1 }
+        unitCount: { type: integer, minimum: 1 }
+        catalogUnitCount:
+          type: integer
+          minimum: 0
+          description: Обязательно в schema v3; число strict phase-aware catalog unitKey matches.
+        lockedSnapshotUnitCount:
+          type: integer
+          minimum: 0
+          description: Legacy schema v2 Mirador count; отсутствует в schema v3.
+        companionUnitCount: { type: integer, minimum: 0 }
+        assignments:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/FloorSchemeExpectedUniverseAssignment' }
+    FloorSchemeExpectedUniverseAssignment:
+      type: object
+      required: [entrance, floor, unitNumber, unitKey, evidence]
+      properties:
+        phaseSlug:
+          type: string
+          minLength: 1
+          description: Обязательно в schema v3; отсутствует в legacy Mirador schema v2.
+        entrance: { type: string, minLength: 1 }
+        floor: { type: integer, minimum: 1 }
+        unitNumber: { type: string, minLength: 1 }
+        unitKey: { type: [string, 'null'], minLength: 1 }
+        evidence: { type: string, enum: [catalog-unit, locked-snapshot, official-public-companion] }
+    FloorSchemeCompanionEvidence:
+      type: object
+      required: [source, sourceObservedAt, recordCount, unitNumbers, recordsSha256]
+      properties:
+        source: { type: string, minLength: 1, maxLength: 200 }
+        sourceObservedAt: { type: string, format: date-time }
+        recordCount: { type: integer, minimum: 1 }
+        unitNumbers:
+          type: array
+          items: { type: string }
+          description: Legacy v2 projection; v3 identity authority is records because unit numbers may repeat between phases.
+        records:
+          type: array
+          items: { $ref: '#/components/schemas/FloorSchemeCompanionRecord' }
+          description: Exact phase-aware companion identities for schema v3; omitted by schema v2.
+        recordsSha256: { type: string, pattern: '^[a-f0-9]{64}$' }
+    FloorSchemeCompanionRecord:
+      type: object
+      required: [phaseSlug, entrance, floor, unitNumber]
+      properties:
+        phaseSlug: { type: string, minLength: 1 }
+        entrance: { type: string, minLength: 1 }
+        floor: { type: integer, minimum: 1 }
+        unitNumber: { type: string, minLength: 1 }
+    FloorSchemeCaptureScope:
+      type: object
+      required: [mode, declaredBlocks, declaredEntrances, declaredFloors, declaredUnitHotspots, schemeCount, hotspotCount, auditedExclusions]
+      properties:
+        mode: { type: string, enum: [blocked, unavailable, complete, partial] }
+        declaredBlocks:
+          type: array
+          maxItems: 0
+          description: 'Пусто: visual blocks не являются CRM identity.'
+        declaredEntrances:
+          type: array
+          uniqueItems: true
+          items: { type: string, minLength: 1 }
+        declaredFloors:
+          type: array
+          items: { $ref: '#/components/schemas/FloorSchemeScopeFloor' }
+        declaredUnitHotspots:
+          type: array
+          items: { $ref: '#/components/schemas/FloorSchemeScopeUnitHotspot' }
+        schemeCount: { type: integer, minimum: 0 }
+        hotspotCount: { type: integer, minimum: 0 }
+        auditedExclusions:
+          type: array
+          items: { $ref: '#/components/schemas/FloorSchemeAuditedExclusion' }
+    FloorSchemeScopeFloor:
+      type: object
+      required: [entrance, floor]
+      properties:
+        phaseSlug:
+          type: string
+          minLength: 1
+          description: Обязательно в schema v3; отсутствует в legacy Mirador schema v2.
+        entrance: { type: string, minLength: 1 }
+        floor: { type: integer, minimum: 1 }
+    FloorSchemeScopeUnitHotspot:
+      allOf:
+        - $ref: '#/components/schemas/FloorSchemeScopeFloor'
+        - type: object
+          required: [unitNumber]
+          properties:
+            unitNumber: { type: string, minLength: 1 }
+    FloorSchemeAuditedExclusion:
+      type: object
+      required: [kind, reason, evidence]
+      properties:
+        kind: { type: string, minLength: 1, maxLength: 80 }
+        reason: { type: string, minLength: 1, maxLength: 160 }
+        evidence: { type: string, minLength: 1, maxLength: 1000 }
+    FloorScheme:
+      type: object
+      required: [entrance, floor, imageUrl, imageSha256, imageBytes, width, height, sourceScreenshotSha256, sourceCrop, zones]
+      properties:
+        phaseSlug:
+          type: string
+          minLength: 1
+          description: Обязательно в schema v3; schema v2 не содержит поле и использует legacy phase main.
+        entrance: { type: string, minLength: 1 }
+        floor: { type: integer, minimum: 1 }
+        imageUrl: { type: string, pattern: '^/kayan/[a-z0-9][a-z0-9-]*/floor-schemes/[A-Za-z0-9/_-]+\.webp$' }
+        imageSha256: { type: string, pattern: '^[a-f0-9]{64}$' }
+        imageBytes: { type: integer, format: int64, minimum: 1024, maximum: 12582912 }
+        width: { type: integer, minimum: 1, maximum: 8192 }
+        height: { type: integer, minimum: 1, maximum: 8192 }
+        sourceScreenshotSha256: { type: string, pattern: '^[a-f0-9]{64}$' }
+        sourceScreenshotWidth:
+          type: integer
+          minimum: 1
+          maximum: 8192
+          description: Обязательно в schema v3; v2 использует зафиксированный legacy canvas 1661×811.
+        sourceScreenshotHeight:
+          type: integer
+          minimum: 1
+          maximum: 8192
+          description: Обязательно в schema v3; v2 использует зафиксированный legacy canvas 1661×811.
+        sourceCrop: { $ref: '#/components/schemas/FloorSchemeImageRectangle' }
+        zones:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/FloorSchemeZone' }
+    FloorSchemeZone:
+      type: object
+      required: [unitKey, unitNumber, points, label]
+      properties:
+        unitKey:
+          type: [string, 'null']
+          minLength: 1
+          description: >-
+            Stable opaque unit sourceKey. null допускается только при exact companion evidence:
+            legacy v2 — 10 Mirador companion-only квартир; v3 — совпадающая
+            phaseSlug/entrance/floor/unitNumber запись.
+        unitNumber: { type: string, minLength: 1 }
+        points: { type: string, minLength: 1, description: SVG polygon points в координатах исходной схемы. }
+        label:
+          $ref: '#/components/schemas/FloorSchemeLabel'
+    FloorSchemeLabel:
+      type: object
+      required: [x, y]
+      properties:
+        x: { type: number, minimum: 0 }
+        y: { type: number, minimum: 0 }
+    FloorSchemeImageRectangle:
+      type: object
+      required: [x, y, width, height]
+      description: Tight crop в координатах полного официального screenshot; v3 проверяет границы по sourceScreenshotWidth/sourceScreenshotHeight, v2 сохраняет legacy canvas 1661×811.
+      properties:
+        x: { type: integer, minimum: 0 }
+        y: { type: integer, minimum: 0 }
+        width: { type: integer, minimum: 1 }
+        height: { type: integer, minimum: 1 }
+    SyncStatus:
+      type: object
+      required: [source, status, startedAt, recordsRead, recordsSaved]
+      properties:
+        source: { type: string }
+        status: { type: string, enum: [running, succeeded, failed] }
+        startedAt: { type: string, format: date-time }
+        finishedAt: { type: string, format: date-time }
+        recordsRead: { type: integer }
+        recordsSaved: { type: integer }
+    CreateLeadRequest:
+      type: object
+      required: [projectSlug, name, phone, goal, language, consent]
+      properties:
+        projectSlug: { type: string, examples: [mirador, ofiyat] }
+        unitId:
+          description: >-
+            JSON number разрешается исключительно по deployment-local units.id; любая JSON string (включая строку
+            только из цифр) — legacy compatibility identity, разрешаемая исключительно по units.source_id.
+            Никогда не используется как units.source_key. Проверяется в пределах projectSlug.
+          oneOf:
+            - { type: string, minLength: 1, maxLength: 200, examples: ['12', aaa4e56c-4fb7-4ad4-91e9-f0d8972f836d] }
+            - { type: integer, format: int64, minimum: 1, examples: [45] }
+        unitKey:
+          type: string
+          minLength: 1
+          maxLength: 200
+          examples: ['154813:apartment:1:2:1']
+          description: >-
+            Stable opaque units.source_key. Даже numeric-looking строка остаётся source_key и никогда не разрешается
+            по units.id/source_id. Если переданы unitId и unitKey, оба обязаны разрешиться в одну canonical unit.
+        lastViewedApartment:
+          type: object
+          description: >-
+            Используется только identity; клиентские характеристики не становятся canonical. uuid разрешается только
+            по legacy units.source_id, unitKey только по units.source_key, unitId следует тем же правилам namespace,
+            что и верхнеуровневое поле. Несколько identity-полей должны указывать на одну canonical unit.
+          properties:
+            uuid: { type: string, minLength: 1, maxLength: 200, description: Legacy units.source_id identity. }
+            unitKey: { type: string, minLength: 1, maxLength: 200, description: Stable opaque units.source_key identity. }
+            unitId:
+              oneOf:
+                - { type: string, minLength: 1, maxLength: 200 }
+                - { type: integer, format: int64, minimum: 1 }
+        name: { type: string, minLength: 2, maxLength: 120 }
+        phone: { type: string, pattern: '^\\+998\\d{9}$' }
+        goal: { type: string, enum: [live, invest, rent] }
+        language: { type: string, enum: [ru, uz, en] }
+        lang: { type: string, enum: [ru, uz, en], description: Alias; должен совпадать с language. }
+        formContext: { type: string, maxLength: 2048 }
+        context: { type: string, maxLength: 2048, description: Legacy alias для formContext. }
+        consent: { type: boolean, const: true }
+        landing_url: { type: string, format: uri }
+        referrer_url: { type: string, format: uri }
+        fbc: { type: string, maxLength: 1024 }
+        fbp: { type: string, maxLength: 1024 }
+        fbclid: { type: string, maxLength: 1024 }
+        utm_source: { type: string, maxLength: 1024 }
+        utm_medium: { type: string, maxLength: 1024 }
+        utm_campaign: { type: string, maxLength: 1024 }
+        utm_content: { type: string, maxLength: 1024 }
+        utm_term: { type: string, maxLength: 1024 }
+        tcid: { type: string, maxLength: 1024 }
+    Lead:
+      type: object
+      required: [id, projectSlug, hasUnit, hasLastViewed, consentGiven, createdAt]
+      properties:
+        id: { type: integer, format: int64 }
+        projectSlug: { type: string }
+        hasUnit: { type: boolean }
+        hasLastViewed: { type: boolean }
+        consentGiven: { type: boolean, const: true }
+        createdAt: { type: string, format: date-time }
+    Readiness:
+      type: object
+      required: [status, catalog]
+      properties:
+        status: { type: string, enum: [ready, not_ready] }
+        catalog:
+          type: object
+          required: [projects, activeUnits, successfulRuns]
+          properties:
+            projects: { type: integer, format: int64 }
+            activeUnits: { type: integer, format: int64 }
+            successfulRuns: { type: integer, format: int64 }
+            lastImportedAt: { type: string, format: date-time }
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }

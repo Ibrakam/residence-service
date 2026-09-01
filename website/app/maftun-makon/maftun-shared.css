@@ -1,0 +1,197 @@
+html.maftun-scroll-smooth { scroll-behavior: smooth; }
+
+.maftun-lead-host { display: contents; }
+
+.maftun-site .lead-modal__backdrop,
+.maftun-catalog-site .lead-modal__backdrop {
+  background: rgba(4, 9, 30, .88);
+  backdrop-filter: blur(14px);
+}
+
+.maftun-site .lead-modal__panel,
+.maftun-catalog-site .lead-modal__panel {
+  border-color: rgba(223, 201, 133, .34);
+  border-radius: 34px 34px 12px 12px;
+  background: #faf6ed;
+  color: #17231d;
+}
+
+.maftun-site .lead-modal__visual,
+.maftun-catalog-site .lead-modal__visual {
+  background:
+    radial-gradient(circle at 18% 82%, rgba(181, 150, 86, .26), transparent 31%),
+    linear-gradient(148deg, #123b2d 0%, #101c54 58%, #081238 100%);
+}
+
+.maftun-site .lead-modal__visual::before,
+.maftun-catalog-site .lead-modal__visual::before {
+  right: -90px;
+  bottom: -118px;
+  width: 325px;
+  height: 390px;
+  border-color: rgba(223, 201, 133, .28);
+  border-radius: 49% 49% 20px 20px / 27% 27% 20px 20px;
+  box-shadow: 0 0 0 48px rgba(223, 201, 133, .035), 0 0 0 96px rgba(223, 201, 133, .022);
+}
+
+.maftun-site .lead-modal__visual > div small,
+.maftun-catalog-site .lead-modal__visual > div small { color: #dfc985; }
+
+.maftun-site .lead-modal__eyebrow,
+.maftun-site .lead-success > small,
+.maftun-catalog-site .lead-modal__eyebrow,
+.maftun-catalog-site .lead-success > small { color: #805b3f; }
+
+.maftun-site .lead-modal__visual > p,
+.maftun-catalog-site .lead-modal__visual > p { color: #dfc985; }
+
+.maftun-site .lead-modal__content h2,
+.maftun-catalog-site .lead-modal__content h2 { color: #123b2d; }
+
+.maftun-site .lead-modal__content > p,
+.maftun-site .lead-modal .lead-success > p,
+.maftun-catalog-site .lead-modal__content > p,
+.maftun-catalog-site .lead-modal .lead-success > p,
+.maftun-site .lead-modal .lead-form > label > span,
+.maftun-site .lead-modal .lead-form legend,
+.maftun-site .lead-modal .lead-form__privacy,
+.maftun-catalog-site .lead-modal .lead-form > label > span,
+.maftun-catalog-site .lead-modal .lead-form legend,
+.maftun-catalog-site .lead-modal .lead-form__privacy { color: #4b554e; }
+
+.maftun-site .lead-modal .lead-goals label,
+.maftun-catalog-site .lead-modal .lead-goals label { color: #465149; }
+
+.maftun-site .lead-modal .lead-form .lead-consent,
+.maftun-catalog-site .lead-modal .lead-form .lead-consent {
+  grid-column: 1 / -1;
+  display: flex;
+  min-height: 44px;
+  align-items: flex-start;
+  gap: 11px;
+  color: #465149;
+  cursor: pointer;
+}
+
+.maftun-site .lead-modal .lead-form .lead-consent input,
+.maftun-catalog-site .lead-modal .lead-form .lead-consent input {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  margin: 0;
+  padding: 0;
+  border-radius: 3px;
+  accent-color: #123b2d;
+}
+
+.maftun-site .lead-modal .lead-form .lead-consent > span,
+.maftun-catalog-site .lead-modal .lead-form .lead-consent > span {
+  padding-top: 3px;
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.maftun-site .lead-modal .lead-modal__close,
+.maftun-catalog-site .lead-modal .lead-modal__close {
+  width: 44px;
+  height: 44px;
+  border-color: rgba(16, 28, 84, .2);
+  background: rgba(250, 246, 237, .94);
+  color: #101c54;
+}
+
+.maftun-site .lead-modal .lead-form input,
+.maftun-site .lead-modal .lead-phone,
+.maftun-catalog-site .lead-modal .lead-form input,
+.maftun-catalog-site .lead-modal .lead-phone {
+  border-color: rgba(23, 35, 29, .2);
+  background: rgba(255, 255, 255, .66);
+  color: #17231d;
+}
+
+.maftun-site .lead-modal .lead-form input:focus,
+.maftun-site .lead-modal .lead-phone:focus-within,
+.maftun-catalog-site .lead-modal .lead-form input:focus,
+.maftun-catalog-site .lead-modal .lead-phone:focus-within {
+  border-color: #b59656;
+  box-shadow: 0 0 0 3px rgba(181, 150, 86, .15);
+}
+
+.maftun-site .lead-modal .lead-goals label.is-active,
+.maftun-catalog-site .lead-modal .lead-goals label.is-active {
+  border-color: #123b2d;
+  background: #123b2d;
+  color: #fff;
+}
+
+.maftun-site .lead-modal .lead-form__submit,
+.maftun-catalog-site .lead-modal .lead-form__submit {
+  border-radius: 4px;
+  background: #101c54;
+  color: #fff;
+  transition: background .2s ease, transform .2s ease;
+}
+
+.maftun-site .lead-modal .lead-form__submit:hover,
+.maftun-catalog-site .lead-modal .lead-form__submit:hover {
+  transform: translateY(-2px);
+  background: #081238;
+}
+
+.maftun-site .lead-modal .lead-form__submit span,
+.maftun-catalog-site .lead-modal .lead-form__submit span { transition: transform .2s ease; }
+.maftun-site .lead-modal .lead-form__submit:hover span,
+.maftun-catalog-site .lead-modal .lead-form__submit:hover span { transform: translate(2px, -2px); }
+
+.maftun-site .lead-modal .lead-success__icon,
+.maftun-catalog-site .lead-modal .lead-success__icon {
+  background: #b59656;
+  color: #fff;
+  box-shadow: 0 15px 35px rgba(181, 150, 86, .24);
+}
+
+.maftun-site .lead-modal .lead-success button,
+.maftun-catalog-site .lead-modal .lead-success button {
+  border-color: #123b2d;
+  border-radius: 4px;
+  background: #123b2d;
+  color: #fff;
+}
+
+.maftun-site .lead-modal .lead-form__privacy a,
+.maftun-catalog-site .lead-modal .lead-form__privacy a { color: #123b2d; }
+
+.maftun-site .lead-modal :focus-visible,
+.maftun-catalog-site .lead-modal :focus-visible {
+  outline: 3px solid #101c54;
+  outline-offset: 3px;
+}
+
+.maftun-site .lead-modal .lead-goals label:focus-within,
+.maftun-catalog-site .lead-modal .lead-goals label:focus-within {
+  outline: 3px solid #101c54;
+  outline-offset: 3px;
+}
+
+.maftun-site .lead-modal .lead-form__submit:focus-visible,
+.maftun-site .lead-modal .lead-success button:focus-visible,
+.maftun-site .lead-modal .lead-goals label.is-active:focus-within,
+.maftun-catalog-site .lead-modal .lead-form__submit:focus-visible,
+.maftun-catalog-site .lead-modal .lead-success button:focus-visible,
+.maftun-catalog-site .lead-modal .lead-goals label.is-active:focus-within {
+  outline-color: #dfc985;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.maftun-scroll-smooth { scroll-behavior: auto; }
+  .maftun-site .lead-modal *,
+  .maftun-site .lead-modal *::before,
+  .maftun-site .lead-modal *::after,
+  .maftun-catalog-site .lead-modal *,
+  .maftun-catalog-site .lead-modal *::before,
+  .maftun-catalog-site .lead-modal *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

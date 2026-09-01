@@ -1,0 +1,124 @@
+body.jm-active {
+  background: #f3eee2;
+  color: #242321;
+}
+
+.jomiy-site,
+.jomiy-catalog-site {
+  --jm-ivory: #f3eee2;
+  --jm-paper: #fbf8f0;
+  --jm-graphite: #242321;
+  --jm-muted: #6d6860;
+  --jm-bronze: #a77a49;
+  --jm-bronze-dark: #6f4a29;
+  --jm-pomegranate: #832f34;
+  --jm-turquoise: #2d7773;
+  --jm-line: rgba(36, 35, 33, .16);
+  --jm-gutter: clamp(22px, 5.3vw, 90px);
+  background: var(--jm-ivory);
+  color: var(--jm-graphite);
+  font-family: var(--font-ui), Arial, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+.jomiy-site *,
+.jomiy-site *::before,
+.jomiy-site *::after,
+.jomiy-catalog-site *,
+.jomiy-catalog-site *::before,
+.jomiy-catalog-site *::after { box-sizing: border-box; }
+
+.jomiy-site button,
+.jomiy-site a,
+.jomiy-catalog-site button,
+.jomiy-catalog-site a { color: inherit; font: inherit; }
+
+.jomiy-site button,
+.jomiy-catalog-site button { border: 0; }
+
+.jomiy-site img,
+.jomiy-catalog-site img { display: block; max-width: 100%; }
+
+.jomiy-site ::selection,
+.jomiy-catalog-site ::selection { background: var(--jm-pomegranate); color: #fff; }
+
+.jomiy-site :focus-visible,
+.jomiy-catalog-site :focus-visible {
+  outline: 2px solid var(--jm-pomegranate);
+  outline-offset: 4px;
+}
+
+.jomiy-site .lead-modal__panel,
+.jomiy-catalog-site .lead-modal__panel { border-radius: 0; background: var(--jm-paper); color: var(--jm-graphite); }
+.jomiy-site .lead-modal__visual,
+.jomiy-catalog-site .lead-modal__visual {
+  background:
+    linear-gradient(90deg, transparent 49.5%, rgba(255,255,255,.08) 50%, transparent 50.5%),
+    linear-gradient(180deg, #302d29, #1f1e1c);
+}
+.jomiy-site .lead-modal__visual::before,
+.jomiy-catalog-site .lead-modal__visual::before { border-radius: 0; border-color: rgba(197,150,93,.35); transform: rotate(45deg); }
+.jomiy-site .lead-modal__visual > div small,
+.jomiy-catalog-site .lead-modal__visual > div small { color: #e1c69e; }
+.jomiy-site .lead-modal__eyebrow,
+.jomiy-catalog-site .lead-modal__eyebrow { color: var(--jm-bronze-dark); }
+.jomiy-site .lead-modal__visual > p,
+.jomiy-catalog-site .lead-modal__visual > p { color: #e1c69e; }
+.jomiy-site .lead-form__submit,
+.jomiy-catalog-site .lead-form__submit { background: var(--jm-pomegranate); color: #fff; }
+.jomiy-site .lead-goals label.is-active,
+.jomiy-catalog-site .lead-goals label.is-active { border-color: var(--jm-bronze-dark); background: var(--jm-bronze-dark); color: #fff; }
+.jomiy-site .lead-modal__content > p,
+.jomiy-catalog-site .lead-modal__content > p,
+.jomiy-site .lead-form > label > span,
+.jomiy-catalog-site .lead-form > label > span,
+.jomiy-site .lead-form legend,
+.jomiy-catalog-site .lead-form legend,
+.jomiy-site .lead-goals label,
+.jomiy-catalog-site .lead-goals label,
+.jomiy-site .lead-form__privacy,
+.jomiy-catalog-site .lead-form__privacy { color: #5c554b; }
+.jomiy-site .lead-form__privacy,
+.jomiy-catalog-site .lead-form__privacy { font-size: 10px; }
+.jomiy-site .lead-form__privacy a,
+.jomiy-catalog-site .lead-form__privacy a { display: inline-flex; min-height: 44px; align-items: center; }
+.jomiy-site .lead-modal__close,
+.jomiy-catalog-site .lead-modal__close { width: 44px; height: 44px; }
+:is(.jomiy-site, .jomiy-catalog-site) .lead-goals label:focus-within {
+  outline: 2px solid var(--jm-pomegranate);
+  outline-offset: 3px;
+}
+:is(.jomiy-site, .jomiy-catalog-site) .lead-form .lead-consent {
+  grid-column: 1 / -1;
+  grid-template-columns: 26px minmax(0, 1fr);
+  min-height: 48px;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+:is(.jomiy-site, .jomiy-catalog-site) .lead-form .lead-consent input {
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--jm-pomegranate);
+}
+:is(.jomiy-site, .jomiy-catalog-site) .lead-form .lead-consent > span {
+  color: #5c554b;
+  font-size: 11px;
+  line-height: 1.4;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jomiy-site *, .jomiy-site *::before, .jomiy-site *::after,
+  .jomiy-catalog-site *, .jomiy-catalog-site *::before, .jomiy-catalog-site *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 2,
+  "project": "SUN",
+  "projectSlug": "sun",
+  "capturedAt": "2026-08-31T12:00:00+05:00",
+  "summary": {
+    "publicCatalogRecords": 306,
+    "available": 51,
+    "reserve": 41,
+    "sold": 214,
+    "normalizedStatusCounts": { "available": 51, "reserve": 41, "sold": 214 }
+  },
+  "units": [
+    {
+      "id": "sun-a-a2-f2",
+      "unitKey": "sun-a-a2-f2",
+      "number": "A-101",
+      "rooms": 2,
+      "area": 61.4,
+      "price": 1250000000,
+      "pricePerM2": 20358306,
+      "floor": 3,
+      "maxFloor": 9,
+      "entrance": 1,
+      "block": "A",
+      "status": "available",
+      "sourceStatus": "available",
+      "currency": "UZS",
+      "primaryPlanPath": "/sun/plans/101.webp"
+    },
+    {
+      "id": "sun-a-a3-f2",
+      "unitKey": "sun-a-a3-f2",
+      "number": "A-102",
+      "rooms": 3,
+      "area": 82.1,
+      "price": 1680000000,
+      "floor": 3,
+      "maxFloor": 9,
+      "entrance": 1,
+      "block": "A",
+      "status": "available",
+      "sourceStatus": "available",
+      "currency": "UZS",
+      "primaryPlanPath": "/sun/plans/102.webp"
+    }
+  ]
+}

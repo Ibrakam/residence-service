@@ -1,0 +1,10 @@
+ALTER TABLE leads
+    VALIDATE CONSTRAINT leads_name_length_check,
+    VALIDATE CONSTRAINT leads_phone_format_check,
+    VALIDATE CONSTRAINT leads_goal_check,
+    VALIDATE CONSTRAINT leads_language_check,
+    VALIDATE CONSTRAINT leads_context_length_check,
+    VALIDATE CONSTRAINT leads_url_length_check,
+    VALIDATE CONSTRAINT leads_unit_reference_length_check,
+    VALIDATE CONSTRAINT leads_metadata_object_check,
+    VALIDATE CONSTRAINT leads_consent_check;

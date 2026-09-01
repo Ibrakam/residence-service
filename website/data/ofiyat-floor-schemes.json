@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 3,
+  "projectSlug": "ofiyat",
+  "capturedAt": "2026-08-31T19:26:42.293Z",
+  "captureStatus": "not-published-by-source",
+  "captureScope": {
+    "mode": "unavailable",
+    "declaredBlocks": [],
+    "declaredEntrances": [],
+    "declaredFloors": [],
+    "declaredUnitHotspots": [],
+    "schemeCount": 0,
+    "hotspotCount": 0,
+    "auditedExclusions": [
+      {
+        "kind": "all-floor-schemes",
+        "reason": "not-published-by-source",
+        "evidence": "Authenticated read-only inspection of both Ofiyat residential phases exposed chessboard, enhanced chessboard, premises and layouts, but no published floor-plan view, floor canvases or apartment hotspot geometry."
+      }
+    ]
+  },
+  "sourceStatus": "captured-read-only",
+  "sourceObservedAt": "2026-08-31T19:26:42.293Z",
+  "floorSchemeCount": 0,
+  "hotspotCount": 0,
+  "blockEntranceMapping": null,
+  "schemes": [],
+  "expectedUniverse": null,
+  "companionEvidence": null
+}

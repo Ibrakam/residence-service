@@ -1,0 +1,70 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${CATALOG_DB_NAME:-catalog}
+      POSTGRES_USER: ${CATALOG_DB_USER:-catalog}
+      POSTGRES_PASSWORD: ${CATALOG_DB_PASSWORD:-catalog}
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - catalog_postgres_data:/var/lib/postgresql/data
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  api:
+    build: .
+    init: true
+    restart: unless-stopped
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    stop_grace_period: 15s
+    environment:
+      API_ADDR: :8080
+      DATABASE_URL: ${CATALOG_DATABASE_URL:-postgres://catalog:catalog@db:5432/catalog?sslmode=disable}
+      MIGRATIONS_DIR: /app/migrations
+      CATALOG_DATA_DIR: /app/data/catalogs
+      AUTO_MIGRATE: "true"
+      IMPORT_ON_START: "true"
+      LEAD_WRITES_ENABLED: ${LEAD_WRITES_ENABLED:-false}
+      ALLOWED_ORIGIN: ${ALLOWED_ORIGIN-http://localhost:3000}
+      REQUEST_TIMEOUT: ${REQUEST_TIMEOUT:-10s}
+      SHUTDOWN_TIMEOUT: ${SHUTDOWN_TIMEOUT:-10s}
+      LEAD_DUPLICATE_WINDOW: ${LEAD_DUPLICATE_WINDOW:-1m}
+      LEAD_MAX_IN_FLIGHT: ${LEAD_MAX_IN_FLIGHT:-8}
+    ports:
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/readyz"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ../website/data:/app/data/catalogs:ro
+      - ../website/public:/app/data/public:ro
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  catalog_postgres_data:

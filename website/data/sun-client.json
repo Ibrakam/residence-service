@@ -1,0 +1,3126 @@
+{
+  "schemaVersion": 2,
+  "project": "SUN",
+  "projectSlug": "sun",
+  "capturedAt": "2026-08-31T09:18:56.700Z",
+  "sourceKeyContract": "sun-{block}-{published-unit-number}-f{floor}",
+  "summary": {
+    "publicCatalogRecords": 306,
+    "available": 51,
+    "reserve": 41,
+    "sold": 214,
+    "normalizedStatusCounts": {
+      "available": 51,
+      "reserve": 41,
+      "sold": 214
+    },
+    "availableByRooms": {
+      "1": 18,
+      "2": 31,
+      "3": 2
+    },
+    "areaRange": {
+      "min": 34.61,
+      "max": 83.9
+    },
+    "priceRange": {
+      "min": 867730752,
+      "max": 1966290516
+    },
+    "planTypeCount": 16,
+    "planSourceCount": 32,
+    "matrixRowCount": 47
+  },
+  "projectFacts": {
+    "positioning": {
+      "ru": "Первый клубный проект Human2Human — создан людьми для людей",
+      "uz": "Human2Humanning odamlar tomonidan odamlar uchun yaratilgan ilk klub loyihasi",
+      "en": "Human2Human’s first club-format project, created by people for people"
+    },
+    "siteAreaHectares": 1,
+    "projectBlocks": 5,
+    "totalProjectApartments": 361,
+    "floorRange": {
+      "min": 11,
+      "max": 14
+    },
+    "address": {
+      "ru": "Ташкент, Мирабадский район, ул. Сайхун 56/2",
+      "uz": "Toshkent, Mirobod tumani, Sayxun ko‘chasi 56/2",
+      "en": "56/2 Saykhun Street, Mirabad District, Tashkent"
+    },
+    "phone": "+998 78 150 55 00",
+    "email": "info@h2h.uz",
+    "hours": {
+      "ru": "Ежедневно 09:00–20:00",
+      "uz": "Har kuni 09:00–20:00",
+      "en": "Daily 09:00–20:00"
+    },
+    "officialMapUrl": "https://yandex.uz/maps/?ll=69.301919%2C41.282957&z=16",
+    "schedule": [
+      {
+        "block": "A",
+        "blockName": "А",
+        "published": {
+          "ru": "октябрь 2026",
+          "uz": "2026-yil oktabr",
+          "en": "October 2026"
+        }
+      },
+      {
+        "block": "B",
+        "blockName": "Б",
+        "published": {
+          "ru": "октябрь 2027",
+          "uz": "2027-yil oktabr",
+          "en": "October 2027"
+        },
+        "absentFromPublicCatalog": true
+      },
+      {
+        "block": "V",
+        "blockName": "В",
+        "published": {
+          "ru": "февраль 2027",
+          "uz": "2027-yil fevral",
+          "en": "February 2027"
+        }
+      },
+      {
+        "block": "G",
+        "blockName": "Г",
+        "published": {
+          "ru": "июнь 2026",
+          "uz": "2026-yil iyun",
+          "en": "June 2026"
+        },
+        "scheduleConflict": true
+      },
+      {
+        "block": "D",
+        "blockName": "Д",
+        "published": {
+          "ru": "июнь 2026",
+          "uz": "2026-yil iyun",
+          "en": "June 2026"
+        },
+        "scheduleConflict": true
+      }
+    ],
+    "constructionUpdateDate": "2026-08-15",
+    "wordpressPageModifiedAt": "2026-08-26T13:42:01",
+    "currentPromotionsFoundAtCapture": 0
+  },
+  "campaign": {
+    "snapshotCampaignPrice": null,
+    "campaignActive": false,
+    "campaignDeadline": null
+  },
+  "groups": [
+    {
+      "id": "a",
+      "block": "A",
+      "blockName": "А",
+      "entrance": 1,
+      "floorStart": 2,
+      "floorEnd": 11,
+      "maxFloor": 11,
+      "total": 70,
+      "available": 12,
+      "reserve": 3,
+      "sold": 55,
+      "availableByRooms": {
+        "1": 0,
+        "2": 10,
+        "3": 2
+      },
+      "areaRange": {
+        "min": 62.01,
+        "max": 83.9
+      },
+      "unitIds": [
+        "sun-a-a2-f2",
+        "sun-a-a3-f2",
+        "sun-a-a10-f3",
+        "sun-a-a31-f6",
+        "sun-a-a45-f8",
+        "sun-a-a46-f8",
+        "sun-a-a52-f9",
+        "sun-a-a53-f9",
+        "sun-a-a58-f10",
+        "sun-a-a59-f10",
+        "sun-a-a66-f11",
+        "sun-a-a67-f11"
+      ]
+    },
+    {
+      "id": "g",
+      "block": "G",
+      "blockName": "Г",
+      "entrance": 1,
+      "floorStart": 2,
+      "floorEnd": 13,
+      "maxFloor": 13,
+      "total": 72,
+      "available": 9,
+      "reserve": 16,
+      "sold": 47,
+      "availableByRooms": {
+        "1": 4,
+        "2": 5,
+        "3": 0
+      },
+      "areaRange": {
+        "min": 34.67,
+        "max": 62.01
+      },
+      "unitIds": [
+        "sun-g-g1-f2",
+        "sun-g-g4-f2",
+        "sun-g-g5-f2",
+        "sun-g-g55-f11",
+        "sun-g-g59-f11",
+        "sun-g-g61-f12",
+        "sun-g-g64-f12",
+        "sun-g-g65-f12",
+        "sun-g-g66-f12"
+      ]
+    },
+    {
+      "id": "d",
+      "block": "D",
+      "blockName": "Д",
+      "entrance": 1,
+      "floorStart": 2,
+      "floorEnd": 14,
+      "maxFloor": 14,
+      "total": 104,
+      "available": 13,
+      "reserve": 17,
+      "sold": 74,
+      "availableByRooms": {
+        "1": 13,
+        "2": 0,
+        "3": 0
+      },
+      "areaRange": {
+        "min": 34.61,
+        "max": 37.2
+      },
+      "unitIds": [
+        "sun-d-d1-f2",
+        "sun-d-d7-f2",
+        "sun-d-d8-f2",
+        "sun-d-d16-f3",
+        "sun-d-d32-f5",
+        "sun-d-d64-f9",
+        "sun-d-d65-f10",
+        "sun-d-d72-f10",
+        "sun-d-d79-f11",
+        "sun-d-d80-f11",
+        "sun-d-d81-f12",
+        "sun-d-d82-f12",
+        "sun-d-d96-f13"
+      ]
+    },
+    {
+      "id": "v",
+      "block": "V",
+      "blockName": "В",
+      "entrance": 1,
+      "floorStart": 2,
+      "floorEnd": 13,
+      "maxFloor": 13,
+      "total": 60,
+      "available": 17,
+      "reserve": 5,
+      "sold": 38,
+      "availableByRooms": {
+        "1": 1,
+        "2": 16,
+        "3": 0
+      },
+      "areaRange": {
+        "min": 40.39,
+        "max": 68.31
+      },
+      "unitIds": [
+        "sun-v-v3-f2",
+        "sun-v-v7-f3",
+        "sun-v-v13-f4",
+        "sun-v-v18-f5",
+        "sun-v-v23-f6",
+        "sun-v-v43-f10",
+        "sun-v-v47-f11",
+        "sun-v-v48-f11",
+        "sun-v-v49-f11",
+        "sun-v-v52-f12",
+        "sun-v-v53-f12",
+        "sun-v-v54-f12",
+        "sun-v-v56-f13",
+        "sun-v-v57-f13",
+        "sun-v-v58-f13",
+        "sun-v-v59-f13",
+        "sun-v-v60-f13"
+      ]
+    }
+  ],
+  "matrixRows": [
+    {
+      "id": "a-e1-f11",
+      "groupId": "a",
+      "block": "A",
+      "blockName": "А",
+      "entrance": 1,
+      "floor": 11,
+      "unitIds": [
+        "sun-a-a66-f11",
+        "sun-a-a67-f11"
+      ],
+      "rawStatusCounts": {
+        "available": 2,
+        "booked": 0,
+        "sold": 5
+      },
+      "statusCounts": {
+        "available": 2,
+        "reserve": 0,
+        "sold": 5
+      },
+      "totalUnits": 7
+    },
+    {
+      "id": "a-e1-f10",
+      "groupId": "a",
+      "block": "A",
+      "blockName": "А",
+      "entrance": 1,
+      "floor": 10,
+      "unitIds": [
+        "sun-a-a58-f10",
+        "sun-a-a59-f10"
+      ],
+      "rawStatusCounts": {
+        "available": 2,
+        "booked": 0,
+        "sold": 5
+      },
+      "statusCounts": {
+        "available": 2,
+        "reserve": 0,
+        "sold": 5
+      },
+      "totalUnits": 7
+    },
+    {
+      "id": "a-e1-f9",
+      "groupId": "a",
+      "block": "A",
+      "blockName": "А",
+      "entrance": 1,
+      "floor": 9,
+      "unitIds": [
+        "sun-a-a52-f9",
+        "sun-a-a53-f9"
+      ],
+      "rawStatusCounts": {
+        "available": 2,
+        "booked": 1,
+        "sold": 4
+      },
+      "statusCounts": {
+        "available": 2,
+        "reserve": 1,
+        "sold": 4
+      },
+      "totalUnits": 7
+    },
+    {
+      "id": "a-e1-f8",
+      "groupId": "a",
+      "block": "A",
+      "blockName": "А",
+      "entrance": 1,
+      "floor": 8,
+      "unitIds": [
+        "sun-a-a45-f8",
+        "sun-a-a46-f8"
+      ],
+      "rawStatusCounts": {
+        "available": 2,
+        "booked": 0,
+        "sold": 5
+      },
+      "statusCounts": {
+        "available": 2,
+        "reserve": 0,
+        "sold": 5
+      },
+      "totalUnits": 7
+    },
+    {
+      "id": "a-e1-f7",
+      "groupId": "a",
+      "block": "A",
+      "blockName": "А",
+      "entrance": 1,
+      "floor": 7,
+      "unitIds": [],
+      "rawStatusCounts": {
+        "available": 0,
+        "booked": 0,
+        "sold": 7
+      },
+      "statusCounts": {
+        "available": 0,
+        "reserve": 0,
+        "sold": 7
+      },
+      "totalUnits": 7
+    },
+    {
+      "id": "a-e1-f6",
+      "groupId": "a",
+      "block": "A",
+      "blockName": "А",
+      "entrance": 1,
+      "floor": 6,
+      "unitIds": [
+        "sun-a-a31-f6"
+      ],
+      "rawStatusCounts": {
+        "available": 1,
+        "booked": 0,
+        "sold": 6
+      },
+      "statusCounts": {
+        "available": 1,
+        "reserve": 0,
+        "sold": 6
+      },
+      "totalUnits": 7
+    },
+    {
+      "id": "a-e1-f5",
+      "groupId": "a",
+      "block": "A",
+      "blockName": "А",
+      "entrance": 1,
+      "floor": 5,
+      "unitIds": [],
+      "rawStatusCounts": {
+        "available": 0,
+        "booked": 0,
+        "sold": 7
+      },
+      "statusCounts": {
+        "available": 0,
+        "reserve": 0,
+        "sold": 7
+      },
+      "totalUnits": 7
+    },
+    {
+      "id": "a-e1-f4",
+      "groupId": "a",
+      "block": "A",
+      "blockName": "А",
+      "entrance": 1,
+      "floor": 4,
+      "unitIds": [],
+      "rawStatusCounts": {
+        "available": 0,
+        "booked": 0,
+        "sold": 7
+      },
+      "statusCounts": {
+        "available": 0,
+        "reserve": 0,
+        "sold": 7
+      },
+      "totalUnits": 7
+    },
+    {
+      "id": "a-e1-f3",
+      "groupId": "a",
+      "block": "A",
+      "blockName": "А",
+      "entrance": 1,
+      "floor": 3,
+      "unitIds": [
+        "sun-a-a10-f3"
+      ],
+      "rawStatusCounts": {
+        "available": 1,
+        "booked": 2,
+        "sold": 4
+      },
+      "statusCounts": {
+        "available": 1,
+        "reserve": 2,
+        "sold": 4
+      },
+      "totalUnits": 7
+    },
+    {
+      "id": "a-e1-f2",
+      "groupId": "a",
+      "block": "A",
+      "blockName": "А",
+      "entrance": 1,
+      "floor": 2,
+      "unitIds": [
+        "sun-a-a2-f2",
+        "sun-a-a3-f2"
+      ],
+      "rawStatusCounts": {
+        "available": 2,
+        "booked": 0,
+        "sold": 5
+      },
+      "statusCounts": {
+        "available": 2,
+        "reserve": 0,
+        "sold": 5
+      },
+      "totalUnits": 7
+    },
+    {
+      "id": "g-e1-f13",
+      "groupId": "g",
+      "block": "G",
+      "blockName": "Г",
+      "entrance": 1,
+      "floor": 13,
+      "unitIds": [],
+      "rawStatusCounts": {
+        "available": 0,
+        "booked": 0,
+        "sold": 6
+      },
+      "statusCounts": {
+        "available": 0,
+        "reserve": 0,
+        "sold": 6
+      },
+      "totalUnits": 6
+    },
+    {
+      "id": "g-e1-f12",
+      "groupId": "g",
+      "block": "G",
+      "blockName": "Г",
+      "entrance": 1,
+      "floor": 12,
+      "unitIds": [
+        "sun-g-g61-f12",
+        "sun-g-g64-f12",
+        "sun-g-g65-f12",
+        "sun-g-g66-f12"
+      ],
+      "rawStatusCounts": {
+        "available": 4,
+        "booked": 0,
+        "sold": 2
+      },
+      "statusCounts": {
+        "available": 4,
+        "reserve": 0,
+        "sold": 2
+      },
+      "totalUnits": 6
+    },
+    {
+      "id": "g-e1-f11",
+      "groupId": "g",
+      "block": "G",
+      "blockName": "Г",
+      "entrance": 1,
+      "floor": 11,
+      "unitIds": [
+        "sun-g-g55-f11",
+        "sun-g-g59-f11"
+      ],
+      "rawStatusCounts": {
+        "available": 2,
+        "booked": 0,
+        "sold": 4
+      },
+      "statusCounts": {
+        "available": 2,
+        "reserve": 0,
+        "sold": 4
+      },
+      "totalUnits": 6
+    },
+    {
+      "id": "g-e1-f10",
+      "groupId": "g",
+      "block": "G",
+      "blockName": "Г",
+      "entrance": 1,
+      "floor": 10,
+      "unitIds": [],
+      "rawStatusCounts": {
+        "available": 0,
+        "booked": 2,
+        "sold": 4
+      },
+      "statusCounts": {
+        "available": 0,
+        "reserve": 2,
+        "sold": 4
+      },
+      "totalUnits": 6
+    },
+    {
+      "id": "g-e1-f9",
+      "groupId": "g",
+      "block": "G",
+      "blockName": "Г",
+      "entrance": 1,
+      "floor": 9,
+      "unitIds": [],
+      "rawStatusCounts": {
+        "available": 0,
+        "booked": 6,
+        "sold": 0
+      },
+      "statusCounts": {
+        "available": 0,
+        "reserve": 6,
+        "sold": 0
+      },
+      "totalUnits": 6
+    },
+    {
+      "id": "g-e1-f8",
+      "groupId": "g",
+      "block": "G",
+      "blockName": "Г",
+      "entrance": 1,
+      "floor": 8,
+      "unitIds": [],
+      "rawStatusCounts": {
+        "available": 0,
+        "booked": 3,
+        "sold": 3
+      },
+      "statusCounts": {
+        "available": 0,
+        "reserve": 3,
+        "sold": 3
+      },
+      "totalUnits": 6
+    },
+    {
+      "id": "g-e1-f7",
+      "groupId": "g",
+      "block": "G",
+      "blockName": "Г",
+      "entrance": 1,
+      "floor": 7,
+      "unitIds": [],
+      "rawStatusCounts": {
+        "available": 0,
+        "booked": 0,
+        "sold": 6
+      },
+      "statusCounts": {
+        "available": 0,
+        "reserve": 0,
+        "sold": 6
+      },
+      "totalUnits": 6
+    },
+    {
+      "id": "g-e1-f6",
+      "groupId": "g",
+      "block": "G",
+      "blockName": "Г",
+      "entrance": 1,
+      "floor": 6,
+      "unitIds": [],
+      "rawStatusCounts": {
+        "available": 0,
+        "booked": 0,
+        "sold": 6
+      },
+      "statusCounts": {
+        "available": 0,
+        "reserve": 0,
+        "sold": 6
+      },
+      "totalUnits": 6
+    },
+    {
+      "id": "g-e1-f5",
+      "groupId": "g",
+      "block": "G",
+      "blockName": "Г",
+      "entrance": 1,
+      "floor": 5,
+      "unitIds": [],
+      "rawStatusCounts": {
+        "available": 0,
+        "booked": 0,
+        "sold": 6
+      },
+      "statusCounts": {
+        "available": 0,
+        "reserve": 0,
+        "sold": 6
+      },
+      "totalUnits": 6
+    },
+    {
+      "id": "g-e1-f4",
+      "groupId": "g",
+      "block": "G",
+      "blockName": "Г",
+      "entrance": 1,
+      "floor": 4,
+      "unitIds": [],
+      "rawStatusCounts": {
+        "available": 0,
+        "booked": 2,
+        "sold": 4
+      },
+      "statusCounts": {
+        "available": 0,
+        "reserve": 2,
+        "sold": 4
+      },
+      "totalUnits": 6
+    },
+    {
+      "id": "g-e1-f3",
+      "groupId": "g",
+      "block": "G",
+      "blockName": "Г",
+      "entrance": 1,
+      "floor": 3,
+      "unitIds": [],
+      "rawStatusCounts": {
+        "available": 0,
+        "booked": 3,
+        "sold": 3
+      },
+      "statusCounts": {
+        "available": 0,
+        "reserve": 3,
+        "sold": 3
+      },
+      "totalUnits": 6
+    },
+    {
+      "id": "g-e1-f2",
+      "groupId": "g",
+      "block": "G",
+      "blockName": "Г",
+      "entrance": 1,
+      "floor": 2,
+      "unitIds": [
+        "sun-g-g1-f2",
+        "sun-g-g4-f2",
+        "sun-g-g5-f2"
+      ],
+      "rawStatusCounts": {
+        "available": 3,
+        "booked": 0,
+        "sold": 3
+      },
+      "statusCounts": {
+        "available": 3,
+        "reserve": 0,
+        "sold": 3
+      },
+      "totalUnits": 6
+    },
+    {
+      "id": "d-e1-f14",
+      "groupId": "d",
+      "block": "D",
+      "blockName": "Д",
+      "entrance": 1,
+      "floor": 14,
+      "unitIds": [],
+      "rawStatusCounts": {
+        "available": 0,
+        "booked": 8,
+        "sold": 0
+      },
+      "statusCounts": {
+        "available": 0,
+        "reserve": 8,
+        "sold": 0
+      },
+      "totalUnits": 8
+    },
+    {
+      "id": "d-e1-f13",
+      "groupId": "d",
+      "block": "D",
+      "blockName": "Д",
+      "entrance": 1,
+      "floor": 13,
+      "unitIds": [
+        "sun-d-d96-f13"
+      ],
+      "rawStatusCounts": {
+        "available": 1,
+        "booked": 4,
+        "sold": 3
+      },
+      "statusCounts": {
+        "available": 1,
+        "reserve": 4,
+        "sold": 3
+      },
+      "totalUnits": 8
+    },
+    {
+      "id": "d-e1-f12",
+      "groupId": "d",
+      "block": "D",
+      "blockName": "Д",
+      "entrance": 1,
+      "floor": 12,
+      "unitIds": [
+        "sun-d-d81-f12",
+        "sun-d-d82-f12"
+      ],
+      "rawStatusCounts": {
+        "available": 2,
+        "booked": 2,
+        "sold": 4
+      },
+      "statusCounts": {
+        "available": 2,
+        "reserve": 2,
+        "sold": 4
+      },
+      "totalUnits": 8
+    },
+    {
+      "id": "d-e1-f11",
+      "groupId": "d",
+      "block": "D",
+      "blockName": "Д",
+      "entrance": 1,
+      "floor": 11,
+      "unitIds": [
+        "sun-d-d79-f11",
+        "sun-d-d80-f11"
+      ],
+      "rawStatusCounts": {
+        "available": 2,
+        "booked": 0,
+        "sold": 6
+      },
+      "statusCounts": {
+        "available": 2,
+        "reserve": 0,
+        "sold": 6
+      },
+      "totalUnits": 8
+    },
+    {
+      "id": "d-e1-f10",
+      "groupId": "d",
+      "block": "D",
+      "blockName": "Д",
+      "entrance": 1,
+      "floor": 10,
+      "unitIds": [
+        "sun-d-d65-f10",
+        "sun-d-d72-f10"
+      ],
+      "rawStatusCounts": {
+        "available": 2,
+        "booked": 0,
+        "sold": 6
+      },
+      "statusCounts": {
+        "available": 2,
+        "reserve": 0,
+        "sold": 6
+      },
+      "totalUnits": 8
+    },
+    {
+      "id": "d-e1-f9",
+      "groupId": "d",
+      "block": "D",
+      "blockName": "Д",
+      "entrance": 1,
+      "floor": 9,
+      "unitIds": [
+        "sun-d-d64-f9"
+      ],
+      "rawStatusCounts": {
+        "available": 1,
+        "booked": 0,
+        "sold": 7
+      },
+      "statusCounts": {
+        "available": 1,
+        "reserve": 0,
+        "sold": 7
+      },
+      "totalUnits": 8
+    },
+    {
+      "id": "d-e1-f8",
+      "groupId": "d",
+      "block": "D",
+      "blockName": "Д",
+      "entrance": 1,
+      "floor": 8,
+      "unitIds": [],
+      "rawStatusCounts": {
+        "available": 0,
+        "booked": 3,
+        "sold": 5
+      },
+      "statusCounts": {
+        "available": 0,
+        "reserve": 3,
+        "sold": 5
+      },
+      "totalUnits": 8
+    },
+    {
+      "id": "d-e1-f7",
+      "groupId": "d",
+      "block": "D",
+      "blockName": "Д",
+      "entrance": 1,
+      "floor": 7,
+      "unitIds": [],
+      "rawStatusCounts": {
+        "available": 0,
+        "booked": 0,
+        "sold": 8
+      },
+      "statusCounts": {
+        "available": 0,
+        "reserve": 0,
+        "sold": 8
+      },
+      "totalUnits": 8
+    },
+    {
+      "id": "d-e1-f6",
+      "groupId": "d",
+      "block": "D",
+      "blockName": "Д",
+      "entrance": 1,
+      "floor": 6,
+      "unitIds": [],
+      "rawStatusCounts": {
+        "available": 0,
+        "booked": 0,
+        "sold": 8
+      },
+      "statusCounts": {
+        "available": 0,
+        "reserve": 0,
+        "sold": 8
+      },
+      "totalUnits": 8
+    },
+    {
+      "id": "d-e1-f5",
+      "groupId": "d",
+      "block": "D",
+      "blockName": "Д",
+      "entrance": 1,
+      "floor": 5,
+      "unitIds": [
+        "sun-d-d32-f5"
+      ],
+      "rawStatusCounts": {
+        "available": 1,
+        "booked": 0,
+        "sold": 7
+      },
+      "statusCounts": {
+        "available": 1,
+        "reserve": 0,
+        "sold": 7
+      },
+      "totalUnits": 8
+    },
+    {
+      "id": "d-e1-f4",
+      "groupId": "d",
+      "block": "D",
+      "blockName": "Д",
+      "entrance": 1,
+      "floor": 4,
+      "unitIds": [],
+      "rawStatusCounts": {
+        "available": 0,
+        "booked": 0,
+        "sold": 8
+      },
+      "statusCounts": {
+        "available": 0,
+        "reserve": 0,
+        "sold": 8
+      },
+      "totalUnits": 8
+    },
+    {
+      "id": "d-e1-f3",
+      "groupId": "d",
+      "block": "D",
+      "blockName": "Д",
+      "entrance": 1,
+      "floor": 3,
+      "unitIds": [
+        "sun-d-d16-f3"
+      ],
+      "rawStatusCounts": {
+        "available": 1,
+        "booked": 0,
+        "sold": 7
+      },
+      "statusCounts": {
+        "available": 1,
+        "reserve": 0,
+        "sold": 7
+      },
+      "totalUnits": 8
+    },
+    {
+      "id": "d-e1-f2",
+      "groupId": "d",
+      "block": "D",
+      "blockName": "Д",
+      "entrance": 1,
+      "floor": 2,
+      "unitIds": [
+        "sun-d-d1-f2",
+        "sun-d-d7-f2",
+        "sun-d-d8-f2"
+      ],
+      "rawStatusCounts": {
+        "available": 3,
+        "booked": 0,
+        "sold": 5
+      },
+      "statusCounts": {
+        "available": 3,
+        "reserve": 0,
+        "sold": 5
+      },
+      "totalUnits": 8
+    },
+    {
+      "id": "v-e1-f13",
+      "groupId": "v",
+      "block": "V",
+      "blockName": "В",
+      "entrance": 1,
+      "floor": 13,
+      "unitIds": [
+        "sun-v-v56-f13",
+        "sun-v-v57-f13",
+        "sun-v-v58-f13",
+        "sun-v-v59-f13",
+        "sun-v-v60-f13"
+      ],
+      "rawStatusCounts": {
+        "available": 5,
+        "booked": 0,
+        "sold": 0
+      },
+      "statusCounts": {
+        "available": 5,
+        "reserve": 0,
+        "sold": 0
+      },
+      "totalUnits": 5
+    },
+    {
+      "id": "v-e1-f12",
+      "groupId": "v",
+      "block": "V",
+      "blockName": "В",
+      "entrance": 1,
+      "floor": 12,
+      "unitIds": [
+        "sun-v-v52-f12",
+        "sun-v-v53-f12",
+        "sun-v-v54-f12"
+      ],
+      "rawStatusCounts": {
+        "available": 3,
+        "booked": 0,
+        "sold": 2
+      },
+      "statusCounts": {
+        "available": 3,
+        "reserve": 0,
+        "sold": 2
+      },
+      "totalUnits": 5
+    },
+    {
+      "id": "v-e1-f11",
+      "groupId": "v",
+      "block": "V",
+      "blockName": "В",
+      "entrance": 1,
+      "floor": 11,
+      "unitIds": [
+        "sun-v-v47-f11",
+        "sun-v-v48-f11",
+        "sun-v-v49-f11"
+      ],
+      "rawStatusCounts": {
+        "available": 3,
+        "booked": 0,
+        "sold": 2
+      },
+      "statusCounts": {
+        "available": 3,
+        "reserve": 0,
+        "sold": 2
+      },
+      "totalUnits": 5
+    },
+    {
+      "id": "v-e1-f10",
+      "groupId": "v",
+      "block": "V",
+      "blockName": "В",
+      "entrance": 1,
+      "floor": 10,
+      "unitIds": [
+        "sun-v-v43-f10"
+      ],
+      "rawStatusCounts": {
+        "available": 1,
+        "booked": 0,
+        "sold": 4
+      },
+      "statusCounts": {
+        "available": 1,
+        "reserve": 0,
+        "sold": 4
+      },
+      "totalUnits": 5
+    },
+    {
+      "id": "v-e1-f9",
+      "groupId": "v",
+      "block": "V",
+      "blockName": "В",
+      "entrance": 1,
+      "floor": 9,
+      "unitIds": [],
+      "rawStatusCounts": {
+        "available": 0,
+        "booked": 0,
+        "sold": 5
+      },
+      "statusCounts": {
+        "available": 0,
+        "reserve": 0,
+        "sold": 5
+      },
+      "totalUnits": 5
+    },
+    {
+      "id": "v-e1-f8",
+      "groupId": "v",
+      "block": "V",
+      "blockName": "В",
+      "entrance": 1,
+      "floor": 8,
+      "unitIds": [],
+      "rawStatusCounts": {
+        "available": 0,
+        "booked": 1,
+        "sold": 4
+      },
+      "statusCounts": {
+        "available": 0,
+        "reserve": 1,
+        "sold": 4
+      },
+      "totalUnits": 5
+    },
+    {
+      "id": "v-e1-f7",
+      "groupId": "v",
+      "block": "V",
+      "blockName": "В",
+      "entrance": 1,
+      "floor": 7,
+      "unitIds": [],
+      "rawStatusCounts": {
+        "available": 0,
+        "booked": 2,
+        "sold": 3
+      },
+      "statusCounts": {
+        "available": 0,
+        "reserve": 2,
+        "sold": 3
+      },
+      "totalUnits": 5
+    },
+    {
+      "id": "v-e1-f6",
+      "groupId": "v",
+      "block": "V",
+      "blockName": "В",
+      "entrance": 1,
+      "floor": 6,
+      "unitIds": [
+        "sun-v-v23-f6"
+      ],
+      "rawStatusCounts": {
+        "available": 1,
+        "booked": 2,
+        "sold": 2
+      },
+      "statusCounts": {
+        "available": 1,
+        "reserve": 2,
+        "sold": 2
+      },
+      "totalUnits": 5
+    },
+    {
+      "id": "v-e1-f5",
+      "groupId": "v",
+      "block": "V",
+      "blockName": "В",
+      "entrance": 1,
+      "floor": 5,
+      "unitIds": [
+        "sun-v-v18-f5"
+      ],
+      "rawStatusCounts": {
+        "available": 1,
+        "booked": 0,
+        "sold": 4
+      },
+      "statusCounts": {
+        "available": 1,
+        "reserve": 0,
+        "sold": 4
+      },
+      "totalUnits": 5
+    },
+    {
+      "id": "v-e1-f4",
+      "groupId": "v",
+      "block": "V",
+      "blockName": "В",
+      "entrance": 1,
+      "floor": 4,
+      "unitIds": [
+        "sun-v-v13-f4"
+      ],
+      "rawStatusCounts": {
+        "available": 1,
+        "booked": 0,
+        "sold": 4
+      },
+      "statusCounts": {
+        "available": 1,
+        "reserve": 0,
+        "sold": 4
+      },
+      "totalUnits": 5
+    },
+    {
+      "id": "v-e1-f3",
+      "groupId": "v",
+      "block": "V",
+      "blockName": "В",
+      "entrance": 1,
+      "floor": 3,
+      "unitIds": [
+        "sun-v-v7-f3"
+      ],
+      "rawStatusCounts": {
+        "available": 1,
+        "booked": 0,
+        "sold": 4
+      },
+      "statusCounts": {
+        "available": 1,
+        "reserve": 0,
+        "sold": 4
+      },
+      "totalUnits": 5
+    },
+    {
+      "id": "v-e1-f2",
+      "groupId": "v",
+      "block": "V",
+      "blockName": "В",
+      "entrance": 1,
+      "floor": 2,
+      "unitIds": [
+        "sun-v-v3-f2"
+      ],
+      "rawStatusCounts": {
+        "available": 1,
+        "booked": 0,
+        "sold": 4
+      },
+      "statusCounts": {
+        "available": 1,
+        "reserve": 0,
+        "sold": 4
+      },
+      "totalUnits": 5
+    }
+  ],
+  "units": [
+    {
+      "id": "sun-a-a2-f2",
+      "unitKey": "sun-a-a2-f2",
+      "recommendationRank": 1,
+      "number": "А2",
+      "title": "3-комнатная квартира А2",
+      "block": "A",
+      "blockName": "А",
+      "floor": 2,
+      "maxFloor": 11,
+      "entrance": 1,
+      "rooms": 3,
+      "area": 83.9,
+      "price": 1960906442,
+      "pricePerM2": 23371948,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/a4d4203a11fb7a3a-primary.webp",
+      "secondPlanPath": "/sun/plans/163b88302f625e58-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1960906442,
+      "displayPrice": {
+        "ru": "1 960 906 442 сум",
+        "uz": "1 960 906 442 so‘m",
+        "en": "UZS 1 960 906 442"
+      },
+      "regularPrice": 1960906442,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "двор"
+    },
+    {
+      "id": "sun-a-a3-f2",
+      "unitKey": "sun-a-a3-f2",
+      "recommendationRank": 2,
+      "number": "А3",
+      "title": "2-комнатная квартира А3",
+      "block": "A",
+      "blockName": "А",
+      "floor": 2,
+      "maxFloor": 11,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 62.01,
+      "price": 1428330645,
+      "pricePerM2": 23033876,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/b993c5191e59cc15-primary.webp",
+      "secondPlanPath": "/sun/plans/c1a808c36582f6a6-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1428330645,
+      "displayPrice": {
+        "ru": "1 428 330 645 сум",
+        "uz": "1 428 330 645 so‘m",
+        "en": "UZS 1 428 330 645"
+      },
+      "regularPrice": 1428330645,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "город"
+    },
+    {
+      "id": "sun-a-a10-f3",
+      "unitKey": "sun-a-a10-f3",
+      "recommendationRank": 9,
+      "number": "А10",
+      "title": "2-комнатная квартира А10",
+      "block": "A",
+      "blockName": "А",
+      "floor": 3,
+      "maxFloor": 11,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 62.01,
+      "price": 1432880914,
+      "pricePerM2": 23107256,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/b993c5191e59cc15-primary.webp",
+      "secondPlanPath": "/sun/plans/c1a808c36582f6a6-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1432880914,
+      "displayPrice": {
+        "ru": "1 432 880 914 сум",
+        "uz": "1 432 880 914 so‘m",
+        "en": "UZS 1 432 880 914"
+      },
+      "regularPrice": 1432880914,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "город"
+    },
+    {
+      "id": "sun-a-a31-f6",
+      "unitKey": "sun-a-a31-f6",
+      "recommendationRank": 30,
+      "number": "А31",
+      "title": "2-комнатная квартира А31",
+      "block": "A",
+      "blockName": "А",
+      "floor": 6,
+      "maxFloor": 11,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 62.01,
+      "price": 1425853437,
+      "pricePerM2": 22993927,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/b993c5191e59cc15-primary.webp",
+      "secondPlanPath": "/sun/plans/c1a808c36582f6a6-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1425853437,
+      "displayPrice": {
+        "ru": "1 425 853 437 сум",
+        "uz": "1 425 853 437 so‘m",
+        "en": "UZS 1 425 853 437"
+      },
+      "regularPrice": 1425853437,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "город"
+    },
+    {
+      "id": "sun-a-a45-f8",
+      "unitKey": "sun-a-a45-f8",
+      "recommendationRank": 44,
+      "number": "А45",
+      "title": "2-комнатная квартира А45",
+      "block": "A",
+      "blockName": "А",
+      "floor": 8,
+      "maxFloor": 11,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 62.01,
+      "price": 1428066221,
+      "pricePerM2": 23029612,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/b993c5191e59cc15-primary.webp",
+      "secondPlanPath": "/sun/plans/c1a808c36582f6a6-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1428066221,
+      "displayPrice": {
+        "ru": "1 428 066 221 сум",
+        "uz": "1 428 066 221 so‘m",
+        "en": "UZS 1 428 066 221"
+      },
+      "regularPrice": 1428066221,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "город"
+    },
+    {
+      "id": "sun-a-a46-f8",
+      "unitKey": "sun-a-a46-f8",
+      "recommendationRank": 45,
+      "number": "А46",
+      "title": "2-комнатная квартира А46",
+      "block": "A",
+      "blockName": "А",
+      "floor": 8,
+      "maxFloor": 11,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 62.01,
+      "price": 1424465070,
+      "pricePerM2": 22971538,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/6702413d9c15acf1-primary.webp",
+      "secondPlanPath": "/sun/plans/a86fda418fec8de6-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1424465070,
+      "displayPrice": {
+        "ru": "1 424 465 070 сум",
+        "uz": "1 424 465 070 so‘m",
+        "en": "UZS 1 424 465 070"
+      },
+      "regularPrice": 1424465070,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "город"
+    },
+    {
+      "id": "sun-a-a52-f9",
+      "unitKey": "sun-a-a52-f9",
+      "recommendationRank": 51,
+      "number": "А52",
+      "title": "2-комнатная квартира А52",
+      "block": "A",
+      "blockName": "А",
+      "floor": 9,
+      "maxFloor": 11,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 62.01,
+      "price": 1430258188,
+      "pricePerM2": 23064960,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/b993c5191e59cc15-primary.webp",
+      "secondPlanPath": "/sun/plans/c1a808c36582f6a6-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1430258188,
+      "displayPrice": {
+        "ru": "1 430 258 188 сум",
+        "uz": "1 430 258 188 so‘m",
+        "en": "UZS 1 430 258 188"
+      },
+      "regularPrice": 1430258188,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "город"
+    },
+    {
+      "id": "sun-a-a53-f9",
+      "unitKey": "sun-a-a53-f9",
+      "recommendationRank": 52,
+      "number": "А53",
+      "title": "2-комнатная квартира А53",
+      "block": "A",
+      "blockName": "А",
+      "floor": 9,
+      "maxFloor": 11,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 62.01,
+      "price": 1425083596,
+      "pricePerM2": 22981513,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/6702413d9c15acf1-primary.webp",
+      "secondPlanPath": "/sun/plans/a86fda418fec8de6-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1425083596,
+      "displayPrice": {
+        "ru": "1 425 083 596 сум",
+        "uz": "1 425 083 596 so‘m",
+        "en": "UZS 1 425 083 596"
+      },
+      "regularPrice": 1425083596,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "город"
+    },
+    {
+      "id": "sun-a-a58-f10",
+      "unitKey": "sun-a-a58-f10",
+      "recommendationRank": 57,
+      "number": "А58",
+      "title": "3-комнатная квартира А58",
+      "block": "A",
+      "blockName": "А",
+      "floor": 10,
+      "maxFloor": 11,
+      "entrance": 1,
+      "rooms": 3,
+      "area": 83.9,
+      "price": 1966290516,
+      "pricePerM2": 23436121,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/a4d4203a11fb7a3a-primary.webp",
+      "secondPlanPath": "/sun/plans/163b88302f625e58-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1966290516,
+      "displayPrice": {
+        "ru": "1 966 290 516 сум",
+        "uz": "1 966 290 516 so‘m",
+        "en": "UZS 1 966 290 516"
+      },
+      "regularPrice": 1966290516,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "двор"
+    },
+    {
+      "id": "sun-a-a59-f10",
+      "unitKey": "sun-a-a59-f10",
+      "recommendationRank": 58,
+      "number": "А59",
+      "title": "2-комнатная квартира А59",
+      "block": "A",
+      "blockName": "А",
+      "floor": 10,
+      "maxFloor": 11,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 62.01,
+      "price": 1435738104,
+      "pricePerM2": 23153332,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/b993c5191e59cc15-primary.webp",
+      "secondPlanPath": "/sun/plans/c1a808c36582f6a6-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1435738104,
+      "displayPrice": {
+        "ru": "1 435 738 104 сум",
+        "uz": "1 435 738 104 so‘m",
+        "en": "UZS 1 435 738 104"
+      },
+      "regularPrice": 1435738104,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "город"
+    },
+    {
+      "id": "sun-a-a66-f11",
+      "unitKey": "sun-a-a66-f11",
+      "recommendationRank": 65,
+      "number": "А66",
+      "title": "2-комнатная квартира А66",
+      "block": "A",
+      "blockName": "А",
+      "floor": 11,
+      "maxFloor": 11,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 62.01,
+      "price": 1441218021,
+      "pricePerM2": 23241703,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/b993c5191e59cc15-primary.webp",
+      "secondPlanPath": "/sun/plans/c1a808c36582f6a6-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1441218021,
+      "displayPrice": {
+        "ru": "1 441 218 021 сум",
+        "uz": "1 441 218 021 so‘m",
+        "en": "UZS 1 441 218 021"
+      },
+      "regularPrice": 1441218021,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "город"
+    },
+    {
+      "id": "sun-a-a67-f11",
+      "unitKey": "sun-a-a67-f11",
+      "recommendationRank": 66,
+      "number": "А67",
+      "title": "2-комнатная квартира А67",
+      "block": "A",
+      "blockName": "А",
+      "floor": 11,
+      "maxFloor": 11,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 62.01,
+      "price": 1435400516,
+      "pricePerM2": 23147888,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/6702413d9c15acf1-primary.webp",
+      "secondPlanPath": "/sun/plans/a86fda418fec8de6-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1435400516,
+      "displayPrice": {
+        "ru": "1 435 400 516 сум",
+        "uz": "1 435 400 516 so‘m",
+        "en": "UZS 1 435 400 516"
+      },
+      "regularPrice": 1435400516,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "город"
+    },
+    {
+      "id": "sun-v-v3-f2",
+      "unitKey": "sun-v-v3-f2",
+      "recommendationRank": 72,
+      "number": "В3",
+      "title": "2-комнатная квартира В3",
+      "block": "V",
+      "blockName": "В",
+      "floor": 2,
+      "maxFloor": 13,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 60.99,
+      "price": 1350042263,
+      "pricePerM2": 22135469,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/63acb0c96d3eb43d-primary.webp",
+      "secondPlanPath": "/sun/plans/2a76962c04461267-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1350042263,
+      "displayPrice": {
+        "ru": "1 350 042 263 сум",
+        "uz": "1 350 042 263 so‘m",
+        "en": "UZS 1 350 042 263"
+      },
+      "regularPrice": 1350042263,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "дорога"
+    },
+    {
+      "id": "sun-v-v7-f3",
+      "unitKey": "sun-v-v7-f3",
+      "recommendationRank": 76,
+      "number": "В7",
+      "title": "2-комнатная квартира В7",
+      "block": "V",
+      "blockName": "В",
+      "floor": 3,
+      "maxFloor": 13,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 62.03,
+      "price": 1410062898,
+      "pricePerM2": 22731951,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/b6df02ca5b5b5f4c-primary.webp",
+      "secondPlanPath": "/sun/plans/10b17485014bc98f-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1410062898,
+      "displayPrice": {
+        "ru": "1 410 062 898 сум",
+        "uz": "1 410 062 898 so‘m",
+        "en": "UZS 1 410 062 898"
+      },
+      "regularPrice": 1410062898,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "дорога"
+    },
+    {
+      "id": "sun-v-v13-f4",
+      "unitKey": "sun-v-v13-f4",
+      "recommendationRank": 82,
+      "number": "В13",
+      "title": "2-комнатная квартира В13",
+      "block": "V",
+      "blockName": "В",
+      "floor": 4,
+      "maxFloor": 13,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 60.99,
+      "price": 1363840598,
+      "pricePerM2": 22361708,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/63acb0c96d3eb43d-primary.webp",
+      "secondPlanPath": "/sun/plans/2a76962c04461267-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1363840598,
+      "displayPrice": {
+        "ru": "1 363 840 598 сум",
+        "uz": "1 363 840 598 so‘m",
+        "en": "UZS 1 363 840 598"
+      },
+      "regularPrice": 1363840598,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "дорога"
+    },
+    {
+      "id": "sun-v-v18-f5",
+      "unitKey": "sun-v-v18-f5",
+      "recommendationRank": 87,
+      "number": "В18",
+      "title": "2-комнатная квартира В18",
+      "block": "V",
+      "blockName": "В",
+      "floor": 5,
+      "maxFloor": 13,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 60.99,
+      "price": 1373485699,
+      "pricePerM2": 22519851,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/63acb0c96d3eb43d-primary.webp",
+      "secondPlanPath": "/sun/plans/2a76962c04461267-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1373485699,
+      "displayPrice": {
+        "ru": "1 373 485 699 сум",
+        "uz": "1 373 485 699 so‘m",
+        "en": "UZS 1 373 485 699"
+      },
+      "regularPrice": 1373485699,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "дорога"
+    },
+    {
+      "id": "sun-v-v23-f6",
+      "unitKey": "sun-v-v23-f6",
+      "recommendationRank": 92,
+      "number": "В23",
+      "title": "2-комнатная квартира В23",
+      "block": "V",
+      "blockName": "В",
+      "floor": 6,
+      "maxFloor": 13,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 60.99,
+      "price": 1386302316,
+      "pricePerM2": 22729994,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/63acb0c96d3eb43d-primary.webp",
+      "secondPlanPath": "/sun/plans/2a76962c04461267-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1386302316,
+      "displayPrice": {
+        "ru": "1 386 302 316 сум",
+        "uz": "1 386 302 316 so‘m",
+        "en": "UZS 1 386 302 316"
+      },
+      "regularPrice": 1386302316,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "горы"
+    },
+    {
+      "id": "sun-v-v43-f10",
+      "unitKey": "sun-v-v43-f10",
+      "recommendationRank": 112,
+      "number": "В43",
+      "title": "2-комнатная квартира В43",
+      "block": "V",
+      "blockName": "В",
+      "floor": 10,
+      "maxFloor": 13,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 60.99,
+      "price": 1400265524,
+      "pricePerM2": 22958936,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/63acb0c96d3eb43d-primary.webp",
+      "secondPlanPath": "/sun/plans/2a76962c04461267-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1400265524,
+      "displayPrice": {
+        "ru": "1 400 265 524 сум",
+        "uz": "1 400 265 524 so‘m",
+        "en": "UZS 1 400 265 524"
+      },
+      "regularPrice": 1400265524,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "горы"
+    },
+    {
+      "id": "sun-v-v47-f11",
+      "unitKey": "sun-v-v47-f11",
+      "recommendationRank": 116,
+      "number": "В47",
+      "title": "2-комнатная квартира В47",
+      "block": "V",
+      "blockName": "В",
+      "floor": 11,
+      "maxFloor": 13,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 62.03,
+      "price": 1410062898,
+      "pricePerM2": 22731951,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/b6df02ca5b5b5f4c-primary.webp",
+      "secondPlanPath": "/sun/plans/10b17485014bc98f-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1410062898,
+      "displayPrice": {
+        "ru": "1 410 062 898 сум",
+        "uz": "1 410 062 898 so‘m",
+        "en": "UZS 1 410 062 898"
+      },
+      "regularPrice": 1410062898,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "горы"
+    },
+    {
+      "id": "sun-v-v48-f11",
+      "unitKey": "sun-v-v48-f11",
+      "recommendationRank": 117,
+      "number": "В48",
+      "title": "2-комнатная квартира В48",
+      "block": "V",
+      "blockName": "В",
+      "floor": 11,
+      "maxFloor": 13,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 60.99,
+      "price": 1411072921,
+      "pricePerM2": 23136136,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/63acb0c96d3eb43d-primary.webp",
+      "secondPlanPath": "/sun/plans/2a76962c04461267-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1411072921,
+      "displayPrice": {
+        "ru": "1 411 072 921 сум",
+        "uz": "1 411 072 921 so‘m",
+        "en": "UZS 1 411 072 921"
+      },
+      "regularPrice": 1411072921,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "горы"
+    },
+    {
+      "id": "sun-v-v49-f11",
+      "unitKey": "sun-v-v49-f11",
+      "recommendationRank": 118,
+      "number": "В49",
+      "title": "2-комнатная квартира В49",
+      "block": "V",
+      "blockName": "В",
+      "floor": 11,
+      "maxFloor": 13,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 68.31,
+      "price": 1562540544,
+      "pricePerM2": 22874258,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/61ea61cb5303852a-primary.webp",
+      "secondPlanPath": "/sun/plans/5d4f15bc3db81ba9-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1562540544,
+      "displayPrice": {
+        "ru": "1 562 540 544 сум",
+        "uz": "1 562 540 544 so‘m",
+        "en": "UZS 1 562 540 544"
+      },
+      "regularPrice": 1562540544,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "Гринвич"
+    },
+    {
+      "id": "sun-v-v52-f12",
+      "unitKey": "sun-v-v52-f12",
+      "recommendationRank": 121,
+      "number": "В52",
+      "title": "2-комнатная квартира В52",
+      "block": "V",
+      "blockName": "В",
+      "floor": 12,
+      "maxFloor": 13,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 62.03,
+      "price": 1415344032,
+      "pricePerM2": 22817089,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/b6df02ca5b5b5f4c-primary.webp",
+      "secondPlanPath": "/sun/plans/10b17485014bc98f-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1415344032,
+      "displayPrice": {
+        "ru": "1 415 344 032 сум",
+        "uz": "1 415 344 032 so‘m",
+        "en": "UZS 1 415 344 032"
+      },
+      "regularPrice": 1415344032,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "горы"
+    },
+    {
+      "id": "sun-v-v53-f12",
+      "unitKey": "sun-v-v53-f12",
+      "recommendationRank": 122,
+      "number": "В53",
+      "title": "2-комнатная квартира В53",
+      "block": "V",
+      "blockName": "В",
+      "floor": 12,
+      "maxFloor": 13,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 60.99,
+      "price": 1437784600,
+      "pricePerM2": 23574104,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/63acb0c96d3eb43d-primary.webp",
+      "secondPlanPath": "/sun/plans/2a76962c04461267-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1437784600,
+      "displayPrice": {
+        "ru": "1 437 784 600 сум",
+        "uz": "1 437 784 600 so‘m",
+        "en": "UZS 1 437 784 600"
+      },
+      "regularPrice": 1437784600,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "горы"
+    },
+    {
+      "id": "sun-v-v54-f12",
+      "unitKey": "sun-v-v54-f12",
+      "recommendationRank": 123,
+      "number": "В54",
+      "title": "2-комнатная квартира В54",
+      "block": "V",
+      "blockName": "В",
+      "floor": 12,
+      "maxFloor": 13,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 68.31,
+      "price": 1576368336,
+      "pricePerM2": 23076685,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/61ea61cb5303852a-primary.webp",
+      "secondPlanPath": "/sun/plans/5d4f15bc3db81ba9-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1576368336,
+      "displayPrice": {
+        "ru": "1 576 368 336 сум",
+        "uz": "1 576 368 336 so‘m",
+        "en": "UZS 1 576 368 336"
+      },
+      "regularPrice": 1576368336,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "Гринвич"
+    },
+    {
+      "id": "sun-v-v56-f13",
+      "unitKey": "sun-v-v56-f13",
+      "recommendationRank": 125,
+      "number": "В56",
+      "title": "1-комнатная квартира В56",
+      "block": "V",
+      "blockName": "В",
+      "floor": 13,
+      "maxFloor": 13,
+      "entrance": 1,
+      "rooms": 1,
+      "area": 40.39,
+      "price": 975158765,
+      "pricePerM2": 24143569,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/fec648ca9fe352ca-primary.webp",
+      "secondPlanPath": "/sun/plans/86f67971aecaf20a-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 975158765,
+      "displayPrice": {
+        "ru": "975 158 765 сум",
+        "uz": "975 158 765 so‘m",
+        "en": "UZS 975 158 765"
+      },
+      "regularPrice": 975158765,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "Гринвич"
+    },
+    {
+      "id": "sun-v-v57-f13",
+      "unitKey": "sun-v-v57-f13",
+      "recommendationRank": 126,
+      "number": "В57",
+      "title": "2-комнатная квартира В57",
+      "block": "V",
+      "blockName": "В",
+      "floor": 13,
+      "maxFloor": 13,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 62.03,
+      "price": 1420625167,
+      "pricePerM2": 22902227,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/b6df02ca5b5b5f4c-primary.webp",
+      "secondPlanPath": "/sun/plans/10b17485014bc98f-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1420625167,
+      "displayPrice": {
+        "ru": "1 420 625 167 сум",
+        "uz": "1 420 625 167 so‘m",
+        "en": "UZS 1 420 625 167"
+      },
+      "regularPrice": 1420625167,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "горы"
+    },
+    {
+      "id": "sun-v-v58-f13",
+      "unitKey": "sun-v-v58-f13",
+      "recommendationRank": 127,
+      "number": "В58",
+      "title": "2-комнатная квартира В58",
+      "block": "V",
+      "blockName": "В",
+      "floor": 13,
+      "maxFloor": 13,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 60.99,
+      "price": 1453926820,
+      "pricePerM2": 23838774,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/63acb0c96d3eb43d-primary.webp",
+      "secondPlanPath": "/sun/plans/2a76962c04461267-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1453926820,
+      "displayPrice": {
+        "ru": "1 453 926 820 сум",
+        "uz": "1 453 926 820 so‘m",
+        "en": "UZS 1 453 926 820"
+      },
+      "regularPrice": 1453926820,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "горы"
+    },
+    {
+      "id": "sun-v-v59-f13",
+      "unitKey": "sun-v-v59-f13",
+      "recommendationRank": 128,
+      "number": "В59",
+      "title": "2-комнатная квартира В59",
+      "block": "V",
+      "blockName": "В",
+      "floor": 13,
+      "maxFloor": 13,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 68.31,
+      "price": 1590196129,
+      "pricePerM2": 23279112,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/61ea61cb5303852a-primary.webp",
+      "secondPlanPath": "/sun/plans/5d4f15bc3db81ba9-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1590196129,
+      "displayPrice": {
+        "ru": "1 590 196 129 сум",
+        "uz": "1 590 196 129 so‘m",
+        "en": "UZS 1 590 196 129"
+      },
+      "regularPrice": 1590196129,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "Гринвич"
+    },
+    {
+      "id": "sun-v-v60-f13",
+      "unitKey": "sun-v-v60-f13",
+      "recommendationRank": 129,
+      "number": "В60",
+      "title": "2-комнатная квартира В60",
+      "block": "V",
+      "blockName": "В",
+      "floor": 13,
+      "maxFloor": 13,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 53.12,
+      "price": 1239235692,
+      "pricePerM2": 23328985,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/cff8c3201d25485e-primary.webp",
+      "secondPlanPath": "/sun/plans/55e1631bce046139-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1239235692,
+      "displayPrice": {
+        "ru": "1 239 235 692 сум",
+        "uz": "1 239 235 692 so‘m",
+        "en": "UZS 1 239 235 692"
+      },
+      "regularPrice": 1239235692,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "Гринвич"
+    },
+    {
+      "id": "sun-g-g1-f2",
+      "unitKey": "sun-g-g1-f2",
+      "recommendationRank": 130,
+      "number": "Г1",
+      "title": "1-комнатная квартира Г1",
+      "block": "G",
+      "blockName": "Г",
+      "floor": 2,
+      "maxFloor": 13,
+      "entrance": 1,
+      "rooms": 1,
+      "area": 34.67,
+      "price": 910892136,
+      "pricePerM2": 26273208,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/8d2a31742754350c-primary.webp",
+      "secondPlanPath": "/sun/plans/7f03ab299ec50bc6-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 910892136,
+      "displayPrice": {
+        "ru": "910 892 136 сум",
+        "uz": "910 892 136 so‘m",
+        "en": "UZS 910 892 136"
+      },
+      "regularPrice": 910892136,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "Гринвич"
+    },
+    {
+      "id": "sun-g-g4-f2",
+      "unitKey": "sun-g-g4-f2",
+      "recommendationRank": 133,
+      "number": "Г4",
+      "title": "2-комнатная квартира Г4",
+      "block": "G",
+      "blockName": "Г",
+      "floor": 2,
+      "maxFloor": 13,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 61.1,
+      "price": 1443704341,
+      "pricePerM2": 23628549,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/94856624a94bc066-primary.webp",
+      "secondPlanPath": "/sun/plans/f5d69ec40f6531d5-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1443704341,
+      "displayPrice": {
+        "ru": "1 443 704 341 сум",
+        "uz": "1 443 704 341 so‘m",
+        "en": "UZS 1 443 704 341"
+      },
+      "regularPrice": 1443704341,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "дорога"
+    },
+    {
+      "id": "sun-g-g5-f2",
+      "unitKey": "sun-g-g5-f2",
+      "recommendationRank": 134,
+      "number": "Г5",
+      "title": "2-комнатная квартира Г5",
+      "block": "G",
+      "blockName": "Г",
+      "floor": 2,
+      "maxFloor": 13,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 62.01,
+      "price": 1465206321,
+      "pricePerM2": 23628549,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/d8f1a29ca1b20094-primary.webp",
+      "secondPlanPath": "/sun/plans/5e7463c0d08274b8-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1465206321,
+      "displayPrice": {
+        "ru": "1 465 206 321 сум",
+        "uz": "1 465 206 321 so‘m",
+        "en": "UZS 1 465 206 321"
+      },
+      "regularPrice": 1465206321,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "дорога"
+    },
+    {
+      "id": "sun-g-g55-f11",
+      "unitKey": "sun-g-g55-f11",
+      "recommendationRank": 184,
+      "number": "Г55",
+      "title": "1-комнатная квартира Г55",
+      "block": "G",
+      "blockName": "Г",
+      "floor": 11,
+      "maxFloor": 13,
+      "entrance": 1,
+      "rooms": 1,
+      "area": 34.67,
+      "price": 916042300,
+      "pricePerM2": 26421757,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/8d2a31742754350c-primary.webp",
+      "secondPlanPath": "/sun/plans/7f03ab299ec50bc6-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 916042300,
+      "displayPrice": {
+        "ru": "916 042 300 сум",
+        "uz": "916 042 300 so‘m",
+        "en": "UZS 916 042 300"
+      },
+      "regularPrice": 916042300,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "Гринвич"
+    },
+    {
+      "id": "sun-g-g59-f11",
+      "unitKey": "sun-g-g59-f11",
+      "recommendationRank": 188,
+      "number": "Г59",
+      "title": "2-комнатная квартира Г59",
+      "block": "G",
+      "blockName": "Г",
+      "floor": 11,
+      "maxFloor": 13,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 62.01,
+      "price": 1506918051,
+      "pricePerM2": 24301210,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/d8f1a29ca1b20094-primary.webp",
+      "secondPlanPath": "/sun/plans/5e7463c0d08274b8-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1506918051,
+      "displayPrice": {
+        "ru": "1 506 918 051 сум",
+        "uz": "1 506 918 051 so‘m",
+        "en": "UZS 1 506 918 051"
+      },
+      "regularPrice": 1506918051,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "горы"
+    },
+    {
+      "id": "sun-g-g61-f12",
+      "unitKey": "sun-g-g61-f12",
+      "recommendationRank": 190,
+      "number": "Г61",
+      "title": "1-комнатная квартира Г61",
+      "block": "G",
+      "blockName": "Г",
+      "floor": 12,
+      "maxFloor": 13,
+      "entrance": 1,
+      "rooms": 1,
+      "area": 34.67,
+      "price": 923905324,
+      "pricePerM2": 26648553,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/8d2a31742754350c-primary.webp",
+      "secondPlanPath": "/sun/plans/7f03ab299ec50bc6-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 923905324,
+      "displayPrice": {
+        "ru": "923 905 324 сум",
+        "uz": "923 905 324 so‘m",
+        "en": "UZS 923 905 324"
+      },
+      "regularPrice": 923905324,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "Гринвич"
+    },
+    {
+      "id": "sun-g-g64-f12",
+      "unitKey": "sun-g-g64-f12",
+      "recommendationRank": 193,
+      "number": "Г64",
+      "title": "2-комнатная квартира Г64",
+      "block": "G",
+      "blockName": "Г",
+      "floor": 12,
+      "maxFloor": 13,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 61.1,
+      "price": 1498002206,
+      "pricePerM2": 24517221,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/94856624a94bc066-primary.webp",
+      "secondPlanPath": "/sun/plans/f5d69ec40f6531d5-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1498002206,
+      "displayPrice": {
+        "ru": "1 498 002 206 сум",
+        "uz": "1 498 002 206 so‘m",
+        "en": "UZS 1 498 002 206"
+      },
+      "regularPrice": 1498002206,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "горы"
+    },
+    {
+      "id": "sun-g-g65-f12",
+      "unitKey": "sun-g-g65-f12",
+      "recommendationRank": 194,
+      "number": "Г65",
+      "title": "2-комнатная квартира Г65",
+      "block": "G",
+      "blockName": "Г",
+      "floor": 12,
+      "maxFloor": 13,
+      "entrance": 1,
+      "rooms": 2,
+      "area": 62.01,
+      "price": 1520312878,
+      "pricePerM2": 24517221,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/d8f1a29ca1b20094-primary.webp",
+      "secondPlanPath": "/sun/plans/5e7463c0d08274b8-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1520312878,
+      "displayPrice": {
+        "ru": "1 520 312 878 сум",
+        "uz": "1 520 312 878 so‘m",
+        "en": "UZS 1 520 312 878"
+      },
+      "regularPrice": 1520312878,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "горы"
+    },
+    {
+      "id": "sun-g-g66-f12",
+      "unitKey": "sun-g-g66-f12",
+      "recommendationRank": 195,
+      "number": "Г66",
+      "title": "1-комнатная квартира Г66",
+      "block": "G",
+      "blockName": "Г",
+      "floor": 12,
+      "maxFloor": 13,
+      "entrance": 1,
+      "rooms": 1,
+      "area": 40.39,
+      "price": 1081249817,
+      "pricePerM2": 26770236,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/e2b4281206404e39-primary.webp",
+      "secondPlanPath": "/sun/plans/d135847754f87b97-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1081249817,
+      "displayPrice": {
+        "ru": "1 081 249 817 сум",
+        "uz": "1 081 249 817 so‘m",
+        "en": "UZS 1 081 249 817"
+      },
+      "regularPrice": 1081249817,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "Гринвич"
+    },
+    {
+      "id": "sun-d-d1-f2",
+      "unitKey": "sun-d-d1-f2",
+      "recommendationRank": 202,
+      "number": "Д1",
+      "title": "1-комнатная квартира Д1",
+      "block": "D",
+      "blockName": "Д",
+      "floor": 2,
+      "maxFloor": 14,
+      "entrance": 1,
+      "rooms": 1,
+      "area": 34.61,
+      "price": 882920516,
+      "pricePerM2": 25510561,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/17f34b569e4db95a-primary.webp",
+      "secondPlanPath": "/sun/plans/4678ea7a433f7ebb-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 882920516,
+      "displayPrice": {
+        "ru": "882 920 516 сум",
+        "uz": "882 920 516 so‘m",
+        "en": "UZS 882 920 516"
+      },
+      "regularPrice": 882920516,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "двор"
+    },
+    {
+      "id": "sun-d-d7-f2",
+      "unitKey": "sun-d-d7-f2",
+      "recommendationRank": 208,
+      "number": "Д7",
+      "title": "1-комнатная квартира Д7",
+      "block": "D",
+      "blockName": "Д",
+      "floor": 2,
+      "maxFloor": 14,
+      "entrance": 1,
+      "rooms": 1,
+      "area": 37.2,
+      "price": 948125988,
+      "pricePerM2": 25487258,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/50b1775298892254-primary.webp",
+      "secondPlanPath": "/sun/plans/b6f621a474d0099a-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 948125988,
+      "displayPrice": {
+        "ru": "948 125 988 сум",
+        "uz": "948 125 988 so‘m",
+        "en": "UZS 948 125 988"
+      },
+      "regularPrice": 948125988,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "двор"
+    },
+    {
+      "id": "sun-d-d8-f2",
+      "unitKey": "sun-d-d8-f2",
+      "recommendationRank": 209,
+      "number": "Д8",
+      "title": "1-комнатная квартира Д8",
+      "block": "D",
+      "blockName": "Д",
+      "floor": 2,
+      "maxFloor": 14,
+      "entrance": 1,
+      "rooms": 1,
+      "area": 34.61,
+      "price": 882920511,
+      "pricePerM2": 25510561,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/addbef11d93ceb55-primary.webp",
+      "secondPlanPath": "/sun/plans/319e63c64435359f-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 882920511,
+      "displayPrice": {
+        "ru": "882 920 511 сум",
+        "uz": "882 920 511 so‘m",
+        "en": "UZS 882 920 511"
+      },
+      "regularPrice": 882920511,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "двор"
+    },
+    {
+      "id": "sun-d-d16-f3",
+      "unitKey": "sun-d-d16-f3",
+      "recommendationRank": 217,
+      "number": "Д16",
+      "title": "1-комнатная квартира Д16",
+      "block": "D",
+      "blockName": "Д",
+      "floor": 3,
+      "maxFloor": 14,
+      "entrance": 1,
+      "rooms": 1,
+      "area": 34.61,
+      "price": 883725789,
+      "pricePerM2": 25533828,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/addbef11d93ceb55-primary.webp",
+      "secondPlanPath": "/sun/plans/319e63c64435359f-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 883725789,
+      "displayPrice": {
+        "ru": "883 725 789 сум",
+        "uz": "883 725 789 so‘m",
+        "en": "UZS 883 725 789"
+      },
+      "regularPrice": 883725789,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "двор"
+    },
+    {
+      "id": "sun-d-d32-f5",
+      "unitKey": "sun-d-d32-f5",
+      "recommendationRank": 233,
+      "number": "Д32",
+      "title": "1-комнатная квартира Д32",
+      "block": "D",
+      "blockName": "Д",
+      "floor": 5,
+      "maxFloor": 14,
+      "entrance": 1,
+      "rooms": 1,
+      "area": 34.61,
+      "price": 867730752,
+      "pricePerM2": 25071677,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/addbef11d93ceb55-primary.webp",
+      "secondPlanPath": "/sun/plans/319e63c64435359f-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 867730752,
+      "displayPrice": {
+        "ru": "867 730 752 сум",
+        "uz": "867 730 752 so‘m",
+        "en": "UZS 867 730 752"
+      },
+      "regularPrice": 867730752,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "двор"
+    },
+    {
+      "id": "sun-d-d64-f9",
+      "unitKey": "sun-d-d64-f9",
+      "recommendationRank": 265,
+      "number": "Д64",
+      "title": "1-комнатная квартира Д64",
+      "block": "D",
+      "blockName": "Д",
+      "floor": 9,
+      "maxFloor": 14,
+      "entrance": 1,
+      "rooms": 1,
+      "area": 34.61,
+      "price": 867730752,
+      "pricePerM2": 25071677,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/addbef11d93ceb55-primary.webp",
+      "secondPlanPath": "/sun/plans/319e63c64435359f-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 867730752,
+      "displayPrice": {
+        "ru": "867 730 752 сум",
+        "uz": "867 730 752 so‘m",
+        "en": "UZS 867 730 752"
+      },
+      "regularPrice": 867730752,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "двор"
+    },
+    {
+      "id": "sun-d-d65-f10",
+      "unitKey": "sun-d-d65-f10",
+      "recommendationRank": 266,
+      "number": "Д65",
+      "title": "1-комнатная квартира Д65",
+      "block": "D",
+      "blockName": "Д",
+      "floor": 10,
+      "maxFloor": 14,
+      "entrance": 1,
+      "rooms": 1,
+      "area": 34.61,
+      "price": 875728271,
+      "pricePerM2": 25302753,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/17f34b569e4db95a-primary.webp",
+      "secondPlanPath": "/sun/plans/4678ea7a433f7ebb-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 875728271,
+      "displayPrice": {
+        "ru": "875 728 271 сум",
+        "uz": "875 728 271 so‘m",
+        "en": "UZS 875 728 271"
+      },
+      "regularPrice": 875728271,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "двор"
+    },
+    {
+      "id": "sun-d-d72-f10",
+      "unitKey": "sun-d-d72-f10",
+      "recommendationRank": 273,
+      "number": "Д72",
+      "title": "1-комнатная квартира Д72",
+      "block": "D",
+      "blockName": "Д",
+      "floor": 10,
+      "maxFloor": 14,
+      "entrance": 1,
+      "rooms": 1,
+      "area": 34.61,
+      "price": 875728271,
+      "pricePerM2": 25302753,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/addbef11d93ceb55-primary.webp",
+      "secondPlanPath": "/sun/plans/319e63c64435359f-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 875728271,
+      "displayPrice": {
+        "ru": "875 728 271 сум",
+        "uz": "875 728 271 so‘m",
+        "en": "UZS 875 728 271"
+      },
+      "regularPrice": 875728271,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "двор"
+    },
+    {
+      "id": "sun-d-d79-f11",
+      "unitKey": "sun-d-d79-f11",
+      "recommendationRank": 280,
+      "number": "Д79",
+      "title": "1-комнатная квартира Д79",
+      "block": "D",
+      "blockName": "Д",
+      "floor": 11,
+      "maxFloor": 14,
+      "entrance": 1,
+      "rooms": 1,
+      "area": 37.2,
+      "price": 970234116,
+      "pricePerM2": 26081562,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/50b1775298892254-primary.webp",
+      "secondPlanPath": "/sun/plans/b6f621a474d0099a-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 970234116,
+      "displayPrice": {
+        "ru": "970 234 116 сум",
+        "uz": "970 234 116 so‘m",
+        "en": "UZS 970 234 116"
+      },
+      "regularPrice": 970234116,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "горы"
+    },
+    {
+      "id": "sun-d-d80-f11",
+      "unitKey": "sun-d-d80-f11",
+      "recommendationRank": 281,
+      "number": "Д80",
+      "title": "1-комнатная квартира Д80",
+      "block": "D",
+      "blockName": "Д",
+      "floor": 11,
+      "maxFloor": 14,
+      "entrance": 1,
+      "rooms": 1,
+      "area": 34.61,
+      "price": 887724548,
+      "pricePerM2": 25649366,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/addbef11d93ceb55-primary.webp",
+      "secondPlanPath": "/sun/plans/319e63c64435359f-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 887724548,
+      "displayPrice": {
+        "ru": "887 724 548 сум",
+        "uz": "887 724 548 so‘m",
+        "en": "UZS 887 724 548"
+      },
+      "regularPrice": 887724548,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "двор"
+    },
+    {
+      "id": "sun-d-d81-f12",
+      "unitKey": "sun-d-d81-f12",
+      "recommendationRank": 282,
+      "number": "Д81",
+      "title": "1-комнатная квартира Д81",
+      "block": "D",
+      "blockName": "Д",
+      "floor": 12,
+      "maxFloor": 14,
+      "entrance": 1,
+      "rooms": 1,
+      "area": 34.61,
+      "price": 895722067,
+      "pricePerM2": 25880441,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/17f34b569e4db95a-primary.webp",
+      "secondPlanPath": "/sun/plans/4678ea7a433f7ebb-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 895722067,
+      "displayPrice": {
+        "ru": "895 722 067 сум",
+        "uz": "895 722 067 so‘m",
+        "en": "UZS 895 722 067"
+      },
+      "regularPrice": 895722067,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "двор"
+    },
+    {
+      "id": "sun-d-d82-f12",
+      "unitKey": "sun-d-d82-f12",
+      "recommendationRank": 283,
+      "number": "Д82",
+      "title": "1-комнатная квартира Д82",
+      "block": "D",
+      "blockName": "Д",
+      "floor": 12,
+      "maxFloor": 14,
+      "entrance": 1,
+      "rooms": 1,
+      "area": 37.2,
+      "price": 1012418208,
+      "pricePerM2": 27215543,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/9e47ac9895fda59f-primary.webp",
+      "secondPlanPath": "/sun/plans/646700a89a79a582-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 1012418208,
+      "displayPrice": {
+        "ru": "1 012 418 208 сум",
+        "uz": "1 012 418 208 so‘m",
+        "en": "UZS 1 012 418 208"
+      },
+      "regularPrice": 1012418208,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "Гринвич"
+    },
+    {
+      "id": "sun-d-d96-f13",
+      "unitKey": "sun-d-d96-f13",
+      "recommendationRank": 297,
+      "number": "Д96",
+      "title": "1-комнатная квартира Д96",
+      "block": "D",
+      "blockName": "Д",
+      "floor": 13,
+      "maxFloor": 14,
+      "entrance": 1,
+      "rooms": 1,
+      "area": 34.61,
+      "price": 903719585,
+      "pricePerM2": 26111516,
+      "status": "available",
+      "primaryPlanPath": "/sun/plans/addbef11d93ceb55-primary.webp",
+      "secondPlanPath": "/sun/plans/319e63c64435359f-second.webp",
+      "primaryPlanWidth": 1100,
+      "primaryPlanHeight": 1100,
+      "secondPlanWidth": 1100,
+      "secondPlanHeight": 1100,
+      "planWidth": 1100,
+      "planHeight": 1100,
+      "effectivePrice": 903719585,
+      "displayPrice": {
+        "ru": "903 719 585 сум",
+        "uz": "903 719 585 so‘m",
+        "en": "UZS 903 719 585"
+      },
+      "regularPrice": 903719585,
+      "snapshotCampaignPrice": null,
+      "campaignActive": false,
+      "campaignDeadline": null,
+      "windowView": "двор"
+    }
+  ]
+}

@@ -117,6 +117,20 @@ export default function Home() {
   const maxUnitsOnFloor = Math.max(...floors.map((floor) => buildingUnits.filter((unit) => unit.floor === floor).length));
   const filteredUnits = buildingUnits.filter((unit) => (roomFilter === 'all' || unit.rooms === roomFilter) && (!onlyFree || unit.status === 'free'));
 
+  const changeLanguage = (next: Language) => {
+    setLanguage(next);
+    const url = new URL(window.location.href);
+    url.searchParams.set('lang', next);
+    window.history.replaceState({}, '', url);
+  };
+
+  useEffect(() => {
+    const queryLanguage = new URLSearchParams(window.location.search).get('lang');
+    if (queryLanguage !== 'ru' && queryLanguage !== 'uz') return;
+    const frame = window.requestAnimationFrame(() => setLanguage(queryLanguage));
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
   useEffect(() => {
     document.documentElement.lang = language;
   }, [language]);
@@ -221,7 +235,7 @@ export default function Home() {
       blockName: `Корпус ${selectedUnit.building}`,
       blockId: selectedUnit.building,
       price: selectedUnit.price ?? 0,
-    });
+    }, 'avalon-residence');
     setDetailsOpen(true);
   };
 
@@ -241,7 +255,7 @@ export default function Home() {
             <img className="city-scene__image" src={assetPath('/avalon-city.webp')} alt="Панорама Ташкента с AVALON RESIDENCE и станцией метро Тузель" fetchPriority="high" decoding="async" />
           </picture>
           <div className="city-scene__shade" />
-          <SiteHeader language={language} onLanguageChange={setLanguage} onHome={() => setView('city')} onApartments={() => setView('facade')} />
+          <SiteHeader language={language} onLanguageChange={changeLanguage} onHome={() => setView('city')} onApartments={() => setView('facade')} />
           <a className="construction-passport-link" href="https://api-nazorat.mc.uz/object-info/240228796" target="_blank" rel="noreferrer" aria-label={language === 'ru' ? 'Открыть официальный паспорт объекта строительного надзора' : 'Qurilish nazoratidagi obyektning rasmiy pasportini ochish'}>
             <img src={assetPath('/construction-nazorat.svg')} alt="" />
           </a>
@@ -262,7 +276,7 @@ export default function Home() {
 
       {view === 'complex' ? (
         <section className="complex-section complex-screen view-stage" aria-labelledby="complex-title">
-          <SiteHeader language={language} onLanguageChange={setLanguage} onHome={() => setView('city')} onApartments={() => setView('facade')} />
+          <SiteHeader language={language} onLanguageChange={changeLanguage} onHome={() => setView('city')} onApartments={() => setView('facade')} />
           <button className="screen-back" type="button" onClick={() => setView('city')}>← <span>{t.cityAround}</span></button>
           <div className="masterplan-stage">
             <picture>
@@ -296,7 +310,7 @@ export default function Home() {
 
       {view === 'facade' ? (
         <section className="facade-screen view-stage" aria-labelledby="facade-title">
-          <SiteHeader light language={language} onLanguageChange={setLanguage} onHome={() => setView('city')} onApartments={() => setView('facade')} />
+          <SiteHeader light language={language} onLanguageChange={changeLanguage} onHome={() => setView('city')} onApartments={() => setView('facade')} />
           <div className="facade-toolbar"><button className="screen-back screen-back--static" type="button" onClick={() => setView('complex')}>← <span>{t.buildingChoice}</span></button><div><p className="eyebrow eyebrow--dark">{t.visualChoice}</p><h1 id="facade-title">{t.building} {selectedBuilding}</h1></div></div>
           <div className="facade-workspace">
             <aside className="facade-copy"><span className="facade-copy__index">03</span><p>{t.visualChoice}</p><h2>{t.chooseFloor}</h2><small>{t.facadeLead}</small><nav className="facade-floor-list" aria-label={t.floor}><span>{t.floor}</span>{floors.map((floor) => { const available = buildingUnits.filter((unit) => unit.floor === floor && unit.status === 'free').length; return <button key={floor} type="button" onClick={() => chooseFloor(floor)}><strong>{floor}</strong><i style={{ '--availability': Math.max(18, available * 14) } as React.CSSProperties} /><small>{available}</small></button>; })}</nav></aside>
@@ -308,7 +322,7 @@ export default function Home() {
 
       {view === 'showroom' ? (
         <section className="apartments-section apartments-screen view-stage" aria-labelledby="apartments-title">
-          <SiteHeader light language={language} onLanguageChange={setLanguage} onHome={() => setView('city')} onApartments={() => setView('facade')} />
+          <SiteHeader light language={language} onLanguageChange={changeLanguage} onHome={() => setView('city')} onApartments={() => setView('facade')} />
           <div className="showroom-shell showroom-shell--visual">
             <div className="showroom-topbar"><button className="screen-back screen-back--static" type="button" onClick={() => setView('facade')}>← <span>{t.facade}</span></button><div className="showroom-title"><p className="eyebrow eyebrow--dark">AVALON RESIDENCE · {t.building.toLowerCase()} {selectedBuilding}</p><h1 id="apartments-title">{selectedFloor} {t.floor.toLowerCase()}</h1></div></div>
             <div className="visual-modebar"><div className="catalog-tabs"><button type="button" className={catalogMode === 'plan' ? 'is-active' : ''} onClick={() => setCatalogMode('plan')}>◆ {t.floorPlan}</button><button type="button" className={catalogMode === 'chess' ? 'is-active' : ''} onClick={() => setCatalogMode('chess')}>▦ {t.chess}</button><button type="button" className={catalogMode === 'list' ? 'is-active' : ''} onClick={() => setCatalogMode('list')}>☷ {t.list}</button></div>{catalogMode !== 'plan' ? <div className="filter-pills"><span>{t.rooms}</span>{(['all', 2, 3] as RoomFilter[]).map((room) => <button key={room} type="button" className={roomFilter === room ? 'is-active' : ''} onClick={() => setRoomFilter(room)}>{room === 'all' ? t.all : room}</button>)}<button type="button" className={onlyFree ? 'is-active is-free' : ''} onClick={() => setOnlyFree((value) => !value)}>{t.onlyFree}</button></div> : <div className="plan-hint"><i /> {t.clickApartment}</div>}</div>
@@ -336,7 +350,7 @@ export default function Home() {
       {projectInfoOpen ? <ProjectModal language={language} onClose={() => setProjectInfoOpen(false)} /> : null}
       {detailsOpen && selectedUnit ? <ApartmentModal unit={selectedUnit} language={language} onClose={() => setDetailsOpen(false)} onPrint={() => setPrintOpen(true)} onLead={() => openLeadForm(`Заявка из карточки квартиры №${selectedUnit.number} · корпус ${selectedUnit.building}`)} /> : null}
       {printOpen && selectedUnit ? <PrintProposal unit={selectedUnit} language={language} onClose={() => setPrintOpen(false)} /> : null}
-      {leadOpen ? <LeadModal open language={language} context={leadContext} autoPrompt={leadAutoPrompt} onClose={() => setLeadOpen(false)} /> : null}
+      {leadOpen ? <LeadModal open language={language} context={leadContext} autoPrompt={leadAutoPrompt} submitUrl={`${appBasePath}/v1/leads`} projectSlug="avalon-residence" unitId={selectedUnit?.id} privacyUrl={`${appBasePath}/privacy?project=avalon-residence&lang=${language}`} requireConsent onClose={() => setLeadOpen(false)} /> : null}
     </main>
   );
 }

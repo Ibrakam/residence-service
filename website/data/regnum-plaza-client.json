@@ -1,0 +1,573 @@
+{
+  "project": "REGNUM PLAZA",
+  "projectSlug": "regnum-plaza",
+  "projectId": 1,
+  "capturedAt": "2026-08-30T20:46:15Z",
+  "capturedAtUzt": "2026-08-31T01:46:15.000+05:00",
+  "dbUpdatedAt": "2026-08-12T12:56:39.000000Z",
+  "officialTotalAtCapture": 12,
+  "publicPrice": false,
+  "offerCount": 0,
+  "pricingPolicy": {
+    "display": "price-on-request",
+    "clientSortKeys": [
+      "priceRank",
+      "ppmRank"
+    ],
+    "numericPricesPublic": false,
+    "jsonLdOffers": false
+  },
+  "campaign": {
+    "snapshotCampaignPrice": null,
+    "campaignActive": false,
+    "campaignDeadline": null
+  },
+  "projectFacts": {
+    "class": {
+      "ru": "Бизнес",
+      "uz": "Biznes",
+      "en": "Business"
+    },
+    "status": {
+      "ru": "Последние квартиры",
+      "uz": "Eng so'nggi kvartiralar",
+      "en": "Last Remaining Apartments"
+    },
+    "completion": {
+      "ru": "IV квартал 2026",
+      "uz": "IV kvartal 2026",
+      "en": "Q4 2026"
+    },
+    "blocks": 11,
+    "apartments": 776,
+    "phases": 3,
+    "siteAreaSquareMeters": 30000,
+    "address": {
+      "ru": "Ташкент, Мирзо-Улугбекский район, ул. Сайрам",
+      "uz": "Toshkent shahri, Mirzo Ulug‘bek tumani, Sayram ko‘chasi",
+      "en": "Sayram Street, Mirzo-Ulugbek District, Tashkent"
+    },
+    "coordinates": {
+      "latitude": 41.331564,
+      "longitude": 69.324328
+    },
+    "salesOffice": {
+      "ru": "Ташкент, Мирабадский район, ул. Ойбека, 38A",
+      "uz": "Toshkent, Mirobod tumani, Oybek ko‘chasi, 38A",
+      "en": "38A Oybek Street, Mirabad District, Tashkent",
+      "latitude": 41.291432,
+      "longitude": 69.280519
+    },
+    "phone": "+998 78 122 88 22",
+    "insuranceYears": 10
+  },
+  "source": "https://mbc.uz/api/plans",
+  "sourceLanding": "https://mbc.uz/project/regnum-plaza",
+  "sourceGenplan": "https://mbc.uz/genplan/regnum-plaza",
+  "sourceTour": "https://cloud.chaos.com/collaboration/n/VELR7kWdz9hqfoHWYRwfai/present?t=vrt",
+  "integrity": {
+    "uniqueInternalIds": 12,
+    "uniqueCrmIds": 12,
+    "uniqueOfficialPlanSources": 6,
+    "missingOfficialPlans": 2,
+    "realGroups": 4,
+    "exactMatrixRows": 11,
+    "publicDerivativeCount": 39
+  },
+  "filterSummary": {
+    "rooms": [
+      {
+        "value": 1,
+        "count": 7
+      },
+      {
+        "value": 2,
+        "count": 2
+      },
+      {
+        "value": 3,
+        "count": 1
+      },
+      {
+        "value": 4,
+        "count": 2
+      }
+    ],
+    "floors": [
+      {
+        "value": 3,
+        "count": 1
+      },
+      {
+        "value": 7,
+        "count": 1
+      },
+      {
+        "value": 8,
+        "count": 1
+      },
+      {
+        "value": 9,
+        "count": 1
+      },
+      {
+        "value": 10,
+        "count": 1
+      },
+      {
+        "value": 11,
+        "count": 1
+      },
+      {
+        "value": 12,
+        "count": 1
+      },
+      {
+        "value": 14,
+        "count": 5
+      }
+    ],
+    "queues": [
+      {
+        "value": 1,
+        "count": 4
+      },
+      {
+        "value": 3,
+        "count": 8
+      }
+    ],
+    "sections": [
+      {
+        "value": 1,
+        "count": 1
+      },
+      {
+        "value": 2,
+        "count": 2
+      },
+      {
+        "value": 8,
+        "count": 1
+      },
+      {
+        "value": 11,
+        "count": 8
+      }
+    ],
+    "completions": [
+      {
+        "value": "2025",
+        "count": 4
+      },
+      {
+        "value": "2026",
+        "count": 8
+      }
+    ],
+    "statuses": [
+      {
+        "value": "available",
+        "count": 12
+      }
+    ],
+    "ranges": {
+      "area": {
+        "min": 38.48,
+        "max": 249.27
+      },
+      "floor": {
+        "min": 3,
+        "max": 14
+      }
+    }
+  },
+  "matrix": {
+    "policy": "Only exact current-listing rows are represented; no physical empty floors are invented.",
+    "groups": [
+      {
+        "id": "q1-s1",
+        "queue": 1,
+        "section": 1,
+        "unitIds": [
+          "2713"
+        ]
+      },
+      {
+        "id": "q1-s2",
+        "queue": 1,
+        "section": 2,
+        "unitIds": [
+          "250",
+          "1441"
+        ]
+      },
+      {
+        "id": "q1-s8",
+        "queue": 1,
+        "section": 8,
+        "unitIds": [
+          "2234"
+        ]
+      },
+      {
+        "id": "q3-s11",
+        "queue": 3,
+        "section": 11,
+        "unitIds": [
+          "12",
+          "235",
+          "736",
+          "880",
+          "1273",
+          "1635",
+          "2032",
+          "2285"
+        ]
+      }
+    ],
+    "rows": [
+      {
+        "id": "q1-s1-f14",
+        "groupId": "q1-s1",
+        "queue": 1,
+        "section": 1,
+        "floor": 14,
+        "unitIds": [
+          "2713"
+        ]
+      },
+      {
+        "id": "q1-s2-f14",
+        "groupId": "q1-s2",
+        "queue": 1,
+        "section": 2,
+        "floor": 14,
+        "unitIds": [
+          "250",
+          "1441"
+        ]
+      },
+      {
+        "id": "q1-s8-f14",
+        "groupId": "q1-s8",
+        "queue": 1,
+        "section": 8,
+        "floor": 14,
+        "unitIds": [
+          "2234"
+        ]
+      },
+      {
+        "id": "q3-s11-f3",
+        "groupId": "q3-s11",
+        "queue": 3,
+        "section": 11,
+        "floor": 3,
+        "unitIds": [
+          "1273"
+        ]
+      },
+      {
+        "id": "q3-s11-f7",
+        "groupId": "q3-s11",
+        "queue": 3,
+        "section": 11,
+        "floor": 7,
+        "unitIds": [
+          "1635"
+        ]
+      },
+      {
+        "id": "q3-s11-f8",
+        "groupId": "q3-s11",
+        "queue": 3,
+        "section": 11,
+        "floor": 8,
+        "unitIds": [
+          "2032"
+        ]
+      },
+      {
+        "id": "q3-s11-f9",
+        "groupId": "q3-s11",
+        "queue": 3,
+        "section": 11,
+        "floor": 9,
+        "unitIds": [
+          "12"
+        ]
+      },
+      {
+        "id": "q3-s11-f10",
+        "groupId": "q3-s11",
+        "queue": 3,
+        "section": 11,
+        "floor": 10,
+        "unitIds": [
+          "2285"
+        ]
+      },
+      {
+        "id": "q3-s11-f11",
+        "groupId": "q3-s11",
+        "queue": 3,
+        "section": 11,
+        "floor": 11,
+        "unitIds": [
+          "880"
+        ]
+      },
+      {
+        "id": "q3-s11-f12",
+        "groupId": "q3-s11",
+        "queue": 3,
+        "section": 11,
+        "floor": 12,
+        "unitIds": [
+          "235"
+        ]
+      },
+      {
+        "id": "q3-s11-f14",
+        "groupId": "q3-s11",
+        "queue": 3,
+        "section": 11,
+        "floor": 14,
+        "unitIds": [
+          "736"
+        ]
+      }
+    ]
+  },
+  "units": [
+    {
+      "id": "12",
+      "sourceOrder": 0,
+      "number": "40",
+      "rooms": 1,
+      "area": 38.48,
+      "floor": 9,
+      "queue": 3,
+      "section": 11,
+      "completion": "2026",
+      "status": "available",
+      "publicPrice": false,
+      "displayPriceKey": "priceOnRequest",
+      "priceRank": 2,
+      "ppmRank": 4,
+      "planPublicPath": "/regnum-plaza/plans/67d3f7ec7eb2c.webp",
+      "planWidth": 591,
+      "planHeight": 777
+    },
+    {
+      "id": "235",
+      "sourceOrder": 1,
+      "number": "58",
+      "rooms": 1,
+      "area": 38.48,
+      "floor": 12,
+      "queue": 3,
+      "section": 11,
+      "completion": "2026",
+      "status": "available",
+      "publicPrice": false,
+      "displayPriceKey": "priceOnRequest",
+      "priceRank": 6,
+      "ppmRank": 7,
+      "planPublicPath": "/regnum-plaza/plans/67d3f7ec7eb2c.webp",
+      "planWidth": 591,
+      "planHeight": 777
+    },
+    {
+      "id": "250",
+      "sourceOrder": 2,
+      "number": "79",
+      "rooms": 4,
+      "area": 182.16,
+      "floor": 14,
+      "queue": 1,
+      "section": 2,
+      "completion": "2025",
+      "status": "available",
+      "publicPrice": false,
+      "displayPriceKey": "priceOnRequest",
+      "priceRank": 9,
+      "ppmRank": 9,
+      "planPublicPath": null,
+      "planWidth": null,
+      "planHeight": null
+    },
+    {
+      "id": "736",
+      "sourceOrder": 3,
+      "number": "72",
+      "rooms": 2,
+      "area": 55.05,
+      "floor": 14,
+      "queue": 3,
+      "section": 11,
+      "completion": "2026",
+      "status": "available",
+      "publicPrice": false,
+      "displayPriceKey": "priceOnRequest",
+      "priceRank": 7,
+      "ppmRank": 0,
+      "planPublicPath": "/regnum-plaza/plans/69047d515d4b2.webp",
+      "planWidth": 1000,
+      "planHeight": 717
+    },
+    {
+      "id": "880",
+      "sourceOrder": 4,
+      "number": "52",
+      "rooms": 1,
+      "area": 38.48,
+      "floor": 11,
+      "queue": 3,
+      "section": 11,
+      "completion": "2026",
+      "status": "available",
+      "publicPrice": false,
+      "displayPriceKey": "priceOnRequest",
+      "priceRank": 5,
+      "ppmRank": 6,
+      "planPublicPath": "/regnum-plaza/plans/67d3f7ec7eb2c.webp",
+      "planWidth": 591,
+      "planHeight": 777
+    },
+    {
+      "id": "1273",
+      "sourceOrder": 5,
+      "number": "4",
+      "rooms": 1,
+      "area": 39.28,
+      "floor": 3,
+      "queue": 3,
+      "section": 11,
+      "completion": "2026",
+      "status": "available",
+      "publicPrice": false,
+      "displayPriceKey": "priceOnRequest",
+      "priceRank": 3,
+      "ppmRank": 1,
+      "planPublicPath": "/regnum-plaza/plans/67d3f75a8d93b.webp",
+      "planWidth": 591,
+      "planHeight": 735
+    },
+    {
+      "id": "1441",
+      "sourceOrder": 6,
+      "number": "78",
+      "rooms": 3,
+      "area": 249.27,
+      "floor": 14,
+      "queue": 1,
+      "section": 2,
+      "completion": "2025",
+      "status": "available",
+      "publicPrice": false,
+      "displayPriceKey": "priceOnRequest",
+      "priceRank": 11,
+      "ppmRank": 11,
+      "planPublicPath": null,
+      "planWidth": null,
+      "planHeight": null
+    },
+    {
+      "id": "1635",
+      "sourceOrder": 7,
+      "number": "28",
+      "rooms": 1,
+      "area": 38.51,
+      "floor": 7,
+      "queue": 3,
+      "section": 11,
+      "completion": "2026",
+      "status": "available",
+      "publicPrice": false,
+      "displayPriceKey": "priceOnRequest",
+      "priceRank": 0,
+      "ppmRank": 2,
+      "planPublicPath": "/regnum-plaza/plans/67d3f7871a29b.webp",
+      "planWidth": 592,
+      "planHeight": 738
+    },
+    {
+      "id": "2032",
+      "sourceOrder": 8,
+      "number": "34",
+      "rooms": 1,
+      "area": 38.51,
+      "floor": 8,
+      "queue": 3,
+      "section": 11,
+      "completion": "2026",
+      "status": "available",
+      "publicPrice": false,
+      "displayPriceKey": "priceOnRequest",
+      "priceRank": 1,
+      "ppmRank": 3,
+      "planPublicPath": "/regnum-plaza/plans/67d3f7871a29b.webp",
+      "planWidth": 592,
+      "planHeight": 738
+    },
+    {
+      "id": "2234",
+      "sourceOrder": 9,
+      "number": "81",
+      "rooms": 4,
+      "area": 137.07,
+      "floor": 14,
+      "queue": 1,
+      "section": 8,
+      "completion": "2025",
+      "status": "available",
+      "publicPrice": false,
+      "displayPriceKey": "priceOnRequest",
+      "priceRank": 8,
+      "ppmRank": 8,
+      "planPublicPath": "/regnum-plaza/plans/66bef7a7e4ce0.webp",
+      "planWidth": 1000,
+      "planHeight": 1278
+    },
+    {
+      "id": "2285",
+      "sourceOrder": 10,
+      "number": "46",
+      "rooms": 1,
+      "area": 38.48,
+      "floor": 10,
+      "queue": 3,
+      "section": 11,
+      "completion": "2026",
+      "status": "available",
+      "publicPrice": false,
+      "displayPriceKey": "priceOnRequest",
+      "priceRank": 4,
+      "ppmRank": 5,
+      "planPublicPath": "/regnum-plaza/plans/67d3f7ec7eb2c.webp",
+      "planWidth": 591,
+      "planHeight": 777
+    },
+    {
+      "id": "2713",
+      "sourceOrder": 11,
+      "number": "54",
+      "rooms": 2,
+      "area": 230.68,
+      "floor": 14,
+      "queue": 1,
+      "section": 1,
+      "completion": "2025",
+      "status": "available",
+      "publicPrice": false,
+      "displayPriceKey": "priceOnRequest",
+      "priceRank": 10,
+      "ppmRank": 10,
+      "planPublicPath": "/regnum-plaza/plans/68a5ab5e26317.webp",
+      "planWidth": 399,
+      "planHeight": 532
+    }
+  ]
+}

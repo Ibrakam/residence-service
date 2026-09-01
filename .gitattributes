@@ -1,0 +1,9 @@
+# Official brochures and supplied vector source assets are immutable binaries.
+# This keeps whitespace checks focused on editable source code.
+*.pdf binary
+*.svg binary
+*.mp4 binary
+*.webp binary
+*.png binary
+*.jpg binary
+*.jpeg binary

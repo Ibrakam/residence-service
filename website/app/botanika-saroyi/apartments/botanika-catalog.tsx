@@ -579,7 +579,7 @@ export function BotanikaCatalog({ snapshot, initialLanguage }: { snapshot: Botan
       <header className="botanika-catalog-header">
         <a className="botanika-catalog-back" href={withLanguage('/botanika-saroyi', language)}><span aria-hidden="true">←</span>{t.back}</a>
         <a className="botanika-catalog-wordmark" href={withLanguage('/botanika-saroyi', language)} aria-label={t.home}>{t.wordmark}<small>{t.index}</small></a>
-        <a className="botanika-catalog-phone" href="tel:1360"><small>{t.phone}</small><span>1360</span></a>
+        <a className="botanika-catalog-phone" href="tel:+998781137712"><small>{t.phone}</small><span>+998 78 113 77 12</span></a>
         <div className="botanika-catalog-languages" role="group" aria-label={t.language}>{languages.map((item) => <button type="button" key={item} className={language === item ? 'is-active' : undefined} aria-pressed={language === item} lang={item} onClick={() => setLanguage(item)}>{item.toUpperCase()}</button>)}</div>
       </header>
 

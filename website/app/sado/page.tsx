@@ -34,7 +34,7 @@ export default function SadoRoute() {
     description: 'Жилой комплекс классов Business и Comfort в Яшнабадском районе Ташкента.',
     address: { '@type': 'PostalAddress', streetAddress: 'ул. Паркентская', addressLocality: 'Ташкент', addressRegion: 'Яшнабадский район', addressCountry: 'UZ' },
     image: `${appBasePath}/sado/hero.webp`,
-    telephone: '1360',
+    telephone: '+998781137712',
     amenityFeature: [
       { '@type': 'LocationFeatureSpecification', name: 'Закрытый двор без машин', value: true },
       { '@type': 'LocationFeatureSpecification', name: 'Подземная и наземная парковка', value: true },

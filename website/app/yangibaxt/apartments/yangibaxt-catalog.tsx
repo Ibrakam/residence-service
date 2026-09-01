@@ -177,7 +177,7 @@ const copy = {
     nav: "Навигация каталога",
     language: "Язык",
     consult: "Оставить заявку",
-    call: "1360",
+    call: "+998 78 113 77 12",
     eyebrow: "PARK LOOP · КАТАЛОГ 30.08.2026",
     title: "Квартиры",
     accent: "в контуре Baxt.",
@@ -305,7 +305,7 @@ const copy = {
     nav: "Katalog navigatsiyasi",
     language: "Til",
     consult: "Ariza qoldirish",
-    call: "1360",
+    call: "+998 78 113 77 12",
     eyebrow: "PARK LOOP · 30.08.2026 KATALOGI",
     title: "Baxt konturidagi",
     accent: "xonadonlar.",
@@ -436,7 +436,7 @@ const copy = {
     nav: "Catalogue navigation",
     language: "Language",
     consult: "Send an enquiry",
-    call: "1360",
+    call: "+998 78 113 77 12",
     eyebrow: "PARK LOOP · CATALOGUE 30 AUG 2026",
     title: "Apartments",
     accent: "inside the Baxt loop.",
@@ -1810,7 +1810,7 @@ export function YangiBaxtCatalog({
               </button>
             ))}
           </div>
-          <a href="tel:1360">{t.call}</a>
+          <a href="tel:+998781137712">{t.call}</a>
           <button
             type="button"
             data-lead-trigger
@@ -2026,7 +2026,7 @@ export function YangiBaxtCatalog({
         <p>{t.disclaimer}</p>
         <nav>
           <a href={privacyUrl(language)}>{t.privacy}</a>
-          <a href="tel:1360">1360</a>
+          <a href="tel:+998781137712">+998 78 113 77 12</a>
           <a href="#top">{t.top} ↑</a>
         </nav>
       </footer>

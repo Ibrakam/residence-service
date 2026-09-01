@@ -101,7 +101,7 @@ export default async function Page({ searchParams }: PageProps) {
         inLanguage,
         url: projectUrl,
         image: absoluteUrl('/jomiy/images/hero-real.webp'),
-        telephone: '1360',
+        telephone: '+998781137712',
         brand: { '@type': 'Organization', name: 'NRG-BI' },
         additionalProperty: [...current.properties, ...current.addressProperties].map(([name, value]) => ({ '@type': 'PropertyValue', name, value })),
         sameAs: ['https://uzbekistan360.uz/ru/location/nrg-jomiy-vid-so-dvoraOWb'],

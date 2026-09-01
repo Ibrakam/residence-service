@@ -708,7 +708,7 @@ export function ZamonCatalog({ snapshot, initialLanguage }: { snapshot: ZamonSna
         <nav aria-label={t.nav}>
           <a className="zamon-catalog-wordmark" href={withLanguage('/zamon', language)} aria-label={t.home}><strong>Zamon</strong><span>NRG-BI</span></a>
           <a className="zamon-catalog-back" href={withLanguage('/zamon', language)}><span aria-hidden="true">←</span>{t.back}</a>
-          <a className="zamon-catalog-phone" href="tel:1360"><small>{t.sales}</small><strong>1360</strong></a>
+          <a className="zamon-catalog-phone" href="tel:+998781137712"><small>{t.sales}</small><strong>+998 78 113 77 12</strong></a>
           <div className="zamon-catalog-languages" role="group" aria-label={t.language}>{languages.map((item) => <button type="button" key={item} className={language === item ? 'is-active' : undefined} aria-pressed={language === item} lang={item} onClick={() => setLanguage(item)}>{item.toUpperCase()}</button>)}</div>
         </nav>
       </header>

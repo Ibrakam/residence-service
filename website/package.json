@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "vinext dev",
-    "prebuild": "npm run verify:mirador-plans && npm run verify:ofiyat",
+    "prebuild": "npm run verify:tencorp-contact && npm run verify:mirador-plans && npm run verify:ofiyat",
     "build": "vinext build && node scripts/prepare-standalone-runtime.mjs",
     "start": "vinext start",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
@@ -47,6 +47,7 @@
     "audit:ofiyat-capture": "node scripts/build-ofiyat-assets.mjs --audit-capture && node scripts/test-ofiyat-data-contract.mjs --audit-capture",
     "verify:public-provenance": "node scripts/verify-public-provenance.mjs",
     "verify:base-path": "node scripts/test-base-path-deployment.mjs",
+    "verify:tencorp-contact": "node scripts/verify-tencorp-contact.mjs",
     "test:lead-client": "node scripts/test-lead-client-contract.mjs",
     "test:lead-proxy": "node --no-warnings --experimental-strip-types scripts/test-residence-lead-proxy.mjs",
     "build:sado-assets": "node scripts/build-sado-assets.mjs"

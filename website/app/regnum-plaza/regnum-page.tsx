@@ -367,7 +367,7 @@ export function RegnumPlazaPage({ initialLanguage, previewUnits }: { initialLang
 
       <section className="rp-contact">
         <div data-reveal><span>{t.contactEyebrow}</span><h2>{t.contactTitle}</h2><p>{t.contactText}</p><button type="button" data-lead-trigger onClick={() => openLead('landing:footer')}>{t.consult}<b>↗</b></button></div>
-        <a className="rp-contact__phone" href="tel:+998781228822">+998 78 122 88 22 <span>↗</span></a>
+        <a className="rp-contact__phone" href="tel:+998781137712">+998 78 113 77 12 <span>↗</span></a>
         <dl><div><dt>{t.office}</dt><dd>{t.salesAddress.replace(' · ', ' · ')}</dd></div><div><dt>{t.project}</dt><dd>{t.projectAddress.replace(' · ', ' · ')}</dd></div></dl>
         <footer><img src={asset('/regnum-plaza/logo.svg')} width="522" height="95" alt="Regnum Plaza" /><p>{t.disclaimer}</p><nav><a href={`${appBasePath}/privacy?project=regnum-plaza&lang=${language}&from=landing`}>{t.privacy}</a><a href="#top">{t.top}</a></nav></footer>
       </section>

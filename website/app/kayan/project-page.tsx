@@ -484,7 +484,7 @@ function ProjectMenu({ open, slug, language, onClose, onLead, routeContext }: { 
       <a href={routeTo(slug, '/apartments', language, routeContext)} onClick={onClose}>{t.choose}</a>
       <button type="button" onClick={onLead}>{t.contact}</button>
     </nav>
-    <a className="kayan-menu__phone" href="tel:+998785552020">+998 78 555 20 20</a>
+    <a className="kayan-menu__phone" href="tel:+998781137712">+998 78 113 77 12</a>
   </div>;
 }
 
@@ -509,7 +509,7 @@ function ProjectFooter({ slug, language, routeContext }: { slug: KayanProjectSlu
   return <footer className="kayan-footer">
     <ProjectBrand name={config.name} />
     <p>{t.newLife}</p>
-    <a href="tel:+998785552020">+998 78 555 20 20</a>
+    <a href="tel:+998781137712">+998 78 113 77 12</a>
     <address>{copy.address.replaceAll(' · ', ', ')}</address>
     <a href={privacyRoute(slug, language, routeContext)}>{language === 'ru' ? 'Обработка данных' : language === 'uz' ? 'Ma’lumotlarni qayta ishlash' : 'Data processing'}</a>
     <a href="#top">{t.backTop}</a>
@@ -741,7 +741,7 @@ function OfiyatProjectPage({ initialProject, initialLanguage }: { initialProject
 
     <section id="contact" className="ofiyat-contact" data-reveal>
       <p>{t.consultationKicker}</p><h2>{copy.consultationTitle}<br /><em>{copy.consultationAccent}</em></h2><span>{copy.consultationCopy}</span>
-      <div><button type="button" onClick={() => setLeadOpen(true)}>{t.request}<b>↗</b></button><a href="tel:+998785552020">{t.phone}<b>+998 78 555 20 20</b></a></div>
+      <div><button type="button" onClick={() => setLeadOpen(true)}>{t.request}<b>↗</b></button><a href="tel:+998781137712">{t.phone}<b>+998 78 113 77 12</b></a></div>
     </section>
 
     <ProjectFooter slug={slug} language={language} />
@@ -889,7 +889,7 @@ function DefaultKayanProjectPage({ slug, initialProject, initialLanguage }: { sl
 
     <section id="contact" className="kayan-contact" data-reveal>
       <p>{t.consultationKicker}</p><h2>{copy.consultationTitle}<br /><em>{copy.consultationAccent}</em></h2><span>{copy.consultationCopy}</span>
-      <div><button type="button" onClick={() => setLeadOpen(true)}>{t.request}<b>↗</b></button><a href="tel:+998785552020">{t.phone}<b>+998 78 555 20 20</b></a></div>
+      <div><button type="button" onClick={() => setLeadOpen(true)}>{t.request}<b>↗</b></button><a href="tel:+998781137712">{t.phone}<b>+998 78 113 77 12</b></a></div>
     </section>
 
     <ProjectFooter slug={slug} language={language} />

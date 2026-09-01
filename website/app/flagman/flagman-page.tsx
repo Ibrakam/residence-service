@@ -297,7 +297,7 @@ export function FlagmanPage({ initialLanguage = 'ru' }: { initialLanguage?: Lang
       <section className="flagman-contact" id="contact">
         <div className="flagman-contact__copy" data-flagman-reveal><div className="flagman-section-label"><span>09</span><p>{t.contactOverline}</p></div><h2>{t.contactTitle}</h2><p>{t.contactText}</p><button type="button" onClick={() => setLeadOpen(true)}>{t.consult}<span>↗</span></button></div>
         <div className="flagman-contact__photo"><img src={asset('/flagman/images/building-close.webp')} alt={t.heroPhoto} loading="lazy" /><span>{t.actual}</span></div>
-        <div className="flagman-contact__meta"><div><small>{t.phone}</small><a href="tel:1360">1360</a></div><div><small>{t.partner}</small><span>NRG-BI × AL-BINA</span></div></div>
+        <div className="flagman-contact__meta"><div><small>{t.phone}</small><a href="tel:+998781137712">+998 78 113 77 12</a></div><div><small>{t.partner}</small><span>NRG-BI × AL-BINA</span></div></div>
       </section>
     </div>
 

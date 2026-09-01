@@ -48,7 +48,7 @@ const copy = {
   ru: {
     skip: 'К содержанию', navigation: 'Навигация', footerNavigation: 'Источники и юридическая информация', menu: 'Меню', closeMenu: 'Закрыть меню', language: 'Язык',
     nav: [['roots', 'Корни'], ['architecture', 'Архитектура'], ['courtyards', 'Дворы'], ['city', 'Город'], ['inside', 'Внутри'], ['gallery', 'Галерея']] as const,
-    choose: 'Выбрать квартиру', consult: 'Получить консультацию', phone: 'Позвонить 1360',
+    choose: 'Выбрать квартиру', consult: 'Получить консультацию', phone: 'Позвонить · +998 78 113 77 12',
     heroOverline: 'НОВЫЙ ТАШКЕНТ · COMFORT+ / BUSINESS', heroText: 'Архитектурная вертикаль между легендой, домом и новым городом.',
     heroAlt: 'Официальная архитектурная визуализация фасада Bayterak в Новом Ташкенте',
     heroFacts: [['Новый Ташкент', 'локация'], ['Comfort+ / Business', 'классы'], ['9–16', 'этажей'], ['3 м', 'потолки']] as const,
@@ -110,7 +110,7 @@ const copy = {
   uz: {
     skip: 'Mazmunga o‘tish', navigation: 'Navigatsiya', footerNavigation: 'Manbalar va huquqiy ma’lumot', menu: 'Menyu', closeMenu: 'Menyuni yopish', language: 'Til',
     nav: [['roots', 'Ildizlar'], ['architecture', 'Arxitektura'], ['courtyards', 'Hovlilar'], ['city', 'Shahar'], ['inside', 'Ichkarida'], ['gallery', 'Galereya']] as const,
-    choose: 'Xonadon tanlash', consult: 'Maslahat olish', phone: '1360 ga qo‘ng‘iroq',
+    choose: 'Xonadon tanlash', consult: 'Maslahat olish', phone: 'Qo‘ng‘iroq · +998 78 113 77 12',
     heroOverline: 'YANGI TOSHKENT · COMFORT+ / BUSINESS', heroText: 'Afsona, uy va yangi shaharni bog‘laydigan arxitektura vertikali.',
     heroAlt: 'Yangi Toshkentdagi Bayterak fasadining rasmiy arxitektura vizualizatsiyasi',
     heroFacts: [['Yangi Toshkent', 'joylashuv'], ['Comfort+ / Business', 'klasslar'], ['9–16', 'qavat'], ['3 m', 'shiftlar']] as const,
@@ -172,7 +172,7 @@ const copy = {
   en: {
     skip: 'Skip to content', navigation: 'Navigation', footerNavigation: 'Sources and legal information', menu: 'Menu', closeMenu: 'Close menu', language: 'Language',
     nav: [['roots', 'Roots'], ['architecture', 'Architecture'], ['courtyards', 'Courtyards'], ['city', 'City'], ['inside', 'Inside'], ['gallery', 'Gallery']] as const,
-    choose: 'Choose an apartment', consult: 'Get a consultation', phone: 'Call 1360',
+    choose: 'Choose an apartment', consult: 'Get a consultation', phone: 'Call · +998 78 113 77 12',
     heroOverline: 'NEW TASHKENT · COMFORT+ / BUSINESS', heroText: 'An architectural vertical connecting legend, home and a new city.',
     heroAlt: 'Official architectural visualisation of the Bayterak facade in New Tashkent',
     heroFacts: [['New Tashkent', 'location'], ['Comfort+ / Business', 'classes'], ['9–16', 'storeys'], ['3 m', 'ceilings']] as const,
@@ -527,7 +527,7 @@ export function BayterakPage({ initialLanguage }: { initialLanguage: Language })
 
       <section className="bayterak-catalog" data-bayterak-reveal><header><p className="bayterak-overline">{t.catalogIndex}</p><h2>{t.catalogTitle}</h2><p>{t.catalogText}</p></header><div className="bayterak-catalog__stats">{t.catalogStats.map(([value, label]) => <article key={label}><strong>{value}</strong><span>{label}</span></article>)}</div><footer><p>{t.catalogPrice}</p><a className="bayterak-button is-solid" href={withLanguage('/bayterak/apartments', language)}>{t.openCatalog}<span>↗</span></a></footer></section>
 
-      <section className="bayterak-contact" data-bayterak-reveal><div><p className="bayterak-overline">{t.contactIndex}</p><h2>{t.contactTitle}</h2><p>{t.contactText}</p></div><div className="bayterak-contact__actions"><button className="bayterak-button is-solid" type="button" data-lead-trigger onClick={() => openLead('contact-consultation')}>{t.consult}<span>↗</span></button><a className="bayterak-button" href="tel:1360">{t.phone}<span>↗</span></a></div></section>
+      <section className="bayterak-contact" data-bayterak-reveal><div><p className="bayterak-overline">{t.contactIndex}</p><h2>{t.contactTitle}</h2><p>{t.contactText}</p></div><div className="bayterak-contact__actions"><button className="bayterak-button is-solid" type="button" data-lead-trigger onClick={() => openLead('contact-consultation')}>{t.consult}<span>↗</span></button><a className="bayterak-button" href="tel:+998781137712">{t.phone}<span>↗</span></a></div></section>
     </main>
 
     <footer className="bayterak-footer"><a className="bayterak-mark" href={withLanguage('/bayterak', language)}><span>BAY</span><span>TERAK</span></a><p>{t.disclaimer}</p><nav aria-label={t.footerNavigation}><a href={asset(officialBooklet)} target="_blank" rel="noreferrer">{t.booklet} ↗</a><a href={panorama} target="_blank" rel="noreferrer">{t.panorama} ↗</a><a href={privacyUrl(language)}>{t.privacy}</a><a href="#bayterak-content" onClick={(event) => goToAnchor(event, 'bayterak-content')}>{t.top} ↑</a></nav></footer>

@@ -129,7 +129,7 @@ export default async function Page({ searchParams }: PageProps) {
         inLanguage,
         url: projectUrl,
         image: absoluteUrl('/yangibaxt/images/hero-real.webp'),
-        telephone: '1360',
+        telephone: '+998781137712',
         brand: { '@type': 'Organization', name: 'NRG-BI' },
         address: {
           '@type': 'PostalAddress',

@@ -298,7 +298,7 @@ export function MerosPage({ initialAvailable = 256, initialLanguage = 'ru' }: { 
       <div className="meros-menu__image"><img src={asset('/meros/story-detail.webp')} alt="" /><span>{i.menuLocation}</span></div>
       <nav>{c.nav.map((label, index) => <a key={sectionIDs[index]} href={`#${sectionIDs[index]}`} onClick={() => setMenuOpen(false)}><small>0{index + 1}</small>{label}</a>)}<a href={withLanguage('/meros/apartments', language)} onClick={() => setMenuOpen(false)}><small>06</small>{c.choose}</a></nav>
       <button className="meros-menu__contact" type="button" onClick={() => { setMenuOpen(false); setLeadOpen(true); }}>{c.contact}<span>↗</span></button>
-      <a className="meros-menu__phone" href="tel:+998785552020">+998 78 555 20 20</a>
+      <a className="meros-menu__phone" href="tel:+998781137712">+998 78 113 77 12</a>
     </div>
 
     <section className="meros-hero">
@@ -362,7 +362,7 @@ export function MerosPage({ initialAvailable = 256, initialLanguage = 'ru' }: { 
     </section>
 
     <section className="meros-contact">
-      <div data-reveal><span>{i.contactLabel}</span><h2>{c.contact}</h2><button type="button" onClick={() => setLeadOpen(true)}>{c.contact}<i>↗</i></button></div><a href="tel:+998785552020">+998 78 555 20 20</a>
+      <div data-reveal><span>{i.contactLabel}</span><h2>{c.contact}</h2><button type="button" onClick={() => setLeadOpen(true)}>{c.contact}<i>↗</i></button></div><a href="tel:+998781137712">+998 78 113 77 12</a>
     </section>
 
     <footer className="meros-footer"><a className="meros-brand" href="#top"><i>M</i><span><strong>MEROS</strong><small>RESIDENCE</small></span></a><p>{c.footerNote}</p><div><a href={`${appBasePath}/privacy?project=meros&lang=${language}`}>{i.privacy}</a><a href="#top">↑ 2026</a></div></footer>

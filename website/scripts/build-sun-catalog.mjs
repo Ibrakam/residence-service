@@ -366,7 +366,7 @@ async function main() {
     positioning: { ru: 'Первый клубный проект Human2Human — создан людьми для людей', uz: 'Human2Humanning odamlar tomonidan odamlar uchun yaratilgan ilk klub loyihasi', en: 'Human2Human’s first club-format project, created by people for people' },
     siteAreaHectares: 1, projectBlocks: 5, totalProjectApartments: 361, floorRange: { min: 11, max: 14 },
     address: { ru: 'Ташкент, Мирабадский район, ул. Сайхун 56/2', uz: 'Toshkent, Mirobod tumani, Sayxun ko‘chasi 56/2', en: '56/2 Saykhun Street, Mirabad District, Tashkent' },
-    phone: '+998 78 150 55 00', email: 'info@h2h.uz', hours: { ru: 'Ежедневно 09:00–20:00', uz: 'Har kuni 09:00–20:00', en: 'Daily 09:00–20:00' },
+    phone: '+998 78 113 77 12', email: 'info@h2h.uz', hours: { ru: 'Ежедневно 09:00–20:00', uz: 'Har kuni 09:00–20:00', en: 'Daily 09:00–20:00' },
     officialMapUrl: 'https://yandex.uz/maps/?ll=69.301919%2C41.282957&z=16',
     schedule: [
       { block: 'A', blockName: 'А', published: { ru: 'октябрь 2026', uz: '2026-yil oktabr', en: 'October 2026' } },

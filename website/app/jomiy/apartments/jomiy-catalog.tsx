@@ -180,7 +180,7 @@ const copy = {
     nav: "Навигация каталога",
     language: "Язык",
     consult: "Уточнить доступность",
-    call: "1360",
+    call: "+998 78 113 77 12",
     eyebrow: "POETIC LATTICE · СРЕЗ 30.08.2026",
     title: "Каталог",
     accent: "без домыслов.",
@@ -317,7 +317,7 @@ const copy = {
     nav: "Katalog navigatsiyasi",
     language: "Til",
     consult: "Mavjudligini aniqlash",
-    call: "1360",
+    call: "+998 78 113 77 12",
     eyebrow: "POETIC LATTICE · 30.08.2026 NUSXASI",
     title: "Taxminsiz",
     accent: "katalog.",
@@ -456,7 +456,7 @@ const copy = {
     nav: "Catalogue navigation",
     language: "Language",
     consult: "Check availability",
-    call: "1360",
+    call: "+998 78 113 77 12",
     eyebrow: "POETIC LATTICE · SNAPSHOT 30 AUG 2026",
     title: "A catalogue",
     accent: "without assumptions.",
@@ -2096,7 +2096,7 @@ export function JomiyCatalog({
               </button>
             ))}
           </div>
-          <a href="tel:1360">{t.call}</a>
+          <a href="tel:+998781137712">{t.call}</a>
           <button
             type="button"
             data-lead-trigger
@@ -2355,7 +2355,7 @@ export function JomiyCatalog({
         <p>{t.disclaimer}</p>
         <nav>
           <a href={privacyUrl(language)}>{t.privacy}</a>
-          <a href="tel:1360">1360</a>
+          <a href="tel:+998781137712">+998 78 113 77 12</a>
           <a href="#top">{t.top} ↑</a>
         </nav>
       </footer>

@@ -381,13 +381,13 @@ export function SunPage({ initialLanguage }: { initialLanguage: Language }) {
 
       <section id="location" className="sun-section sun-location">
         <header className="sun-section__header" data-reveal><span>{t.locationEyebrow}</span><h2>{t.locationTitle}</h2></header>
-        <div className="sun-location__grid"><article data-reveal><span>01 · {t.addressLabel}</span><h3>{t.address}</h3><p>{t.mapNote}</p><a href="https://yandex.uz/maps/?ll=69.301919%2C41.282957&z=16" target="_blank" rel="noopener noreferrer">{t.map}<b>↗</b></a></article><article data-reveal><span>02 · {t.contacts}</span><a className="sun-location__phone" href="tel:+998781505500">+998 78 150 55 00</a><a href="mailto:info@h2h.uz">info@h2h.uz</a><p>{t.hours}</p></article></div>
+        <div className="sun-location__grid"><article data-reveal><span>01 · {t.addressLabel}</span><h3>{t.address}</h3><p>{t.mapNote}</p><a href="https://yandex.uz/maps/?ll=69.301919%2C41.282957&z=16" target="_blank" rel="noopener noreferrer">{t.map}<b>↗</b></a></article><article data-reveal><span>02 · {t.contacts}</span><a className="sun-location__phone" href="tel:+998781137712">+998 78 113 77 12</a><a href="mailto:info@h2h.uz">info@h2h.uz</a><p>{t.hours}</p></article></div>
         <button className="sun-section__lead" type="button" data-lead-trigger onClick={(event) => openLead('landing:location', null, event.currentTarget)}>{t.locationLead}<span>↗</span></button>
       </section>
 
       <section className="sun-contact">
         <div data-reveal><span>{t.contactEyebrow}</span><h2>{t.contactTitle}</h2><p>{t.contactText}</p><button type="button" data-lead-trigger onClick={(event) => openLead('landing:footer', null, event.currentTarget)}>{t.consult}<b>↗</b></button></div>
-        <a className="sun-contact__phone" href="tel:+998781505500">+998 78 150 55 00 <span>↗</span></a>
+        <a className="sun-contact__phone" href="tel:+998781137712">+998 78 113 77 12 <span>↗</span></a>
         <footer><div><img src={sunAsset('/sun/logo.svg')} width="380" height="64" alt="SUN" /><img src={sunAsset('/sun/h2h-logo.svg')} width="217" height="42" alt="Human2Human" /></div><p>{t.disclaimer}</p><nav><a href={`${sunAsset('/privacy')}?project=sun&lang=${language}&from=landing`}>{t.privacy}</a><a href="#top">{t.top}</a></nav></footer>
       </section>
     </main>

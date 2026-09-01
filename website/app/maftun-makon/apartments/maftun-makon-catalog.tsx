@@ -487,7 +487,7 @@ export function MaftunMakonCatalog({ snapshot, initialLanguage }: { snapshot: Ma
       <header className="maftun-catalog-header">
         <a className="maftun-catalog-wordmark" href={withLanguage('/maftun-makon', language)}>MAFTUN <span>MAKON</span></a>
         <a className="maftun-catalog-back" href={withLanguage('/maftun-makon', language)}>← {t.back}</a>
-        <a className="maftun-catalog-phone" href="tel:1360">1360</a>
+        <a className="maftun-catalog-phone" href="tel:+998781137712">+998 78 113 77 12</a>
         <div className="maftun-catalog-languages" aria-label={t.language}>{languages.map((item) => <button type="button" key={item} className={language === item ? 'is-active' : ''} aria-pressed={language === item} onClick={() => setLanguage(item)}>{item.toUpperCase()}</button>)}</div>
       </header>
 
@@ -537,7 +537,7 @@ export function MaftunMakonCatalog({ snapshot, initialLanguage }: { snapshot: Ma
         ) : null}
       </section>
 
-      <footer className="maftun-catalog-footer"><a className="maftun-catalog-wordmark" href={withLanguage('/maftun-makon', language)}>MAFTUN <span>MAKON</span></a><p>{t.disclaimer}</p><a href="tel:1360">1360</a><a href="#maftun-catalog-top" aria-label="Back to top">↑</a></footer>
+      <footer className="maftun-catalog-footer"><a className="maftun-catalog-wordmark" href={withLanguage('/maftun-makon', language)}>MAFTUN <span>MAKON</span></a><p>{t.disclaimer}</p><a href="tel:+998781137712">+998 78 113 77 12</a><a href="#maftun-catalog-top" aria-label="Back to top">↑</a></footer>
       {plan ? <PlanLightbox unit={plan} language={language} onClose={() => setPlan(undefined)} /> : null}
       {lead ? (
         <div

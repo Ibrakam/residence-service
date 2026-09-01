@@ -73,7 +73,7 @@ const copy = {
     constructionNote: 'Последний опубликованный официальный отчёт — июль 2026. Исходный архив включает 17 месячных групп и 78 строительных фотографий.',
     contactTop: '08 · Следующий шаг', contactTitle: 'Выберите квартиру за порталом.',
     contactText: 'В локальном snapshot — все 204 предложения, опубликованные официальным каталогом на 30 августа 2026 года.',
-    catalog: 'Открыть каталог', phone: 'Позвонить 1360', booklet: 'Официальный буклет', privacy: 'Конфиденциальность',
+    catalog: 'Открыть каталог', phone: 'Позвонить · +998 78 113 77 12', booklet: 'Официальный буклет', privacy: 'Конфиденциальность',
     formTitle: 'Запросить консультацию', formText: 'Менеджер проекта уточнит ваш сценарий покупки и подготовит актуальную подборку Maftun Makon.',
     footerNote: 'Информация и цены snapshot не являются публичной офертой. Актуальные условия подтверждает отдел продаж.',
   },
@@ -108,7 +108,7 @@ const copy = {
     constructionNote: 'So‘nggi e’lon qilingan rasmiy hisobot — 2026-yil iyul. Asl arxivda 17 oylik guruh va 78 ta qurilish fotosurati bor.',
     contactTop: '08 · Keyingi qadam', contactTitle: 'Portal ortidagi xonadonni tanlang.',
     contactText: 'Mahalliy snapshotda 2026-yil 30-avgustdagi rasmiy katalogning barcha 204 ta taklifi bor.',
-    catalog: 'Katalogni ochish', phone: '1360 ga qo‘ng‘iroq', booklet: 'Rasmiy buklet', privacy: 'Maxfiylik',
+    catalog: 'Katalogni ochish', phone: 'Qo‘ng‘iroq · +998 78 113 77 12', booklet: 'Rasmiy buklet', privacy: 'Maxfiylik',
     formTitle: 'Maslahat so‘rash', formText: 'Loyiha menejeri xarid maqsadingizni aniqlab, Maftun Makon bo‘yicha dolzarb variantlarni tayyorlaydi.',
     footerNote: 'Snapshot ma’lumotlari va narxlari ommaviy oferta emas. Amaldagi shartlarni savdo bo‘limi tasdiqlaydi.',
   },
@@ -143,7 +143,7 @@ const copy = {
     constructionNote: 'The latest published official report is July 2026. The source archive contains 17 monthly groups and 78 construction photographs.',
     contactTop: '08 · Next step', contactTitle: 'Choose an apartment beyond the portal.',
     contactText: 'The local snapshot contains all 204 listings published by the official catalogue on 30 August 2026.',
-    catalog: 'Open catalogue', phone: 'Call 1360', booklet: 'Official booklet', privacy: 'Privacy',
+    catalog: 'Open catalogue', phone: 'Call · +998 78 113 77 12', booklet: 'Official booklet', privacy: 'Privacy',
     formTitle: 'Request a consultation', formText: 'The project manager will clarify your purchase plans and prepare current Maftun Makon options.',
     footerNote: 'Snapshot information and prices are not a public offer. Current terms are confirmed by the sales team.',
   },
@@ -407,7 +407,7 @@ export function MaftunMakonPage({ initialLanguage }: { initialLanguage: Language
       <header className="maftun-header">
         <a className="maftun-wordmark" href={withLanguage('/maftun-makon', language)} aria-label="Maftun Makon" aria-hidden={menuOpen || undefined} inert={menuOpen ? true : undefined}>MAFTUN <span>MAKON</span></a>
         <nav className="maftun-header__nav" aria-label="Primary" aria-hidden={menuOpen || undefined} inert={menuOpen ? true : undefined}>{Object.entries(t.nav).map(([id, label]) => <a key={id} href={`#${id}`}>{label}</a>)}</nav>
-        <a className="maftun-header__phone" href="tel:1360" aria-hidden={menuOpen || undefined} inert={menuOpen ? true : undefined}>1360</a>
+        <a className="maftun-header__phone" href="tel:+998781137712" aria-hidden={menuOpen || undefined} inert={menuOpen ? true : undefined}>+998 78 113 77 12</a>
         <div className="maftun-languages" aria-label={t.language} aria-hidden={menuOpen || undefined} inert={menuOpen ? true : undefined}>{languages.map((item) => <button type="button" key={item} aria-pressed={language === item} className={language === item ? 'is-active' : ''} onClick={() => setLanguage(item)}>{item.toUpperCase()}</button>)}</div>
         <button ref={menuButtonRef} className="maftun-menu-button" type="button" onClick={() => setMenuOpen(true)} aria-expanded={menuOpen} aria-haspopup="dialog" aria-controls="maftun-menu"><span>{t.menu}</span><i aria-hidden="true" /></button>
       </header>
@@ -480,7 +480,7 @@ export function MaftunMakonPage({ initialLanguage }: { initialLanguage: Language
         </section>
 
         <section className="maftun-contact">
-          <div className="maftun-contact__copy" data-maftun-reveal data-maftun-stagger><p className="maftun-overline">{t.contactTop}</p><h2>{t.contactTitle}</h2><p>{t.contactText}</p><div><a className="maftun-button maftun-button--gold" href={withLanguage('/maftun-makon/apartments', language)}>{t.catalog}<b>↗</b></a><a className="maftun-text-link" href="tel:1360">{t.phone}</a></div></div>
+          <div className="maftun-contact__copy" data-maftun-reveal data-maftun-stagger><p className="maftun-overline">{t.contactTop}</p><h2>{t.contactTitle}</h2><p>{t.contactText}</p><div><a className="maftun-button maftun-button--gold" href={withLanguage('/maftun-makon/apartments', language)}>{t.catalog}<b>↗</b></a><a className="maftun-text-link" href="tel:+998781137712">{t.phone}</a></div></div>
           <div className="maftun-contact__form" data-maftun-reveal data-maftun-stagger><small>MAFTUN MAKON · NRG-BI × AL-BINA</small><h3>{t.formTitle}</h3><p>{t.formText}</p><button className="maftun-contact__lead-button" type="button" data-lead-trigger onClick={() => setLeadContext('maftun-makon:landing:contact-panel:consultation-cta')}>{t.consultation}<span>↗</span></button></div>
         </section>
       </div>

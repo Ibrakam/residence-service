@@ -66,7 +66,7 @@ export default async function Page({ searchParams }: PageProps) {
     '@graph': [
       {
         '@type': 'ApartmentComplex', '@id': `${projectUrl}#project`, name: 'Regnum Plaza', description: current.description,
-        inLanguage: languageTag(language), url: projectUrl, image: absoluteUrl('/regnum-plaza/images/hero.webp'), telephone: '+998781228822',
+        inLanguage: languageTag(language), url: projectUrl, image: absoluteUrl('/regnum-plaza/images/hero.webp'), telephone: '+998781137712',
         address: { '@type': 'PostalAddress', streetAddress: current.address, addressLocality: 'Tashkent', addressCountry: 'UZ' },
         geo: { '@type': 'GeoCoordinates', latitude: 41.331564, longitude: 69.324328 },
         numberOfAccommodationUnits: 776,

@@ -67,7 +67,7 @@ const copy = {
   ru: {
     skip: 'К содержанию', navLabel: 'Навигация Yangi Baxt', menu: 'Меню', closeMenu: 'Закрыть меню', language: 'Язык',
     nav: [['contour', 'Контур'], ['living', 'Уже живёт'], ['towers', 'Towers-3'], ['gallery', 'Среда'], ['progress', 'Стройка'], ['catalog', 'Квартиры']] as const,
-    catalog: 'Выбрать квартиру', consult: 'Оставить заявку', call: 'Позвонить 1360',
+    catalog: 'Выбрать квартиру', consult: 'Оставить заявку', call: 'Позвонить · +998 78 113 77 12',
     heroOverline: 'ТАШКЕНТ · COMFORT / COMFORT+ · АХАНГАРАНСКИЙ ПРОСПЕКТ', heroTitle: 'YANGI BAXT', heroLead: 'Город у озера. В одном ритме с природой.', heroImage: 'Реальная официальная фотография благоустройства Yangi Baxt', heroCgi: 'Towers-3 · официальная CGI-концепция',
     facts: [['58 га', 'территория проекта'], ['7,3 га', 'парковая зона'], ['>30%', 'озеленение']] as const,
     contourIndex: '01 · КОНТУР РАЙОНА', contourTitle: 'Озеро, парк и городская жизнь связаны одним маршрутом.', contourText: 'Yangi Baxt занимает 58 гектаров. Внутри — озеро Baxt, парковая зона 7,3 гектара, спортивные и общественные пространства. Более 30% территории отведено озеленению.', contourCgi: 'Официальная CGI-концепция района · итоговый вид может измениться', contourCards: [['Озеро Baxt', 'точка притяжения'], ['Workout', 'спорт на маршруте'], ['Общественные зоны', 'места для встреч']] as const,
@@ -86,7 +86,7 @@ const copy = {
   uz: {
     skip: 'Mazmunga o‘tish', navLabel: 'Yangi Baxt navigatsiyasi', menu: 'Menyu', closeMenu: 'Menyuni yopish', language: 'Til',
     nav: [['contour', 'Kontur'], ['living', 'Hayot boshlangan'], ['towers', 'Towers-3'], ['gallery', 'Muhit'], ['progress', 'Qurilish'], ['catalog', 'Xonadonlar']] as const,
-    catalog: 'Xonadon tanlash', consult: 'Ariza qoldirish', call: '1360 ga qo‘ng‘iroq',
+    catalog: 'Xonadon tanlash', consult: 'Ariza qoldirish', call: 'Qo‘ng‘iroq · +998 78 113 77 12',
     heroOverline: 'TOSHKENT · COMFORT / COMFORT+ · OHANGARON PROSPEKTI', heroTitle: 'YANGI BAXT', heroLead: 'Ko‘l bo‘yidagi shahar. Tabiat bilan bir maromda.', heroImage: 'Yangi Baxt obodonlashtirilishining haqiqiy rasmiy fotosurati', heroCgi: 'Towers-3 · rasmiy CGI konsepsiyasi',
     facts: [['58 ga', 'loyiha hududi'], ['7,3 ga', 'park hududi'], ['>30%', 'ko‘kalamzor']] as const,
     contourIndex: '01 · HUDUD KONTURI', contourTitle: 'Ko‘l, park va shahar hayoti bitta yo‘nalishda bog‘langan.', contourText: 'Yangi Baxt 58 gektarni egallaydi. Hududda Baxt ko‘li, 7,3 gektarlik park, sport va jamoat makonlari bor. Hududning 30 foizidan ko‘prog‘i ko‘kalamzorlashtirishga ajratilgan.', contourCgi: 'Hududning rasmiy CGI konsepsiyasi · yakuniy ko‘rinish o‘zgarishi mumkin', contourCards: [['Baxt ko‘li', 'asosiy tortish nuqtasi'], ['Workout', 'yo‘nalishdagi sport'], ['Jamoat hududlari', 'uchrashuv joylari']] as const,
@@ -105,7 +105,7 @@ const copy = {
   en: {
     skip: 'Skip to content', navLabel: 'Yangi Baxt navigation', menu: 'Menu', closeMenu: 'Close menu', language: 'Language',
     nav: [['contour', 'The loop'], ['living', 'Already lived in'], ['towers', 'Towers-3'], ['gallery', 'Setting'], ['progress', 'Construction'], ['catalog', 'Apartments']] as const,
-    catalog: 'Choose an apartment', consult: 'Send an enquiry', call: 'Call 1360',
+    catalog: 'Choose an apartment', consult: 'Send an enquiry', call: 'Call · +998 78 113 77 12',
     heroOverline: 'TASHKENT · COMFORT / COMFORT+ · AKHANGARAN AVENUE', heroTitle: 'YANGI BAXT', heroLead: 'A city by the lake. In rhythm with nature.', heroImage: 'Actual official photograph of Yangi Baxt landscaping', heroCgi: 'Towers-3 · official CGI concept',
     facts: [['58 ha', 'project territory'], ['7.3 ha', 'park area'], ['>30%', 'landscaping']] as const,
     contourIndex: '01 · DISTRICT LOOP', contourTitle: 'The lake, park and urban life connect along one route.', contourText: 'Yangi Baxt covers 58 hectares. It includes Lake Baxt, a 7.3-hectare park, sports areas and public spaces. More than 30% of the territory is landscaped.', contourCgi: 'Official CGI district concept · final appearance may change', contourCards: [['Lake Baxt', 'a focal point'], ['Workout', 'sport along the route'], ['Public spaces', 'places to meet']] as const,
@@ -446,7 +446,7 @@ export function YangiBaxtPage({ initialLanguage }: { initialLanguage: Language }
 
         <section className="yb-contact" id="contacts" data-reveal>
           <span>{t.contactIndex}</span><h2>{t.contactTitle}</h2><p>{t.contactText}</p>
-          <div><button type="button" data-lead-trigger onClick={() => setLeadSurface('final')}>{t.consult}<span>↗</span></button><a href="tel:1360">{t.call}</a></div>
+          <div><button type="button" data-lead-trigger onClick={() => setLeadSurface('final')}>{t.consult}<span>↗</span></button><a href="tel:+998781137712">{t.call}</a></div>
           <address>{t.address}</address>
         </section>
       </main>

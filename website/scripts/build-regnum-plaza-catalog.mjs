@@ -335,7 +335,7 @@ async function buildArtifacts() {
       address: { ru: 'Ташкент, Мирзо-Улугбекский район, ул. Сайрам', uz: "Toshkent shahri, Mirzo Ulug‘bek tumani, Sayram ko‘chasi", en: 'Sayram Street, Mirzo-Ulugbek District, Tashkent' },
       coordinates: { latitude: 41.331564, longitude: 69.324328 },
       salesOffice: { ru: 'Ташкент, Мирабадский район, ул. Ойбека, 38A', uz: "Toshkent, Mirobod tumani, Oybek ko‘chasi, 38A", en: '38A Oybek Street, Mirabad District, Tashkent', latitude: 41.291432, longitude: 69.280519 },
-      phone: '+998 78 122 88 22', insuranceYears: 10,
+      phone: '+998 78 113 77 12', insuranceYears: 10,
     },
     source: 'https://mbc.uz/api/plans', sourceLanding: 'https://mbc.uz/project/regnum-plaza', sourceGenplan: 'https://mbc.uz/genplan/regnum-plaza', sourceTour: 'https://cloud.chaos.com/collaboration/n/VELR7kWdz9hqfoHWYRwfai/present?t=vrt',
     integrity: { uniqueInternalIds: 12, uniqueCrmIds: 12, uniqueOfficialPlanSources: 6, missingOfficialPlans: 2, realGroups: 4, exactMatrixRows: 11, publicDerivativeCount: assetDerivatives.length + planDerivatives.length },

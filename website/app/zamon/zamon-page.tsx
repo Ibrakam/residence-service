@@ -61,7 +61,7 @@ const copy = {
   ru: {
     skip: 'К содержанию', navigation: 'Навигация Zamon', footerNavigation: 'Источники и юридическая информация', menu: 'Меню', closeMenu: 'Закрыть меню', language: 'Язык',
     nav: [['time', 'Время'], ['realized', 'Реализовано'], ['media', 'Медиатека'], ['landscape', 'Двор'], ['catalog', 'Квартиры'], ['contacts', 'Контакты']] as const,
-    choose: 'Выбрать квартиру', consult: 'Оставить заявку', phone: 'Позвонить 1360',
+    choose: 'Выбрать квартиру', consult: 'Оставить заявку', phone: 'Позвонить · +998 78 113 77 12',
     heroOverline: 'ТАШКЕНТ · COMFORT CLASS · 4 ОЧЕРЕДИ', heroTitle: 'Zamon', heroText: 'Дом в нескольких временных слоях: сданная I очередь, актуальная подборка квартир и будущая архитектурная концепция.',
     heroAlt: 'Реальная фотография сданной I очереди Zamon', actualPhoto: 'Реальная фотография сданной I очереди',
     phaseCards: [
@@ -117,7 +117,7 @@ const copy = {
   uz: {
     skip: 'Mazmunga o‘tish', navigation: 'Zamon navigatsiyasi', footerNavigation: 'Manbalar va huquqiy ma’lumot', menu: 'Menyu', closeMenu: 'Menyuni yopish', language: 'Til',
     nav: [['time', 'Vaqt'], ['realized', 'Amalga oshgan'], ['media', 'Mediateka'], ['landscape', 'Hovli'], ['catalog', 'Xonadonlar'], ['contacts', 'Aloqa']] as const,
-    choose: 'Xonadon tanlash', consult: 'Ariza qoldirish', phone: '1360 ga qo‘ng‘iroq',
+    choose: 'Xonadon tanlash', consult: 'Ariza qoldirish', phone: 'Qo‘ng‘iroq · +998 78 113 77 12',
     heroOverline: 'TOSHKENT · COMFORT CLASS · 4 BOSQICH', heroTitle: 'Zamon', heroText: 'Bir necha vaqt qatlamidagi uy: topshirilgan I bosqich, dolzarb xonadonlar tanlovi va kelajak me’moriy konsepsiyasi.',
     heroAlt: 'Zamon topshirilgan I bosqichining haqiqiy fotosurati', actualPhoto: 'Topshirilgan I bosqichning haqiqiy fotosurati',
     phaseCards: [{ index: '02', title: 'NRG Zamon 2-2', rows: 'Katalogda 42 ta pozitsiya', deadline: 'Muddat · 2026-yil 14-noyabr' }, { index: '03', title: 'NRG Zamon 3-1', rows: 'Katalogda 62 ta pozitsiya', deadline: 'Muddat · 2027-yil 25-dekabr' }],
@@ -141,7 +141,7 @@ const copy = {
   en: {
     skip: 'Skip to content', navigation: 'Zamon navigation', footerNavigation: 'Sources and legal information', menu: 'Menu', closeMenu: 'Close menu', language: 'Language',
     nav: [['time', 'Time'], ['realized', 'Built'], ['media', 'Media'], ['landscape', 'Courtyard'], ['catalog', 'Apartments'], ['contacts', 'Contacts']] as const,
-    choose: 'Choose an apartment', consult: 'Send a request', phone: 'Call 1360',
+    choose: 'Choose an apartment', consult: 'Send a request', phone: 'Call · +998 78 113 77 12',
     heroOverline: 'TASHKENT · COMFORT CLASS · 4 PHASES', heroTitle: 'Zamon', heroText: 'A home across several layers of time: completed phase I, a current apartment selection and future architectural concepts.', heroAlt: 'Actual photograph of Zamon completed phase I', actualPhoto: 'Actual photograph of the completed first phase',
     phaseCards: [{ index: '02', title: 'NRG Zamon 2-2', rows: '42 catalogue entries', deadline: 'Completion · 14 November 2026' }, { index: '03', title: 'NRG Zamon 3-1', rows: '62 catalogue entries', deadline: 'Completion · 25 December 2027' }], phaseCardNote: 'The catalogue was captured on 30 August 2026; the sales team confirms each apartment’s current status.',
     facts: [['Comfort', 'class'], ['4', 'phases'], ['8 / 9 / 12', 'storeys'], ['≥ 30%', 'landscaping'], ['1', 'own pond']] as const,
@@ -395,7 +395,7 @@ export function ZamonPage({ initialLanguage }: { initialLanguage: Language }) {
 
       <section id="catalog" className="zamon-catalog-teaser" tabIndex={-1} data-zamon-reveal><header><p className="zamon-overline">{t.catalogIndex}</p><h2>{t.catalogTitle}</h2><p>{t.catalogText}</p></header><div>{t.catalogStats.map(([value, label]) => <article key={label}><strong>{value}</strong><span>{label}</span></article>)}</div><details className="zamon-data-note"><summary>{t.dataNoteTitle}<span aria-hidden="true">＋</span></summary><p>{t.dataNoteText}</p></details><footer><p>{t.catalogNote}</p><a className="zamon-button is-solid" href={withLanguage('/zamon/apartments', language)}>{t.openCatalog}<span>↗</span></a></footer></section>
 
-      <section id="contacts" className="zamon-contacts" tabIndex={-1}><div data-zamon-reveal><p className="zamon-overline">{t.contactsIndex}</p><h2>{t.contactsTitle}</h2><p>{t.contactsText}</p></div><address><small>{t.offices}</small><span>{t.officeOne}</span><span>{t.officeTwo}</span><a href="tel:1360">1360</a></address><div className="zamon-contacts__actions"><button className="zamon-button is-solid" type="button" data-lead-trigger onClick={() => openLead('contacts-consultation')}>{t.consult}<span>↗</span></button><a className="zamon-button" href="tel:1360">{t.phone}<span>↗</span></a></div></section>
+      <section id="contacts" className="zamon-contacts" tabIndex={-1}><div data-zamon-reveal><p className="zamon-overline">{t.contactsIndex}</p><h2>{t.contactsTitle}</h2><p>{t.contactsText}</p></div><address><small>{t.offices}</small><span>{t.officeOne}</span><span>{t.officeTwo}</span><a href="tel:+998781137712">+998 78 113 77 12</a></address><div className="zamon-contacts__actions"><button className="zamon-button is-solid" type="button" data-lead-trigger onClick={() => openLead('contacts-consultation')}>{t.consult}<span>↗</span></button><a className="zamon-button" href="tel:+998781137712">{t.phone}<span>↗</span></a></div></section>
     </main>
 
     <footer className="zamon-footer"><a className="zamon-name" href={withLanguage('/zamon', language)}><strong>Zamon</strong><span>NRG-BI</span></a><p>{t.disclaimer}</p><nav aria-label={t.footerNavigation}><a href={`${asset(officialBooklet)}?lang=${language}`} target="_blank" rel="noreferrer" data-return-url={withLanguage('/zamon', language)} title={t.bookletContext}>{t.booklet} ↗</a><a href={panorama} target="_blank" rel="noreferrer">{t.panorama} ↗</a><a href={privacyUrl(language)}>{t.privacy}</a><a href="#zamon-content" onClick={(event) => goToAnchor(event, 'zamon-content')}>{t.top} ↑</a></nav></footer>

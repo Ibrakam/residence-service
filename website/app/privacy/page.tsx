@@ -426,13 +426,13 @@ const sunCopy: Record<Language, PrivacyCopy> = {
 
 const legacyProjects: Record<string, { name: string; path: string; image: string; phoneHref: string; phoneLabel: string }> = {
   'avalon-residence': { name: 'AVALON RESIDENCE', path: '/avalon', image: '/avalon/avalon-city.webp', phoneHref: 'tel:+998781137712', phoneLabel: '+998 78 113 77 12' },
-  mirador: { name: 'MIRADOR', path: '/mirador', image: '/kayan/mirador/hero.webp', phoneHref: 'tel:+998785552020', phoneLabel: '+998 78 555 20 20' },
-  ofiyat: { name: 'OFIYAT', path: '/ofiyat', image: '/kayan/ofiyat/hero.webp', phoneHref: 'tel:+998785552020', phoneLabel: '+998 78 555 20 20' },
-  meros: { name: 'MEROS', path: '/meros', image: '/meros/hero.webp', phoneHref: 'tel:+998785552020', phoneLabel: '+998 78 555 20 20' },
-  sado: { name: 'SAD’O', path: '/sado', image: '/sado/images/hero.webp', phoneHref: 'tel:1360', phoneLabel: '1360' },
-  flagman: { name: 'FLAGMAN', path: '/flagman', image: '/flagman/images/hero.webp', phoneHref: 'tel:1360', phoneLabel: '1360' },
-  '4u': { name: '4U TASHKENT', path: '/4u', image: '/4u/images/hero.webp', phoneHref: 'tel:1360', phoneLabel: '1360' },
-  voha: { name: 'VOHA', path: '/voha', image: '/voha/images/hero.webp', phoneHref: 'tel:1360', phoneLabel: '1360' },
+  mirador: { name: 'MIRADOR', path: '/mirador', image: '/kayan/mirador/hero.webp', phoneHref: 'tel:+998781137712', phoneLabel: '+998 78 113 77 12' },
+  ofiyat: { name: 'OFIYAT', path: '/ofiyat', image: '/kayan/ofiyat/hero.webp', phoneHref: 'tel:+998781137712', phoneLabel: '+998 78 113 77 12' },
+  meros: { name: 'MEROS', path: '/meros', image: '/meros/hero.webp', phoneHref: 'tel:+998781137712', phoneLabel: '+998 78 113 77 12' },
+  sado: { name: 'SAD’O', path: '/sado', image: '/sado/images/hero.webp', phoneHref: 'tel:+998781137712', phoneLabel: '+998 78 113 77 12' },
+  flagman: { name: 'FLAGMAN', path: '/flagman', image: '/flagman/images/hero.webp', phoneHref: 'tel:+998781137712', phoneLabel: '+998 78 113 77 12' },
+  '4u': { name: '4U TASHKENT', path: '/4u', image: '/4u/images/hero.webp', phoneHref: 'tel:+998781137712', phoneLabel: '+998 78 113 77 12' },
+  voha: { name: 'VOHA', path: '/voha', image: '/voha/images/hero.webp', phoneHref: 'tel:+998781137712', phoneLabel: '+998 78 113 77 12' },
 };
 
 function legacyProjectCopy(project: (typeof legacyProjects)[string], language: Language): PrivacyCopy {
@@ -559,9 +559,8 @@ export default async function PrivacyPage({ searchParams }: PageProps) {
   const fromCatalog = (isYangiBaxt || isJomiy || isRegnumPlaza || isSun || Boolean(legacyProject)) && params?.from === 'catalog';
   const returnUrl = fromCatalog && catalogUrl ? catalogUrl : projectUrl;
   const back = fromCatalog && current.catalogBack ? current.catalogBack : current.back;
-  const usesShortPhone = isZamon || isYangiBaxt || isJomiy;
-  const contactHref = legacyProject ? legacyProject.phoneHref : isSun ? 'tel:+998781505500' : isRegnumPlaza ? 'tel:+998781228822' : usesShortPhone ? 'tel:1360' : 'tel:+998785552020';
-  const contactLabel = legacyProject ? legacyProject.phoneLabel : isSun ? '+998 78 150 55 00' : isRegnumPlaza ? '+998 78 122 88 22' : usesShortPhone ? '1360' : '+998 78 555 20 20';
+  const contactHref = 'tel:+998781137712';
+  const contactLabel = '+998 78 113 77 12';
 
   return <main className="privacy-page" lang={language}>
     <PrivacyLanguageSync language={language} />

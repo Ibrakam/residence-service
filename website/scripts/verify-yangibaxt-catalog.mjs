@@ -656,7 +656,7 @@ assertTokens(leadRoute, leadRoutePath, [
   'exactViewed', "receipt: 'development-only'", 'stored: false', 'forwarded: false', 'readLeadJson<Payload>', 'leadJson as json',
 ]);
 assertTokens(privacyRoute, privacyPath, [
-  'yangiBaxtCopy', "project === 'yangibaxt'", 'project=yangibaxt&lang=', '/yangibaxt/apartments?lang=', "params?.from === 'catalog'", 'generateMetadata', 'alternates', 'openGraph', 'twitter', 'tel:1360',
+  'yangiBaxtCopy', "project === 'yangibaxt'", 'project=yangibaxt&lang=', '/yangibaxt/apartments?lang=', "params?.from === 'catalog'", 'generateMetadata', 'alternates', 'openGraph', 'twitter', 'tel:+998781137712',
 ]);
 assertTokens(sitemap, sitemapPath, ["'yangibaxt'", 'projectRoutes', '`/${project}`', '`/${project}/apartments`', "['ru', 'uz', 'en']", "'ru-RU'", "'uz-UZ'", "'x-default'"]);
 assert(packageJson.scripts?.['build:yangibaxt-catalog'] === 'node scripts/build-yangibaxt-catalog.mjs', 'package.json build:yangibaxt-catalog script mismatch');

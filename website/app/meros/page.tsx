@@ -34,7 +34,7 @@ export default async function MerosRoute({ searchParams }: PageProps) {
     '@context': 'https://schema.org', '@type': 'ApartmentComplex', name: 'MEROS',
     address: { '@type': 'PostalAddress', streetAddress: 'ул. 8 Марта', addressLocality: 'Ташкент', addressRegion: 'Мирабадский район', addressCountry: 'UZ' },
     geo: { '@type': 'GeoCoordinates', latitude: 41.280449, longitude: 69.296886 },
-    telephone: '+998785552020', image: `${appBasePath}/meros/hero.webp`, numberOfAccommodationUnits: bundle.project.totalUnits,
+    telephone: '+998781137712', image: `${appBasePath}/meros/hero.webp`, numberOfAccommodationUnits: bundle.project.totalUnits,
   };
   return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} /><MerosPage initialAvailable={bundle.project.availableUnits} initialLanguage={language} /></>;
 }

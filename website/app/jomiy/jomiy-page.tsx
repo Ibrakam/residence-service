@@ -60,7 +60,7 @@ const copy = {
   ru: {
     skip: 'К содержанию', navLabel: 'Навигация Jomiy', menu: 'Оглавление', closeMenu: 'Закрыть', language: 'Язык',
     nav: [['origin', 'Поэзия'], ['lived', 'Уже живёт'], ['phase21', 'Очередь 2.1'], ['phase22', 'Очередь 2.2'], ['progress', 'Стройка'], ['living', 'Среда'], ['catalog', 'Квартиры'], ['location', 'Локация']] as const,
-    catalog: 'Выбрать квартиру', consult: 'Уточнить доступность', call: 'Позвонить 1360', menuNote: 'Архитектурное собрание · восемь глав',
+    catalog: 'Выбрать квартиру', consult: 'Уточнить доступность', call: 'Позвонить · +998 78 113 77 12', menuNote: 'Архитектурное собрание · восемь глав',
     heroOverline: 'ТАШКЕНТ · NRG-BI · БИЗНЕС-КЛАСС', heroTitle: 'JOMIY', heroLead: 'Вдохновлённый поэзией.', heroSublead: 'Готовая часть, сданная очередь 2.1 и строящаяся финальная глава 2.2 — без смешения фактов и образов.', heroImage: 'Реальная официальная фотография готовой части Jomiy',
     heroFacts: [['Бизнес', 'класс'], ['≥ 3,0 м', 'потолки'], ['2.2', 'финальная очередь']] as const,
     originIndex: 'BAYT 01 · ИМЯ И РИТМ', originTitle: 'Имя поэта. Ритм архитектуры.', originText: 'Проект назван в честь Абдурахмана Джами. Официальная формула — «Вдохновлённый поэзией». Мы не приписываем поэту цитат: история начинается с подтверждённого имени и продолжается в ритме фасада.', architectureTitle: 'Решётка света и материала', architectureText: 'Комбинированные фасады соединяют алюминиевые панели, клинкерную плитку и национальные декоративные элементы. Сетка страницы следует ритму реальных окон и золотистой фасадной геометрии.', schemeCaption: 'Концептуальный фотомонтаж / схема очередей · не фотография готового объекта', materials: ['алюминиевые панели', 'клинкерная плитка', 'национальные декоративные элементы'] as const,
@@ -81,7 +81,7 @@ const copy = {
   uz: {
     skip: 'Mazmunga o‘tish', navLabel: 'Jomiy navigatsiyasi', menu: 'Mundarija', closeMenu: 'Yopish', language: 'Til',
     nav: [['origin', 'She’riyat'], ['lived', 'Hayot boshlangan'], ['phase21', '2.1 bosqich'], ['phase22', '2.2 bosqich'], ['progress', 'Qurilish'], ['living', 'Muhit'], ['catalog', 'Xonadonlar'], ['location', 'Joylashuv']] as const,
-    catalog: 'Xonadon tanlash', consult: 'Mavjudligini aniqlash', call: '1360 ga qo‘ng‘iroq', menuNote: 'Me’moriy to‘plam · sakkiz bob',
+    catalog: 'Xonadon tanlash', consult: 'Mavjudligini aniqlash', call: 'Qo‘ng‘iroq · +998 78 113 77 12', menuNote: 'Me’moriy to‘plam · sakkiz bob',
     heroOverline: 'TOSHKENT · NRG-BI · BIZNES-KLASS', heroTitle: 'JOMIY', heroLead: 'She’riyatdan ilhomlangan.', heroSublead: 'Tayyor qism, topshirilgan 2.1 bosqichi va qurilayotgan yakuniy 2.2 bobi — faktlar va obrazlar aralashtirilmagan.', heroImage: 'Jomiy tayyor qismining haqiqiy rasmiy fotosurati',
     heroFacts: [['Biznes', 'klass'], ['≥ 3,0 m', 'shift'], ['2.2', 'yakuniy bosqich']] as const,
     originIndex: 'BAYT 01 · NOM VA RITM', originTitle: 'Shoir nomi. Me’morchilik ritmi.', originText: 'Loyiha Abdurahmon Jomiy sharafiga nomlangan. Tasdiqlangan formula — “She’riyatdan ilhomlangan”. Biz shoirga uydirma iqtiboslar nisbat bermaymiz: hikoya tasdiqlangan nomdan boshlanib, fasad ritmida davom etadi.', architectureTitle: 'Yorug‘lik va material panjarasi', architectureText: 'Aralash fasadlar alyuminiy panellar, klinker plitkalar va milliy bezak elementlarini birlashtiradi. Sahifa to‘ri haqiqiy derazalar ritmi va oltin tusli fasad geometriyasiga ergashadi.', schemeCaption: 'Konseptual fotomontaj / bosqichlar sxemasi · tayyor obyekt fotosurati emas', materials: ['alyuminiy panellar', 'klinker plitkalar', 'milliy bezak elementlari'] as const,
@@ -102,7 +102,7 @@ const copy = {
   en: {
     skip: 'Skip to content', navLabel: 'Jomiy navigation', menu: 'Contents', closeMenu: 'Close', language: 'Language',
     nav: [['origin', 'Poetry'], ['lived', 'Already lived in'], ['phase21', 'Phase 2.1'], ['phase22', 'Phase 2.2'], ['progress', 'Construction'], ['living', 'Everyday life'], ['catalog', 'Apartments'], ['location', 'Location']] as const,
-    catalog: 'Choose an apartment', consult: 'Check availability', call: 'Call 1360', menuNote: 'An architectural collection · eight chapters',
+    catalog: 'Choose an apartment', consult: 'Check availability', call: 'Call · +998 78 113 77 12', menuNote: 'An architectural collection · eight chapters',
     heroOverline: 'TASHKENT · NRG-BI · BUSINESS CLASS', heroTitle: 'JOMIY', heroLead: 'Inspired by poetry.', heroSublead: 'A completed part, completed phase 2.1 and the final chapter 2.2 under construction — facts and visions kept distinct.', heroImage: 'Actual official photograph of a completed part of Jomiy',
     heroFacts: [['Business', 'class'], ['≥ 3.0 m', 'ceilings'], ['2.2', 'final phase']] as const,
     originIndex: 'BAYT 01 · NAME AND RHYTHM', originTitle: 'A poet’s name. An architectural rhythm.', originText: 'The project is named after Abdurahman Jami. Its official formula is “Inspired by poetry”. We attribute no invented quotations to the poet: the story starts with the confirmed name and continues through the rhythm of the facade.', architectureTitle: 'A lattice of light and material', architectureText: 'The combined facades bring together aluminium panels, clinker tile and national decorative elements. The page grid follows the rhythm of the actual windows and the warm metallic facade geometry.', schemeCaption: 'Conceptual photomontage / phase diagram · not a photograph of a completed property', materials: ['aluminium panels', 'clinker tile', 'national decorative elements'] as const,
@@ -409,7 +409,7 @@ export function JomiyPage({ initialLanguage }: { initialLanguage: Language }) {
         </section>
 
         <section className="jm-contact" id="contacts" data-reveal>
-          <span>{t.contactIndex}</span><h2>{t.contactTitle}</h2><p>{t.contactText}</p><div><button type="button" data-lead-trigger onClick={() => setLeadSurface('final')}>{t.consult}<span>↗</span></button><a href="tel:1360">{t.call}</a></div>
+          <span>{t.contactIndex}</span><h2>{t.contactTitle}</h2><p>{t.contactText}</p><div><button type="button" data-lead-trigger onClick={() => setLeadSurface('final')}>{t.consult}<span>↗</span></button><a href="tel:+998781137712">{t.call}</a></div>
         </section>
       </main>
 

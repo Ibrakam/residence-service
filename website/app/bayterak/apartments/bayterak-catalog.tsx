@@ -668,7 +668,7 @@ export function BayterakCatalog({ snapshot, initialLanguage }: { snapshot: Bayte
         <nav aria-label={t.nav}>
           <a className="bayterak-catalog-wordmark" href={withLanguage('/bayterak', language)} aria-label={t.home}><strong>BAY</strong><span>TERAK</span></a>
           <a className="bayterak-catalog-back" href={withLanguage('/bayterak', language)}><span aria-hidden="true">←</span>{t.back}</a>
-          <a className="bayterak-catalog-phone" href="tel:1360"><small>{t.sales}</small><strong>1360</strong></a>
+          <a className="bayterak-catalog-phone" href="tel:+998781137712"><small>{t.sales}</small><strong>+998 78 113 77 12</strong></a>
           <div className="bayterak-catalog-languages" role="group" aria-label={t.language}>{languages.map((item) => <button type="button" key={item} className={language === item ? 'is-active' : undefined} aria-pressed={language === item} lang={item} onClick={() => setLanguage(item)}>{item.toUpperCase()}</button>)}</div>
         </nav>
       </header>

@@ -320,7 +320,7 @@ body.is-meros-menu-open { overflow: hidden; }
 .kayan-site--meros { --kayan-radius: 0px; }
 .kayan-site--meros .kayan-header { background: #241c18; color: #eee5d8; }
 .kayan-site--meros .kayan-selector-hero { background: #241c18; color: #eee5d8; overflow: hidden; position: relative; }
-.kayan-site--meros .kayan-selector-hero::before { background: linear-gradient(90deg, rgba(36,28,24,.95), rgba(36,28,24,.45)), url('/meros/architecture-aerial.webp') center/cover; content: ''; inset: 0; opacity: .52; position: absolute; }
+.kayan-site--meros .kayan-selector-hero::before { background: linear-gradient(90deg, rgba(36,28,24,.95), rgba(36,28,24,.45)), url('/meros/architecture-aerial.webp?v=20260901') center/cover; content: ''; inset: 0; opacity: .52; position: absolute; }
 .kayan-site--meros .kayan-selector-hero > * { position: relative; }
 .kayan-site--meros .kayan-selector-hero em { color: #c9a37d; }
 .kayan-site--meros .kayan-catalog { background: #eee5d8; }

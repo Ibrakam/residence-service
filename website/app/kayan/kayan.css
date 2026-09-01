@@ -947,7 +947,7 @@ body.is-kayan-plan-open { overflow:hidden; }
 /* OFIYAT catalogue */
 .kayan-site--ofiyat.kayan-selector { background:var(--ofiyat-stone); }
 .kayan-site--ofiyat .kayan-selector-hero { min-height:460px; border-bottom:1px solid rgba(47,52,42,.14); background:var(--ofiyat-ivory); color:#2f342a; }
-.kayan-site--ofiyat .kayan-selector-hero::after { position:absolute; right:5%; bottom:0; width:42%; height:78%; content:''; background:url('/kayan/ofiyat/hero.webp') center/cover no-repeat; opacity:.18; mask-image:linear-gradient(90deg,transparent,black 35%); }
+.kayan-site--ofiyat .kayan-selector-hero::after { position:absolute; right:5%; bottom:0; width:42%; height:78%; content:''; background:url('/kayan/ofiyat/hero.webp?v=20260901') center/cover no-repeat; opacity:.18; mask-image:linear-gradient(90deg,transparent,black 35%); }
 .kayan-site--ofiyat .kayan-selector-hero>* { position:relative; z-index:2; }
 .kayan-site--ofiyat .kayan-selector-hero h1 { color:#34372f; }
 .kayan-site--ofiyat .kayan-selector-hero h1 em { color:var(--ofiyat-sage); font-style:italic; }

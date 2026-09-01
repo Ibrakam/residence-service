@@ -84,7 +84,7 @@
   align-items: end;
   background:
     linear-gradient(90deg, rgba(4, 25, 26, 0.94), rgba(4, 25, 26, 0.44)),
-    url("/voha/images/hero.webp") center/cover;
+    url("/voha/images/hero.webp?v=20260901") center/cover;
   color: #fff;
 }
 .voha-catalog-hero > div > p {

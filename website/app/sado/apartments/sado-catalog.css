@@ -23,7 +23,7 @@
 .sado-catalog-language button { min-width: 42px; min-height: 44px; border: 0; color: rgba(248,245,237,.45); background: transparent; cursor: pointer; font-size: .68rem; }
 .sado-catalog-language button.is-active { color: var(--sado-milk); }
 
-.sado-catalog-hero { min-height: 510px; padding: clamp(70px, 8vw, 140px) clamp(20px, 6vw, 110px); display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 60px; color: var(--sado-milk); background: linear-gradient(90deg, rgba(13,35,26,.92), rgba(13,35,26,.48)), url('/sado/courtyard-wide.webp') center 56%/cover; }
+.sado-catalog-hero { min-height: 510px; padding: clamp(70px, 8vw, 140px) clamp(20px, 6vw, 110px); display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 60px; color: var(--sado-milk); background: linear-gradient(90deg, rgba(13,35,26,.92), rgba(13,35,26,.48)), url('/sado/courtyard-wide.webp?v=20260901') center 56%/cover; }
 .sado-catalog-hero p { margin-bottom: 22px; color: #b9c3b3; font-size: .68rem; letter-spacing: .18em; text-transform: uppercase; }
 .sado-catalog-hero h1 { max-width: 920px; font-family: var(--font-display), serif; font-size: clamp(3.2rem, 6.5vw, 7.2rem); font-weight: 400; line-height: .92; letter-spacing: -.05em; }
 .sado-catalog-hero h1 em { display: block; color: #df9c7d; font-style: italic; font-weight: 400; }

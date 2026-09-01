@@ -12,7 +12,6 @@ import {
   useRef,
   useState,
 } from "react";
-import catalogData from "@/data/yangibaxt-catalog.json";
 import { LeadModal, rememberLastViewedApartment } from "@/app/lead-modal";
 import { yangiBaxtLeadSubmitUrl } from "../yangibaxt-lead";
 import {
@@ -145,7 +144,6 @@ type Selection = { unit: Unit; opener: HTMLButtonElement };
 type PlanState = Selection & { view: "apartment" | "position" };
 type LeadRequest = { unit: Unit | null; surface: string };
 
-const snapshot = catalogData as Snapshot;
 const configuredBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? "";
 const appBasePath = configuredBasePath
   ? `/${configuredBasePath.replace(/^\/+|\/+$/g, "")}`
@@ -1211,6 +1209,7 @@ function UnitDetail({
 }
 
 function MatrixGroup({
+  snapshot,
   group,
   units,
   rank,
@@ -1219,6 +1218,7 @@ function MatrixGroup({
   selected,
   onSelect,
 }: {
+  snapshot: Snapshot;
   group: Group;
   units: Unit[];
   rank: ReadonlyMap<string, number>;
@@ -1447,11 +1447,13 @@ function MatrixEntrance({
 }
 
 function FiltersPanel({
+  snapshot,
   filters,
   language,
   onChange,
   onReset,
 }: {
+  snapshot: Snapshot;
   filters: Filters;
   language: Language;
   onChange: (key: keyof Filters, value: string) => void;
@@ -1656,8 +1658,10 @@ function FiltersPanel({
 }
 
 export function YangiBaxtCatalog({
+  snapshot,
   initialLanguage,
 }: {
+  snapshot: Snapshot;
   initialLanguage: Language;
 }) {
   const [language, setLanguage] = useLanguage(initialLanguage);
@@ -1718,7 +1722,7 @@ export function YangiBaxtCatalog({
           );
         })
         .sort((a, b) => compare(a, b, sort)),
-    [filters, sort],
+    [filters, snapshot.units, sort],
   );
   const matrixRank = useMemo(
     () => new Map(filtered.map((unit, index) => [unit.id, index])),
@@ -1874,6 +1878,7 @@ export function YangiBaxtCatalog({
         </section>
         <section className="ybc-workspace">
           <FiltersPanel
+            snapshot={snapshot}
             filters={filters}
             language={language}
             onChange={setFilter}
@@ -1980,6 +1985,7 @@ export function YangiBaxtCatalog({
                     {snapshot.filterSummary.groups.map((group) => (
                       <MatrixGroup
                         key={group.id}
+                        snapshot={snapshot}
                         group={group}
                         units={filtered}
                         rank={matrixRank}

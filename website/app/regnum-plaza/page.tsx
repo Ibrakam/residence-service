@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import catalog from '@/data/regnum-plaza-client.json';
+import { publicClientPayload } from '@/app/public-client-payload';
 import { RegnumPlazaPage } from './regnum-page';
 import './regnum.css';
 import './regnum-shared.css';
@@ -76,6 +78,9 @@ export default async function Page({ searchParams }: PageProps) {
   };
   return <>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, '\\u003c') }} />
-    <RegnumPlazaPage initialLanguage={language} />
+    <RegnumPlazaPage
+      initialLanguage={language}
+      previewUnits={publicClientPayload([catalog.units[0], catalog.units[3], catalog.units[6], catalog.units[9]])}
+    />
   </>;
 }

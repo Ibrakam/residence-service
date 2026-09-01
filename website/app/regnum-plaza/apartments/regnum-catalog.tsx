@@ -11,7 +11,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import catalogData from '@/data/regnum-plaza-client.json';
+import type catalogData from '@/data/regnum-plaza-client.json';
 import { LeadModal } from '@/app/lead-modal';
 import { regnumLeadContext, regnumLeadSubmitUrl, rememberRegnumUnit, type RegnumUnit } from '../regnum-lead';
 import { lockRegnumBody, priceOnRequest, regnumLocale, type RegnumLanguage as Language } from '../regnum-ui';
@@ -22,7 +22,7 @@ type Filters = { rooms: string; areaFrom: string; areaTo: string; floor: string;
 type Selection = { unit: RegnumUnit; opener: HTMLButtonElement };
 type LeadRequest = { surface: string; unit: RegnumUnit | null; opener: HTMLElement | null };
 
-const snapshot = catalogData;
+type Snapshot = typeof catalogData;
 const configuredBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
 const appBasePath = configuredBasePath ? `/${configuredBasePath.replace(/^\/+|\/+$/g, '')}` : '';
 const asset = (path: string) => `${appBasePath}${path}`;
@@ -154,7 +154,7 @@ function UnitDetail({ selection, language, mobile, covered, onClose, onPlan, onL
   return mobile ? <div className="rpc-detail-layer" aria-hidden={covered || undefined} inert={covered ? true : undefined}><button type="button" className="rpc-detail-layer__backdrop" tabIndex={-1} onClick={onClose} aria-label={t.closeDetail} />{content}</div> : content;
 }
 
-function Matrix({ units, matchedIds, rankById, language, selection, onSelection }: { units: RegnumUnit[]; matchedIds: Set<string>; rankById: ReadonlyMap<string, number>; language: Language; selection: Selection | null; onSelection: (selection: Selection | null) => void }) {
+function Matrix({ snapshot, units, matchedIds, rankById, language, selection, onSelection }: { snapshot: Snapshot; units: RegnumUnit[]; matchedIds: Set<string>; rankById: ReadonlyMap<string, number>; language: Language; selection: Selection | null; onSelection: (selection: Selection | null) => void }) {
   const t = copy[language]; const scrollRef = useRef<HTMLDivElement>(null); const [edges, setEdges] = useState({ left: true, right: false }); const byId = useMemo(() => new Map(units.map((unit) => [unit.id, unit])), [units]);
   const updateEdges = useCallback(() => { const node = scrollRef.current; if (!node) return; setEdges({ left: node.scrollLeft <= 2, right: node.scrollLeft + node.clientWidth >= node.scrollWidth - 2 }); }, []);
   useEffect(() => { const node = scrollRef.current; if (!node) return; updateEdges(); const observer = new ResizeObserver(updateEdges); observer.observe(node); node.addEventListener('scroll', updateEdges, { passive: true }); return () => { observer.disconnect(); node.removeEventListener('scroll', updateEdges); }; }, [updateEdges]);
@@ -196,13 +196,13 @@ function Matrix({ units, matchedIds, rankById, language, selection, onSelection 
   </div>;
 }
 
-export function RegnumCatalog({ initialLanguage }: { initialLanguage: Language }) {
+export function RegnumCatalog({ snapshot, initialLanguage }: { snapshot: Snapshot; initialLanguage: Language }) {
   const [language, setLanguage] = useLanguage(initialLanguage); const mobile = useMobile(); const t = copy[language];
   const [mode, setMode] = useState<Mode>('cards'); const [sort, setSort] = useState<Sort>('source'); const [filters, setFilters] = useState<Filters>(defaultFilters); const [visible, setVisible] = useState(6); const [selection, setSelection] = useState<Selection | null>(null); const [plan, setPlan] = useState<Selection | null>(null); const [lead, setLead] = useState<LeadRequest | null>(null); const modeRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const closeLead = useCallback(() => setLead(null), []); const closePlan = useCallback(() => setPlan(null), []); const closeSelection = useCallback(() => setSelection(null), []);
   useEffect(() => { document.body.classList.add('rpc-active'); return () => document.body.classList.remove('rpc-active'); }, []);
 
-  const unique = useCallback((field: 'rooms' | 'floor' | 'queue' | 'section' | 'completion' | 'status') => [...new Set(snapshot.units.map((unit) => String(unit[field])))].sort((left, right) => Number(left) - Number(right)), []);
+  const unique = useCallback((field: 'rooms' | 'floor' | 'queue' | 'section' | 'completion' | 'status') => [...new Set(snapshot.units.map((unit) => String(unit[field])))].sort((left, right) => Number(left) - Number(right)), [snapshot.units]);
   const filtered = useMemo(() => snapshot.units.filter((unit) => {
     const from = Number(filters.areaFrom); const to = Number(filters.areaTo);
     return (filters.rooms === 'all' || String(unit.rooms) === filters.rooms)
@@ -212,7 +212,7 @@ export function RegnumCatalog({ initialLanguage }: { initialLanguage: Language }
       && (filters.section === 'all' || String(unit.section) === filters.section)
       && (filters.completion === 'all' || unit.completion === filters.completion)
       && (filters.status === 'all' || unit.status === filters.status);
-  }), [filters]);
+  }), [filters, snapshot.units]);
   const sorted = useMemo(() => [...filtered].sort((left, right) => {
     const comparators: Record<Sort, number> = {
       source: left.sourceOrder - right.sourceOrder, priceAsc: left.priceRank - right.priceRank, priceDesc: right.priceRank - left.priceRank,
@@ -275,7 +275,7 @@ export function RegnumCatalog({ initialLanguage }: { initialLanguage: Language }
             </article>)}</div>
             <div className="rpc-showing"><span>{t.showing} {Math.min(visible, sorted.length)} {t.of} {sorted.length}</span>{visible < sorted.length ? <button type="button" onClick={() => setVisible(12)}>{t.showMore}<b>↓</b></button> : null}</div>
           </> : <div className={`rpc-matrix-shell ${selection ? 'has-detail' : ''}`}>
-            <Matrix units={snapshot.units as RegnumUnit[]} matchedIds={matchedIds} rankById={rankById} language={language} selection={selection} onSelection={setSelection} />
+            <Matrix snapshot={snapshot} units={snapshot.units as RegnumUnit[]} matchedIds={matchedIds} rankById={rankById} language={language} selection={selection} onSelection={setSelection} />
             {selection && !mobile ? <UnitDetail selection={selection} language={language} mobile={false} covered={Boolean(plan || lead)} onClose={closeSelection} onPlan={openPlan} onLead={(unit, opener) => openLead('catalog:matrix', unit, opener)} /> : null}
           </div>}
         </div>

@@ -50,6 +50,12 @@ const publicAssetChecks = [
   { path: '/sun/sun-official-booklet.pdf', contentType: 'application/pdf', range: true },
   { path: '/sun/video/hero-mobile.mp4', contentType: 'video/mp4', range: true },
 ];
+const forbiddenOfficialWebsiteDomains = [
+  'nrg-bi.uz',
+  'mbc.uz',
+  'human2human.uz',
+  'kayan.uz',
+];
 
 const rawBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
 const rawAssetPrefix = process.env.NEXT_PUBLIC_ASSET_PREFIX ?? rawBasePath;
@@ -243,6 +249,13 @@ function assertNoFilesystemLeaks(value, context) {
   assert.ok(!/[A-Za-z]:\\/.test(value), `${context} leaks an absolute Windows filesystem path`);
 }
 
+function assertNoOfficialWebsiteUrls(value, context) {
+  const normalized = value.toLowerCase();
+  for (const domain of forbiddenOfficialWebsiteDomains) {
+    assert.ok(!normalized.includes(domain), `${context} serializes an official developer website URL (${domain})`);
+  }
+}
+
 function assertRootRelativeAttributes(html, context) {
   for (const tag of html.matchAll(/<[a-z][^>]*>/gi)) {
     const attrs = attributes(tag[0]);
@@ -399,6 +412,7 @@ try {
   const assetPaths = new Set();
   await mapWithConcurrency(projectRoutes, 6, async (path) => {
     const { body } = await fetchText(localOrigin, path);
+    assertNoOfficialWebsiteUrls(body, `${path} HTML`);
     assertRootRelativeAttributes(body, path);
     assertProjectMetadata(body, path);
     for (const match of body.matchAll(/<(?:link|script)\b[^>]*>/gi)) {
@@ -421,6 +435,7 @@ try {
     assert.ok(response.headers.get('content-type')?.startsWith('text/x-component'), `${path} RSC navigation has the wrong Content-Type`);
     assert.ok(body.length > 0, `${path} RSC navigation returned an empty body`);
     assertNoFilesystemLeaks(body, `${path} RSC body`);
+    assertNoOfficialWebsiteUrls(body, `${path} RSC body`);
   });
 
   assert.ok(assetPaths.size > 0, 'No built asset URL was found in project HTML');
@@ -429,6 +444,12 @@ try {
     const assetFile = resolve(standaloneClientRoot, `.${assetPath}`);
     assert.ok(assetFile.startsWith(`${standaloneClientRoot}/`), `Built asset escapes the standalone client directory: ${assetPath}`);
     assert.ok(existsSync(assetFile), `Built asset is missing from standalone output: ${assetPath}`);
+  }
+
+  const clientJavaScriptFiles = findFiles(standaloneClientRoot, (absolutePath) => absolutePath.endsWith('.js'));
+  assert.ok(clientJavaScriptFiles.length > 0, 'Standalone output contains no client JavaScript to audit');
+  for (const assetFile of clientJavaScriptFiles) {
+    assertNoOfficialWebsiteUrls(readFileSync(assetFile, 'utf8'), `${manifestPath(standaloneClientRoot, assetFile)} client JavaScript`);
   }
 
   // vinext 1.0.0-beta.8 does not expose its generated App Router asset-prefix
@@ -483,7 +504,7 @@ try {
     await fetchText(localOrigin, '/tencrop/sitemap.xml', 404);
   }
 
-  console.log(`Deployment-path smoke passed on Node ${process.versions.node}: ${projectRoutes.length} localized HTML pages plus ${projectRoutes.length} RSC navigations, 2 shared pages, ${assetPaths.size} referenced build assets below ${rawAssetPrefix}, ${runtimeManifest.publicAssetAliases.entries.length} CSS public-asset symlinks satisfying the nginx alias contract, ${publicAssetChecks.length} public image/floor/PDF/video assets, 414 API items, sitemap and robots. Page base: ${rawBasePath || '/'}; reverse-proxy static alias required: ${staticProxyRequired}.`);
+  console.log(`Deployment-path smoke passed on Node ${process.versions.node}: ${projectRoutes.length} localized HTML pages plus ${projectRoutes.length} RSC navigations without official developer URLs, 2 shared pages, ${assetPaths.size} referenced build assets below ${rawAssetPrefix}, ${clientJavaScriptFiles.length} client JavaScript assets audited, ${runtimeManifest.publicAssetAliases.entries.length} CSS public-asset symlinks satisfying the nginx alias contract, ${publicAssetChecks.length} public image/floor/PDF/video assets, 414 API items, sitemap and robots. Page base: ${rawBasePath || '/'}; reverse-proxy static alias required: ${staticProxyRequired}.`);
 } catch (error) {
   if (logs()) console.error(`vinext output:\n${logs()}`);
   throw error;

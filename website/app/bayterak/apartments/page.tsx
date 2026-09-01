@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import snapshot from '@/data/bayterak-catalog.json';
+import { publicClientPayload } from '@/app/public-client-payload';
 import { BayterakCatalog } from './bayterak-catalog';
 import './bayterak-catalog.css';
 
@@ -42,7 +43,7 @@ function canonicalPath(language: Language) {
 
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
   const language = getLanguage((await searchParams)?.lang);
-  const data = snapshot as Parameters<typeof BayterakCatalog>[0]['snapshot'];
+  const data = publicClientPayload(snapshot) as Parameters<typeof BayterakCatalog>[0]['snapshot'];
   const count = data.officialTotalAtCapture || data.units.length;
   const current = meta[language];
   const canonical = canonicalPath(language);
@@ -81,7 +82,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 
 export default async function Page({ searchParams }: PageProps) {
   const language = getLanguage((await searchParams)?.lang);
-  const data = snapshot as Parameters<typeof BayterakCatalog>[0]['snapshot'];
+  const data = publicClientPayload(snapshot) as Parameters<typeof BayterakCatalog>[0]['snapshot'];
   const count = data.officialTotalAtCapture || data.units.length;
   const current = meta[language];
   const canonical = canonicalPath(language);

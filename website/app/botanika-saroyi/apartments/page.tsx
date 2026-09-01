@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import snapshot from '@/data/botanika-saroyi-catalog.json';
+import { publicClientPayload } from '@/app/public-client-payload';
 import { BotanikaCatalog } from './botanika-catalog';
 import './botanika-catalog.css';
 
@@ -65,7 +66,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 
 export default async function Page({ searchParams }: PageProps) {
   const language = getLanguage((await searchParams)?.lang);
-  const data = snapshot as Parameters<typeof BotanikaCatalog>[0]['snapshot'];
+  const data = publicClientPayload(snapshot) as Parameters<typeof BotanikaCatalog>[0]['snapshot'];
   const current = meta[language];
   const canonical = `${appBasePath}/botanika-saroyi/apartments?lang=${language}`;
   const roomName = (rooms: number) => language === 'ru'

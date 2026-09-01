@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import catalogSnapshot from '@/data/flagman-catalog.json';
+import { publicClientPayload } from '@/app/public-client-payload';
 import { FlagmanCatalogPage, type FlagmanCatalogSnapshot } from './flagman-catalog-page';
 import './flagman-catalog.css';
 
-const snapshot = catalogSnapshot as FlagmanCatalogSnapshot;
+const snapshot = publicClientPayload(catalogSnapshot) as FlagmanCatalogSnapshot;
 const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
 type Language = 'ru' | 'uz' | 'en';
 type PageProps = { searchParams?: Promise<{ lang?: string }> };

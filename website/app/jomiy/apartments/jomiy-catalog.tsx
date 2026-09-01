@@ -12,7 +12,6 @@ import {
   useRef,
   useState,
 } from "react";
-import catalogData from "@/data/jomiy-catalog.json";
 import { LeadModal, rememberLastViewedApartment } from "@/app/lead-modal";
 import { jomiyLeadSubmitUrl } from "../jomiy-lead";
 import {
@@ -148,16 +147,6 @@ type Selection = { unit: Unit; opener: HTMLButtonElement };
 type PlanState = Selection & { view: "page1" | "page2" };
 type LeadRequest = { unit: Unit | null; surface: string };
 
-const snapshot = catalogData as Snapshot;
-const promotionDeadlines = [
-  ...new Set(
-    snapshot.units
-      .map((unit) => unit.promotion?.deadlineUtc)
-      .filter((value): value is string => Boolean(value)),
-  ),
-]
-  .map(Date.parse)
-  .filter(Number.isFinite);
 const configuredBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? "";
 const appBasePath = configuredBasePath
   ? `/${configuredBasePath.replace(/^\/+|\/+$/g, "")}`
@@ -724,7 +713,7 @@ function compare(a: Unit, b: Unit, sort: Sort, evaluationTime: number) {
   return bPricePerM2 - aPricePerM2 || tie;
 }
 
-function usePromotionClock(initialEvaluationTime: number) {
+function usePromotionClock(initialEvaluationTime: number, promotionDeadlines: number[]) {
   const [evaluationTime, setEvaluationTime] = useState(initialEvaluationTime);
   useEffect(() => {
     const immediate = window.setTimeout(() => setEvaluationTime(Date.now()), 0);
@@ -750,7 +739,7 @@ function usePromotionClock(initialEvaluationTime: number) {
       Math.max(0, delay),
     );
     return () => window.clearTimeout(deadlineTimer);
-  }, [evaluationTime]);
+  }, [evaluationTime, promotionDeadlines]);
   return evaluationTime;
 }
 
@@ -1400,6 +1389,7 @@ function UnitDetail({
 }
 
 function MatrixGroup({
+  snapshot,
   group,
   units,
   rank,
@@ -1409,6 +1399,7 @@ function MatrixGroup({
   selected,
   onSelect,
 }: {
+  snapshot: Snapshot;
   group: Group;
   units: Unit[];
   rank: ReadonlyMap<string, number>;
@@ -1647,12 +1638,14 @@ function MatrixEntrance({
 }
 
 function FiltersPanel({
+  snapshot,
   filters,
   language,
   priceRange,
   onChange,
   onReset,
 }: {
+  snapshot: Snapshot;
   filters: Filters;
   language: Language;
   priceRange: { min: number; max: number };
@@ -1854,9 +1847,11 @@ function FiltersPanel({
 }
 
 export function JomiyCatalog({
+  snapshot,
   initialLanguage,
   initialEvaluationTime,
 }: {
+  snapshot: Snapshot;
   initialLanguage: Language;
   initialEvaluationTime: number;
 }) {
@@ -1870,13 +1865,20 @@ export function JomiyCatalog({
   const [leadRequest, setLeadRequest] = useState<LeadRequest | null>(null);
   const mobile = useMobileDrawer();
   const t = copy[language];
-  const evaluationTime = usePromotionClock(initialEvaluationTime);
+  const promotionDeadlines = useMemo(() => [
+    ...new Set(
+      snapshot.units
+        .map((unit) => unit.promotion?.deadlineUtc)
+        .filter((value): value is string => Boolean(value)),
+    ),
+  ].map(Date.parse).filter(Number.isFinite), [snapshot.units]);
+  const evaluationTime = usePromotionClock(initialEvaluationTime, promotionDeadlines);
   const currentPriceRange = useMemo(() => {
     const prices = snapshot.units.map((unit) =>
       displayPriceAt(unit, evaluationTime),
     );
     return { min: Math.min(...prices), max: Math.max(...prices) };
-  }, [evaluationTime]);
+  }, [evaluationTime, snapshot.units]);
   const closePlan = useCallback(() => setPlanState(null), []);
   const closeDetail = useCallback(() => {
     const opener = selection?.opener;
@@ -1923,7 +1925,7 @@ export function JomiyCatalog({
           );
         })
         .sort((a, b) => compare(a, b, sort, evaluationTime)),
-    [evaluationTime, filters, sort],
+    [evaluationTime, filters, snapshot.units, sort],
   );
   const matrixRank = useMemo(
     () => new Map(filtered.map((unit, index) => [unit.id, index])),
@@ -2112,6 +2114,7 @@ export function JomiyCatalog({
         </section>
         <section className="jmc-workspace">
           <FiltersPanel
+            snapshot={snapshot}
             filters={filters}
             language={language}
             priceRange={currentPriceRange}
@@ -2241,6 +2244,7 @@ export function JomiyCatalog({
                     {snapshot.filterSummary.groups.map((group) => (
                       <MatrixGroup
                         key={group.id}
+                        snapshot={snapshot}
                         group={group}
                         units={filtered}
                         rank={matrixRank}

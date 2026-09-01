@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import snapshot from '@/data/jomiy-catalog.json';
+import { publicClientPayload } from '@/app/public-client-payload';
 import { JomiyCatalog } from './jomiy-catalog';
 import './jomiy-catalog.css';
 import '../jomiy-shared.css';
@@ -98,6 +99,6 @@ export default async function Page({ searchParams }: PageProps) {
 
   return <>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, '\\u003c') }} />
-    <JomiyCatalog initialLanguage={language} initialEvaluationTime={initialEvaluationTime} />
+    <JomiyCatalog snapshot={publicClientPayload(snapshot) as unknown as Parameters<typeof JomiyCatalog>[0]['snapshot']} initialLanguage={language} initialEvaluationTime={initialEvaluationTime} />
   </>;
 }

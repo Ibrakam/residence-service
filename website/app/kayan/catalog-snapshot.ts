@@ -24,5 +24,7 @@ export function getCatalogBundle(slug: KayanProjectSlug) {
     ? merosSnapshot
     : snapshot.projects.find((item) => item.project.slug === slug);
   if (!bundle) throw new Error(`Catalog project not found: ${slug}`);
-  return bundle;
+  // The raw snapshots may carry capture-only top-level fields. Only the
+  // declared UI contract is allowed to cross a React client boundary.
+  return { project: bundle.project, units: bundle.units, layouts: bundle.layouts };
 }

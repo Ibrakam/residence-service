@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import snapshot from '@/data/yangibaxt-catalog.json';
+import { publicClientPayload } from '@/app/public-client-payload';
 import { YangiBaxtCatalog } from './yangibaxt-catalog';
 import './yangibaxt-catalog.css';
 import '../yangibaxt-shared.css';
@@ -226,7 +227,7 @@ export default async function Page({ searchParams }: PageProps) {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, '\\u003c') }} />
-      <YangiBaxtCatalog initialLanguage={language} />
+      <YangiBaxtCatalog snapshot={publicClientPayload(snapshot) as unknown as Parameters<typeof YangiBaxtCatalog>[0]['snapshot']} initialLanguage={language} />
     </>
   );
 }

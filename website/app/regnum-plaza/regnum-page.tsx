@@ -10,7 +10,6 @@ import {
   useRef,
   useState,
 } from 'react';
-import catalog from '@/data/regnum-plaza-client.json';
 import { LeadModal } from '@/app/lead-modal';
 import { regnumLeadContext, regnumLeadSubmitUrl, rememberRegnumUnit, type RegnumUnit } from './regnum-lead';
 import { lockRegnumBody, type RegnumLanguage as Language } from './regnum-ui';
@@ -219,7 +218,7 @@ function Lightbox({ state, language, onClose, onChange }: { state: LightboxState
   </div>;
 }
 
-export function RegnumPlazaPage({ initialLanguage }: { initialLanguage: Language }) {
+export function RegnumPlazaPage({ initialLanguage, previewUnits }: { initialLanguage: Language; previewUnits: RegnumUnit[] }) {
   const [language, setLanguage] = useLanguage(initialLanguage);
   const [menuOpen, setMenuOpen] = useState(false);
   const [lightbox, setLightbox] = useState<LightboxState | null>(null);
@@ -227,7 +226,6 @@ export function RegnumPlazaPage({ initialLanguage }: { initialLanguage: Language
   const menuRef = useRef<HTMLElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const t = copy[language];
-  const previewUnits = [catalog.units[0], catalog.units[3], catalog.units[6], catalog.units[9]] as RegnumUnit[];
   const closeLead = useCallback(() => setLead(null), []);
   const closeLightbox = useCallback(() => setLightbox(null), []);
   const changeLightbox = useCallback((index: number) => setLightbox((current) => current ? { ...current, index } : current), []);

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import snapshot from '@/data/voha-catalog.json';
+import { publicClientPayload } from '@/app/public-client-payload';
 import { VohaCatalog } from './voha-catalog';
 import '../voha.css';
 import './voha-catalog.css';
@@ -24,7 +25,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 export default async function Page({ searchParams }: PageProps) {
   const params = await searchParams;
   const language: Language = params?.lang === 'uz' || params?.lang === 'en' ? params.lang : 'ru';
-  const data = snapshot as Parameters<typeof VohaCatalog>[0]['snapshot'];
+  const data = publicClientPayload(snapshot) as Parameters<typeof VohaCatalog>[0]['snapshot'];
   const itemList = {
     '@context': 'https://schema.org', '@type': 'ItemList', name: 'Квартиры Voha', numberOfItems: data.units.length, dateModified: data.capturedAt,
     itemListElement: data.units.slice(0, 12).map((unit, index) => ({ '@type': 'ListItem', position: index + 1, item: { '@type': 'Apartment', name: `Квартира №${unit.number}, ${unit.rooms} комн.`, floorSize: { '@type': 'QuantitativeValue', value: unit.area, unitCode: 'MTK' }, numberOfRooms: unit.rooms } })),

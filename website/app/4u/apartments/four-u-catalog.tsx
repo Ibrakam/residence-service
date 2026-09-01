@@ -4,12 +4,13 @@
 
 import { type KeyboardEvent as ReactKeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { LeadModal } from '@/app/lead-modal';
-import snapshotData from '@/data/4u-catalog.json';
+import type snapshotData from '@/data/4u-catalog.json';
 
 type Language = 'ru' | 'uz' | 'en';
 type Mode = 'cards' | 'chess';
 type Sort = 'price-asc' | 'price-desc' | 'area-asc' | 'area-desc' | 'floor-asc';
 type Unit = (typeof snapshotData.units)[number];
+type Snapshot = typeof snapshotData;
 
 const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
 const languages: Language[] = ['ru', 'uz', 'en'];
@@ -51,11 +52,11 @@ function PlanLightbox({ unit, language, onClose, onConsult }: { unit: Unit; lang
   return <div className="fouru-planbox" role="dialog" aria-modal="true" aria-label={`${t.unit} №${unit.number}`} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}><button ref={closeRef} className="fouru-planbox__close" type="button" aria-label={t.close} onClick={onClose}>×</button><div className="fouru-planbox__visual"><img src={plan(unit)} alt={`${t.plan} №${unit.number}`} /><span>{t.plan}</span></div><aside><span>{phaseLabel(unit.phase)}</span><h2>{t.unit} №{unit.number}</h2><p>{unit.rooms} · {unit.area} m² · {unit.floor}/{unit.maxFloor} {t.floor.toLowerCase()}</p><strong>{formatPrice(unit.price, language)}</strong><small>{formatPrice(Math.round(unit.price / unit.area), language)} {t.perM2}</small><button className="fouru-catalog-button is-primary" type="button" onClick={onConsult}>{t.consult}<span>↗</span></button></aside></div>;
 }
 
-export function FourUCatalog({ initialLanguage = 'ru' }: { initialLanguage?: Language }) {
+export function FourUCatalog({ snapshot: snapshotData, initialLanguage = 'ru' }: { snapshot: Snapshot; initialLanguage?: Language }) {
   const [language, setLanguage] = useLanguage(initialLanguage); const t = copy[language];
   const [mode, setMode] = useState<Mode>('cards'); const [phase, setPhase] = useState('all'); const [rooms, setRooms] = useState<number | 'all'>('all'); const [minArea, setMinArea] = useState(33); const [maxArea, setMaxArea] = useState(108); const [minPrice, setMinPrice] = useState(800); const [maxPrice, setMaxPrice] = useState(2500); const [completion, setCompletion] = useState('all'); const [sort, setSort] = useState<Sort>('price-asc'); const [visible, setVisible] = useState(12); const [selected, setSelected] = useState<Unit | null>(snapshotData.units[0]); const [planbox, setPlanbox] = useState<Unit | null>(null); const [lead, setLead] = useState(false); const tableRef = useRef<HTMLDivElement>(null);
-  const phases = useMemo(() => [...new Set(snapshotData.units.map((unit) => unit.phase))], []); const dates = useMemo(() => [...new Set(snapshotData.units.map((unit) => unit.completion))], []);
-  const filtered = useMemo(() => snapshotData.units.filter((unit) => (phase === 'all' || unit.phase === phase) && (rooms === 'all' || unit.rooms === rooms) && unit.area >= minArea && unit.area <= maxArea && unit.price / 1_000_000 >= minPrice && unit.price / 1_000_000 <= maxPrice && (completion === 'all' || unit.completion === completion)).sort((a, b) => sort === 'price-asc' ? a.price - b.price : sort === 'price-desc' ? b.price - a.price : sort === 'area-asc' ? a.area - b.area : sort === 'area-desc' ? b.area - a.area : a.floor - b.floor), [phase, rooms, minArea, maxArea, minPrice, maxPrice, completion, sort]);
+  const phases = useMemo(() => [...new Set(snapshotData.units.map((unit) => unit.phase))], [snapshotData.units]); const dates = useMemo(() => [...new Set(snapshotData.units.map((unit) => unit.completion))], [snapshotData.units]);
+  const filtered = useMemo(() => snapshotData.units.filter((unit) => (phase === 'all' || unit.phase === phase) && (rooms === 'all' || unit.rooms === rooms) && unit.area >= minArea && unit.area <= maxArea && unit.price / 1_000_000 >= minPrice && unit.price / 1_000_000 <= maxPrice && (completion === 'all' || unit.completion === completion)).sort((a, b) => sort === 'price-asc' ? a.price - b.price : sort === 'price-desc' ? b.price - a.price : sort === 'area-asc' ? a.area - b.area : sort === 'area-desc' ? b.area - a.area : a.floor - b.floor), [snapshotData.units, phase, rooms, minArea, maxArea, minPrice, maxPrice, completion, sort]);
   useEffect(() => { const frame = requestAnimationFrame(() => setVisible(12)); return () => cancelAnimationFrame(frame); }, [phase, rooms, minArea, maxArea, minPrice, maxPrice, completion, sort]);
   const effectiveSelected = selected && filtered.some((unit) => unit.id === selected.id) ? selected : filtered[0] || null;
   const floors = useMemo(() => [...new Set(filtered.map((unit) => unit.floor))].sort((a, b) => b - a), [filtered]); const columns = useMemo(() => [...new Set(filtered.map((unit) => `${unit.phase}|${unit.entrance}`))], [filtered]);

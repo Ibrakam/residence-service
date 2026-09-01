@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import snapshot from '@/data/4u-catalog.json';
+import { publicClientPayload } from '@/app/public-client-payload';
 import { FourUCatalog } from './four-u-catalog';
 import '../four-u.css';
 import './four-u-catalog.css';
@@ -32,5 +33,5 @@ export default async function Page({ searchParams }: PageProps) {
     dateModified: snapshot.capturedAt,
     itemListElement: snapshot.units.slice(0, 12).map((unit, index) => ({ '@type': 'ListItem', position: index + 1, item: { '@type': 'Apartment', name: `Квартира №${unit.number}, ${unit.rooms} комн.`, floorSize: { '@type': 'QuantitativeValue', value: unit.area, unitCode: 'MTK' }, numberOfRooms: unit.rooms } })),
   };
-  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }} /><FourUCatalog initialLanguage={language} /></>;
+  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }} /><FourUCatalog snapshot={publicClientPayload(snapshot)} initialLanguage={language} /></>;
 }

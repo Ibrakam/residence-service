@@ -4,6 +4,7 @@ import {
   constants as fsConstants,
   copyFileSync,
   existsSync,
+  lstatSync,
   linkSync,
   mkdirSync,
   mkdtempSync,
@@ -15,7 +16,7 @@ import {
   symlinkSync,
 } from 'node:fs';
 import { createServer } from 'node:net';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
@@ -64,7 +65,95 @@ assert.ok(existsSync(sourceStandaloneEntry), 'Standalone server is missing; run 
 assert.ok(existsSync(sourceBuildEntry), 'Standalone server bundle is incomplete');
 assert.ok(existsSync(resolve(sourceStandaloneRoot, 'node_modules/react/package.json')), 'Standalone React runtime closure is missing');
 const runtimeManifest = JSON.parse(readFileSync(resolve(sourceStandaloneRoot, 'STANDALONE_RUNTIME.json'), 'utf8'));
+assert.equal(runtimeManifest.schemaVersion, 2, 'Standalone runtime manifest schema changed without review');
 assert.deepEqual(runtimeManifest.packages?.map(({ name, version }) => `${name}@${version}`), ['react@19.2.8'], 'Standalone runtime closure changed without review');
+
+function manifestPath(root, absolutePath) {
+  return relative(root, absolutePath).split(sep).join('/');
+}
+
+function assertInside(parent, child, context) {
+  const pathFromParent = relative(parent, child);
+  assert.ok(pathFromParent && pathFromParent !== '..' && !pathFromParent.startsWith(`..${sep}`), `${context} escapes ${parent}`);
+}
+
+function findFiles(directory, predicate, result = []) {
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const absolutePath = resolve(directory, entry.name);
+    if (entry.isDirectory()) findFiles(absolutePath, predicate, result);
+    else if (entry.isFile() && predicate(absolutePath)) result.push(absolutePath);
+  }
+  return result;
+}
+
+function referencedCssPublicAssets(clientRoot, staticRoot, urlPrefix) {
+  const references = new Map();
+  for (const stylesheet of findFiles(resolve(staticRoot, 'css'), (absolutePath) => absolutePath.endsWith('.css')).sort()) {
+    const css = readFileSync(stylesheet, 'utf8').replaceAll(/\/\*[\s\S]*?\*\//g, '');
+    for (const match of css.matchAll(/url\(\s*(?:(['"])(.*?)\1|([^)]*?))\s*\)/g)) {
+      const value = (match[2] ?? match[3] ?? '').trim();
+      const rawPath = value.split(/[?#]/, 1)[0];
+      if (!rawPath.startsWith(`${urlPrefix}/`)) continue;
+      let decodedPath;
+      assert.doesNotThrow(() => { decodedPath = decodeURIComponent(rawPath); }, `CSS asset URL is not valid UTF-8 in ${stylesheet}: ${value}`);
+      assert.ok(decodedPath.startsWith(`${urlPrefix}/`), `CSS asset URL changes prefix after decoding in ${stylesheet}: ${value}`);
+      assert.ok(!decodedPath.includes('\\') && !/[\0-\x1f\x7f]/.test(decodedPath), `CSS asset URL contains unsafe characters in ${stylesheet}: ${value}`);
+      const assetPath = decodedPath.slice(urlPrefix.length + 1);
+      assert.ok(assetPath.split('/').every((segment) => segment && segment !== '.' && segment !== '..'), `CSS asset URL contains an unsafe path segment in ${stylesheet}: ${value}`);
+      const sourcePath = resolve(clientRoot, assetPath);
+      assertInside(clientRoot, sourcePath, `CSS public asset source ${rawPath}`);
+      // URLs for generated chunks already resident below _next/static are not
+      // public-file aliases. Public assets also exist at dist/client/<path>.
+      if (!existsSync(sourcePath)) continue;
+      const reference = references.get(rawPath) ?? { assetPath, stylesheets: new Set() };
+      reference.stylesheets.add(manifestPath(clientRoot, stylesheet));
+      references.set(rawPath, reference);
+    }
+  }
+  return references;
+}
+
+function assertNginxStaticAliasContract(artifactRoot, manifest) {
+  const clientRoot = resolve(artifactRoot, 'dist/client');
+  const aliasManifest = manifest.publicAssetAliases;
+  assert.ok(aliasManifest && typeof aliasManifest === 'object', 'Standalone manifest is missing publicAssetAliases');
+  assert.equal(aliasManifest.urlPrefix, `${rawAssetPrefix}/_next/static`, 'CSS alias URL prefix does not match the production asset prefix');
+
+  const staticRoot = resolve(artifactRoot, aliasManifest.staticRoot);
+  assertInside(clientRoot, staticRoot, 'Nginx static alias root');
+  assert.equal(aliasManifest.staticRoot, manifestPath(artifactRoot, staticRoot), 'Nginx static alias root is not canonical');
+  assert.equal(aliasManifest.urlPrefix, `/${manifestPath(clientRoot, staticRoot)}`, 'Nginx URL prefix and filesystem alias root disagree');
+  assert.ok(existsSync(resolve(staticRoot, 'css')), 'Nginx static alias root is missing built CSS');
+
+  const references = referencedCssPublicAssets(clientRoot, staticRoot, aliasManifest.urlPrefix);
+  assert.ok(references.size > 0, 'Built CSS no longer exercises the public-asset alias contract');
+  assert.deepEqual(aliasManifest.entries.map(({ url }) => url), [...references.keys()].sort(), 'CSS public-asset alias manifest is incomplete or stale');
+
+  for (const entry of aliasManifest.entries) {
+    const reference = references.get(entry.url);
+    assert.ok(reference, `Manifest contains an unreferenced CSS public asset: ${entry.url}`);
+    const urlAssetPath = decodeURIComponent(entry.url.slice(aliasManifest.urlPrefix.length + 1));
+    assert.equal(urlAssetPath, reference.assetPath, `Manifest URL path changed for ${entry.url}`);
+
+    // This is the exact filesystem mapping used by nginx:
+    // alias <staticRoot>/ for location <urlPrefix>/.
+    const aliasPath = resolve(staticRoot, urlAssetPath);
+    const sourcePath = resolve(clientRoot, urlAssetPath);
+    assertInside(staticRoot, aliasPath, `Nginx alias destination ${entry.url}`);
+    assertInside(clientRoot, sourcePath, `Nginx alias source ${entry.url}`);
+    assert.equal(entry.alias, manifestPath(clientRoot, aliasPath), `Manifest alias path changed for ${entry.url}`);
+    assert.equal(entry.source, manifestPath(clientRoot, sourcePath), `Manifest source path changed for ${entry.url}`);
+    assert.deepEqual(entry.stylesheets, [...reference.stylesheets].sort(), `Manifest stylesheet references changed for ${entry.url}`);
+
+    assert.ok(lstatSync(aliasPath).isSymbolicLink(), `Nginx alias target is not a symlink: ${aliasPath}`);
+    const linkTarget = readlinkSync(aliasPath);
+    assert.ok(!isAbsolute(linkTarget), `Nginx alias target must remain relative: ${aliasPath} -> ${linkTarget}`);
+    assert.equal(entry.target, linkTarget.split(sep).join('/'), `Manifest symlink target changed for ${entry.url}`);
+    const canonicalSource = realpathSync(sourcePath);
+    assertInside(clientRoot, canonicalSource, `CSS public asset source ${entry.url}`);
+    assert.equal(realpathSync(aliasPath), canonicalSource, `Nginx alias does not resolve to its public source: ${entry.url}`);
+  }
+}
 
 function cloneTreeWithLinks(source, destination) {
   mkdirSync(destination, { recursive: true });
@@ -94,6 +183,7 @@ function cloneTreeWithLinks(source, destination) {
 const isolationRoot = realpathSync(mkdtempSync(join(tmpdir(), 'residence-standalone-smoke-')));
 const standaloneRoot = resolve(isolationRoot, 'standalone');
 cloneTreeWithLinks(sourceStandaloneRoot, standaloneRoot);
+assertNginxStaticAliasContract(standaloneRoot, runtimeManifest);
 for (let ancestor = dirname(standaloneRoot); ; ancestor = dirname(ancestor)) {
   assert.ok(!existsSync(resolve(ancestor, 'node_modules')), `Isolation ancestor unexpectedly provides node_modules: ${ancestor}`);
   if (dirname(ancestor) === ancestor) break;
@@ -393,7 +483,7 @@ try {
     await fetchText(localOrigin, '/tencrop/sitemap.xml', 404);
   }
 
-  console.log(`Deployment-path smoke passed on Node ${process.versions.node}: ${projectRoutes.length} localized HTML pages plus ${projectRoutes.length} RSC navigations, 2 shared pages, ${assetPaths.size} referenced build assets below ${rawAssetPrefix}, ${publicAssetChecks.length} public image/floor/PDF/video assets, 414 API items, sitemap and robots. Page base: ${rawBasePath || '/'}; reverse-proxy static alias required: ${staticProxyRequired}.`);
+  console.log(`Deployment-path smoke passed on Node ${process.versions.node}: ${projectRoutes.length} localized HTML pages plus ${projectRoutes.length} RSC navigations, 2 shared pages, ${assetPaths.size} referenced build assets below ${rawAssetPrefix}, ${runtimeManifest.publicAssetAliases.entries.length} CSS public-asset symlinks satisfying the nginx alias contract, ${publicAssetChecks.length} public image/floor/PDF/video assets, 414 API items, sitemap and robots. Page base: ${rawBasePath || '/'}; reverse-proxy static alias required: ${staticProxyRequired}.`);
 } catch (error) {
   if (logs()) console.error(`vinext output:\n${logs()}`);
   throw error;

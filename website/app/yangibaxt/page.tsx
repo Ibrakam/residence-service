@@ -141,11 +141,6 @@ export default async function Page({ searchParams }: PageProps) {
           name,
           value,
         })),
-        sameAs: [
-          'https://nrg-bi.uz/uz-ru/landing/yangibaxt',
-          'https://nrg-bi.uz/uz/landing/yangibaxt',
-          'https://nrg-bi.uz/uz-ru/news/sdana-vtoraya-ochered-zhk-yangi-baxt',
-        ],
       },
       {
         '@type': 'BreadcrumbList',

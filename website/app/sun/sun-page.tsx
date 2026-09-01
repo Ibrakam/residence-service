@@ -125,7 +125,7 @@ const copy = {
     catalogFacts: [['51', 'доступная'], ['18 / 31 / 2', '1 / 2 / 3 комнаты'], ['34,61–83,90 м²', 'диапазон площади'], ['4 из 5', 'корпусов в live-каталоге']] as const,
     catalogNote: 'Корпус Б отсутствует в текущем публичном каталоге. Мы не создаём для него фиктивные позиции.',
     locationEyebrow: 'МИРАБАД · ТАШКЕНТ', locationTitle: 'Официальный адрес без лишней точности.', addressLabel: 'Адрес проекта', address: 'Ташкент, Мирабадский район, ул. Сайхун 56/2', map: 'Точка по ссылке девелопера', mapNote: 'Текстовый адрес и объект в картографической ссылке могут отображаться по-разному; используйте ссылку как опубликованный девелопером ориентир.',
-    contacts: 'Контакты', hours: 'Ежедневно, 09:00–20:00', source: 'Официальный сайт', locationLead: 'Назначить встречу',
+    contacts: 'Контакты', hours: 'Ежедневно, 09:00–20:00', locationLead: 'Назначить встречу',
     contactEyebrow: 'ДАЛЬШЕ — РАЗГОВОР', contactTitle: 'Подберём квартиру под ваш ритм.', contactText: 'Менеджер уточнит текущую доступность и ответит на вопросы. Заявка не является бронированием.',
     privacy: 'Обработка персональных данных', top: 'Наверх', disclaimer: 'Данные каталога — зафиксированный публичный срез. Проектные изображения — визуализации. Статусы строительства основаны на публикации девелопера от 15.08.2026.',
     lightbox: 'Просмотр официальных материалов', previous: 'Предыдущее изображение', next: 'Следующее изображение', imageOf: 'Изображение',
@@ -152,7 +152,7 @@ const copy = {
     catalogFacts: [['51', 'mavjud'], ['18 / 31 / 2', '1 / 2 / 3 xona'], ['34,61–83,90 m²', 'maydon oralig‘i'], ['5 tadan 4', 'live-katalogdagi bino']] as const,
     catalogNote: 'B binosi joriy ommaviy katalogda yo‘q. Biz unga sun’iy pozitsiyalar yaratmaymiz.',
     locationEyebrow: 'MIROBOD · TOSHKENT', locationTitle: 'Ortiqcha aniqliksiz rasmiy manzil.', addressLabel: 'Loyiha manzili', address: 'Toshkent, Mirobod tumani, Sayxun ko‘chasi 56/2', map: 'Developer havolasidagi nuqta', mapNote: 'Matnli manzil va xarita havolasidagi obyekt turlicha ko‘rinishi mumkin; havoladan developer e’lon qilgan mo‘ljal sifatida foydalaning.',
-    contacts: 'Kontaktlar', hours: 'Har kuni, 09:00–20:00', source: 'Rasmiy sayt', locationLead: 'Uchrashuv belgilash',
+    contacts: 'Kontaktlar', hours: 'Har kuni, 09:00–20:00', locationLead: 'Uchrashuv belgilash',
     contactEyebrow: 'KEYINGI QADAM — SUHBAT', contactTitle: 'Ritmingizga mos xonadon tanlaymiz.', contactText: 'Menejer joriy mavjudlikni aniqlaydi va savollarga javob beradi. Ariza bron hisoblanmaydi.',
     privacy: 'Shaxsiy ma’lumotlarni qayta ishlash', top: 'Yuqoriga', disclaimer: 'Katalog ma’lumotlari — qayd etilgan ommaviy kesim. Loyiha tasvirlari — vizualizatsiya. Qurilish holati developerning 15.08.2026 e’loniga asoslangan.',
     lightbox: 'Rasmiy materiallarni ko‘rish', previous: 'Oldingi tasvir', next: 'Keyingi tasvir', imageOf: 'Tasvir',
@@ -179,7 +179,7 @@ const copy = {
     catalogFacts: [['51', 'available'], ['18 / 31 / 2', '1 / 2 / 3 rooms'], ['34.61–83.90 m²', 'area range'], ['4 of 5', 'buildings in live catalogue']] as const,
     catalogNote: 'Building B is absent from the current public catalogue. We do not invent listings for it.',
     locationEyebrow: 'MIRABAD · TASHKENT', locationTitle: 'The official address, without invented precision.', addressLabel: 'Project address', address: '56/2 Saykhun Street, Mirabad District, Tashkent', map: 'Point in the developer’s link', mapNote: 'The written address and the object shown by the mapping link may differ; use the link only as the reference published by the developer.',
-    contacts: 'Contact', hours: 'Daily, 09:00–20:00', source: 'Official website', locationLead: 'Arrange a visit',
+    contacts: 'Contact', hours: 'Daily, 09:00–20:00', locationLead: 'Arrange a visit',
     contactEyebrow: 'NEXT — A CONVERSATION', contactTitle: 'We will find an apartment for your rhythm.', contactText: 'A manager will confirm current availability and answer your questions. A request is not a reservation.',
     privacy: 'Personal data processing', top: 'Back to top', disclaimer: 'Catalogue data is a frozen public snapshot. Project imagery is visualisation. Construction status follows the developer’s publication dated 15 August 2026.',
     lightbox: 'View official materials', previous: 'Previous image', next: 'Next image', imageOf: 'Image',
@@ -381,14 +381,14 @@ export function SunPage({ initialLanguage }: { initialLanguage: Language }) {
 
       <section id="location" className="sun-section sun-location">
         <header className="sun-section__header" data-reveal><span>{t.locationEyebrow}</span><h2>{t.locationTitle}</h2></header>
-        <div className="sun-location__grid"><article data-reveal><span>01 · {t.addressLabel}</span><h3>{t.address}</h3><p>{t.mapNote}</p><a href="https://yandex.uz/maps/?ll=69.301919%2C41.282957&z=16" target="_blank" rel="noopener noreferrer">{t.map}<b>↗</b></a></article><article data-reveal><span>02 · {t.contacts}</span><a className="sun-location__phone" href="tel:+998781505500">+998 78 150 55 00</a><a href="mailto:info@h2h.uz">info@h2h.uz</a><p>{t.hours}</p><a href="https://human2human.uz/" target="_blank" rel="noopener noreferrer">{t.source}<b>↗</b></a></article></div>
+        <div className="sun-location__grid"><article data-reveal><span>01 · {t.addressLabel}</span><h3>{t.address}</h3><p>{t.mapNote}</p><a href="https://yandex.uz/maps/?ll=69.301919%2C41.282957&z=16" target="_blank" rel="noopener noreferrer">{t.map}<b>↗</b></a></article><article data-reveal><span>02 · {t.contacts}</span><a className="sun-location__phone" href="tel:+998781505500">+998 78 150 55 00</a><a href="mailto:info@h2h.uz">info@h2h.uz</a><p>{t.hours}</p></article></div>
         <button className="sun-section__lead" type="button" data-lead-trigger onClick={(event) => openLead('landing:location', null, event.currentTarget)}>{t.locationLead}<span>↗</span></button>
       </section>
 
       <section className="sun-contact">
         <div data-reveal><span>{t.contactEyebrow}</span><h2>{t.contactTitle}</h2><p>{t.contactText}</p><button type="button" data-lead-trigger onClick={(event) => openLead('landing:footer', null, event.currentTarget)}>{t.consult}<b>↗</b></button></div>
         <a className="sun-contact__phone" href="tel:+998781505500">+998 78 150 55 00 <span>↗</span></a>
-        <footer><div><img src={sunAsset('/sun/logo.svg')} width="380" height="64" alt="SUN" /><img src={sunAsset('/sun/h2h-logo.svg')} width="217" height="42" alt="Human2Human" /></div><p>{t.disclaimer}</p><nav><a href={`${sunAsset('/privacy')}?project=sun&lang=${language}&from=landing`}>{t.privacy}</a><a href="https://human2human.uz/" target="_blank" rel="noopener noreferrer">{t.source}</a><a href="#top">{t.top}</a></nav></footer>
+        <footer><div><img src={sunAsset('/sun/logo.svg')} width="380" height="64" alt="SUN" /><img src={sunAsset('/sun/h2h-logo.svg')} width="217" height="42" alt="Human2Human" /></div><p>{t.disclaimer}</p><nav><a href={`${sunAsset('/privacy')}?project=sun&lang=${language}&from=landing`}>{t.privacy}</a><a href="#top">{t.top}</a></nav></footer>
       </section>
     </main>
 

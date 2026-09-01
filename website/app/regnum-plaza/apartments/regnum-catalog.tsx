@@ -16,7 +16,7 @@ import { LeadModal } from '@/app/lead-modal';
 import { regnumLeadContext, regnumLeadSubmitUrl, rememberRegnumUnit, type RegnumUnit } from '../regnum-lead';
 import { lockRegnumBody, priceOnRequest, regnumLocale, type RegnumLanguage as Language } from '../regnum-ui';
 
-type Mode = 'cards' | 'chess' | 'chess-plus';
+type Mode = 'cards' | 'chess';
 type Sort = 'source' | 'priceAsc' | 'priceDesc' | 'areaAsc' | 'areaDesc' | 'floorAsc' | 'floorDesc' | 'roomsAsc' | 'roomsDesc' | 'ppmAsc' | 'ppmDesc';
 type Filters = { rooms: string; areaFrom: string; areaTo: string; floor: string; queue: string; section: string; completion: string; status: string };
 type Selection = { unit: RegnumUnit; opener: HTMLButtonElement };
@@ -28,7 +28,7 @@ const appBasePath = configuredBasePath ? `/${configuredBasePath.replace(/^\/+|\/
 const asset = (path: string) => `${appBasePath}${path}`;
 const withLanguage = (path: string, language: Language) => `${appBasePath}${path}?lang=${language}`;
 const languages: Language[] = ['ru', 'uz', 'en'];
-const modes: Mode[] = ['cards', 'chess', 'chess-plus'];
+const modes: Mode[] = ['cards', 'chess'];
 const storageKey = 'regnum-plaza-language';
 const defaultFilters: Filters = { rooms: 'all', areaFrom: '', areaTo: '', floor: 'all', queue: 'all', section: 'all', completion: 'all', status: 'all' };
 
@@ -37,35 +37,35 @@ const copy = {
     skip: 'К результатам каталога', back: 'О проекте', nav: 'Навигация каталога Regnum Plaza', language: 'Язык', consult: 'Получить консультацию', call: 'Позвонить',
     eyebrow: 'COPPER APERTURES · СРЕЗ 31.08.2026', title: '12 последних квартир.', lead: 'Официальный срез содержит 12 записей со статусом AVAILABLE. Публичная цена скрыта источником и показывается только как «По запросу».', heroLead: 'Уточнить текущую доступность', heroAlt: 'Реальная первая очередь Regnum Plaza',
     facts: [['12', 'предложений'], ['1–4', 'комнаты'], ['38,48–249,27 м²', 'площадь'], ['По запросу', 'публичная цена']] as const,
-    modes: { cards: 'Карточки', chess: 'Шахматка', 'chess-plus': 'Шахматка+' }, modeLabel: 'Режим каталога', filters: 'Фильтры', reset: 'Сбросить', any: 'Все', rooms: 'Комнаты', areaFrom: 'Площадь от, м²', areaTo: 'Площадь до, м²', floor: 'Этаж', queue: 'Очередь', section: 'Секция', completion: 'Срок / год', status: 'Статус', results: 'найдено',
+    modes: { cards: 'Карточки', chess: 'Шахматка' }, modeLabel: 'Режим каталога', filters: 'Фильтры', reset: 'Сбросить', any: 'Все', rooms: 'Комнаты', areaFrom: 'Площадь от, м²', areaTo: 'Площадь до, м²', floor: 'Этаж', queue: 'Очередь', section: 'Секция', completion: 'Срок / год', status: 'Статус', results: 'найдено',
     sort: 'Сортировка', sorts: { source: 'Исходный порядок', priceAsc: 'Цена ↑', priceDesc: 'Цена ↓', areaAsc: 'Площадь ↑', areaDesc: 'Площадь ↓', floorAsc: 'Этаж ↑', floorDesc: 'Этаж ↓', roomsAsc: 'Комнаты ↑', roomsDesc: 'Комнаты ↓', ppmAsc: 'Цена/м² ↑', ppmDesc: 'Цена/м² ↓' },
     sortNote: 'Сортировки по цене и цене/м² используют внутренние значения официального среза. Числа не публикуются: publicPrice=false.', number: 'Квартира №', roomsShort: 'комн.', area: 'Площадь', floorShort: 'Этаж', queueShort: 'Очередь', sectionShort: 'Секция', completionShort: 'Срок', available: 'Доступна', price: 'По запросу', openPlan: 'Открыть официальную планировку', missingPlan: 'Официальная планировка не опубликована', ask: 'Оставить заявку', showMore: 'Показать ещё 6', showing: 'Показано', of: 'из',
     emptyTitle: 'По этим фильтрам ничего не найдено.', emptyText: 'Сбросьте параметры или оставьте заявку — менеджер перепроверит текущую доступность.', emptyLead: 'Запросить подборку',
     matrixTitle: 'Четыре реальные группы. Одиннадцать строк среза.', matrixText: 'Очередь × секция сохранены точно. Пустые физические этажи не дорисованы; фильтры только приглушают квартиры в существующих строках.', matched: 'совпадений', row: 'Этаж', scrollLeft: 'Прокрутить шахматку влево', scrollRight: 'Прокрутить шахматку вправо', matrixHelp: 'Прокрутка: свайп, трекпад, кнопки, ← →, Home и End.', openUnit: 'Открыть квартиру',
     detail: 'Детали квартиры', closeDetail: 'Закрыть детали', plan: 'Планировка', noPlan: 'Планировка отсутствует', unitFacts: 'Характеристики', matrixLead: 'Уточнить эту квартиру',
     planDialog: 'Официальная планировка квартиры', closePlan: 'Закрыть планировку', zoomHint: 'Можно масштабировать жестом браузера', planLead: 'Уточнить квартиру по планировке',
-    footerTitle: 'Нужен точный ответ по конкретной квартире?', footerText: 'Менеджер сверит квартиру с текущим источником. Заявка не является бронированием.', privacy: 'Обработка персональных данных', source: 'Официальный источник', top: 'Наверх',
+    footerTitle: 'Нужен точный ответ по конкретной квартире?', footerText: 'Менеджер сверит квартиру с текущим источником. Заявка не является бронированием.', privacy: 'Обработка персональных данных', top: 'Наверх',
     formTagline: 'Свет входит через медь.', formFacts: ['Бизнес-класс', '12 предложений', 'IV квартал 2026'] as const,
   },
   uz: {
     skip: 'Katalog natijalariga o‘tish', back: 'Loyiha haqida', nav: 'Regnum Plaza katalogi navigatsiyasi', language: 'Til', consult: 'Maslahat olish', call: 'Qo‘ng‘iroq qilish',
     eyebrow: 'COPPER APERTURES · 31.08.2026 KESIMI', title: '12 ta eng so‘nggi xonadon.', lead: 'Rasmiy kesimda AVAILABLE holatidagi 12 ta yozuv bor. Manba ommaviy narxni yashiradi va u faqat “So‘rov bo‘yicha” ko‘rsatiladi.', heroLead: 'Joriy mavjudlikni aniqlash', heroAlt: 'Regnum Plaza haqiqiy birinchi bosqichi', facts: [['12', 'taklif'], ['1–4', 'xona'], ['38,48–249,27 m²', 'maydon'], ['So‘rov bo‘yicha', 'ommaviy narx']] as const,
-    modes: { cards: 'Kartochkalar', chess: 'Shaxmatka', 'chess-plus': 'Shaxmatka+' }, modeLabel: 'Katalog rejimi', filters: 'Filtrlar', reset: 'Tozalash', any: 'Barchasi', rooms: 'Xonalar', areaFrom: 'Maydon, dan m²', areaTo: 'Maydon, gacha m²', floor: 'Qavat', queue: 'Bosqich', section: 'Seksiya', completion: 'Muddat / yil', status: 'Holat', results: 'topildi',
+    modes: { cards: 'Kartochkalar', chess: 'Shaxmatka' }, modeLabel: 'Katalog rejimi', filters: 'Filtrlar', reset: 'Tozalash', any: 'Barchasi', rooms: 'Xonalar', areaFrom: 'Maydon, dan m²', areaTo: 'Maydon, gacha m²', floor: 'Qavat', queue: 'Bosqich', section: 'Seksiya', completion: 'Muddat / yil', status: 'Holat', results: 'topildi',
     sort: 'Saralash', sorts: { source: 'Manba tartibi', priceAsc: 'Narx ↑', priceDesc: 'Narx ↓', areaAsc: 'Maydon ↑', areaDesc: 'Maydon ↓', floorAsc: 'Qavat ↑', floorDesc: 'Qavat ↓', roomsAsc: 'Xonalar ↑', roomsDesc: 'Xonalar ↓', ppmAsc: 'Narx/m² ↑', ppmDesc: 'Narx/m² ↓' }, sortNote: 'Narx va narx/m² bo‘yicha saralash rasmiy kesimning ichki qiymatlaridan foydalanadi. Raqamlar e’lon qilinmaydi: publicPrice=false.',
     number: 'Xonadon №', roomsShort: 'xona', area: 'Maydon', floorShort: 'Qavat', queueShort: 'Bosqich', sectionShort: 'Seksiya', completionShort: 'Muddat', available: 'Mavjud', price: 'So‘rov bo‘yicha', openPlan: 'Rasmiy rejani ochish', missingPlan: 'Rasmiy reja e’lon qilinmagan', ask: 'Ariza qoldirish', showMore: 'Yana 6 tasini ko‘rsatish', showing: 'Ko‘rsatildi', of: 'dan',
     emptyTitle: 'Bu filtrlarga mos xonadon topilmadi.', emptyText: 'Parametrlarni tozalang yoki ariza qoldiring — menejer joriy mavjudlikni qayta tekshiradi.', emptyLead: 'Tanlov so‘rash', matrixTitle: 'To‘rtta haqiqiy guruh. Kesimning o‘n bir qatori.', matrixText: 'Bosqich × seksiya aniq saqlangan. Bo‘sh jismoniy qavatlar chizilmagan; filtrlar faqat mavjud qatorlardagi xonadonlarni xira qiladi.', matched: 'mos', row: 'Qavat', scrollLeft: 'Shaxmatkani chapga aylantirish', scrollRight: 'Shaxmatkani o‘ngga aylantirish', matrixHelp: 'Aylantirish: svayp, trekpad, tugmalar, ← →, Home va End.', openUnit: 'Xonadonni ochish',
     detail: 'Xonadon tafsilotlari', closeDetail: 'Tafsilotlarni yopish', plan: 'Reja', noPlan: 'Reja yo‘q', unitFacts: 'Xususiyatlar', matrixLead: 'Bu xonadonni aniqlash', planDialog: 'Xonadonning rasmiy rejasi', closePlan: 'Rejani yopish', zoomHint: 'Brauzer ishorasi bilan kattalashtirish mumkin', planLead: 'Reja bo‘yicha xonadonni aniqlash',
-    footerTitle: 'Muayyan xonadon bo‘yicha aniq javob kerakmi?', footerText: 'Menejer xonadonni joriy manba bilan qayta tekshiradi. Ariza bron hisoblanmaydi.', privacy: 'Shaxsiy ma’lumotlarni qayta ishlash', source: 'Rasmiy manba', top: 'Yuqoriga', formTagline: 'Yorug‘lik mis orqali kiradi.', formFacts: ['Biznes-klass', '12 taklif', '2026-yil IV chorak'] as const,
+    footerTitle: 'Muayyan xonadon bo‘yicha aniq javob kerakmi?', footerText: 'Menejer xonadonni joriy manba bilan qayta tekshiradi. Ariza bron hisoblanmaydi.', privacy: 'Shaxsiy ma’lumotlarni qayta ishlash', top: 'Yuqoriga', formTagline: 'Yorug‘lik mis orqali kiradi.', formFacts: ['Biznes-klass', '12 taklif', '2026-yil IV chorak'] as const,
   },
   en: {
     skip: 'Skip to catalogue results', back: 'About the project', nav: 'Regnum Plaza catalogue navigation', language: 'Language', consult: 'Get a consultation', call: 'Call',
     eyebrow: 'COPPER APERTURES · SNAPSHOT 31 AUG 2026', title: '12 last remaining apartments.', lead: 'The official snapshot contains 12 AVAILABLE records. The source keeps public pricing hidden, so the interface says only “Price on request”.', heroLead: 'Check current availability', heroAlt: 'Actual first phase of Regnum Plaza', facts: [['12', 'listings'], ['1–4', 'rooms'], ['38.48–249.27 m²', 'area'], ['On request', 'public price']] as const,
-    modes: { cards: 'Cards', chess: 'Matrix', 'chess-plus': 'Matrix+' }, modeLabel: 'Catalogue mode', filters: 'Filters', reset: 'Reset', any: 'All', rooms: 'Rooms', areaFrom: 'Area from, m²', areaTo: 'Area to, m²', floor: 'Floor', queue: 'Phase', section: 'Section', completion: 'Completion / year', status: 'Status', results: 'found',
+    modes: { cards: 'Cards', chess: 'Matrix' }, modeLabel: 'Catalogue mode', filters: 'Filters', reset: 'Reset', any: 'All', rooms: 'Rooms', areaFrom: 'Area from, m²', areaTo: 'Area to, m²', floor: 'Floor', queue: 'Phase', section: 'Section', completion: 'Completion / year', status: 'Status', results: 'found',
     sort: 'Sort', sorts: { source: 'Source order', priceAsc: 'Price ↑', priceDesc: 'Price ↓', areaAsc: 'Area ↑', areaDesc: 'Area ↓', floorAsc: 'Floor ↑', floorDesc: 'Floor ↓', roomsAsc: 'Rooms ↑', roomsDesc: 'Rooms ↓', ppmAsc: 'Price/m² ↑', ppmDesc: 'Price/m² ↓' }, sortNote: 'Price and price/m² sorting uses internal official snapshot values. Numbers are not published: publicPrice=false.',
     number: 'Apartment no.', roomsShort: 'rooms', area: 'Area', floorShort: 'Floor', queueShort: 'Phase', sectionShort: 'Section', completionShort: 'Completion', available: 'Available', price: 'Price on request', openPlan: 'Open official plan', missingPlan: 'Official plan has not been published', ask: 'Request details', showMore: 'Show 6 more', showing: 'Showing', of: 'of',
     emptyTitle: 'Nothing matches these filters.', emptyText: 'Reset the filters or request a selection and a manager will re-check current availability.', emptyLead: 'Request a selection', matrixTitle: 'Four real groups. Eleven snapshot rows.', matrixText: 'Phase × section is preserved exactly. Empty physical floors are not invented; filters only dim apartments in existing rows.', matched: 'matches', row: 'Floor', scrollLeft: 'Scroll matrix left', scrollRight: 'Scroll matrix right', matrixHelp: 'Scroll with swipe, trackpad, buttons, ← →, Home and End.', openUnit: 'Open apartment',
     detail: 'Apartment details', closeDetail: 'Close details', plan: 'Plan', noPlan: 'No plan', unitFacts: 'Specifications', matrixLead: 'Ask about this apartment', planDialog: 'Official apartment plan', closePlan: 'Close plan', zoomHint: 'Use your browser gesture to zoom', planLead: 'Ask about this floor plan',
-    footerTitle: 'Need an exact answer about a specific apartment?', footerText: 'A manager will check the apartment against the current source. A request is not a reservation.', privacy: 'Personal data processing', source: 'Official source', top: 'Back to top', formTagline: 'Light enters through copper.', formFacts: ['Business class', '12 listings', 'Q4 2026'] as const,
+    footerTitle: 'Need an exact answer about a specific apartment?', footerText: 'A manager will check the apartment against the current source. A request is not a reservation.', privacy: 'Personal data processing', top: 'Back to top', formTagline: 'Light enters through copper.', formFacts: ['Business class', '12 listings', 'Q4 2026'] as const,
   },
 } as const;
 
@@ -154,7 +154,7 @@ function UnitDetail({ selection, language, mobile, covered, onClose, onPlan, onL
   return mobile ? <div className="rpc-detail-layer" aria-hidden={covered || undefined} inert={covered ? true : undefined}><button type="button" className="rpc-detail-layer__backdrop" tabIndex={-1} onClick={onClose} aria-label={t.closeDetail} />{content}</div> : content;
 }
 
-function Matrix({ units, matchedIds, rankById, mode, language, selection, onSelection, onPlan, onLead }: { units: RegnumUnit[]; matchedIds: Set<string>; rankById: ReadonlyMap<string, number>; mode: Mode; language: Language; selection: Selection | null; onSelection: (selection: Selection | null) => void; onPlan: (selection: Selection) => void; onLead: (unit: RegnumUnit, surface: string, opener: HTMLButtonElement) => void }) {
+function Matrix({ units, matchedIds, rankById, language, selection, onSelection }: { units: RegnumUnit[]; matchedIds: Set<string>; rankById: ReadonlyMap<string, number>; language: Language; selection: Selection | null; onSelection: (selection: Selection | null) => void }) {
   const t = copy[language]; const scrollRef = useRef<HTMLDivElement>(null); const [edges, setEdges] = useState({ left: true, right: false }); const byId = useMemo(() => new Map(units.map((unit) => [unit.id, unit])), [units]);
   const updateEdges = useCallback(() => { const node = scrollRef.current; if (!node) return; setEdges({ left: node.scrollLeft <= 2, right: node.scrollLeft + node.clientWidth >= node.scrollWidth - 2 }); }, []);
   useEffect(() => { const node = scrollRef.current; if (!node) return; updateEdges(); const observer = new ResizeObserver(updateEdges); observer.observe(node); node.addEventListener('scroll', updateEdges, { passive: true }); return () => { observer.disconnect(); node.removeEventListener('scroll', updateEdges); }; }, [updateEdges]);
@@ -168,11 +168,9 @@ function Matrix({ units, matchedIds, rankById, mode, language, selection, onSele
   };
   const activate = (unit: RegnumUnit, button: HTMLButtonElement) => {
     rememberRegnumUnit(unit);
-    if (mode === 'chess-plus') onSelection({ unit, opener: button });
-    else if (unit.planPublicPath) onPlan({ unit, opener: button });
-    else onLead(unit, 'catalog:matrix', button);
+    onSelection({ unit, opener: button });
   };
-  return <div className={`rpc-matrix-layout ${mode === 'chess-plus' ? 'is-plus' : ''}`}>
+  return <div className="rpc-matrix-layout">
     <section className="rpc-matrix" aria-labelledby="rpc-matrix-title">
       <header><div><h2 id="rpc-matrix-title">{t.matrixTitle}</h2><p>{t.matrixText}</p></div><div><button type="button" onClick={() => move(-1)} disabled={edges.left} aria-label={t.scrollLeft}>←</button><button type="button" onClick={() => move(1)} disabled={edges.right} aria-label={t.scrollRight}>→</button></div></header>
       <p className="rpc-matrix__help">{t.matrixHelp}</p>
@@ -236,7 +234,7 @@ export function RegnumCatalog({ initialLanguage }: { initialLanguage: Language }
     if (event.key === 'ArrowRight') next = (index + 1) % modes.length; else if (event.key === 'ArrowLeft') next = (index - 1 + modes.length) % modes.length; else if (event.key === 'Home') next = 0; else if (event.key === 'End') next = modes.length - 1; else return;
     event.preventDefault(); selectMode(modes[next]); modeRefs.current[next]?.focus();
   };
-  const mobileDetailOpen = mode === 'chess-plus' && Boolean(selection) && mobile;
+  const mobileDetailOpen = mode === 'chess' && Boolean(selection) && mobile;
 
   return <div className="rpc-site" lang={language}>
     <a className="rpc-skip" href="#rpc-results" aria-hidden={mobileDetailOpen || undefined} inert={mobileDetailOpen ? true : undefined}>{t.skip}</a>
@@ -276,17 +274,17 @@ export function RegnumCatalog({ initialLanguage }: { initialLanguage: Language }
               <p>{priceOnRequest(language)}</p><button className="rpc-card__lead" type="button" data-lead-trigger onClick={(event) => openLead('catalog:card', unit, event.currentTarget)}>{t.ask}<span>↗</span></button>
             </article>)}</div>
             <div className="rpc-showing"><span>{t.showing} {Math.min(visible, sorted.length)} {t.of} {sorted.length}</span>{visible < sorted.length ? <button type="button" onClick={() => setVisible(12)}>{t.showMore}<b>↓</b></button> : null}</div>
-          </> : <div className={`rpc-matrix-shell ${mode === 'chess-plus' && selection ? 'has-detail' : ''}`}>
-            <Matrix units={snapshot.units as RegnumUnit[]} matchedIds={matchedIds} rankById={rankById} mode={mode} language={language} selection={selection} onSelection={setSelection} onPlan={openPlan} onLead={(unit, surface, opener) => openLead(surface, unit, opener)} />
-            {mode === 'chess-plus' && selection && !mobile ? <UnitDetail selection={selection} language={language} mobile={false} covered={Boolean(plan || lead)} onClose={closeSelection} onPlan={openPlan} onLead={(unit, opener) => openLead('catalog:matrix-plus', unit, opener)} /> : null}
+          </> : <div className={`rpc-matrix-shell ${selection ? 'has-detail' : ''}`}>
+            <Matrix units={snapshot.units as RegnumUnit[]} matchedIds={matchedIds} rankById={rankById} language={language} selection={selection} onSelection={setSelection} />
+            {selection && !mobile ? <UnitDetail selection={selection} language={language} mobile={false} covered={Boolean(plan || lead)} onClose={closeSelection} onPlan={openPlan} onLead={(unit, opener) => openLead('catalog:matrix', unit, opener)} /> : null}
           </div>}
         </div>
       </section>
 
-      <section className="rpc-footer-cta"><div><span>REGNUM PLAZA · SAYRAM</span><h2>{t.footerTitle}</h2><p>{t.footerText}</p><button type="button" data-lead-trigger onClick={() => openLead('catalog:footer')}>{t.consult}<b>↗</b></button></div><a href="tel:+998781228822">+998 78 122 88 22 <span>↗</span></a><footer><img src={asset('/regnum-plaza/logo.svg')} width="522" height="95" alt="Regnum Plaza" /><nav><a href={`${appBasePath}/privacy?project=regnum-plaza&lang=${language}&from=catalog`}>{t.privacy}</a><a href="https://mbc.uz/project/regnum-plaza" target="_blank" rel="noreferrer">{t.source}</a><a href="#top">{t.top}</a></nav></footer></section>
+      <section className="rpc-footer-cta"><div><span>REGNUM PLAZA · SAYRAM</span><h2>{t.footerTitle}</h2><p>{t.footerText}</p><button type="button" data-lead-trigger onClick={() => openLead('catalog:footer')}>{t.consult}<b>↗</b></button></div><a href="tel:+998781228822">+998 78 122 88 22 <span>↗</span></a><footer><img src={asset('/regnum-plaza/logo.svg')} width="522" height="95" alt="Regnum Plaza" /><nav><a href={`${appBasePath}/privacy?project=regnum-plaza&lang=${language}&from=catalog`}>{t.privacy}</a><a href="#top">{t.top}</a></nav></footer></section>
     </main>
 
-    {mode === 'chess-plus' && selection && mobile ? <UnitDetail selection={selection} language={language} mobile covered={Boolean(plan || lead)} onClose={closeSelection} onPlan={openPlan} onLead={(unit, opener) => openLead('catalog:matrix-plus', unit, opener)} /> : null}
+    {mode === 'chess' && selection && mobile ? <UnitDetail selection={selection} language={language} mobile covered={Boolean(plan || lead)} onClose={closeSelection} onPlan={openPlan} onLead={(unit, opener) => openLead('catalog:matrix', unit, opener)} /> : null}
     {plan ? <PlanLightbox selection={plan} language={language} covered={Boolean(lead)} onClose={closePlan} onLead={(unit, opener) => openLead('catalog:plan', unit, opener)} /> : null}
     {lead ? <LeadModal open language={language} context={regnumLeadContext(lead.surface, language, lead.unit)} brandName="MURAD BUILDINGS" projectName="REGNUM PLAZA" tagline={t.formTagline} facts={t.formFacts} submitUrl={regnumLeadSubmitUrl()} projectSlug="regnum-plaza" unitId={lead.unit?.id} privacyUrl={`${appBasePath}/privacy?project=regnum-plaza&lang=${language}&from=catalog`} requireConsent returnFocusTo={lead.opener} onClose={closeLead} /> : null}
   </div>;

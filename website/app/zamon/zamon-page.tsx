@@ -26,8 +26,6 @@ const appBasePath = configuredBasePath ? `/${configuredBasePath.replace(/^\/+|\/
 const languages: Language[] = ['ru', 'uz', 'en'];
 const storageKey = 'zamon-language';
 const introKey = 'zamon-intro-seen-v1';
-const officialLandingRu = 'https://nrg-bi.uz/uz-ru/landing/zamon';
-const officialLandingUz = 'https://nrg-bi.uz/uz/landing/zamon';
 const officialBooklet = '/zamon/documents/zamon-booklet-2026-03.pdf';
 const panorama = 'https://uzbekistan360.uz/ru/location/nrg-zamon-vid-s-ptichego-poljotappC';
 
@@ -111,7 +109,7 @@ const copy = {
     dataNoteTitle: 'О данных и источниках', dataNoteText: '104 записи сохранены из официального каталога NRG-BI 30.08.2026 в 20:15 UZT. В техническом источнике isSale=true у 103 из 104 записей; сроки на странице приведены по единому значению официальных filter/realEstateList, а исходная дата placementList сохранена внутри карточки в разделе происхождения данных.',
     contactsIndex: '09 · КОНТАКТЫ', contactsTitle: 'Поговорить о конкретной квартире.', contactsText: 'Менеджер NRG-BI подтверждает актуальный статус, цену, срок и условия.', offices: 'Отделы продаж', officeOne: 'ул. Нукус, 91/1', officeTwo: 'ул. Айбека, 38А',
     formTagline: 'Хронология света.', formFacts: ['Comfort class', '4 очереди', 'собственный пруд'],
-    privacy: 'Обработка персональных данных', source: 'Официальная страница', booklet: 'Официальный буклет · 36 страниц', panorama: 'Панорама 360', top: 'Наверх',
+    privacy: 'Обработка персональных данных', booklet: 'Официальный буклет · 36 страниц', panorama: 'Панорама 360', top: 'Наверх',
     bookletContext: 'PDF откроется отдельно; текущая страница сохранит выбранный язык.',
     disclaimer: 'Реальные фото, CGI и стройархив подписаны отдельно. Каталог датирован 30.08.2026, не является публичной офертой и не гарантирует юридическую доступность.',
     introLabel: 'ХРОНОЛОГИЯ СВЕТА · ZAMON',
@@ -138,7 +136,7 @@ const copy = {
     catalogIndex: '08 · KATALOG · 30.08.2026', catalogTitle: '104 pozitsiya. Manbadagi to‘rtta holat.', catalogText: 'Katalog sanasida: 93 «Bo‘sh», 1 «Bron», 7 «Bekor qilish» va 3 «Rezervni yechish». Har bir xonadonning holati va huquqiy mavjudligini savdo bo‘limi tasdiqlaydi.', catalogStats: [['104', 'katalog pozitsiyasi'], ['1–5', 'xonalar'], ['31.14–134.42 m²', 'maydon'], ['392 276 808–1 488 956 497 UZS', 'katalog sanasidagi aksiya narxi']] as const, catalogNote: '12% chegirma 2026-12-31 17:59:59Z gacha ko‘rsatilgan. Bu sanali fakt; joriy shartlarni savdo bo‘limi tasdiqlaydi.', openCatalog: 'To‘liq katalogni ochish',
     dataNoteTitle: 'Ma’lumotlar va manbalar haqida', dataNoteText: '104 ta yozuv NRG-BI rasmiy katalogidan 30.08.2026 soat 20:15 UZT da saqlangan. Texnik manbada 104 yozuvdan 103 tasida isSale=true; sahifadagi muddatlar rasmiy filter/realEstateList yagona qiymati bo‘yicha berilgan, placementList dagi asl sana esa xonadon kartasining ma’lumotlar bo‘limida saqlangan.',
     contactsIndex: '09 · ALOQA', contactsTitle: 'Aniq xonadon haqida gaplashish.', contactsText: 'NRG-BI menejeri joriy holat, narx, muddat va shartlarni tasdiqlaydi.', offices: 'Savdo bo‘limlari', officeOne: 'Nukus ko‘chasi, 91/1', officeTwo: 'Oybek ko‘chasi, 38A',
-    formTagline: 'Yorug‘lik xronologiyasi.', formFacts: ['Comfort class', '4 bosqich', 'shaxsiy hovuz'], privacy: 'Shaxsiy ma’lumotlarni qayta ishlash', source: 'Rasmiy sahifa', booklet: 'Rasmiy buklet · 36 sahifa', panorama: '360 panorama', top: 'Yuqoriga', bookletContext: 'PDF alohida ochiladi; joriy sahifada tanlangan til saqlanadi.', disclaimer: 'Haqiqiy foto, CGI va qurilish arxivi alohida belgilangan. Katalog 30.08.2026 sanasiga tegishli, ommaviy oferta yoki huquqiy mavjudlik kafolati emas.', introLabel: 'YORUG‘LIK XRONOLOGIYASI · ZAMON',
+    formTagline: 'Yorug‘lik xronologiyasi.', formFacts: ['Comfort class', '4 bosqich', 'shaxsiy hovuz'], privacy: 'Shaxsiy ma’lumotlarni qayta ishlash', booklet: 'Rasmiy buklet · 36 sahifa', panorama: '360 panorama', top: 'Yuqoriga', bookletContext: 'PDF alohida ochiladi; joriy sahifada tanlangan til saqlanadi.', disclaimer: 'Haqiqiy foto, CGI va qurilish arxivi alohida belgilangan. Katalog 30.08.2026 sanasiga tegishli, ommaviy oferta yoki huquqiy mavjudlik kafolati emas.', introLabel: 'YORUG‘LIK XRONOLOGIYASI · ZAMON',
   },
   en: {
     skip: 'Skip to content', navigation: 'Zamon navigation', footerNavigation: 'Sources and legal information', menu: 'Menu', closeMenu: 'Close menu', language: 'Language',
@@ -159,7 +157,7 @@ const copy = {
     catalogIndex: '08 · CATALOGUE · 30 AUG 2026', catalogTitle: '104 entries. Four source statuses.', catalogText: 'On the catalogue date: 93 “Available”, 1 “Booking”, 7 “Termination” and 3 “Reservation release”. The sales team confirms each apartment’s status and legal availability.', catalogStats: [['104', 'catalogue entries'], ['1–5', 'rooms'], ['31.14–134.42 m²', 'area'], ['392,276,808–1,488,956,497 UZS', 'promotional price on catalogue date']] as const, catalogNote: 'The 12% discount was shown through 31 Dec 2026 17:59:59Z. This is a dated fact; the sales team confirms current terms.', openCatalog: 'Open the full catalogue',
     dataNoteTitle: 'About the data and sources', dataNoteText: '104 records were saved from the official NRG-BI catalogue on 30 Aug 2026 at 20:15 UZT. The technical source has isSale=true for 103 of 104 records; displayed completion dates use the consistent official filter/realEstateList value, while the original placementList date is retained in each apartment’s data note.',
     contactsIndex: '09 · CONTACTS', contactsTitle: 'Discuss one specific apartment.', contactsText: 'An NRG-BI manager confirms current status, price, completion and terms.', offices: 'Sales offices', officeOne: '91/1 Nukus Street', officeTwo: '38A Oybek Street',
-    formTagline: 'A chronology of light.', formFacts: ['Comfort class', '4 phases', 'own pond'], privacy: 'Personal data processing', source: 'Official project page', booklet: 'Official booklet · 36 pages', panorama: '360 panorama', top: 'Back to top', bookletContext: 'The PDF opens separately; this page keeps the selected language.', disclaimer: 'Actual photos, CGI and construction records are labelled separately. The catalogue is dated 30 Aug 2026, is not a public offer and does not guarantee legal availability.', introLabel: 'CHRONOLOGY OF LIGHT · ZAMON',
+    formTagline: 'A chronology of light.', formFacts: ['Comfort class', '4 phases', 'own pond'], privacy: 'Personal data processing', booklet: 'Official booklet · 36 pages', panorama: '360 panorama', top: 'Back to top', bookletContext: 'The PDF opens separately; this page keeps the selected language.', disclaimer: 'Actual photos, CGI and construction records are labelled separately. The catalogue is dated 30 Aug 2026, is not a public offer and does not guarantee legal availability.', introLabel: 'CHRONOLOGY OF LIGHT · ZAMON',
   },
 } as const;
 
@@ -363,8 +361,6 @@ export function ZamonPage({ initialLanguage }: { initialLanguage: Language }) {
     measuredScrollbarWidth = Math.max(measuredScrollbarWidth, window.innerWidth - document.documentElement.clientWidth, 0);
     setLeadContext(`projectSlug=zamon;surface=landing:${surface};lang=${language};unit=general`);
   };
-  const officialLanding = language === 'uz' ? officialLandingUz : officialLandingRu;
-
   return <div className="zamon-site" lang={language}>
     {introPhase !== 'hidden' ? <div className={`zamon-intro${introPhase === 'leaving' ? ' is-leaving' : ''}`} aria-hidden="true"><span>{t.introLabel}</span><i /><small>01 — 04</small></div> : null}
     <a className="zamon-skip" href="#zamon-content">{t.skip}</a>
@@ -402,7 +398,7 @@ export function ZamonPage({ initialLanguage }: { initialLanguage: Language }) {
       <section id="contacts" className="zamon-contacts" tabIndex={-1}><div data-zamon-reveal><p className="zamon-overline">{t.contactsIndex}</p><h2>{t.contactsTitle}</h2><p>{t.contactsText}</p></div><address><small>{t.offices}</small><span>{t.officeOne}</span><span>{t.officeTwo}</span><a href="tel:1360">1360</a></address><div className="zamon-contacts__actions"><button className="zamon-button is-solid" type="button" data-lead-trigger onClick={() => openLead('contacts-consultation')}>{t.consult}<span>↗</span></button><a className="zamon-button" href="tel:1360">{t.phone}<span>↗</span></a></div></section>
     </main>
 
-    <footer className="zamon-footer"><a className="zamon-name" href={withLanguage('/zamon', language)}><strong>Zamon</strong><span>NRG-BI</span></a><p>{t.disclaimer}</p><nav aria-label={t.footerNavigation}><a href={officialLanding} target="_blank" rel="noreferrer">{t.source} ↗</a><a href={`${asset(officialBooklet)}?lang=${language}`} target="_blank" rel="noreferrer" data-return-url={withLanguage('/zamon', language)} title={t.bookletContext}>{t.booklet} ↗</a><a href={panorama} target="_blank" rel="noreferrer">{t.panorama} ↗</a><a href={privacyUrl(language)}>{t.privacy}</a><a href="#zamon-content" onClick={(event) => goToAnchor(event, 'zamon-content')}>{t.top} ↑</a></nav></footer>
+    <footer className="zamon-footer"><a className="zamon-name" href={withLanguage('/zamon', language)}><strong>Zamon</strong><span>NRG-BI</span></a><p>{t.disclaimer}</p><nav aria-label={t.footerNavigation}><a href={`${asset(officialBooklet)}?lang=${language}`} target="_blank" rel="noreferrer" data-return-url={withLanguage('/zamon', language)} title={t.bookletContext}>{t.booklet} ↗</a><a href={panorama} target="_blank" rel="noreferrer">{t.panorama} ↗</a><a href={privacyUrl(language)}>{t.privacy}</a><a href="#zamon-content" onClick={(event) => goToAnchor(event, 'zamon-content')}>{t.top} ↑</a></nav></footer>
 
     {leadContext ? <div className="zamon-lead-host" data-project-slug="zamon" data-context={leadContext}><LeadModal open language={language} context={leadContext} brandName="NRG-BI" projectName="ZAMON" tagline={t.formTagline} facts={t.formFacts} submitUrl={zamonLeadSubmitUrl()} projectSlug="zamon" privacyUrl={privacyUrl(language)} requireConsent onClose={() => setLeadContext(undefined)} /></div> : null}
   </div>;

@@ -16,7 +16,7 @@ import { LeadModal, rememberLastViewedApartment } from '@/app/lead-modal';
 import { zamonLeadSubmitUrl } from '../zamon-lead';
 
 type Language = 'ru' | 'uz' | 'en';
-type Mode = 'cards' | 'chess' | 'chess-plus';
+type Mode = 'cards' | 'chess';
 type Sort = 'source' | 'priceAsc' | 'priceDesc' | 'areaAsc' | 'areaDesc' | 'floorAsc' | 'floorDesc' | 'roomsAsc' | 'roomsDesc' | 'numberAsc' | 'numberDesc';
 type BooleanFilter = '' | 'yes' | 'no';
 
@@ -113,7 +113,7 @@ type LeadRequest = { unit: Unit | null; context: string };
 const configuredBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
 const appBasePath = configuredBasePath ? `/${configuredBasePath.replace(/^\/+|\/+$/g, '')}` : '';
 const languages: Language[] = ['ru', 'uz', 'en'];
-const modes: Mode[] = ['cards', 'chess', 'chess-plus'];
+const modes: Mode[] = ['cards', 'chess'];
 const languageStorageKey = 'zamon-language';
 const mobileDrawerQuery = '(max-width: 820px)';
 const pageSize = 12;
@@ -127,9 +127,9 @@ const copy = {
     eyebrow: 'Хронология света · каталог на 30.08.2026', title: 'Реестр', accent: 'света.', actualPhoto: 'Реальная фотография сданной I очереди',
     leadBefore: 'В официальной подборке на дату каталога —', leadAfter: 'позиций. Для каждой указаны планировка, цена, срок и статус из официального источника.',
     snapshot: 'Каталог на', captured: 'Зафиксировано', proposals: 'позиций', saleRows: 'Статус «Свободно»', localPlans: 'Официальные планировки', classesSummary: 'Комфорт', blocksLabel: 'Блоки в каталоге',
-    consult: 'Получить консультацию', officialSource: 'Официальный источник', sourceTitle: 'О данных каталога',
+    consult: 'Получить консультацию', sourceTitle: 'О данных каталога',
     sourceNoteBefore: 'Все', sourceNoteAfter: 'записей получены из одной официальной выгрузки 30.08.2026 в 20:15 по времени Ташкента. Технические статусы не подтверждают юридическую доступность; цена со скидкой и акция относятся к моменту фиксации.',
-    modes: { cards: 'Карточки', chess: 'Шахматка', 'chess-plus': 'Шахматка+' }, modeLabel: 'Режим каталога',
+    modes: { cards: 'Карточки', chess: 'Шахматка' }, modeLabel: 'Режим каталога',
     filters: 'Фильтры', filterIndex: 'ПАРАМЕТРЫ КАТАЛОГА', filterGroupOne: 'Квартира и цена', filterGroupTwo: 'Дом и срок', rooms: 'Комнаты', allRooms: 'Все', areaFrom: 'Площадь от, м²', areaTo: 'Площадь до, м²', priceFrom: 'Цена по акции от, млн UZS', priceTo: 'Цена по акции до, млн UZS', floor: 'Этаж', allFloors: 'Все этажи', building: 'Блок', allBuildings: 'Все блоки', entrance: 'Подъезд', allEntrances: 'Все подъезды', completion: 'Срок сдачи', allCompletions: 'Все сроки', statusFilter: 'Статус в каталоге', allStatuses: 'Все статусы', studio: 'Студия', any: 'Любой вариант', yes: 'Да', no: 'Нет', reset: 'Сбросить',
     sort: 'Сортировка', sorts: { source: 'Порядок официального каталога', priceAsc: 'Цена ↑', priceDesc: 'Цена ↓', areaAsc: 'Площадь ↑', areaDesc: 'Площадь ↓', floorAsc: 'Этаж ↑', floorDesc: 'Этаж ↓', roomsAsc: 'Комнаты ↑', roomsDesc: 'Комнаты ↓', numberAsc: 'Номер ↑', numberDesc: 'Номер ↓' }, results: 'найдено', folio: 'КВАРТИРА',
     apartment: 'Квартира', roomsShort: 'комн.', area: 'Площадь', areaUnit: 'м²', currentPrice: 'Цена по акции на 30.08.2026', originalPrice: 'Цена до скидки', perM2: 'Цена за м² · рассчитана от цены по акции', campaign: 'Скидка на дату каталога', campaignUntil: 'до', status: 'Статус', statusNote: 'Статус в официальном каталоге на 30.08.2026', class: 'Класс', floorOf: 'Этаж', entranceShort: 'Подъезд', block: 'Блок', completionShort: 'Срок сдачи', normalized: 'filter/realEstateList · срок', rawPlacement: 'placementList · исходная дата', finishing: 'Ремонт', noFinishing: 'Без ремонта', studioFlag: 'Студия', ceiling: 'Высота потолка', balcony: 'Балкон', datedCampaign: 'Условия относятся к 30.08.2026 и требуют подтверждения',
@@ -144,9 +144,9 @@ const copy = {
     eyebrow: 'Yorug‘lik xronologiyasi · 30.08.2026 katalogi', title: 'Yorug‘lik', accent: 'reyestri.', actualPhoto: 'Topshirilgan I bosqichning haqiqiy fotosurati',
     leadBefore: 'Katalog sanasidagi rasmiy tanlovda', leadAfter: 'ta pozitsiya bor. Har birida reja, narx, muddat va rasmiy manbadagi holat ko‘rsatilgan.',
     snapshot: 'Katalog sanasi', captured: 'Qayd etilgan vaqt', proposals: 'pozitsiya', saleRows: '«Bo‘sh» holati', localPlans: 'Rasmiy rejalar', classesSummary: 'Komfort', blocksLabel: 'Katalogdagi bloklar',
-    consult: 'Maslahat olish', officialSource: 'Rasmiy manba', sourceTitle: 'Katalog ma’lumotlari haqida',
+    consult: 'Maslahat olish', sourceTitle: 'Katalog ma’lumotlari haqida',
     sourceNoteBefore: 'Barcha', sourceNoteAfter: 'ta yozuv bitta rasmiy yuklamadan 30.08.2026 soat 20:15 da Toshkent vaqti bilan olingan. Texnik holatlar huquqiy mavjudlikni tasdiqlamaydi; chegirmali narx va aksiya qayd etilgan paytga tegishli.',
-    modes: { cards: 'Kartalar', chess: 'Shaxmatka', 'chess-plus': 'Shaxmatka+' }, modeLabel: 'Katalog ko‘rinishi',
+    modes: { cards: 'Kartalar', chess: 'Shaxmatka' }, modeLabel: 'Katalog ko‘rinishi',
     filters: 'Filtrlar', filterIndex: 'KATALOG PARAMETRLARI', filterGroupOne: 'Xonadon va narx', filterGroupTwo: 'Uy va muddat', rooms: 'Xonalar', allRooms: 'Barchasi', areaFrom: 'Maydon, m² dan', areaTo: 'Maydon, m² gacha', priceFrom: 'Aksiya narxi, mln UZS dan', priceTo: 'Aksiya narxi, mln UZS gacha', floor: 'Qavat', allFloors: 'Barcha qavatlar', building: 'Blok', allBuildings: 'Barcha bloklar', entrance: 'Kirish', allEntrances: 'Barcha kirishlar', completion: 'Topshirish muddati', allCompletions: 'Barcha muddatlar', statusFilter: 'Katalogdagi holat', allStatuses: 'Barcha holatlar', studio: 'Studiya', any: 'Istalgan variant', yes: 'Ha', no: 'Yo‘q', reset: 'Tozalash',
     sort: 'Saralash', sorts: { source: 'Rasmiy katalog tartibi', priceAsc: 'Narx ↑', priceDesc: 'Narx ↓', areaAsc: 'Maydon ↑', areaDesc: 'Maydon ↓', floorAsc: 'Qavat ↑', floorDesc: 'Qavat ↓', roomsAsc: 'Xonalar ↑', roomsDesc: 'Xonalar ↓', numberAsc: 'Raqam ↑', numberDesc: 'Raqam ↓' }, results: 'topildi', folio: 'XONADON',
     apartment: 'Xonadon', roomsShort: 'xonali', area: 'Maydon', areaUnit: 'm²', currentPrice: '30.08.2026 dagi aksiya narxi', originalPrice: 'Chegirmagacha narx', perM2: 'm² narxi · aksiya narxi asosida', campaign: 'Katalog sanasidagi chegirma', campaignUntil: 'gacha', status: 'Holat', statusNote: '30.08.2026 rasmiy katalogidagi holat', class: 'Toifa', floorOf: 'Qavat', entranceShort: 'Kirish', block: 'Blok', completionShort: 'Topshirish muddati', normalized: 'filter/realEstateList · muddat', rawPlacement: 'placementList · asl sana', finishing: 'Pardoz', noFinishing: 'Pardozsiz', studioFlag: 'Studiya', ceiling: 'Shift balandligi', balcony: 'Balkon', datedCampaign: 'Shartlar 30.08.2026 sanasiga tegishli va tasdiqlanishi kerak',
@@ -161,9 +161,9 @@ const copy = {
     eyebrow: 'Chronology of light · catalogue as of 30 Aug 2026', title: 'Light', accent: 'register.', actualPhoto: 'Actual photograph of completed phase I',
     leadBefore: 'The official selection on the catalogue date contains', leadAfter: 'entries. Each shows a plan, price, completion date and status from the official source.',
     snapshot: 'Catalogue as of', captured: 'Captured', proposals: 'entries', saleRows: '“Available” status', localPlans: 'Official plans', classesSummary: 'Comfort', blocksLabel: 'Blocks in catalogue',
-    consult: 'Request a consultation', officialSource: 'Official source', sourceTitle: 'About the catalogue data',
+    consult: 'Request a consultation', sourceTitle: 'About the catalogue data',
     sourceNoteBefore: 'All', sourceNoteAfter: 'records came from one official export captured on 30 Aug 2026 at 20:15 Tashkent time. Technical statuses do not confirm legal availability; promotional pricing and the campaign reflect the capture time.',
-    modes: { cards: 'Cards', chess: 'Matrix', 'chess-plus': 'Matrix+' }, modeLabel: 'Catalogue view',
+    modes: { cards: 'Cards', chess: 'Matrix' }, modeLabel: 'Catalogue view',
     filters: 'Filters', filterIndex: 'CATALOGUE PARAMETERS', filterGroupOne: 'Apartment and price', filterGroupTwo: 'Building and completion', rooms: 'Rooms', allRooms: 'Any', areaFrom: 'Area from, m²', areaTo: 'Area to, m²', priceFrom: 'Promotional price from, million UZS', priceTo: 'Promotional price to, million UZS', floor: 'Floor', allFloors: 'Any floor', building: 'Block', allBuildings: 'All blocks', entrance: 'Entrance', allEntrances: 'All entrances', completion: 'Completion date', allCompletions: 'All dates', statusFilter: 'Catalogue status', allStatuses: 'All statuses', studio: 'Studio', any: 'Any option', yes: 'Yes', no: 'No', reset: 'Reset',
     sort: 'Sort', sorts: { source: 'Official catalogue order', priceAsc: 'Price ↑', priceDesc: 'Price ↓', areaAsc: 'Area ↑', areaDesc: 'Area ↓', floorAsc: 'Floor ↑', floorDesc: 'Floor ↓', roomsAsc: 'Rooms ↑', roomsDesc: 'Rooms ↓', numberAsc: 'Number ↑', numberDesc: 'Number ↓' }, results: 'found', folio: 'APARTMENT',
     apartment: 'Apartment', roomsShort: 'room', area: 'Area', areaUnit: 'm²', currentPrice: 'Promotional price on 30 Aug 2026', originalPrice: 'Price before discount', perM2: 'Price per m² · derived from promotional price', campaign: 'Discount on catalogue date', campaignUntil: 'until', status: 'Status', statusNote: 'Status in the official catalogue on 30 Aug 2026', class: 'Class', floorOf: 'Floor', entranceShort: 'Entrance', block: 'Block', completionShort: 'Completion date', normalized: 'filter/realEstateList · completion', rawPlacement: 'placementList · original date', finishing: 'Finishing', noFinishing: 'No finishing', studioFlag: 'Studio', ceiling: 'Ceiling height', balcony: 'Balcony', datedCampaign: 'Terms reflect 30 Aug 2026 and require confirmation',
@@ -248,9 +248,6 @@ function compareUnits(a: Unit, b: Unit, sort: Sort) {
   if (sort === 'roomsDesc') return b.rooms - a.rooms || numberTie(a, b);
   if (sort === 'numberDesc') return -numberTie(a, b);
   return numberTie(a, b);
-}
-function officialLanding(language: Language) {
-  return language === 'ru' ? 'https://nrg-bi.uz/uz-ru/landing/zamon' : 'https://nrg-bi.uz/uz/landing/zamon';
 }
 function scrollBehavior(): ScrollBehavior {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
@@ -518,7 +515,7 @@ function UnitDetail({ unit, language, onClose, onPlan, onLead, obscured }: { uni
   );
 }
 
-function MatrixGroup({ units, language, plus, sort, selectedId, floorMin, onSelect }: { units: Unit[]; language: Language; plus: boolean; sort: Sort; selectedId?: string; floorMin: number; onSelect: (unit: Unit, opener: HTMLButtonElement) => void }) {
+function MatrixGroup({ units, language, sort, selectedId, floorMin, onSelect }: { units: Unit[]; language: Language; sort: Sort; selectedId?: string; floorMin: number; onSelect: (unit: Unit, opener: HTMLButtonElement) => void }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const [edges, setEdges] = useState({ start: true, end: false });
   const t = copy[language];
@@ -557,7 +554,7 @@ function MatrixGroup({ units, language, plus, sort, selectedId, floorMin, onSele
     observer.observe(element);
     if (element.firstElementChild) observer.observe(element.firstElementChild);
     return () => { window.cancelAnimationFrame(frame); observer.disconnect(); };
-  }, [plus, sort, units, updateEdges]);
+  }, [sort, units, updateEdges]);
 
   return (
     <section className="zamon-matrix-group">
@@ -569,7 +566,7 @@ function MatrixGroup({ units, language, plus, sort, selectedId, floorMin, onSele
         </div>
       </header>
       <div ref={viewportRef} className="zamon-matrix-viewport" tabIndex={0} onKeyDown={onKeyDown} onScroll={updateEdges} aria-label={`${t.matrix}: ${buildingLabel(building)}, ${t.entranceShort} ${entrance}`} aria-describedby="zamon-matrix-help">
-        <table className={plus ? 'is-plus' : undefined}>
+        <table>
           <thead><tr><th scope="col">{t.floorColumn}</th><th scope="col">{t.unitsColumn}</th></tr></thead>
           <tbody>{floors.map((floor) => {
             const floorUnits = units.filter((unit) => unit.floor === floor).sort((a, b) => compareUnits(a, b, sort));
@@ -579,11 +576,11 @@ function MatrixGroup({ units, language, plus, sort, selectedId, floorMin, onSele
                 <td>{floorUnits.length ? <div>{floorUnits.map((unit) => {
                   const selected = selectedId === unit.id;
                   return (
-                    <button type="button" key={unit.id} className={selected ? 'is-selected' : undefined} aria-pressed={plus ? selected : undefined} aria-expanded={plus ? selected : undefined} aria-controls={plus && selected ? `zamon-detail-${unit.id}` : undefined} onClick={(event) => onSelect(unit, event.currentTarget)} aria-label={`${t.apartment} № ${unit.number}, ${classLabel(unit.propertyClass, language)}, ${roomPhrase(unit.rooms, language)}, ${areaWithUnit(unit.area, language)}, ${t.floorOf} ${unit.floor}/${unit.totalFloors}, ${statusLabel(unit, language)}, ${money(unit.price, language)}`}>
+                    <button type="button" key={unit.id} className={selected ? 'is-selected' : undefined} aria-pressed={selected} aria-expanded={selected} aria-controls={selected ? `zamon-detail-${unit.id}` : undefined} onClick={(event) => onSelect(unit, event.currentTarget)} aria-label={`${t.apartment} № ${unit.number}, ${classLabel(unit.propertyClass, language)}, ${roomPhrase(unit.rooms, language)}, ${areaWithUnit(unit.area, language)}, ${t.floorOf} ${unit.floor}/${unit.totalFloors}, ${statusLabel(unit, language)}, ${money(unit.price, language)}`}>
                       <small><span>№ {unit.number}</span><i data-tone={statusTone(unit.statusOriginal)} aria-hidden="true" /></small>
                       <strong>{areaWithUnit(unit.area, language)}</strong>
                       <span>{roomPhrase(unit.rooms, language)} · {shortMoney(unit.price, language)}</span>
-                      {plus ? <em>{classLabel(unit.propertyClass, language)} · {unit.repairIncluded ? t.finishing : t.studioFlag}: {unit.repairIncluded || unit.studio ? t.yes : t.no}</em> : null}
+                      <em>{classLabel(unit.propertyClass, language)} · {unit.repairIncluded ? t.finishing : t.studioFlag}: {unit.repairIncluded || unit.studio ? t.yes : t.no}</em>
                     </button>
                   );
                 })}</div> : <span className="zamon-matrix-empty">— <span className="zamon-visually-hidden">{t.emptyFloor}</span></span>}</td>
@@ -687,11 +684,7 @@ export function ZamonCatalog({ snapshot, initialLanguage }: { snapshot: ZamonSna
   const selectUnit = (unit: Unit, opener: HTMLButtonElement) => {
     rememberUnit(unit);
     selectionOpener.current = opener;
-    if (mode === 'chess-plus') setSelected(unit);
-    else {
-      planOpener.current = opener;
-      setPlanUnit(unit);
-    }
+    setSelected(unit);
   };
   const changeMode = (next: Mode) => {
     setMode(next);
@@ -767,11 +760,11 @@ export function ZamonCatalog({ snapshot, initialLanguage }: { snapshot: ZamonSna
 
       <section id="zamon-results" className="zamon-catalog-results" aria-labelledby="zamon-results-title">
         <header>
-          <div aria-live="polite"><small>{t.folio} · {mode === 'cards' ? '01' : mode === 'chess' ? '02' : '03'}</small><h2 id="zamon-results-title"><strong>{filtered.length}</strong> {t.results}</h2></div>
+          <div aria-live="polite"><small>{t.folio} · {mode === 'cards' ? '01' : '02'}</small><h2 id="zamon-results-title"><strong>{filtered.length}</strong> {t.results}</h2></div>
           <label><span>{t.sort}</span><select value={sort} onChange={(event) => { setSort(event.target.value as Sort); setVisible(pageSize); }}>{(Object.entries(t.sorts) as Array<[Sort, string]>).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
         </header>
         <section className="zamon-status-ledger" aria-label={t.statusLedger}><p>{t.statusLedger}</p><div>{snapshot.statusSummary.map((item) => <article key={item.id}><strong>{item.count}</strong><span>{statusLabel(snapshot.units.find((unit) => unit.statusOriginal === item.status)!, language)}</span></article>)}</div></section>
-        <details className="zamon-catalog-source"><summary><span aria-hidden="true">i</span><strong>{t.sourceTitle}</strong><em aria-hidden="true">＋</em></summary><div><p>{t.sourceNoteBefore} {snapshot.officialTotalAtCapture} {t.sourceNoteAfter}</p><a href={officialLanding(language)} target="_blank" rel="noreferrer">{t.officialSource}<span aria-hidden="true">↗</span></a></div></details>
+        <details className="zamon-catalog-source"><summary><span aria-hidden="true">i</span><strong>{t.sourceTitle}</strong><em aria-hidden="true">＋</em></summary><div><p>{t.sourceNoteBefore} {snapshot.officialTotalAtCapture} {t.sourceNoteAfter}</p></div></details>
 
         {modes.filter((item) => item !== mode).map((item) => <div id={`zamon-panel-${item}`} role="tabpanel" aria-labelledby={`zamon-tab-${item}`} hidden key={item} />)}
 
@@ -785,9 +778,9 @@ export function ZamonCatalog({ snapshot, initialLanguage }: { snapshot: ZamonSna
         ) : (
           <div id={`zamon-panel-${mode}`} className="zamon-matrix" role="tabpanel" aria-labelledby={`zamon-tab-${mode}`}>
             <header><div><small>{t.modes[mode]}</small><h2>{t.matrix}</h2><p id="zamon-matrix-help">{t.matrixHint}</p></div></header>
-            <div className={`zamon-matrix-layout${mode === 'chess-plus' ? ' has-detail' : ''}`}>
-              <div className="zamon-matrix-groups">{matrixGroups.map((units) => { const publishedGroupUnits = snapshot.units.filter((unit) => unit.buildingId === units[0].buildingId && unit.entrance === units[0].entrance); const floorMin = Math.min(...publishedGroupUnits.map((unit) => unit.floor)); return <MatrixGroup key={`${units[0].buildingId}-${units[0].entrance}`} units={units} language={language} plus={mode === 'chess-plus'} sort={sort} floorMin={floorMin} selectedId={activeSelected?.id} onSelect={selectUnit} />; })}</div>
-              {mode === 'chess-plus' ? activeSelected ? <UnitDetail key={activeSelected.id} unit={activeSelected} language={language} onClose={closeDetail} onPlan={(opener) => openPlan(activeSelected, opener)} onLead={() => openLead(activeSelected, 'matrix-plus-detail')} obscured={Boolean(planUnit)} /> : <aside className="zamon-unit-detail zamon-unit-detail--empty" aria-label={t.selected}><span aria-hidden="true">↖</span><p>{t.selectHint}</p></aside> : null}
+            <div className="zamon-matrix-layout has-detail">
+              <div className="zamon-matrix-groups">{matrixGroups.map((units) => { const publishedGroupUnits = snapshot.units.filter((unit) => unit.buildingId === units[0].buildingId && unit.entrance === units[0].entrance); const floorMin = Math.min(...publishedGroupUnits.map((unit) => unit.floor)); return <MatrixGroup key={`${units[0].buildingId}-${units[0].entrance}`} units={units} language={language} sort={sort} floorMin={floorMin} selectedId={activeSelected?.id} onSelect={selectUnit} />; })}</div>
+              {activeSelected ? <UnitDetail key={activeSelected.id} unit={activeSelected} language={language} onClose={closeDetail} onPlan={(opener) => openPlan(activeSelected, opener)} onLead={() => openLead(activeSelected, 'matrix-detail')} obscured={Boolean(planUnit)} /> : <aside className="zamon-unit-detail zamon-unit-detail--empty" aria-label={t.selected}><span aria-hidden="true">↖</span><p>{t.selectHint}</p></aside>}
             </div>
           </div>
         )}

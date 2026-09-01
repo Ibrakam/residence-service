@@ -3,7 +3,7 @@ import catalog from '../../data/kayan-catalog.json';
 import { catalogUnitAriaLabel, type CatalogAccessibilityLanguage, type CatalogAccessibilityStatus } from '../../app/kayan/catalog-accessibility';
 
 const languages: CatalogAccessibilityLanguage[] = ['ru', 'uz', 'en'];
-const modes = ['chess', 'chess-plus'] as const;
+const modes = ['chess'] as const;
 const localized = {
   ru: {
     entrance: 'Подъезд', floor: 'Этаж', status: 'Статус', area: 'м²',

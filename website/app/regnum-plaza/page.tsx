@@ -69,7 +69,7 @@ export default async function Page({ searchParams }: PageProps) {
         geo: { '@type': 'GeoCoordinates', latitude: 41.331564, longitude: 69.324328 },
         numberOfAccommodationUnits: 776,
         additionalProperty: current.properties.map(([name, value]) => ({ '@type': 'PropertyValue', name, value })),
-        sameAs: ['https://mbc.uz/project/regnum-plaza', 'https://mbc.uz/genplan/regnum-plaza', 'https://cloud.chaos.com/collaboration/n/VELR7kWdz9hqfoHWYRwfai/present?t=vrt'],
+        sameAs: ['https://cloud.chaos.com/collaboration/n/VELR7kWdz9hqfoHWYRwfai/present?t=vrt'],
       },
       { '@type': 'BreadcrumbList', inLanguage: languageTag(language), itemListElement: [{ '@type': 'ListItem', position: 1, name: current.home, item: `${publicOrigin}${sitePath('/')}` }, { '@type': 'ListItem', position: 2, name: 'Regnum Plaza', item: projectUrl }] },
     ],

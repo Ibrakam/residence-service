@@ -640,12 +640,13 @@ assert(
 );
 
 assertTokens(catalogUi, catalogUiPath, [
-  "type Mode = 'cards' | 'chess' | 'chess-plus'", "const modes: Mode[] = ['cards', 'chess', 'chess-plus']",
+  'type Mode = "cards" | "chess"', 'const modes: Mode[] = ["cards", "chess"]',
   'priceAsc', 'priceDesc', 'areaAsc', 'areaDesc', 'floorAsc', 'floorDesc', 'roomsAsc', 'roomsDesc', 'ppmAsc', 'ppmDesc',
   'rooms:', 'areaFrom:', 'areaTo:', 'priceFrom:', 'priceTo:', 'floor:', 'building:', 'entrance:', 'status:', 'completion:', 'repair:', 'studio:',
-  'projectSlug=yangibaxt', 'unitUuid=', 'rememberLastViewedApartment', 'role="tablist"', 'aria-modal', "event.key === 'ArrowLeft'", "event.key === 'ArrowRight'", "event.key === 'Home'", "event.key === 'End'",
-  "loading=\"lazy\"", 'Карточки', 'Шахматка+', 'Kartalar', 'Shaxmatka+', 'Cards', 'Matrix+',
+  'projectSlug=yangibaxt', 'unitUuid=', 'rememberLastViewedApartment', 'role="tablist"', 'aria-modal', 'event.key === "ArrowLeft"', 'event.key === "ArrowRight"', 'event.key === "Home"', 'event.key === "End"',
+  "loading=\"lazy\"", 'Карточки', 'Шахматка', 'Kartalar', 'Shaxmatka', 'Cards', 'Matrix',
 ]);
+assert(!catalogUi.includes('chess-plus') && !catalogUi.includes('Matrix+'), `${catalogUiPath} contains a duplicate matrix mode`);
 assert(!/floor-plan|floorPlanMode|План этажа/.test(catalogUi), `${catalogUiPath} contains the forbidden floor-plan catalog mode`);
 
 assertTokens(leadHelper, leadHelperPath, ['NEXT_PUBLIC_APP_BASE_PATH', "replace(/^\\/+|\\/+$/g, '')", '/v1/leads', "process.env.NODE_ENV !== 'production'", '/api/yangibaxt-lead']);

@@ -130,7 +130,7 @@
   .jmc-floor-empty,
   .jmc-floor-units button b
 ) { color: #5c554b; }
-.jomiy-catalog-site .jmc-matrix-entrance:not([data-plus]) .jmc-floor-units button small { color: #5c554b; }
+.jomiy-catalog-site .jmc-floor-units button small { color: #5c554b; }
 .jmc-price s { margin-top: 5px; font-size: 12px; }
 .jomiy-catalog-site .jmc-unit-card__actions button,
 .jomiy-catalog-site .jmc-detail-cta,
@@ -211,9 +211,7 @@
 .jmc-floor-units button[data-tone='booking'],
 .jmc-floor-units button[data-tone='booking-release'] { background: #ddd9d0; }
 .jmc-floor-units button b { overflow: hidden; color: rgba(37,36,34,.68); font-size: 10px; font-weight: 700; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
-.jmc-matrix-entrance:not([data-plus]) .jmc-floor-units button { min-height: 84px; }
-.jmc-matrix-entrance:not([data-plus]) .jmc-floor-units button small { overflow: hidden; color: rgba(37,36,34,.62); text-overflow: ellipsis; white-space: nowrap; }
-.jmc-matrix-entrance[data-plus] .jmc-floor-units button { min-height: 128px; background-image: linear-gradient(135deg, transparent 0 79%, rgba(154,116,72,.15) 79% 100%); }
+.jmc-matrix-entrance .jmc-floor-units button { min-height: 128px; background-image: linear-gradient(135deg, transparent 0 79%, rgba(154,116,72,.15) 79% 100%); }
 .jmc-campaign-state { width: fit-content; margin-top: 9px; padding: 5px 8px; border: 1px solid currentColor; color: #35634d; font-size: 10px; font-weight: 750; line-height: 1.3; }
 .jmc-campaign-state[data-active='false'] { color: var(--jmc-berry); }
 .jmc-empty > div { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }

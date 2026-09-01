@@ -261,7 +261,7 @@ async function verifyCatalogs() {
     assert(ordered.map((unit) => unit.id).join(',') === expectedSortOrders[sort], `${sort}: deterministic card order mismatch`);
     const ranks = new Map(ordered.map((unit, index) => [unit.id, index]));
     const pair = [...pairRow.unitIds].sort((left, right) => ranks.get(left) - ranks.get(right)).join(',');
-    assert(pair === expectedPairOrders[sort], `${sort}: deterministic Matrix/Matrix+ row order mismatch`);
+    assert(pair === expectedPairOrders[sort], `${sort}: deterministic Matrix row order mismatch`);
   }
 
   for (const id of ['no-construction-gallery', 'no-booklet', 'no-active-campaign']) {
@@ -315,7 +315,8 @@ async function verifyApplicationContract(catalog) {
   assertIncludes(source.landingUi, ["const languages: Language[] = ['ru', 'uz', 'en']", 'real-first-phase', 'documentary-opening', 'cgi-full-project', 'archival-cgi-concept', 'const latest = useRef({ state, onChange })', 'returnFocusTo={lead.opener}', '!menuRef.current.contains(document.activeElement)', 'role="dialog"', 'aria-modal={menuOpen && !lead ? true : undefined}', 'inert={!menuOpen || Boolean(lead)', 'inert={menuOpen ? true : undefined}', 'width={unit.planWidth!}', 'height={unit.planHeight!}'], 'landing UI/layers');
   assert(source.landingCss.includes('prefers-reduced-motion') && source.catalogCss.includes('prefers-reduced-motion'), 'Reduced-motion policy is missing');
   assert(source.sharedCss.includes(':is(.rp-site,.rpc-site)'), 'Shared Regnum lead styling is not scoped to both routes');
-  assertIncludes(source.catalogUi, ["type Mode = 'cards' | 'chess' | 'chess-plus'", "const modes: Mode[] = ['cards', 'chess', 'chess-plus']", "type Sort = 'source' | 'priceAsc' | 'priceDesc' | 'areaAsc' | 'areaDesc' | 'floorAsc' | 'floorDesc' | 'roomsAsc' | 'roomsDesc' | 'ppmAsc' | 'ppmDesc'", 'priceRank', 'ppmRank', 'rankById', 'data-row-id', 'data-unit-id', 'covered={Boolean(plan || lead)}', 'aria-hidden={covered || undefined}', 'inert={covered ? true : undefined}', 'returnFocusTo={lead.opener}', '!panel.contains(document.activeElement)', "const mobileDetailOpen = mode === 'chess-plus'", 'inert={mobileDetailOpen ? true : undefined}', 'width={unit.planWidth!}', 'height={unit.planHeight!}', 'setVisible(12)', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Escape'], 'catalog sorting/layer UI');
+  assertIncludes(source.catalogUi, ["type Mode = 'cards' | 'chess'", "const modes: Mode[] = ['cards', 'chess']", "type Sort = 'source' | 'priceAsc' | 'priceDesc' | 'areaAsc' | 'areaDesc' | 'floorAsc' | 'floorDesc' | 'roomsAsc' | 'roomsDesc' | 'ppmAsc' | 'ppmDesc'", 'priceRank', 'ppmRank', 'rankById', 'data-row-id', 'data-unit-id', 'covered={Boolean(plan || lead)}', 'aria-hidden={covered || undefined}', 'inert={covered ? true : undefined}', 'returnFocusTo={lead.opener}', '!panel.contains(document.activeElement)', "const mobileDetailOpen = mode === 'chess'", 'inert={mobileDetailOpen ? true : undefined}', 'width={unit.planWidth!}', 'height={unit.planHeight!}', 'setVisible(12)', 'ArrowLeft', 'ArrowRight', 'Home', 'End', 'Escape'], 'catalog sorting/layer UI');
+  assert(!source.catalogUi.includes('chess-plus') && !source.catalogUi.includes('Matrix+'), 'Duplicate Regnum matrix mode leaked into the catalogue UI');
   assert(!/const modes[^\n]+floor/iu.test(source.catalogUi), 'Forbidden floor-plan mode was added');
   assert(source.catalogUi.includes('priceOnRequest(language)') && source.catalogUi.includes('publicPrice=false'), 'Price-on-request disclosure is missing');
   assertIncludes(source.lead, ["@/data/regnum-plaza-client.json", "process.env.NODE_ENV === 'production'", '/v1/leads', '/api/regnum-plaza-lead', "['unitId', unit.id]", 'rememberLastViewedApartment({ uuid: unit.id }'], 'sanitized lead client');
@@ -363,7 +364,7 @@ async function main() {
   const [{ catalog, privateCatalog }, sourceFiles, derivatives] = await Promise.all([verifyCatalogs(), verifySourceBundle(), verifyDerivatives(), verifyGuards()]);
   const privateLiterals = await verifyClientLeakBoundary(privateCatalog);
   await verifyApplicationContract(catalog);
-  console.log(`Regnum Plaza integrity verified: 12 units, 12 internal IDs, 12 CRM IDs, 6 official plan sources, 2 missing plans, 4 groups, 11 matrix rows, 32 media sources, ${derivatives} public derivatives, ${sourceFiles}/${sourceFiles} frozen bundle files, pinned manifest ${expectedBundleContract.manifestSha256}, ${expectedBundleContract.rawByteTotal} raw bytes, 2/2 bundle tamper controls rejected, 3 languages, 3 modes, 11 deterministic sorts, ${privateLiterals} private numeric literals excluded from client inputs/bundle, 0 Offers${fullBundle ? ', full bundle topology checked' : ''}.`);
+  console.log(`Regnum Plaza integrity verified: 12 units, 12 internal IDs, 12 CRM IDs, 6 official plan sources, 2 missing plans, 4 groups, 11 matrix rows, 32 media sources, ${derivatives} public derivatives, ${sourceFiles}/${sourceFiles} frozen bundle files, pinned manifest ${expectedBundleContract.manifestSha256}, ${expectedBundleContract.rawByteTotal} raw bytes, 2/2 bundle tamper controls rejected, 3 languages, 2 modes, 11 deterministic sorts, ${privateLiterals} private numeric literals excluded from client inputs/bundle, 0 Offers${fullBundle ? ', full bundle topology checked' : ''}.`);
 }
 
 main().catch((error) => { console.error(error instanceof Error ? error.message : error); process.exitCode = 1; });

@@ -46,7 +46,7 @@ const content = {
     places: ['Alfraganus Mall', 'Парк Фурката', 'Tashkent International School', 'Мирабадский базар'], map: 'Открыть карту', route: 'Построить маршрут',
     constructionKicker: '07 · ХОД СТРОИТЕЛЬСТВА', constructionTitle: 'Реальный прогресс.', constructionAccent: 'Июль 2026.',
     constructionCopy: 'Актуальный отчёт по Business-очереди: в блоке 1 завершён монолит, на 9-м этаже идёт кладка, на 6-м — сантехнические работы, на 8-м — электромонтаж. Начаты кровельные работы.',
-    constructionStatus: ['Блок 1', 'монолит завершён'], official: 'Официальный ход строительства', panorama: 'Панорама 360°',
+    constructionStatus: ['Блок 1', 'монолит завершён'], panorama: 'Панорама 360°',
     selectionKicker: '08 · ВЫБОР КВАРТИРЫ', selectionTitle: 'Найдите пространство,', selectionAccent: 'которое станет вашим.',
     selectionCopy: '256 активных предложений из официального каталога: точные площади, цены, этажи и планировки.', selectionButton: 'Открыть каталог',
     footerNote: 'Информация на сайте не является публичной офертой. Наличие, стоимость и условия покупки уточняйте у менеджера.',
@@ -87,7 +87,7 @@ const content = {
     places: ['Alfraganus Mall', 'Furqat bog‘i', 'Tashkent International School', 'Mirobod bozori'], map: 'Xaritani ochish', route: 'Yo‘nalish qurish',
     constructionKicker: '07 · QURILISH JARAYONI', constructionTitle: 'Haqiqiy taraqqiyot.', constructionAccent: '2026-yil iyul.',
     constructionCopy: 'Business bosqichining dolzarb hisoboti: 1-blokda monolit yakunlangan, 9-qavatda g‘isht terish, 6-qavatda santexnika, 8-qavatda elektr montaj ishlari olib borilmoqda. Tom yopish ishlari boshlangan.',
-    constructionStatus: ['1-blok', 'monolit yakunlangan'], official: 'Rasmiy qurilish jarayoni', panorama: '360° panorama',
+    constructionStatus: ['1-blok', 'monolit yakunlangan'], panorama: '360° panorama',
     selectionKicker: '08 · XONADON TANLASH', selectionTitle: 'O‘zingizniki bo‘ladigan', selectionAccent: 'makonni toping.',
     selectionCopy: 'Rasmiy katalogdan 256 ta faol taklif: aniq maydon, narx, qavat va rejalar.', selectionButton: 'Katalogni ochish',
     footerNote: 'Saytdagi ma’lumot ommaviy oferta emas. Mavjudlik, narx va xarid shartlarini menejerdan aniqlang.',
@@ -128,7 +128,7 @@ const content = {
     places: ['Alfraganus Mall', 'Furkat Park', 'Tashkent International School', 'Mirobod Bazaar'], map: 'Open map', route: 'Build a route',
     constructionKicker: '07 · CONSTRUCTION', constructionTitle: 'Real progress.', constructionAccent: 'July 2026.',
     constructionCopy: 'Latest Business-phase report: the structural frame of block 1 is complete; masonry is under way on level 9, plumbing on level 6 and electrical installation on level 8. Roofing work has started.',
-    constructionStatus: ['Block 1', 'structural frame complete'], official: 'Official construction updates', panorama: '360° panorama',
+    constructionStatus: ['Block 1', 'structural frame complete'], panorama: '360° panorama',
     selectionKicker: '08 · APARTMENT SELECTION', selectionTitle: 'Find a space', selectionAccent: 'to make your own.',
     selectionCopy: '256 active official listings with exact areas, prices, floors and plans.', selectionButton: 'Open catalogue',
     footerNote: 'Information on this site is not a public offer. Please confirm availability, price and purchase terms with a project manager.',
@@ -253,7 +253,6 @@ export function MerosPage({ initialAvailable = 256, initialLanguage = 'ru' }: { 
   const closeRef = useRef<HTMLButtonElement>(null);
   const c = content[language];
   const i = interfaceCopy[language];
-  const officialProjectUrl = language === 'uz' ? 'https://nrg-bi.uz/uz/landing/meros' : 'https://nrg-bi.uz/uz-ru/landing/meros';
   useReveals(language);
 
   useEffect(() => {
@@ -355,7 +354,7 @@ export function MerosPage({ initialAvailable = 256, initialLanguage = 'ru' }: { 
 
     <section className="meros-construction" id="construction">
       <div className="meros-construction__head" data-reveal><div><p>{c.constructionKicker}</p><h2>{c.constructionTitle}<em>{c.constructionAccent}</em></h2></div><span>{c.constructionCopy}</span></div>
-      <div className="meros-construction__layout" data-reveal><figure><img src={asset(constructionImages[construction])} alt={`${c.constructionAccent} ${construction + 1}`} loading="lazy" /><figcaption><span>30.07.2026 · 0{construction + 1}/03</span><div><button type="button" onClick={() => setConstruction((construction + 2) % 3)} aria-label={i.previous}>←</button><button type="button" onClick={() => setConstruction((construction + 1) % 3)} aria-label={i.next}>→</button></div></figcaption></figure><aside><small>{i.constructionLabel}</small><strong>{c.constructionStatus[0]}</strong><span>{c.constructionStatus[1]}</span><div>{constructionImages.map((image, index) => <button type="button" key={image} className={construction === index ? 'is-active' : ''} aria-pressed={construction === index} onClick={() => setConstruction(index)}>0{index + 1}</button>)}</div><a href={officialProjectUrl} target="_blank" rel="noreferrer">{c.official} ↗</a><a href="https://uzbekistan360.uz/ru/location/nrg-merosuoI" target="_blank" rel="noreferrer">{c.panorama} ↗</a></aside></div>
+      <div className="meros-construction__layout" data-reveal><figure><img src={asset(constructionImages[construction])} alt={`${c.constructionAccent} ${construction + 1}`} loading="lazy" /><figcaption><span>30.07.2026 · 0{construction + 1}/03</span><div><button type="button" onClick={() => setConstruction((construction + 2) % 3)} aria-label={i.previous}>←</button><button type="button" onClick={() => setConstruction((construction + 1) % 3)} aria-label={i.next}>→</button></div></figcaption></figure><aside><small>{i.constructionLabel}</small><strong>{c.constructionStatus[0]}</strong><span>{c.constructionStatus[1]}</span><div>{constructionImages.map((image, index) => <button type="button" key={image} className={construction === index ? 'is-active' : ''} aria-pressed={construction === index} onClick={() => setConstruction(index)}>0{index + 1}</button>)}</div><a href="https://uzbekistan360.uz/ru/location/nrg-merosuoI" target="_blank" rel="noreferrer">{c.panorama} ↗</a></aside></div>
     </section>
 
     <section className="meros-selection">

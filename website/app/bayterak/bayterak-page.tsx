@@ -27,8 +27,6 @@ const languages: Language[] = ['ru', 'uz', 'en'];
 const classKeys: ClassKey[] = ['comfort', 'business'];
 const storageKey = 'bayterak-language';
 const introKey = 'bayterak-intro-seen-v1';
-const officialLandingRu = 'https://nrg-bi.uz/uz-ru/landing/bayterak';
-const officialLandingUz = 'https://nrg-bi.uz/uz/landing/bayterak';
 const officialBooklet = '/bayterak/documents/bayterak-booklet-2026-08.pdf';
 const panorama = 'https://uzbekistan360.uz/ru/location/nrg-bi-bayterakHcY';
 
@@ -105,7 +103,7 @@ const copy = {
     catalogPrice: 'Текущая цена кампании: 467 567 900–2 055 877 755 UZS. Условия и статус подтверждает отдел продаж.', openCatalog: 'Открыть полный каталог',
     contactIndex: '08 · КОНСУЛЬТАЦИЯ', contactTitle: 'Найдём квартиру на вашей оси координат.', contactText: 'Оставьте контакты — менеджер NRG-BI уточнит актуальный статус, цену и срок выбранного предложения.',
     formTagline: 'Золотая ось Нового Ташкента.', formFacts: ['Comfort+ / Business', '9–16 этажей', 'потолки 3 м'],
-    privacy: 'Обработка персональных данных', source: 'Официальная страница', booklet: 'Буклет · август 2026', panorama: 'Панорама 360', top: 'Наверх',
+    privacy: 'Обработка персональных данных', booklet: 'Буклет · август 2026', panorama: 'Панорама 360', top: 'Наверх',
     disclaimer: 'Все проектные изображения имеют статус визуализации или концепции. Финальный вид может измениться. Материалы и каталог не являются публичной офертой.',
     introLabel: 'ЗОЛОТАЯ ОСЬ · НОВЫЙ ТАШКЕНТ',
   },
@@ -167,7 +165,7 @@ const copy = {
     catalogPrice: 'Kampaniya bo‘yicha joriy narx: 467 567 900–2 055 877 755 UZS. Shart va statusni sotuv bo‘limi tasdiqlaydi.', openCatalog: 'To‘liq katalogni ochish',
     contactIndex: '08 · MASLAHAT', contactTitle: 'Koordinatalaringizga mos xonadonni topamiz.', contactText: 'Kontaktlaringizni qoldiring — NRG-BI menejeri tanlangan taklifning joriy statusi, narxi va muddatini aniqlashtiradi.',
     formTagline: 'Yangi Toshkentning oltin o‘qi.', formFacts: ['Comfort+ / Business', '9–16 qavat', '3 m shiftlar'],
-    privacy: 'Shaxsiy ma’lumotlarni qayta ishlash', source: 'Rasmiy sahifa', booklet: 'Buklet · 2026-yil avgust', panorama: '360 panorama', top: 'Yuqoriga',
+    privacy: 'Shaxsiy ma’lumotlarni qayta ishlash', booklet: 'Buklet · 2026-yil avgust', panorama: '360 panorama', top: 'Yuqoriga',
     disclaimer: 'Barcha loyiha tasvirlari vizualizatsiya yoki konsepsiya maqomiga ega. Yakuniy ko‘rinish o‘zgarishi mumkin. Materiallar va katalog ommaviy oferta emas.',
     introLabel: 'OLTIN O‘Q · YANGI TOSHKENT',
   },
@@ -229,7 +227,7 @@ const copy = {
     catalogPrice: 'Current campaign price: UZS 467,567,900–2,055,877,755. The sales team confirms terms and status.', openCatalog: 'Open the full catalogue',
     contactIndex: '08 · CONSULTATION', contactTitle: 'Find an apartment on your own axis.', contactText: 'Leave your details and an NRG-BI manager will confirm the current status, price and completion date for your chosen listing.',
     formTagline: 'The golden axis of New Tashkent.', formFacts: ['Comfort+ / Business', '9–16 storeys', '3 m ceilings'],
-    privacy: 'Personal data processing', source: 'Official project page', booklet: 'Booklet · August 2026', panorama: '360 panorama', top: 'Back to top',
+    privacy: 'Personal data processing', booklet: 'Booklet · August 2026', panorama: '360 panorama', top: 'Back to top',
     disclaimer: 'Every project image is identified as a visualisation or concept. Final appearance may change. The materials and catalogue are not a public offer.',
     introLabel: 'GOLDEN AXIS · NEW TASHKENT',
   },
@@ -496,8 +494,6 @@ export function BayterakPage({ initialLanguage }: { initialLanguage: Language })
     measuredScrollbarWidth = Math.max(measuredScrollbarWidth, window.innerWidth - document.documentElement.clientWidth, 0);
     setLeadContext(`bayterak:landing:${surface}:lang=${language}`);
   };
-  const officialLanding = language === 'uz' ? officialLandingUz : officialLandingRu;
-
   return <div className="bayterak-site" lang={language}>
     {introPhase !== 'hidden' ? <div className={`bayterak-intro ${introPhase === 'leaving' ? 'is-leaving' : ''}`} aria-hidden="true"><span>{t.introLabel}</span><i /><small>BAY / TERAK</small></div> : null}
     <a className="bayterak-skip" href="#bayterak-content">{t.skip}</a>
@@ -534,7 +530,7 @@ export function BayterakPage({ initialLanguage }: { initialLanguage: Language })
       <section className="bayterak-contact" data-bayterak-reveal><div><p className="bayterak-overline">{t.contactIndex}</p><h2>{t.contactTitle}</h2><p>{t.contactText}</p></div><div className="bayterak-contact__actions"><button className="bayterak-button is-solid" type="button" data-lead-trigger onClick={() => openLead('contact-consultation')}>{t.consult}<span>↗</span></button><a className="bayterak-button" href="tel:1360">{t.phone}<span>↗</span></a></div></section>
     </main>
 
-    <footer className="bayterak-footer"><a className="bayterak-mark" href={withLanguage('/bayterak', language)}><span>BAY</span><span>TERAK</span></a><p>{t.disclaimer}</p><nav aria-label={t.footerNavigation}><a href={officialLanding} target="_blank" rel="noreferrer">{t.source} ↗</a><a href={asset(officialBooklet)} target="_blank" rel="noreferrer">{t.booklet} ↗</a><a href={panorama} target="_blank" rel="noreferrer">{t.panorama} ↗</a><a href={privacyUrl(language)}>{t.privacy}</a><a href="#bayterak-content" onClick={(event) => goToAnchor(event, 'bayterak-content')}>{t.top} ↑</a></nav></footer>
+    <footer className="bayterak-footer"><a className="bayterak-mark" href={withLanguage('/bayterak', language)}><span>BAY</span><span>TERAK</span></a><p>{t.disclaimer}</p><nav aria-label={t.footerNavigation}><a href={asset(officialBooklet)} target="_blank" rel="noreferrer">{t.booklet} ↗</a><a href={panorama} target="_blank" rel="noreferrer">{t.panorama} ↗</a><a href={privacyUrl(language)}>{t.privacy}</a><a href="#bayterak-content" onClick={(event) => goToAnchor(event, 'bayterak-content')}>{t.top} ↑</a></nav></footer>
 
     {leadContext ? <div className="bayterak-lead-host" data-project-slug="bayterak" data-context={leadContext}><LeadModal open language={language} context={leadContext} brandName="NRG-BI" projectName="BAYTERAK" tagline={t.formTagline} facts={t.formFacts} submitUrl={bayterakLeadSubmitUrl()} projectSlug="bayterak" privacyUrl={privacyUrl(language)} requireConsent onClose={() => setLeadContext(undefined)} /></div> : null}
   </div>;

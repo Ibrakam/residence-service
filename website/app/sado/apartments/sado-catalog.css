@@ -107,7 +107,7 @@
 .sado-matrix-cells button small { font-size: .53rem; color: inherit; opacity: .72; }
 .sado-matrix-cells button strong { font-size: .7rem; }
 .sado-matrix-cells button span { font-size: .57rem; }
-.sado-matrix-plus-layout { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; align-items: start; }
+.sado-matrix-detail-layout { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; align-items: start; }
 .sado-unit-detail { width: 100%; max-width: 360px; padding: 20px; border: 1px solid var(--sado-line); background: #fbf9f3; }
 .sado-unit-detail__head { display: flex; align-items: center; justify-content: space-between; }
 .sado-unit-detail__head small { color: var(--sado-olive); font-size: .58rem; text-transform: uppercase; letter-spacing: .08em; }
@@ -160,7 +160,7 @@
   .sado-mode-switch button { flex: 1; padding: 0 12px; }
   .sado-catalog-filters { grid-template-columns: repeat(2, 1fr); }
   .sado-unit-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .sado-matrix-plus-layout { grid-template-columns: 1fr; }
+  .sado-matrix-detail-layout { grid-template-columns: 1fr; }
   .sado-unit-detail { max-width: none; margin-top: 14px; display: grid; grid-template-columns: minmax(260px, .8fr) 1fr; gap: 0 24px; }
   .sado-unit-detail__head, .sado-unit-detail .sado-unit-plan { grid-row: auto; }
   .sado-unit-detail__tags, .sado-unit-detail h3, .sado-unit-detail dl, .sado-unit-detail__price, .sado-unit-detail .sado-catalog-primary { grid-column: 2; }

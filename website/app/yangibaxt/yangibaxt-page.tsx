@@ -80,7 +80,7 @@ const copy = {
     contactIndex: '08 · КОНТАКТ', contactTitle: 'Начните с маршрута, который подходит именно вам.', contactText: 'Менеджер уточнит сценарий покупки и проверит актуальный статус выбранной квартиры.', address: 'Ташкент, Ахангаранский проспект', formTagline: 'Вместе с природой.', formFacts: ['58 га', 'озеро Baxt', '7,3 га парка'] as const,
     media: { real: 'Реальная официальная фотография', cgi: 'Официальная CGI-концепция · итог может измениться', construction: 'Реальная официальная фотография стройки · июль 2026' },
     galleryLabel: 'Галерея', previous: 'Предыдущее изображение', next: 'Следующее изображение', openImage: 'Открыть изображение', closeImage: 'Закрыть изображение', imageOf: 'из',
-    sources: 'Источники', landing: 'Официальная страница', news: 'Новость о сдаче II очереди', booklet: 'Официальный буклет · 33 страницы', privacy: 'Обработка персональных данных', top: 'Наверх',
+    sources: 'Источники', booklet: 'Официальный буклет · 33 страницы', privacy: 'Обработка персональных данных', top: 'Наверх',
     disclaimer: 'Архитектура, благоустройство, фасады, интерьеры, материалы, нумерация и инфраструктура на концептуальных изображениях условны и могут измениться. Информация не является публичной офертой.',
   },
   uz: {
@@ -99,7 +99,7 @@ const copy = {
     contactIndex: '08 · ALOQA', contactTitle: 'Sizga mos yo‘nalishdan boshlang.', contactText: 'Menejer xarid maqsadini aniqlaydi va tanlangan xonadonning dolzarb holatini tekshiradi.', address: 'Toshkent, Ohangaron prospekti', formTagline: 'Tabiat bilan birga.', formFacts: ['58 ga', 'Baxt ko‘li', '7,3 ga park'] as const,
     media: { real: 'Haqiqiy rasmiy fotosurat', cgi: 'Rasmiy CGI konsepsiyasi · yakuniy ko‘rinish o‘zgarishi mumkin', construction: 'Qurilishning haqiqiy rasmiy fotosurati · 2026-yil iyul' },
     galleryLabel: 'Galereya', previous: 'Oldingi tasvir', next: 'Keyingi tasvir', openImage: 'Tasvirni ochish', closeImage: 'Tasvirni yopish', imageOf: 'dan',
-    sources: 'Manbalar', landing: 'Rasmiy sahifa', news: 'II bosqich topshirilgani haqidagi yangilik', booklet: 'Rasmiy buklet · 33 sahifa', privacy: 'Shaxsiy ma’lumotlarni qayta ishlash', top: 'Yuqoriga',
+    sources: 'Manbalar', booklet: 'Rasmiy buklet · 33 sahifa', privacy: 'Shaxsiy ma’lumotlarni qayta ishlash', top: 'Yuqoriga',
     disclaimer: 'Konseptual tasvirlardagi me’morchilik, obodonlashtirish, fasadlar, interyerlar, materiallar, raqamlash va infratuzilma shartli bo‘lib, o‘zgarishi mumkin. Ma’lumot ommaviy oferta emas.',
   },
   en: {
@@ -118,7 +118,7 @@ const copy = {
     contactIndex: '08 · CONTACT', contactTitle: 'Start with the route that fits you.', contactText: 'A manager will clarify your purchase scenario and check the current status of the selected apartment.', address: 'Tashkent, Akhangaran Avenue', formTagline: 'Together with nature.', formFacts: ['58 ha', 'Lake Baxt', '7.3 ha park'] as const,
     media: { real: 'Actual official photograph', cgi: 'Official CGI concept · final appearance may change', construction: 'Actual official construction photograph · July 2026' },
     galleryLabel: 'Gallery', previous: 'Previous image', next: 'Next image', openImage: 'Open image', closeImage: 'Close image', imageOf: 'of',
-    sources: 'Sources', landing: 'Official project page', news: 'Phase II completion announcement', booklet: 'Official booklet · 33 pages', privacy: 'Personal data processing', top: 'Back to top',
+    sources: 'Sources', booklet: 'Official booklet · 33 pages', privacy: 'Personal data processing', top: 'Back to top',
     disclaimer: 'Architecture, landscaping, facades, interiors, materials, numbering and infrastructure shown in concept images are indicative and may change. This information is not a public offer.',
   },
 } as const;
@@ -454,8 +454,6 @@ export function YangiBaxtPage({ initialLanguage }: { initialLanguage: Language }
       <footer className="yb-footer" aria-hidden={mobileMenuOpen || undefined} inert={mobileMenuOpen ? true : undefined}>
         <div><strong>YANGI BAXT</strong><span>{t.heroLead}</span></div>
         <nav aria-label={t.sources}>
-          <a href={language === 'ru' ? 'https://nrg-bi.uz/uz-ru/landing/yangibaxt' : 'https://nrg-bi.uz/uz/landing/yangibaxt'} target="_blank" rel="noreferrer">{t.landing} ↗</a>
-          <a href="https://nrg-bi.uz/uz-ru/news/sdana-vtoraya-ochered-zhk-yangi-baxt" target="_blank" rel="noreferrer">{t.news} ↗</a>
           <a href={asset('/yangibaxt/documents/yangibaxt-official.pdf')} target="_blank" rel="noreferrer">{t.booklet} ↗</a>
           <a href={`${appBasePath}/privacy?project=yangibaxt&lang=${language}&from=landing`}>{t.privacy} ↗</a>
         </nav>

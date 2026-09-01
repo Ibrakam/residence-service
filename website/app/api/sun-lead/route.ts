@@ -36,7 +36,7 @@ const surfaces = new Set([
   'landing:header', 'landing:menu', 'landing:hero', 'landing:evidence', 'landing:dayline',
   'landing:amenities', 'landing:catalog-preview', 'landing:location', 'landing:footer',
   'catalog:header', 'catalog:hero', 'catalog:card', 'catalog:empty', 'catalog:matrix',
-  'catalog:matrix-plus', 'catalog:plan', 'catalog:footer',
+  'catalog:plan', 'catalog:footer',
 ]);
 const trackingKeys = [
   'fbc', 'fbp', 'fbclid', 'utm_source', 'utm_medium', 'utm_campaign',

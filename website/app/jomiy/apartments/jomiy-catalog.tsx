@@ -21,7 +21,7 @@ import {
   jomiyLocale,
 } from "../jomiy-ui";
 
-type Mode = "cards" | "chess" | "chess-plus";
+type Mode = "cards" | "chess";
 type Sort =
   | "source"
   | "priceAsc"
@@ -168,7 +168,7 @@ const withLanguage = (path: string, language: Language) =>
 const privacyUrl = (language: Language) =>
   `${appBasePath}/privacy?project=jomiy&lang=${language}&from=catalog`;
 const languages: Language[] = ["ru", "uz", "en"];
-const modes: Mode[] = ["cards", "chess", "chess-plus"];
+const modes: Mode[] = ["cards", "chess"];
 const defaultFilters: Filters = {
   rooms: "all",
   areaFrom: "",
@@ -206,7 +206,7 @@ const copy = {
     plans: "официальных листов",
     allApartments: "121 позиция · только квартиры · без смешанного инвентаря",
     heroPhoto: "Реальная фотография готовой части Jomiy",
-    modes: { cards: "Карточки", chess: "Шахматка", "chess-plus": "Шахматка+" },
+    modes: { cards: "Карточки", chess: "Шахматка" },
     modeLabel: "Режим каталога",
     filters: "Фильтры",
     reset: "Сбросить",
@@ -308,13 +308,12 @@ const copy = {
     selected: "Выбранная позиция",
     closeDetails: "Закрыть детали",
     selectHint:
-      "Выберите позицию в Шахматке+: справа откроется полная карточка с двумя листами и CTA.",
+      "Выберите позицию в шахматке: справа откроется полная карточка с двумя листами и CTA.",
     closePlan: "Закрыть планировку",
     planViews: "Две официальные страницы планировки",
     sourceTitle: "Что означает этот каталог",
     sourceText:
       "Все 121 позиции получены одной согласованной выгрузкой API 30.08.2026 в 23:47 UZT. Повтор page 1 побайтно совпал, page 2 пуста, захвачены все 121 detail. placementCount 251 — смешанный инвентарь и не используется как счётчик квартир. Статус процесса не гарантирует доступность.",
-    official: "Официальный каталог",
     disclaimer:
       "Срез, цены и статусы зафиксированы 30.08.2026 и не являются публичной офертой. Кампании после дедлайна помечаются завершёнными. Наличие, стоимость и условия подтверждает отдел продаж.",
     privacy: "Обработка персональных данных",
@@ -347,7 +346,6 @@ const copy = {
     modes: {
       cards: "Kartalar",
       chess: "Shaxmatka",
-      "chess-plus": "Shaxmatka+",
     },
     modeLabel: "Katalog ko‘rinishi",
     filters: "Filtrlar",
@@ -449,13 +447,12 @@ const copy = {
     selected: "Tanlangan pozitsiya",
     closeDetails: "Tafsilotlarni yopish",
     selectHint:
-      "Shaxmatka+ dan pozitsiya tanlang: o‘ngda ikki varaq va CTA bilan to‘liq karta ochiladi.",
+      "Shaxmatkadan pozitsiya tanlang: o‘ngda ikki varaq va CTA bilan to‘liq karta ochiladi.",
     closePlan: "Rejani yopish",
     planViews: "Rejaning ikki rasmiy sahifasi",
     sourceTitle: "Bu katalog nimani anglatadi",
     sourceText:
       "121 pozitsiyaning barchasi 30.08.2026 soat 23:47 UZT dagi yagona kelishilgan API nusxasidan olingan. Takroriy page 1 baytma-bayt mos, page 2 bo‘sh va barcha 121 detail saqlangan. placementCount 251 — aralash inventar, xonadonlar soni emas. Jarayon holati mavjudlikni kafolatlamaydi.",
-    official: "Rasmiy katalog",
     disclaimer:
       "Nusxa, narxlar va holatlar 30.08.2026 da qayd etilgan va ommaviy oferta emas. Muddatidan keyin kampaniya tugagan deb belgilanadi. Mavjudlik, narx va shartlarni savdo bo‘limi tasdiqlaydi.",
     privacy: "Shaxsiy ma’lumotlarni qayta ishlash",
@@ -485,7 +482,7 @@ const copy = {
     plans: "official sheets",
     allApartments: "121 entries · apartments only · mixed inventory excluded",
     heroPhoto: "Real photograph of the completed part of Jomiy",
-    modes: { cards: "Cards", chess: "Matrix", "chess-plus": "Matrix+" },
+    modes: { cards: "Cards", chess: "Matrix" },
     modeLabel: "Catalogue view",
     filters: "Filters",
     reset: "Reset",
@@ -586,13 +583,12 @@ const copy = {
     selected: "Selected entry",
     closeDetails: "Close details",
     selectHint:
-      "Choose an entry in Matrix+ to open a full record with two sheets and an enquiry CTA.",
+      "Choose an entry in the matrix to open a full record with two sheets and an enquiry CTA.",
     closePlan: "Close plans",
     planViews: "Two official plan pages",
     sourceTitle: "What this catalogue means",
     sourceText:
       "All 121 entries came from one aligned API capture on 30 Aug 2026 at 23:47 UZT. The repeated page 1 was byte-identical, page 2 was empty and all 121 details were captured. placementCount 251 is mixed inventory, not an apartment count. A workflow status does not guarantee availability.",
-    official: "Official catalogue",
     disclaimer:
       "The snapshot, prices and statuses were captured on 30 Aug 2026 and are not a public offer. Campaigns are marked ended after their deadline. The sales team confirms availability, price and terms.",
     privacy: "Personal data processing",
@@ -1410,10 +1406,8 @@ function MatrixGroup({
   sort,
   language,
   evaluationTime,
-  plus,
   selected,
   onSelect,
-  onPlan,
 }: {
   group: Group;
   units: Unit[];
@@ -1421,10 +1415,8 @@ function MatrixGroup({
   sort: Sort;
   language: Language;
   evaluationTime: number;
-  plus: boolean;
   selected: Selection | null;
   onSelect: (unit: Unit, opener: HTMLButtonElement) => void;
-  onPlan: (unit: Unit, opener: HTMLButtonElement) => void;
 }) {
   const t = copy[language];
   const groupUnits = units.filter((unit) => unit.buildingId === group.id);
@@ -1475,10 +1467,8 @@ function MatrixGroup({
             maxColumns={maxColumns}
             language={language}
             evaluationTime={evaluationTime}
-            plus={plus}
             selected={selected}
             onSelect={onSelect}
-            onPlan={onPlan}
           />
         );
       })}
@@ -1496,10 +1486,8 @@ function MatrixEntrance({
   maxColumns,
   language,
   evaluationTime,
-  plus,
   selected,
   onSelect,
-  onPlan,
 }: {
   group: Group;
   entrance: number;
@@ -1510,10 +1498,8 @@ function MatrixEntrance({
   maxColumns: number;
   language: Language;
   evaluationTime: number;
-  plus: boolean;
   selected: Selection | null;
   onSelect: (unit: Unit, opener: HTMLButtonElement) => void;
-  onPlan: (unit: Unit, opener: HTMLButtonElement) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const t = copy[language];
@@ -1549,7 +1535,6 @@ function MatrixEntrance({
       className="jmc-matrix-entrance"
       data-group={group.displayName}
       data-entrance={entrance}
-      data-plus={plus || undefined}
     >
       <div className="jmc-matrix-entrance__head">
         <div>
@@ -1628,40 +1613,26 @@ function MatrixEntrance({
                         data-jmc-unit-cell
                         data-unit-number={unit.number}
                         data-tone={statusTone(unit.statusOriginal)}
-                        aria-pressed={
-                          plus ? selected?.unit.id === unit.id : undefined
-                        }
-                        aria-expanded={
-                          plus ? selected?.unit.id === unit.id : undefined
-                        }
+                        aria-pressed={selected?.unit.id === unit.id}
+                        aria-expanded={selected?.unit.id === unit.id}
                         aria-controls={
-                          plus && selected?.unit.id === unit.id
+                          selected?.unit.id === unit.id
                             ? `jmc-detail-${unit.id}`
                             : undefined
                         }
-                        onClick={(event) =>
-                          plus
-                            ? onSelect(unit, event.currentTarget)
-                            : onPlan(unit, event.currentTarget)
-                        }
+                        onClick={(event) => onSelect(unit, event.currentTarget)}
                         aria-label={`${t.apartment} № ${unit.number}, ${roomLabel(unit.rooms, language)}, ${number(unit.area, language, 2)} m², ${status(unit, language)}, ${money(displayPriceAt(unit, evaluationTime), language)}`}
                       >
                         <span>№ {unit.number}</span>
                         <strong>{roomLabel(unit.rooms, language)}</strong>
-                        {plus ? (
-                          <>
-                            <small>{number(unit.area, language, 2)} m²</small>
-                            <em>
-                              {shortMoney(
-                                displayPriceAt(unit, evaluationTime),
-                                language,
-                              )}
-                            </em>
-                            <b>{status(unit, language)}</b>
-                          </>
-                        ) : (
-                          <small>{status(unit, language)}</small>
-                        )}
+                        <small>{number(unit.area, language, 2)} m²</small>
+                        <em>
+                          {shortMoney(
+                            displayPriceAt(unit, evaluationTime),
+                            language,
+                          )}
+                        </em>
+                        <b>{status(unit, language)}</b>
                       </button>
                     ))
                   )}
@@ -2153,12 +2124,7 @@ export function JomiyCatalog({
               <strong>{t.sourceTitle}</strong>
               <em>＋</em>
             </summary>
-            <div>
-              <p>{t.sourceText}</p>
-              <a href={snapshot.source} target="_blank" rel="noreferrer">
-                {t.official} ↗
-              </a>
-            </div>
+            <div><p>{t.sourceText}</p></div>
           </details>
           <div className="jmc-toolbar">
             <div className="jmc-modes" role="tablist" aria-label={t.modeLabel}>
@@ -2270,9 +2236,7 @@ export function JomiyCatalog({
                     </button>
                   </div>
                 ) : null}
-                <div
-                  className={`jmc-matrix-layout${mode === "chess-plus" ? " has-detail" : ""}`}
-                >
+                <div className="jmc-matrix-layout has-detail">
                   <div>
                     {snapshot.filterSummary.groups.map((group) => (
                       <MatrixGroup
@@ -2283,15 +2247,12 @@ export function JomiyCatalog({
                         sort={sort}
                         language={language}
                         evaluationTime={evaluationTime}
-                        plus={mode === "chess-plus"}
                         selected={selection}
                         onSelect={selectUnit}
-                        onPlan={openPlan}
                       />
                     ))}
                   </div>
-                  {mode === "chess-plus" ? (
-                    selection ? (
+                  {selection ? (
                       <UnitDetail
                         selection={selection}
                         language={language}
@@ -2300,7 +2261,7 @@ export function JomiyCatalog({
                         obscured={Boolean(planState || leadRequest)}
                         onClose={closeDetail}
                         onPlan={openPlan}
-                        onLead={(unit) => openLead(unit, "matrix-plus-detail")}
+                        onLead={(unit) => openLead(unit, "matrix-detail")}
                       />
                     ) : (
                       <aside className="jmc-detail-empty">
@@ -2309,13 +2270,12 @@ export function JomiyCatalog({
                         <button
                           type="button"
                           data-lead-trigger
-                          onClick={() => openLead(null, "matrix-plus-empty")}
+                          onClick={() => openLead(null, "matrix-empty-detail")}
                         >
                           {t.consult}
                         </button>
                       </aside>
-                    )
-                  ) : null}
+                    )}
                 </div>
               </>
             )}

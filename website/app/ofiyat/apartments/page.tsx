@@ -5,9 +5,9 @@ import '@/app/kayan/kayan.css';
 
 const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
 const localized = {
-  ru: { title: 'Выбор квартиры в OFIYAT', description: 'Каталог OFIYAT: крупные карточки планировок, два режима шахматки, фильтры по очереди, подъезду и этажу, наличие и актуальные цены.' },
-  uz: { title: 'OFIYAT majmuasida xonadon tanlash', description: 'OFIYAT katalogi: yirik reja kartalari, shaxmatkaning ikki ko‘rinishi, bosqich, kirish va qavat filtrlari, mavjudlik va dolzarb narxlar.' },
-  en: { title: 'Choose an apartment at OFIYAT', description: 'OFIYAT catalogue with large layout cards, two availability-grid views, phase, entrance and floor filters, availability and current prices.' },
+  ru: { title: 'Выбор квартиры в OFIYAT', description: 'Каталог OFIYAT: крупные карточки планировок и шахматка, фильтры по очереди, подъезду и этажу, наличие и актуальные цены.' },
+  uz: { title: 'OFIYAT majmuasida xonadon tanlash', description: 'OFIYAT katalogi: yirik reja kartalari va shaxmatka, bosqich, kirish va qavat filtrlari, mavjudlik va dolzarb narxlar.' },
+  en: { title: 'Choose an apartment at OFIYAT', description: 'OFIYAT catalogue with large layout cards and an availability grid, phase, entrance and floor filters, availability and current prices.' },
 } as const;
 
 type PageProps = { searchParams?: Promise<{ lang?: string }> };

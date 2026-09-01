@@ -12,7 +12,7 @@ type Unit = (typeof publicCatalog.units)[number];
 const units = new Map((publicCatalog.units as Unit[]).map((unit) => [unit.id, unit]));
 const languages = new Set(['ru', 'uz', 'en']);
 const goals = new Set(['live', 'invest', 'rent']);
-const surfaces = new Set(['landing:header', 'landing:menu', 'landing:hero', 'landing:amenities', 'landing:catalog-preview', 'landing:footer', 'catalog:header', 'catalog:hero', 'catalog:card', 'catalog:matrix', 'catalog:matrix-plus', 'catalog:plan', 'catalog:empty', 'catalog:footer']);
+const surfaces = new Set(['landing:header', 'landing:menu', 'landing:hero', 'landing:amenities', 'landing:catalog-preview', 'landing:footer', 'catalog:header', 'catalog:hero', 'catalog:card', 'catalog:matrix', 'catalog:plan', 'catalog:empty', 'catalog:footer']);
 const trackingKeys = ['fbc', 'fbp', 'fbclid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'tcid', 'landing_url', 'referrer_url'] as const;
 
 function parseContext(value: string) {

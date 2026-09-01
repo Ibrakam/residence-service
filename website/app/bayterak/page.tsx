@@ -112,10 +112,7 @@ export default async function Page({ searchParams }: PageProps) {
       name,
       value,
     })),
-    sameAs: [
-      language === 'uz' ? 'https://nrg-bi.uz/uz/landing/bayterak' : 'https://nrg-bi.uz/uz-ru/landing/bayterak',
-      'https://uzbekistan360.uz/ru/location/nrg-bi-bayterakHcY',
-    ],
+    sameAs: ['https://uzbekistan360.uz/ru/location/nrg-bi-bayterakHcY'],
   };
 
   return (

@@ -85,7 +85,9 @@ const sourceFiles = [
 ];
 const sourceText = (await Promise.all(sourceFiles.map((path) => readFile(resolve(websiteRoot, path), 'utf8')))).join('\n');
 for (const language of ['ru', 'uz', 'en']) assert(sourceText.includes(language), `SUN source is missing ${language}`);
-for (const mode of ['cards', 'chess', 'chess-plus']) assert(sourceText.includes(mode), `SUN source is missing ${mode}`);
+for (const mode of ['cards', 'chess']) assert(sourceText.includes(mode), `SUN source is missing ${mode}`);
+assert(!sourceText.includes('Matrix+') && !sourceText.includes("'chess-plus':"), 'SUN must expose exactly one matrix mode');
+assert(sourceText.includes("value === 'chess-plus'") && sourceText.includes("value === 'matrix-plus'") && sourceText.includes("url.searchParams.set('mode', 'chess')"), 'SUN must normalize legacy matrix mode URLs');
 assert(sourceText.includes('project=sun&lang='), 'SUN privacy links must keep project and language context');
 assert(sourceText.includes("projectSlug', 'sun'"), 'SUN lead context is missing projectSlug');
 assert(sourceText.includes("['unitKey'"), 'SUN unit lead context is missing the public key');
@@ -121,4 +123,4 @@ if (fullBundle) {
   assert.equal(publicFiles.length, 75, 'SUN public bundle file count changed');
 }
 
-console.log(`SUN ${fullBundle ? 'full integrity' : 'runtime'} verification passed: 51 sanitized keys, 47 matrix rows, 32 lazy plan assets, 3 languages, 3 catalogue modes, no CRM IDs or signed URLs in client data.`);
+console.log(`SUN ${fullBundle ? 'full integrity' : 'runtime'} verification passed: 51 sanitized keys, 47 matrix rows, 32 lazy plan assets, 3 languages, 2 catalogue modes, no CRM IDs or signed URLs in client data.`);

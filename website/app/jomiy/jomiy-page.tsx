@@ -75,7 +75,7 @@ const copy = {
     formTagline: 'Вдохновлённый поэзией.', formFacts: ['Бизнес-класс', '121 позиция', 'финальная очередь 2.2'] as const,
     media: { real: 'Реальная официальная фотография', cgi: 'Официальная визуализация · итог может измениться', construction: 'Реальная стройка · июль 2026', scheme: 'Концептуальный фотомонтаж / схема очередей' },
     galleryLabel: 'Галерея', previous: 'Предыдущее изображение', next: 'Следующее изображение', openImage: 'Открыть изображение', closeImage: 'Закрыть изображение', imageOf: 'из',
-    sources: 'Источники', landing: 'Официальная страница', news: 'Сдача Jomiy 2.1', ecosystem: 'Экосистема и адрес', source360: 'Панорама 360', noBooklet: 'Подтверждённого буклета нет', privacy: 'Обработка персональных данных', top: 'Наверх',
+    sources: 'Источники', source360: 'Панорама 360', noBooklet: 'Подтверждённого буклета нет', privacy: 'Обработка персональных данных', top: 'Наверх',
     disclaimer: 'CGI и схема показывают концепцию и могут измениться. Реальные фотографии, стройка и проектные образы разделены. Информация и цены не являются публичной офертой.',
   },
   uz: {
@@ -96,7 +96,7 @@ const copy = {
     formTagline: 'She’riyatdan ilhomlangan.', formFacts: ['Biznes-klass', '121 pozitsiya', 'yakuniy 2.2 bosqich'] as const,
     media: { real: 'Haqiqiy rasmiy fotosurat', cgi: 'Rasmiy vizualizatsiya · yakuniy ko‘rinish o‘zgarishi mumkin', construction: 'Haqiqiy qurilish · 2026-yil iyul', scheme: 'Konseptual fotomontaj / bosqichlar sxemasi' },
     galleryLabel: 'Galereya', previous: 'Oldingi tasvir', next: 'Keyingi tasvir', openImage: 'Tasvirni ochish', closeImage: 'Tasvirni yopish', imageOf: 'dan',
-    sources: 'Manbalar', landing: 'Rasmiy sahifa', news: 'Jomiy 2.1 topshirilishi', ecosystem: 'Ekotizim va manzil', source360: '360 panorama', noBooklet: 'Tasdiqlangan buklet yo‘q', privacy: 'Shaxsiy ma’lumotlarni qayta ishlash', top: 'Yuqoriga',
+    sources: 'Manbalar', source360: '360 panorama', noBooklet: 'Tasdiqlangan buklet yo‘q', privacy: 'Shaxsiy ma’lumotlarni qayta ishlash', top: 'Yuqoriga',
     disclaimer: 'CGI va sxema konsepsiyani ko‘rsatadi va o‘zgarishi mumkin. Haqiqiy fotosuratlar, qurilish va loyiha obrazlari ajratilgan. Ma’lumot va narxlar ommaviy oferta emas.',
   },
   en: {
@@ -117,7 +117,7 @@ const copy = {
     formTagline: 'Inspired by poetry.', formFacts: ['Business class', '121 entries', 'final phase 2.2'] as const,
     media: { real: 'Actual official photograph', cgi: 'Official visualisation · final appearance may change', construction: 'Actual construction · July 2026', scheme: 'Conceptual photomontage / phase diagram' },
     galleryLabel: 'Gallery', previous: 'Previous image', next: 'Next image', openImage: 'Open image', closeImage: 'Close image', imageOf: 'of',
-    sources: 'Sources', landing: 'Official project page', news: 'Jomiy 2.1 completion', ecosystem: 'Ecosystem and address', source360: '360 panorama', noBooklet: 'No confirmed booklet is available', privacy: 'Personal data processing', top: 'Back to top',
+    sources: 'Sources', source360: '360 panorama', noBooklet: 'No confirmed booklet is available', privacy: 'Personal data processing', top: 'Back to top',
     disclaimer: 'CGI and the diagram show concepts and may change. Actual photographs, construction and project visions are kept distinct. Information and prices are not a public offer.',
   },
 } as const;
@@ -380,7 +380,7 @@ export function JomiyPage({ initialLanguage }: { initialLanguage: Language }) {
 
         <section className="jm-chapter jm-phase21" id="phase21" data-chapter="3" data-reveal>
           <header><span>{t.phase21Index}</span><h2>{t.phase21Title}</h2><p>{t.phase21Text}</p></header>
-          <div className="jm-phase21__spread"><figure><img src={asset('/jomiy/images/real-09.webp')} alt={livedSlides[7].caption[language]} loading="lazy" draggable={false} /><figcaption>{t.media.real}</figcaption></figure><aside><strong>2.1</strong><p>{t.phase21Date}</p><span>{t.phase21Address}</span><a href="https://nrg-bi.uz/uz-ru/news/jomiy-2.1-uspeshno-sdana!" target="_blank" rel="noreferrer">{t.news} ↗</a></aside></div>
+          <div className="jm-phase21__spread"><figure><img src={asset('/jomiy/images/real-09.webp')} alt={livedSlides[7].caption[language]} loading="lazy" draggable={false} /><figcaption>{t.media.real}</figcaption></figure><aside><strong>2.1</strong><p>{t.phase21Date}</p><span>{t.phase21Address}</span></aside></div>
         </section>
 
         <section className="jm-chapter jm-phase22" id="phase22" data-chapter="4" data-reveal>
@@ -413,7 +413,7 @@ export function JomiyPage({ initialLanguage }: { initialLanguage: Language }) {
         </section>
       </main>
 
-      <footer className="jm-footer" aria-hidden={mobileMenuOpen || undefined} inert={mobileMenuOpen ? true : undefined}><div><strong>JOMIY</strong><span>{t.heroLead}</span></div><nav aria-label={t.sources}><a href={language === 'uz' ? 'https://nrg-bi.uz/uz/landing/jomiy' : 'https://nrg-bi.uz/uz-ru/landing/jomiy'} target="_blank" rel="noreferrer">{t.landing} ↗</a><a href="https://nrg-bi.uz/uz-ru/news/jomiy-2.1-uspeshno-sdana!" target="_blank" rel="noreferrer">{t.news} ↗</a><a href="https://nrg-bi.uz/uz-ru/special/ecosystem" target="_blank" rel="noreferrer">{t.ecosystem} ↗</a><a href="https://uzbekistan360.uz/ru/location/nrg-jomiy-vid-so-dvoraOWb" target="_blank" rel="noreferrer">{t.source360} ↗</a><a href={`${appBasePath}/privacy?project=jomiy&lang=${language}&from=landing`}>{t.privacy} ↗</a><span>{t.noBooklet}</span></nav><p>{t.disclaimer}</p><a href="#top">{t.top} ↑</a></footer>
+      <footer className="jm-footer" aria-hidden={mobileMenuOpen || undefined} inert={mobileMenuOpen ? true : undefined}><div><strong>JOMIY</strong><span>{t.heroLead}</span></div><nav aria-label={t.sources}><a href="https://uzbekistan360.uz/ru/location/nrg-jomiy-vid-so-dvoraOWb" target="_blank" rel="noreferrer">{t.source360} ↗</a><a href={`${appBasePath}/privacy?project=jomiy&lang=${language}&from=landing`}>{t.privacy} ↗</a><span>{t.noBooklet}</span></nav><p>{t.disclaimer}</p><a href="#top">{t.top} ↑</a></footer>
 
       {lightbox ? <Lightbox state={lightbox} language={language} onClose={closeLightbox} /> : null}
       <LeadModal open={Boolean(leadSurface)} language={language} context={landingContext} brandName="NRG-BI" projectName="JOMIY" tagline={t.formTagline} facts={t.formFacts} submitUrl={jomiyLeadSubmitUrl()} projectSlug="jomiy" privacyUrl={`${appBasePath}/privacy?project=jomiy&lang=${language}&from=landing`} requireConsent onClose={closeLead} />

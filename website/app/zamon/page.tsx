@@ -96,11 +96,7 @@ export default async function ZamonPage({ searchParams }: PageProps) {
       { '@type': 'PropertyValue', name: language === 'uz' ? 'Ko‘kalamzorlashtirish' : language === 'en' ? 'Landscaping' : 'Озеленение', value: language === 'uz' ? 'kamida 30%' : language === 'en' ? 'at least 30%' : 'не менее 30%' },
       { '@type': 'PropertyValue', name: language === 'uz' ? 'Hovuz' : language === 'en' ? 'Pond' : 'Пруд', value: true },
     ],
-    sameAs: [
-      'https://nrg-bi.uz/uz-ru/landing/zamon',
-      'https://nrg-bi.uz/uz/landing/zamon',
-      'https://uzbekistan360.uz/ru/location/nrg-zamon-vid-s-ptichego-poljotappC',
-    ],
+    sameAs: ['https://uzbekistan360.uz/ru/location/nrg-zamon-vid-s-ptichego-poljotappC'],
   };
   return (
     <>

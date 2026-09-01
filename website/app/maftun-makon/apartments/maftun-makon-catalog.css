@@ -153,7 +153,7 @@
 }
 
 .maftun-catalog-controls { padding: 0 clamp(24px, 5vw, 82px) 48px; background: var(--maftun-cat-paper); }
-.maftun-catalog-modes { display: grid; grid-template-columns: repeat(3, minmax(150px, 230px)); border-bottom: 1px solid var(--maftun-cat-line); }
+.maftun-catalog-modes { display: grid; grid-template-columns: repeat(2, minmax(150px, 230px)); border-bottom: 1px solid var(--maftun-cat-line); }
 .maftun-catalog-modes button {
   position: relative;
   min-height: 66px;
@@ -340,9 +340,9 @@
 .maftun-matrix-cells button > span { font-size: 9px; }
 .maftun-matrix-cells button > em { color: rgba(23, 35, 29, .72); font-size: 8px; font-style: normal; line-height: 1.35; }
 .maftun-matrix-cells button.is-selected > em { color: rgba(255, 255, 255, .62); }
-.maftun-matrix-table.is-plus .maftun-matrix-row { min-height: 128px; }
-.maftun-matrix-table.is-plus .maftun-matrix-cells button { width: 190px; min-height: 110px; flex-basis: 190px; }
-.maftun-matrix-table.is-plus .maftun-matrix-cells button > span { overflow-wrap: anywhere; font-size: 10px; font-weight: 700; }
+.maftun-matrix-table .maftun-matrix-row { min-height: 128px; }
+.maftun-matrix-table .maftun-matrix-cells button { width: 190px; min-height: 110px; flex-basis: 190px; }
+.maftun-matrix-table .maftun-matrix-cells button > span { overflow-wrap: anywhere; font-size: 10px; font-weight: 700; }
 
 .maftun-unit-detail {
   position: sticky;
@@ -425,7 +425,7 @@ body.maftun-catalog-detail-locked { overflow: hidden; }
   .maftun-catalog-hero h1 { font-size: clamp(4.4rem, 13vw, 7rem); }
   .maftun-catalog-hero > aside { min-height: 410px; }
   .maftun-catalog-controls { padding-inline: 22px; }
-  .maftun-catalog-modes { grid-template-columns: repeat(3, 1fr); }
+  .maftun-catalog-modes { grid-template-columns: repeat(2, 1fr); }
   .maftun-catalog-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .maftun-catalog-results { padding-inline: 22px; }
   .maftun-catalog-source { grid-template-columns: 36px 1fr; }
@@ -482,7 +482,7 @@ body.maftun-catalog-detail-locked { overflow: hidden; }
   .maftun-matrix-row { grid-template-columns: 64px auto; }
   .maftun-matrix-floor { min-width: 64px; }
   .maftun-matrix-cells button { width: 142px; flex-basis: 142px; }
-  .maftun-matrix-table.is-plus .maftun-matrix-cells button { width: 180px; flex-basis: 180px; }
+  .maftun-matrix-table .maftun-matrix-cells button { width: 180px; flex-basis: 180px; }
   .maftun-unit-detail .maftun-catalog-plan,
   .maftun-unit-detail .maftun-catalog-plan-placeholder { min-height: 300px; }
   .maftun-unit-detail .maftun-catalog-plan img { height: 255px; }

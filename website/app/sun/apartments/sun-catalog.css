@@ -431,7 +431,7 @@
 .sunc-matrix-row button.is-selected { border-color: var(--sunc-orange); box-shadow: inset 0 0 0 2px var(--sunc-orange); }
 .sunc-matrix-row__empty { display: flex; min-height: 68px; align-items: center; gap: 8px; color: #aaa; font-size: 16px; }
 .sunc-matrix-row__empty small { font-size: 8px; }
-.sunc-matrix.is-plus .sunc-matrix-row { min-height: 90px; }
+.sunc-matrix .sunc-matrix-row { min-height: 90px; }
 
 .sunc-detail {
   width: clamp(340px, 24vw, 380px);

@@ -15,7 +15,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { LeadModal, rememberLastViewedApartment } from '@/app/lead-modal';
 
 type Language = 'ru' | 'uz' | 'en';
-type Mode = 'cards' | 'chess' | 'chess-plus';
+type Mode = 'cards' | 'chess';
 type Sort = 'priceAsc' | 'priceDesc' | 'areaAsc' | 'areaDesc' | 'floorAsc' | 'floorDesc' | 'numberAsc' | 'numberDesc';
 type BooleanFilter = '' | 'yes' | 'no';
 
@@ -117,7 +117,7 @@ type LeadRequest = { unit: Unit | null; context: string };
 
 const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
 const languages: Language[] = ['ru', 'uz', 'en'];
-const modes: Mode[] = ['cards', 'chess', 'chess-plus'];
+const modes: Mode[] = ['cards', 'chess'];
 const languageStorageKey = 'bayterak-language';
 const mobileDrawerQuery = '(max-width: 820px)';
 const pageSize = 12;
@@ -131,9 +131,9 @@ const copy = {
     eyebrow: 'Архитектурный реестр · официальный snapshot', title: 'Архитектурный', accent: 'реестр.',
     leadBefore: 'В датированной официальной подборке —', leadAfter: 'предложений. Исходные workflow-статусы сохранены и не подменены словом «свободно».',
     snapshot: 'Snapshot', captured: 'Срез зафиксирован', proposals: 'предложений', saleRows: 'isSale=true', localPlans: 'локальных планировок', classesSummary: 'Comfort+ / Business',
-    consult: 'Получить консультацию', officialSource: 'Официальный источник', sourceTitle: 'Происхождение данных',
+    consult: 'Получить консультацию', sourceTitle: 'Происхождение данных',
     sourceNoteBefore: 'Все', sourceNoteAfter: 'строк квартир сохранены одной операцией из официальной подборки. Цены, акция и workflow-статусы относятся только к моменту snapshot.',
-    modes: { cards: 'Карточки', chess: 'Шахматка', 'chess-plus': 'Шахматка+' }, modeLabel: 'Режим каталога',
+    modes: { cards: 'Карточки', chess: 'Шахматка' }, modeLabel: 'Режим каталога',
     filters: 'Фильтры', propertyClass: 'Класс', allClasses: 'Все классы', rooms: 'Комнаты', allRooms: 'Все', areaFrom: 'Площадь от, м²', areaTo: 'Площадь до, м²', priceFrom: 'Цена от, млн UZS', priceTo: 'Цена до, млн UZS', floor: 'Этаж', allFloors: 'Все этажи', building: 'Блок', allBuildings: 'Все блоки', entrance: 'Подъезд', allEntrances: 'Все подъезды', completion: 'Нормализованный срок', allCompletions: 'Все сроки', repair: 'Ремонт включён', studio: 'Studio flag', any: 'Любой', yes: 'Да', no: 'Нет', reset: 'Сбросить',
     sort: 'Сортировка', sorts: { priceAsc: 'Цена ↑', priceDesc: 'Цена ↓', areaAsc: 'Площадь ↑', areaDesc: 'Площадь ↓', floorAsc: 'Этаж ↑', floorDesc: 'Этаж ↓', numberAsc: 'Номер ↑', numberDesc: 'Номер ↓' }, results: 'найдено',
     apartment: 'Квартира', roomsShort: 'комн.', area: 'Площадь', areaUnit: 'м²', currentPrice: 'Текущая цена кампании', originalPrice: 'Исходная цена', perM2: 'Цена за м² в источнике', campaign: 'Акция', campaignUntil: 'до', status: 'Исходный статус', statusNote: 'Workflow-статус официального snapshot', class: 'Класс', floorOf: 'Этаж', entranceShort: 'Подъезд', block: 'Блок', completionShort: 'Срок', normalized: 'Нормализован по официальному filter/realEstateList', rawPlacement: 'Дата в raw placementList', finishing: 'Ремонт', studioFlag: 'Studio flag',
@@ -147,9 +147,9 @@ const copy = {
     eyebrow: 'Arxitektura reyestri · rasmiy snapshot', title: 'Arxitektura', accent: 'reyestri.',
     leadBefore: 'Sanasi ko‘rsatilgan rasmiy tanlovda', leadAfter: 'ta taklif bor. Asl workflow holatlari saqlangan va ularning barchasi «bo‘sh» deb belgilanmagan.',
     snapshot: 'Snapshot', captured: 'Snapshot vaqti', proposals: 'taklif', saleRows: 'isSale=true', localPlans: 'mahalliy reja', classesSummary: 'Comfort+ / Business',
-    consult: 'Maslahat olish', officialSource: 'Rasmiy manba', sourceTitle: 'Ma’lumotlar kelib chiqishi',
+    consult: 'Maslahat olish', sourceTitle: 'Ma’lumotlar kelib chiqishi',
     sourceNoteBefore: 'Barcha', sourceNoteAfter: 'ta xonadon qatori rasmiy tanlovdan bitta operatsiyada saqlandi. Narx, aksiya va workflow holatlari faqat snapshot vaqtiga tegishli.',
-    modes: { cards: 'Kartalar', chess: 'Shaxmatka', 'chess-plus': 'Shaxmatka+' }, modeLabel: 'Katalog ko‘rinishi',
+    modes: { cards: 'Kartalar', chess: 'Shaxmatka' }, modeLabel: 'Katalog ko‘rinishi',
     filters: 'Filtrlar', propertyClass: 'Toifa', allClasses: 'Barcha toifalar', rooms: 'Xonalar', allRooms: 'Barchasi', areaFrom: 'Maydon, m² dan', areaTo: 'Maydon, m² gacha', priceFrom: 'Narx, mln UZS dan', priceTo: 'Narx, mln UZS gacha', floor: 'Qavat', allFloors: 'Barcha qavatlar', building: 'Blok', allBuildings: 'Barcha bloklar', entrance: 'Kirish', allEntrances: 'Barcha kirishlar', completion: 'Me’yorlashtirilgan muddat', allCompletions: 'Barcha muddatlar', repair: 'Pardoz kiritilgan', studio: 'Studio flag', any: 'Istalgan', yes: 'Ha', no: 'Yo‘q', reset: 'Tozalash',
     sort: 'Saralash', sorts: { priceAsc: 'Narx ↑', priceDesc: 'Narx ↓', areaAsc: 'Maydon ↑', areaDesc: 'Maydon ↓', floorAsc: 'Qavat ↑', floorDesc: 'Qavat ↓', numberAsc: 'Raqam ↑', numberDesc: 'Raqam ↓' }, results: 'topildi',
     apartment: 'Xonadon', roomsShort: 'xonali', area: 'Maydon', areaUnit: 'm²', currentPrice: 'Kampaniyadagi joriy narx', originalPrice: 'Boshlang‘ich narx', perM2: 'Manbadagi m² narxi', campaign: 'Aksiya', campaignUntil: 'gacha', status: 'Asl holat', statusNote: 'Rasmiy snapshotdagi workflow holati', class: 'Toifa', floorOf: 'Qavat', entranceShort: 'Kirish', block: 'Blok', completionShort: 'Muddat', normalized: 'Rasmiy filter/realEstateList bo‘yicha me’yorlashtirilgan', rawPlacement: 'Raw placementList sanasi', finishing: 'Pardoz', studioFlag: 'Studio flag',
@@ -163,9 +163,9 @@ const copy = {
     eyebrow: 'Architectural register · official snapshot', title: 'Architectural', accent: 'register.',
     leadBefore: 'The dated official selection contains', leadAfter: 'listings. Source workflow states are preserved instead of relabelling every listing as “available”.',
     snapshot: 'Snapshot', captured: 'Captured', proposals: 'listings', saleRows: 'isSale=true', localPlans: 'local floor plans', classesSummary: 'Comfort+ / Business',
-    consult: 'Request a consultation', officialSource: 'Official source', sourceTitle: 'Data provenance',
+    consult: 'Request a consultation', sourceTitle: 'Data provenance',
     sourceNoteBefore: 'All', sourceNoteAfter: 'apartment rows were saved from the official selection in one operation. Prices, the campaign and workflow states are fixed at snapshot time.',
-    modes: { cards: 'Cards', chess: 'Matrix', 'chess-plus': 'Matrix+' }, modeLabel: 'Catalogue view',
+    modes: { cards: 'Cards', chess: 'Matrix' }, modeLabel: 'Catalogue view',
     filters: 'Filters', propertyClass: 'Class', allClasses: 'All classes', rooms: 'Rooms', allRooms: 'Any', areaFrom: 'Area from, m²', areaTo: 'Area to, m²', priceFrom: 'Price from, million UZS', priceTo: 'Price to, million UZS', floor: 'Floor', allFloors: 'Any floor', building: 'Block', allBuildings: 'All blocks', entrance: 'Entrance', allEntrances: 'All entrances', completion: 'Normalized completion', allCompletions: 'All dates', repair: 'Finishing included', studio: 'Studio flag', any: 'Any', yes: 'Yes', no: 'No', reset: 'Reset',
     sort: 'Sort', sorts: { priceAsc: 'Price ↑', priceDesc: 'Price ↓', areaAsc: 'Area ↑', areaDesc: 'Area ↓', floorAsc: 'Floor ↑', floorDesc: 'Floor ↓', numberAsc: 'Number ↑', numberDesc: 'Number ↓' }, results: 'found',
     apartment: 'Apartment', roomsShort: 'room', area: 'Area', areaUnit: 'm²', currentPrice: 'Current campaign price', originalPrice: 'Original price', perM2: 'Source price per m²', campaign: 'Campaign', campaignUntil: 'until', status: 'Source status', statusNote: 'Workflow state in the official snapshot', class: 'Class', floorOf: 'Floor', entranceShort: 'Entrance', block: 'Block', completionShort: 'Completion', normalized: 'Normalized from the official filter/realEstateList', rawPlacement: 'Raw placementList date', finishing: 'Finishing', studioFlag: 'Studio flag',
@@ -241,9 +241,6 @@ function compareUnits(a: Unit, b: Unit, sort: Sort) {
   if (sort === 'floorDesc') return b.floor - a.floor || numberTie(a, b);
   if (sort === 'numberDesc') return -numberTie(a, b);
   return numberTie(a, b);
-}
-function officialLanding(language: Language) {
-  return language === 'ru' ? 'https://nrg-bi.uz/uz-ru/landing/bayterak' : 'https://nrg-bi.uz/uz/landing/bayterak';
 }
 function scrollBehavior(): ScrollBehavior {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
@@ -488,7 +485,7 @@ function UnitDetail({ unit, language, onClose, onPlan, onLead }: { unit: Unit; l
   );
 }
 
-function MatrixGroup({ units, language, plus, sort, selectedId, floorMin, onSelect }: { units: Unit[]; language: Language; plus: boolean; sort: Sort; selectedId?: string; floorMin: number; onSelect: (unit: Unit, opener: HTMLButtonElement) => void }) {
+function MatrixGroup({ units, language, sort, selectedId, floorMin, onSelect }: { units: Unit[]; language: Language; sort: Sort; selectedId?: string; floorMin: number; onSelect: (unit: Unit, opener: HTMLButtonElement) => void }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const [edges, setEdges] = useState({ start: true, end: false });
   const t = copy[language];
@@ -527,7 +524,7 @@ function MatrixGroup({ units, language, plus, sort, selectedId, floorMin, onSele
     observer.observe(element);
     if (element.firstElementChild) observer.observe(element.firstElementChild);
     return () => { window.cancelAnimationFrame(frame); observer.disconnect(); };
-  }, [plus, sort, units, updateEdges]);
+  }, [sort, units, updateEdges]);
 
   return (
     <section className="bayterak-matrix-group">
@@ -539,7 +536,7 @@ function MatrixGroup({ units, language, plus, sort, selectedId, floorMin, onSele
         </div>
       </header>
       <div ref={viewportRef} className="bayterak-matrix-viewport" tabIndex={0} onKeyDown={onKeyDown} onScroll={updateEdges} aria-label={`${t.matrix}: ${buildingLabel(building)}, ${t.entranceShort} ${entrance}`} aria-describedby="bayterak-matrix-help">
-        <table className={plus ? 'is-plus' : undefined}>
+        <table>
           <thead><tr><th scope="col">{t.floorColumn}</th><th scope="col">{t.unitsColumn}</th></tr></thead>
           <tbody>{floors.map((floor) => {
             const floorUnits = units.filter((unit) => unit.floor === floor).sort((a, b) => compareUnits(a, b, sort));
@@ -549,11 +546,11 @@ function MatrixGroup({ units, language, plus, sort, selectedId, floorMin, onSele
                 <td>{floorUnits.length ? <div>{floorUnits.map((unit) => {
                   const selected = selectedId === unit.id;
                   return (
-                    <button type="button" key={unit.id} className={selected ? 'is-selected' : undefined} aria-pressed={plus ? selected : undefined} aria-expanded={plus ? selected : undefined} aria-controls={plus && selected ? `bayterak-detail-${unit.id}` : undefined} onClick={(event) => onSelect(unit, event.currentTarget)} aria-label={`${t.apartment} № ${unit.number}, ${classLabel(unit.propertyClass, language)}, ${roomPhrase(unit.rooms, language)}, ${areaWithUnit(unit.area, language)}, ${t.floorOf} ${unit.floor}/${unit.totalFloors}, ${statusLabel(unit, language)}, ${money(unit.price, language)}`}>
+                    <button type="button" key={unit.id} className={selected ? 'is-selected' : undefined} aria-pressed={selected} aria-expanded={selected} aria-controls={selected ? `bayterak-detail-${unit.id}` : undefined} onClick={(event) => onSelect(unit, event.currentTarget)} aria-label={`${t.apartment} № ${unit.number}, ${classLabel(unit.propertyClass, language)}, ${roomPhrase(unit.rooms, language)}, ${areaWithUnit(unit.area, language)}, ${t.floorOf} ${unit.floor}/${unit.totalFloors}, ${statusLabel(unit, language)}, ${money(unit.price, language)}`}>
                       <small><span>№ {unit.number}</span><i data-tone={statusTone(unit.statusOriginal)} aria-hidden="true" /></small>
                       <strong>{areaWithUnit(unit.area, language)}</strong>
                       <span>{roomPhrase(unit.rooms, language)} · {shortMoney(unit.price, language)}</span>
-                      {plus ? <em>{classLabel(unit.propertyClass, language)} · {unit.repairIncluded ? t.finishing : t.studioFlag}: {unit.repairIncluded || unit.studio ? t.yes : t.no}</em> : null}
+                      <em>{classLabel(unit.propertyClass, language)} · {unit.repairIncluded ? t.finishing : t.studioFlag}: {unit.repairIncluded || unit.studio ? t.yes : t.no}</em>
                     </button>
                   );
                 })}</div> : <span className="bayterak-matrix-empty">— <span className="bayterak-visually-hidden">{t.emptyFloor}</span></span>}</td>
@@ -645,8 +642,7 @@ export function BayterakCatalog({ snapshot, initialLanguage }: { snapshot: Bayte
   const selectUnit = (unit: Unit, opener: HTMLButtonElement) => {
     rememberUnit(unit);
     selectionOpener.current = opener;
-    if (mode === 'chess-plus') setSelected(unit);
-    else setPlanUnit(unit);
+    setSelected(unit);
   };
   const changeMode = (next: Mode) => {
     setMode(next);
@@ -720,10 +716,10 @@ export function BayterakCatalog({ snapshot, initialLanguage }: { snapshot: Bayte
 
       <section id="bayterak-results" className="bayterak-catalog-results" aria-labelledby="bayterak-results-title">
         <header>
-          <div aria-live="polite"><small>REGISTER · {mode === 'cards' ? '01' : mode === 'chess' ? '02' : '03'}</small><h2 id="bayterak-results-title"><strong>{filtered.length}</strong> {t.results}</h2></div>
+          <div aria-live="polite"><small>REGISTER · {mode === 'cards' ? '01' : '02'}</small><h2 id="bayterak-results-title"><strong>{filtered.length}</strong> {t.results}</h2></div>
           <label><span>{t.sort}</span><select value={sort} onChange={(event) => { setSort(event.target.value as Sort); setVisible(pageSize); }}>{(Object.entries(t.sorts) as Array<[Sort, string]>).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
         </header>
-        <aside className="bayterak-catalog-source"><span aria-hidden="true">i</span><div><strong>{t.sourceTitle}</strong><p>{t.sourceNoteBefore} {snapshot.officialTotalAtCapture} {t.sourceNoteAfter}</p></div><a href={officialLanding(language)} target="_blank" rel="noreferrer">{t.officialSource}<span aria-hidden="true">↗</span></a></aside>
+        <aside className="bayterak-catalog-source"><span aria-hidden="true">i</span><div><strong>{t.sourceTitle}</strong><p>{t.sourceNoteBefore} {snapshot.officialTotalAtCapture} {t.sourceNoteAfter}</p></div></aside>
 
         {modes.filter((item) => item !== mode).map((item) => <div id={`bayterak-panel-${item}`} role="tabpanel" aria-labelledby={`bayterak-tab-${item}`} hidden key={item} />)}
 
@@ -737,9 +733,9 @@ export function BayterakCatalog({ snapshot, initialLanguage }: { snapshot: Bayte
         ) : (
           <div id={`bayterak-panel-${mode}`} className="bayterak-matrix" role="tabpanel" aria-labelledby={`bayterak-tab-${mode}`}>
             <header><div><small>{t.modes[mode]}</small><h2>{t.matrix}</h2><p id="bayterak-matrix-help">{t.matrixHint}</p></div></header>
-            <div className={`bayterak-matrix-layout${mode === 'chess-plus' ? ' has-detail' : ''}`}>
-              <div className="bayterak-matrix-groups">{matrixGroups.map((units) => <MatrixGroup key={`${units[0].buildingId}-${units[0].entrance}`} units={units} language={language} plus={mode === 'chess-plus'} sort={sort} floorMin={floorMin} selectedId={activeSelected?.id} onSelect={selectUnit} />)}</div>
-              {mode === 'chess-plus' ? activeSelected ? <UnitDetail key={activeSelected.id} unit={activeSelected} language={language} onClose={closeDetail} onPlan={() => openPlan(activeSelected)} onLead={() => openLead(activeSelected, 'matrix-plus-detail')} /> : <aside className="bayterak-unit-detail bayterak-unit-detail--empty" aria-label={t.selected}><span aria-hidden="true">↖</span><p>{t.selectHint}</p></aside> : null}
+            <div className="bayterak-matrix-layout has-detail">
+              <div className="bayterak-matrix-groups">{matrixGroups.map((units) => <MatrixGroup key={`${units[0].buildingId}-${units[0].entrance}`} units={units} language={language} sort={sort} floorMin={floorMin} selectedId={activeSelected?.id} onSelect={selectUnit} />)}</div>
+              {activeSelected ? <UnitDetail key={activeSelected.id} unit={activeSelected} language={language} onClose={closeDetail} onPlan={() => openPlan(activeSelected)} onLead={() => openLead(activeSelected, 'matrix-detail')} /> : <aside className="bayterak-unit-detail bayterak-unit-detail--empty" aria-label={t.selected}><span aria-hidden="true">↖</span><p>{t.selectHint}</p></aside>}
             </div>
           </div>
         )}

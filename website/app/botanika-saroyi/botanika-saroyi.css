@@ -231,7 +231,7 @@ body.botanika-overlay-locked { overflow: hidden; }
 .botanika-build__grid figcaption span { grid-column: 1 / -1; color: #d1b36e; font-size: 8px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
 .botanika-build__grid figcaption strong { font-family: var(--font-display), serif; font-size: 21px; font-weight: 400; }
 .botanika-build__grid figcaption small { color: rgba(248, 243, 233, .45); }
-.botanika-build nav { grid-template-columns: 1fr 1fr; max-width: 720px; margin: 58px 0 0 auto; }
+.botanika-build nav { grid-template-columns: minmax(260px, 360px); justify-content: end; max-width: 720px; margin: 58px 0 0 auto; }
 
 .botanika-contact { padding: clamp(105px, 13vw, 210px) 7vw; background: var(--bot-green); color: var(--bot-paper-soft); text-align: center; }
 .botanika-contact > small { color: #d1b36e; }

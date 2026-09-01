@@ -65,7 +65,6 @@ export default async function Page({ searchParams }: PageProps) {
         address: { '@type': 'PostalAddress', streetAddress: language === 'ru' ? 'ул. Сайхун 56/2' : language === 'uz' ? 'Sayxun ko‘chasi 56/2' : '56/2 Saykhun Street', addressLocality: 'Tashkent', addressRegion: 'Mirabad', addressCountry: 'UZ' },
         numberOfAccommodationUnits: 361,
         additionalProperty: current.properties.map(([name, value]) => ({ '@type': 'PropertyValue', name, value })),
-        sameAs: ['https://human2human.uz/'],
       },
       { '@type': 'BreadcrumbList', inLanguage: languageTag(language), itemListElement: [{ '@type': 'ListItem', position: 1, name: current.home, item: `${publicOrigin}${sitePath('/')}` }, { '@type': 'ListItem', position: 2, name: 'SUN', item: projectUrl }] },
     ],

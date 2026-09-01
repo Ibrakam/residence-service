@@ -27,7 +27,7 @@ const OfiyatBlockExplorer = dynamic(
 );
 
 type UnitStatus = 'available' | 'reserved' | 'sold' | 'unavailable';
-type CatalogMode = 'cards' | 'chess' | 'chess-plus';
+type CatalogMode = 'cards' | 'chess';
 type RoomFilter = 'all' | number;
 type FloorFilter = 'all' | number;
 type EntranceFilter = 'all' | string;
@@ -110,7 +110,7 @@ const ui = {
     consultationKicker: '04 · ПЕРСОНАЛЬНАЯ КОНСУЛЬТАЦИЯ', request: 'Оставить заявку', phone: 'Позвонить', backTop: 'Наверх ↑',
     newLife: 'Новый уровень жизни начинается здесь.', selectorBack: 'Вернуться к проекту', selectorKicker: 'ИНТЕРАКТИВНЫЙ КАТАЛОГ',
     selectorTitle: 'Выберите свою', selectorAccent: 'квартиру.', selectorLead: 'Актуальные площади, цены и статусы объектов проекта.',
-    phase: 'Очередь или тип недвижимости', view: 'Режим каталога', plan: 'Планировка квартиры', cards: 'Карточки', chess: 'Шахматка', chessPlus: 'Шахматка+', rooms: 'Комнаты', all: 'Все',
+    phase: 'Очередь или тип недвижимости', view: 'Режим каталога', plan: 'Планировка квартиры', cards: 'Карточки', chess: 'Шахматка', rooms: 'Комнаты', all: 'Все',
     onlyAvailable: 'Только свободные', onlyAvailableHint: 'скрыть проданные и забронированные', objects: 'объектов', floor: 'Этаж', level: 'Уровень',
     empty: 'По выбранным параметрам объектов нет.', corridor: 'холл · лифты · лестница', driveway: 'проезд', apartment: 'Квартира', parking: 'Машиноместо',
     area: 'Площадь', entrance: 'Подъезд', status: 'Статус', cost: 'Стоимость', askTerms: 'Уточнить условия', pickSimilar: 'Подобрать похожую', noPlan: 'Планировка для этого объекта пока не опубликована.',
@@ -126,7 +126,7 @@ const ui = {
     consultationKicker: '04 · SHAXSIY MASLAHAT', request: 'Ariza qoldirish', phone: 'Qo‘ng‘iroq qilish', backTop: 'Yuqoriga ↑',
     newLife: 'Hayotning yangi darajasi shu yerdan boshlanadi.', selectorBack: 'Loyihaga qaytish', selectorKicker: 'INTERAKTIV KATALOG',
     selectorTitle: 'O‘z xonadoningizni', selectorAccent: 'tanlang.', selectorLead: 'Loyihadagi obyektlarning dolzarb maydoni, narxi va holati.',
-    phase: 'Bosqich yoki ko‘chmas mulk turi', view: 'Katalog ko‘rinishi', plan: 'Xonadon rejasi', cards: 'Kartalar', chess: 'Shaxmatka', chessPlus: 'Shaxmatka+', rooms: 'Xonalar', all: 'Barchasi',
+    phase: 'Bosqich yoki ko‘chmas mulk turi', view: 'Katalog ko‘rinishi', plan: 'Xonadon rejasi', cards: 'Kartalar', chess: 'Shaxmatka', rooms: 'Xonalar', all: 'Barchasi',
     onlyAvailable: 'Faqat mavjud', onlyAvailableHint: 'sotilgan va band obyektlarni yashirish', objects: 'obyekt', floor: 'Qavat', level: 'Daraja',
     empty: 'Tanlangan parametrlarga mos obyekt yo‘q.', corridor: 'xoll · liftlar · zina', driveway: 'yo‘lak', apartment: 'Xonadon', parking: 'Parking o‘rni',
     area: 'Maydon', entrance: 'Kirish', status: 'Holat', cost: 'Narxi', askTerms: 'Shartlarni aniqlash', pickSimilar: 'O‘xshashini tanlash', noPlan: 'Bu obyektning rejasi hozircha e’lon qilinmagan.',
@@ -142,7 +142,7 @@ const ui = {
     consultationKicker: '04 · PERSONAL CONSULTATION', request: 'Submit a request', phone: 'Call us', backTop: 'Back to top ↑',
     newLife: 'A new level of life starts here.', selectorBack: 'Back to the project', selectorKicker: 'INTERACTIVE SHOWROOM',
     selectorTitle: 'Choose your', selectorAccent: 'apartment.', selectorLead: 'Current areas, prices and availability across the project.',
-    phase: 'Phase or property type', view: 'Catalogue view', plan: 'Apartment plan', cards: 'Cards', chess: 'Availability grid', chessPlus: 'Detailed grid', rooms: 'Rooms', all: 'All',
+    phase: 'Phase or property type', view: 'Catalogue view', plan: 'Apartment plan', cards: 'Cards', chess: 'Availability grid', rooms: 'Rooms', all: 'All',
     onlyAvailable: 'Available only', onlyAvailableHint: 'hide sold and reserved properties', objects: 'properties', floor: 'Floor', level: 'Level',
     empty: 'No properties match the selected filters.', corridor: 'lobby · lifts · stairs', driveway: 'driveway', apartment: 'Apartment', parking: 'Parking space',
     area: 'Area', entrance: 'Entrance', status: 'Status', cost: 'Price', askTerms: 'Ask about terms', pickSimilar: 'Find a similar home', noPlan: 'A plan for this property has not been published yet.',
@@ -532,7 +532,7 @@ const ofiyatLandingUi = {
     parkingKicker: '200 МЕСТ', parkingTitle: 'Двор — людям.', parkingAccent: 'Автомобили — под землёй.', parkingLead: 'Подземный паркинг эффективно использует пространство и сохраняет внутреннюю территорию для жителей.',
     phasesKicker: 'ВЫБОР ОЧЕРЕДИ', phasesTitle: 'Две очереди.', phasesAccent: 'Один ритм жизни.', phasesLead: 'Сравните актуальное наличие в каждой очереди и отдельно выберите парковочное место.',
     available: 'свободно', openPhase: 'Смотреть объекты',
-    catalogKicker: 'КАТАЛОГ КВАРТИР', catalogTitle: 'Пространство, которое', catalogAccent: 'подходит вашему дню.', catalogLead: 'Карточки с крупными планировками и два режима шахматки — всё для удобного выбора на одной странице.', catalogCta: 'Открыть каталог',
+    catalogKicker: 'КАТАЛОГ КВАРТИР', catalogTitle: 'Пространство, которое', catalogAccent: 'подходит вашему дню.', catalogLead: 'Карточки с крупными планировками и шахматка — всё для удобного выбора на одной странице.', catalogCta: 'Открыть каталог',
     dataLive: 'Актуальные данные API', dataSnapshot: 'Проверенный снимок каталога', plansMarked: 'Типовые планы честно отмечены как примеры',
     mapKicker: 'РАСПОЛОЖЕНИЕ', mapTitle: 'Город рядом —', mapAccent: 'без суеты.', route: 'Построить маршрут',
   },
@@ -551,7 +551,7 @@ const ofiyatLandingUi = {
     parkingKicker: '200 O‘RIN', parkingTitle: 'Hovli — odamlar uchun.', parkingAccent: 'Avtomobillar — yer ostida.', parkingLead: 'Yer osti parkingi makondan samarali foydalanadi va ichki hududni yashovchilar uchun saqlaydi.',
     phasesKicker: 'BOSQICHNI TANLASH', phasesTitle: 'Ikki bosqich.', phasesAccent: 'Bitta hayot ritmi.', phasesLead: 'Har bir bosqichdagi dolzarb takliflarni solishtiring va parking o‘rnini alohida tanlang.',
     available: 'mavjud', openPhase: 'Obyektlarni ko‘rish',
-    catalogKicker: 'XONADONLAR KATALOGI', catalogTitle: 'Kuningizga mos', catalogAccent: 'makonni toping.', catalogLead: 'Yirik rejalarga ega kartalar va shaxmatkaning ikki rejimi — qulay tanlov uchun bitta sahifada.', catalogCta: 'Katalogni ochish',
+    catalogKicker: 'XONADONLAR KATALOGI', catalogTitle: 'Kuningizga mos', catalogAccent: 'makonni toping.', catalogLead: 'Yirik rejali kartalar va shaxmatka — qulay tanlov uchun bitta sahifada.', catalogCta: 'Katalogni ochish',
     dataLive: 'Dolzarb API ma’lumotlari', dataSnapshot: 'Tekshirilgan katalog nusxasi', plansMarked: 'Namunaviy rejalar misol sifatida aniq belgilangan',
     mapKicker: 'JOYLASHUV', mapTitle: 'Shahar yaqin —', mapAccent: 'ortiqcha shovqinsiz.', route: 'Yo‘nalish qurish',
   },
@@ -570,7 +570,7 @@ const ofiyatLandingUi = {
     parkingKicker: '200 SPACES', parkingTitle: 'The courtyard for people.', parkingAccent: 'Cars underground.', parkingLead: 'Underground parking uses space efficiently and keeps the inner territory for residents.',
     phasesKicker: 'CHOOSE A PHASE', phasesTitle: 'Two phases.', phasesAccent: 'One rhythm of life.', phasesLead: 'Compare current availability in both phases and choose a parking space separately.',
     available: 'available', openPhase: 'View properties',
-    catalogKicker: 'APARTMENT CATALOGUE', catalogTitle: 'A space that fits', catalogAccent: 'the way you live.', catalogLead: 'Large-layout cards and two availability-grid views make choosing simple on one page.', catalogCta: 'Open the catalogue',
+    catalogKicker: 'APARTMENT CATALOGUE', catalogTitle: 'A space that fits', catalogAccent: 'the way you live.', catalogLead: 'Large-layout cards and an availability grid make choosing simple on one page.', catalogCta: 'Open the catalogue',
     dataLive: 'Current API data', dataSnapshot: 'Verified catalogue snapshot', plansMarked: 'Representative plans are clearly labelled as examples',
     mapKicker: 'LOCATION', mapTitle: 'The city close —', mapAccent: 'without the rush.', route: 'Build a route',
   },
@@ -944,6 +944,13 @@ export function KayanCatalogPage({ slug, initialBundle, snapshotGeneratedAt, ini
     const params = new URLSearchParams(window.location.search);
     const phaseFromURL = params.get('phase');
     const modeFromURL = params.get('mode');
+    const legacyMode = modeFromURL === 'chess-plus' || modeFromURL === 'matrix-plus';
+    const normalizedMode = legacyMode ? 'chess' : modeFromURL;
+    if (legacyMode) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('mode', 'chess');
+      window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+    }
     const entranceFromURL = params.get('entrance');
     const floorParam = params.get('floor');
     const roomsParam = params.get('rooms');
@@ -960,7 +967,7 @@ export function KayanCatalogPage({ slug, initialBundle, snapshotGeneratedAt, ini
     const roomsIsValid = Boolean(roomsParam?.trim()) && Number.isSafeInteger(roomsFromURL) && filterPhaseUnits.some((unit) => unit.rooms === roomsFromURL);
     const frame = window.requestAnimationFrame(() => {
       if (phaseIsValid && phaseFromURL) setSelectedPhase(phaseFromURL);
-      if (modeFromURL === 'cards' || modeFromURL === 'chess' || modeFromURL === 'chess-plus') setMode(modeFromURL);
+      if (normalizedMode === 'cards' || normalizedMode === 'chess') setMode(normalizedMode);
       if (entranceIsValid && entranceFromURL) setEntranceFilter(entranceFromURL);
       if (floorIsValid) setFloorFilter(floorFromURL);
       if (roomsIsValid) setRoomFilter(roomsFromURL);
@@ -1058,7 +1065,7 @@ export function KayanCatalogPage({ slug, initialBundle, snapshotGeneratedAt, ini
         .sort((a, b) => a.number.localeCompare(b.number, 'ru', { numeric: true })),
     }))
     .filter((row) => row.items.length), [filteredUnits]);
-  const chessContentWidth = 79 + Math.max(1, ...chessRows.map((row) => row.items.length)) * (mode === 'chess-plus' ? 130 : 53);
+  const chessContentWidth = 79 + Math.max(1, ...chessRows.map((row) => row.items.length)) * 130;
 
   useEffect(() => {
     const scroll = chessScrollRef.current;
@@ -1139,8 +1146,8 @@ export function KayanCatalogPage({ slug, initialBundle, snapshotGeneratedAt, ini
       scroll.scrollTo({ left: event.key === 'Home' ? 0 : scroll.scrollWidth, behavior: chessScrollBehavior() });
     }
   };
-  const modeLabels: Record<CatalogMode, string> = { cards: t.cards, chess: t.chess, 'chess-plus': t.chessPlus };
-  const modes: CatalogMode[] = ['cards', 'chess', 'chess-plus'];
+  const modeLabels: Record<CatalogMode, string> = { cards: t.cards, chess: t.chess };
+  const modes: CatalogMode[] = ['cards', 'chess'];
   const chessStatusLegend = (['available', 'reserved', 'sold', 'unavailable'] as UnitStatus[]).map((status) => <span key={status}><i data-status={status} />{t.statusLabels[status]}</span>);
   const leadPhase = selectedUnit ? bundle.project.phases.find((item) => item.slug === selectedUnit.phaseSlug) : phase;
   const leadContext = [
@@ -1198,12 +1205,12 @@ export function KayanCatalogPage({ slug, initialBundle, snapshotGeneratedAt, ini
             <button type="button" className="kayan-card-catalog__lead" onClick={() => { chooseUnit(unit, false); setLeadOpen(true); }}>{unit.status === 'available' || unit.status === 'reserved' ? t.askTerms : t.pickSimilar}<span>↗</span></button>
           </article>;
         }) : <div className="kayan-empty">{t.empty}</div>}
-      </div>{cardUnits.length ? <div className={`kayan-card-pagination${isMirador ? ' mirador-card-pagination' : ''}`} aria-live="polite"><p>{t.showing} {visibleCardUnits.length} {t.ofObjects} {cardUnits.length}</p>{visibleCardUnits.length < cardUnits.length ? <button type="button" onClick={() => setVisibleCardCount((count) => Math.min(cardUnits.length, count + CATALOG_CARD_PAGE_SIZE))}>{t.showMore}<span>+{Math.min(CATALOG_CARD_PAGE_SIZE, cardUnits.length - visibleCardUnits.length)}</span></button> : null}</div> : null}</> : <div className={`kayan-chess ${mode === 'chess-plus' ? 'is-plus' : ''}`}>
+      </div>{cardUnits.length ? <div className={`kayan-card-pagination${isMirador ? ' mirador-card-pagination' : ''}`} aria-live="polite"><p>{t.showing} {visibleCardUnits.length} {t.ofObjects} {cardUnits.length}</p>{visibleCardUnits.length < cardUnits.length ? <button type="button" onClick={() => setVisibleCardCount((count) => Math.min(cardUnits.length, count + CATALOG_CARD_PAGE_SIZE))}>{t.showMore}<span>+{Math.min(CATALOG_CARD_PAGE_SIZE, cardUnits.length - visibleCardUnits.length)}</span></button> : null}</div> : null}</> : <div className="kayan-chess">
         <div className="kayan-chess__legend">
           {isMirador ? <div className="mirador-chess__statuses">{chessStatusLegend}</div> : chessStatusLegend}
           {isMirador && chessPan.overflow ? <div className="kayan-chess__buttons mirador-chess__buttons" role="group" aria-label={t.swipe}><button type="button" aria-label={t.scrollBack} disabled={!chessPan.canLeft} onClick={() => panChess(-1)}>←</button><button type="button" aria-label={t.scrollForward} disabled={!chessPan.canRight} onClick={() => panChess(1)}>→</button></div> : null}
         </div>
-        <div ref={chessScrollRef} className="kayan-chess__scroll" data-lenis-prevent tabIndex={0} aria-label={`${t.chess}: ${t.floor}`} onKeyDown={onChessKeyDown} style={{ '--kayan-chess-content-width': `${chessContentWidth}px` } as CSSProperties}>{chessRows.length ? chessRows.map(({ floor, items }) => <div className="kayan-chess__row" key={floor}><div className="kayan-chess__floor"><strong>{floorLabel(floor)}</strong><span>{t.floor}</span></div><div className="kayan-chess__units">{items.map((unit) => <button type="button" key={unit.id} aria-label={catalogUnitAriaLabel({ projectName: config.name, phaseLabel: currentPhaseLabel, language, unit })} aria-pressed={unit.id === selectedUnit?.id} aria-controls="kayan-unit-detail" data-status={unit.status} className={unit.id === selectedUnit?.id ? 'is-selected' : ''} onClick={() => chooseUnit(unit)}><strong>№{unit.number}</strong>{mode === 'chess-plus' ? <><span>{unit.rooms ? `${unit.rooms} · ${unit.area} ${areaUnit(language)}` : `${t.parking} · ${unit.area} ${areaUnit(language)}`}</span><small>{money(unit.price, language)}</small></> : null}</button>)}</div></div>) : <div className="kayan-empty kayan-chess__empty">{t.empty}</div>}</div>
+        <div ref={chessScrollRef} className="kayan-chess__scroll" data-lenis-prevent tabIndex={0} aria-label={`${t.chess}: ${t.floor}`} onKeyDown={onChessKeyDown} style={{ '--kayan-chess-content-width': `${chessContentWidth}px` } as CSSProperties}>{chessRows.length ? chessRows.map(({ floor, items }) => <div className="kayan-chess__row" key={floor}><div className="kayan-chess__floor"><strong>{floorLabel(floor)}</strong><span>{t.floor}</span></div><div className="kayan-chess__units">{items.map((unit) => <button type="button" key={unit.id} aria-label={catalogUnitAriaLabel({ projectName: config.name, phaseLabel: currentPhaseLabel, language, unit })} aria-pressed={unit.id === selectedUnit?.id} aria-controls="kayan-unit-detail" data-status={unit.status} className={unit.id === selectedUnit?.id ? 'is-selected' : ''} onClick={() => chooseUnit(unit)}><strong>№{unit.number}</strong><span>{unit.rooms ? `${unit.rooms} · ${unit.area} ${areaUnit(language)}` : `${t.parking} · ${unit.area} ${areaUnit(language)}`}</span><small>{money(unit.price, language)}</small></button>)}</div></div>) : <div className="kayan-empty kayan-chess__empty">{t.empty}</div>}</div>
         <UnitDetail unit={selectedUnit} layout={selectedLayout} language={language} onLead={() => setLeadOpen(true)} compact />
       </div>}
     </section>

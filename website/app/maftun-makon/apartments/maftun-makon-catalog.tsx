@@ -15,7 +15,7 @@ import { maftunScrollBehavior, useMaftunSmoothScroll } from '../maftun-interacti
 import { maftunLeadSubmitUrl } from '../maftun-lead';
 
 type Language = 'ru' | 'uz' | 'en';
-type Mode = 'cards' | 'chess' | 'chess-plus';
+type Mode = 'cards' | 'chess';
 type Sort = 'priceAsc' | 'priceDesc' | 'areaAsc' | 'areaDesc' | 'floorAsc' | 'floorDesc';
 type Promotion = { percent: number; name: string; deadlineUtc: string; discountSum: number } | null;
 type Unit = {
@@ -72,7 +72,7 @@ export type MaftunMakonSnapshot = {
 
 const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
 const languages: Language[] = ['ru', 'uz', 'en'];
-const modeOptions: Mode[] = ['cards', 'chess', 'chess-plus'];
+const modeOptions: Mode[] = ['cards', 'chess'];
 const storageKey = 'maftun-makon-language-v1';
 
 const copy = {
@@ -80,36 +80,36 @@ const copy = {
     skip: 'К каталогу', back: 'О проекте', project: 'MAFTUN MAKON · NRG-BI × AL-BINA', language: 'Язык',
     title: 'Найдите свой', accent: 'сад за порталом.', lead: 'Полный локальный срез актуального официального каталога — без реконструкции скрытых или проданных квартир.',
     snapshot: 'Официальный snapshot', captured: 'Проверено', offers: 'предложений', firstRender: 'На первом рендере источника', plans: 'локальных планировок',
-    modes: { cards: 'Карточки', chess: 'Шахматка', 'chess-plus': 'Шахматка+' },
+    modes: { cards: 'Карточки', chess: 'Шахматка' },
     filters: 'Фильтры', rooms: 'Комнаты', allRooms: 'Все', areaFrom: 'Площадь от, м²', areaTo: 'Площадь до, м²', priceFrom: 'Цена от, млрд', priceTo: 'Цена до, млрд', floor: 'Этаж', allFloors: 'Все этажи', building: 'Очередь / дом', allBuildings: 'Все дома', propertyClass: 'Класс', allClasses: 'Все классы', reset: 'Сбросить',
     sort: 'Сортировка', sorts: { priceAsc: 'Цена ↑', priceDesc: 'Цена ↓', areaAsc: 'Площадь ↑', areaDesc: 'Площадь ↓', floorAsc: 'Этаж ↑', floorDesc: 'Этаж ↓' }, results: 'найдено',
-    sourceNote: 'Все 204 позиции сохранены из live-каталога 30 августа 2026 года. Цены и акции относятся к моменту snapshot и могут измениться.', official: 'Открыть официальный каталог',
+    sourceNote: 'Все 204 позиции сохранены из live-каталога 30 августа 2026 года. Цены и акции относятся к моменту snapshot и могут измениться.',
     active: 'В продаже', apartment: 'комн.', entrance: 'Подъезд', completion: 'Срок в каталоге', class: 'Класс', house: 'Дом', plan: 'Открыть планировку', unavailablePlan: 'Планировка временно недоступна в официальном источнике', choose: 'Выбрать квартиру', showMore: 'Показать ещё', price: 'Цена snapshot', oldPrice: 'Цена до акции', perM2: 'за м²', promotion: 'Акция',
-    noResults: 'По этим параметрам предложений нет.', resetFilters: 'Сбросить фильтры', matrix: 'Этаж × квартиры', matrixHint: 'Прокручивайте пальцем или трекпадом, кнопками 44 px либо клавишами ← → Home End.', scrollLeft: 'Прокрутить влево', scrollRight: 'Прокрутить вправо', selected: 'Выбранная квартира', close: 'Закрыть', details: 'Подробности', balcony: 'Балкон', ceiling: 'Высота потолка', studio: 'Студия', yes: 'Да', no: 'Нет', finishing: 'Отделка включена', officialUnit: 'Карточка в источнике', consult: 'Получить консультацию',
+    noResults: 'По этим параметрам предложений нет.', resetFilters: 'Сбросить фильтры', matrix: 'Этаж × квартиры', matrixHint: 'Прокручивайте пальцем или трекпадом, кнопками 44 px либо клавишами ← → Home End.', scrollLeft: 'Прокрутить влево', scrollRight: 'Прокрутить вправо', selected: 'Выбранная квартира', close: 'Закрыть', details: 'Подробности', balcony: 'Балкон', ceiling: 'Высота потолка', studio: 'Студия', yes: 'Да', no: 'Нет', finishing: 'Отделка включена', consult: 'Получить консультацию',
     disclaimer: 'Snapshot не является публичной офертой. Актуальные условия подтверждает отдел продаж.',
   },
   uz: {
     skip: 'Katalogga o‘tish', back: 'Loyiha haqida', project: 'MAFTUN MAKON · NRG-BI × AL-BINA', language: 'Til',
     title: 'Portal ortidagi', accent: 'bog‘ingizni toping.', lead: 'Yashirilgan yoki sotilgan xonadonlarni qayta yaratmasdan, joriy rasmiy katalogning to‘liq mahalliy snapshoti.',
     snapshot: 'Rasmiy snapshot', captured: 'Tekshirilgan vaqt', offers: 'taklif', firstRender: 'Manbaning birinchi renderida', plans: 'mahalliy reja',
-    modes: { cards: 'Kartalar', chess: 'Shaxmatka', 'chess-plus': 'Shaxmatka+' },
+    modes: { cards: 'Kartalar', chess: 'Shaxmatka' },
     filters: 'Filtrlar', rooms: 'Xonalar', allRooms: 'Barchasi', areaFrom: 'Maydon, m² dan', areaTo: 'Maydon, m² gacha', priceFrom: 'Narx, mlrd dan', priceTo: 'Narx, mlrd gacha', floor: 'Qavat', allFloors: 'Barcha qavatlar', building: 'Navbat / uy', allBuildings: 'Barcha uylar', propertyClass: 'Toifa', allClasses: 'Barcha toifalar', reset: 'Tozalash',
     sort: 'Saralash', sorts: { priceAsc: 'Narx ↑', priceDesc: 'Narx ↓', areaAsc: 'Maydon ↑', areaDesc: 'Maydon ↓', floorAsc: 'Qavat ↑', floorDesc: 'Qavat ↓' }, results: 'topildi',
-    sourceNote: '204 pozitsiyaning barchasi 2026-yil 30-avgustdagi live katalogdan saqlangan. Narx va aksiyalar snapshot vaqtiga tegishli.', official: 'Rasmiy katalogni ochish',
+    sourceNote: '204 pozitsiyaning barchasi 2026-yil 30-avgustdagi live katalogdan saqlangan. Narx va aksiyalar snapshot vaqtiga tegishli.',
     active: 'Sotuvda', apartment: 'xonali', entrance: 'Kirish', completion: 'Katalogdagi muddat', class: 'Toifa', house: 'Uy', plan: 'Rejani ochish', unavailablePlan: 'Rasmiy manbada reja vaqtincha mavjud emas', choose: 'Xonadon tanlash', showMore: 'Yana ko‘rsatish', price: 'Snapshot narxi', oldPrice: 'Aksiyagacha narx', perM2: 'm² uchun', promotion: 'Aksiya',
-    noResults: 'Bu parametrlar bo‘yicha taklif yo‘q.', resetFilters: 'Filtrlarni tozalash', matrix: 'Qavat × xonadonlar', matrixHint: 'Barmoq yoki trekpad, 44 px tugmalar yoxud ← → Home End klavishlaridan foydalaning.', scrollLeft: 'Chapga surish', scrollRight: 'O‘ngga surish', selected: 'Tanlangan xonadon', close: 'Yopish', details: 'Tafsilotlar', balcony: 'Balkon', ceiling: 'Shift balandligi', studio: 'Studiya', yes: 'Ha', no: 'Yo‘q', finishing: 'Pardoz kiritilgan', officialUnit: 'Manbadagi kartochka', consult: 'Maslahat olish',
+    noResults: 'Bu parametrlar bo‘yicha taklif yo‘q.', resetFilters: 'Filtrlarni tozalash', matrix: 'Qavat × xonadonlar', matrixHint: 'Barmoq yoki trekpad, 44 px tugmalar yoxud ← → Home End klavishlaridan foydalaning.', scrollLeft: 'Chapga surish', scrollRight: 'O‘ngga surish', selected: 'Tanlangan xonadon', close: 'Yopish', details: 'Tafsilotlar', balcony: 'Balkon', ceiling: 'Shift balandligi', studio: 'Studiya', yes: 'Ha', no: 'Yo‘q', finishing: 'Pardoz kiritilgan', consult: 'Maslahat olish',
     disclaimer: 'Snapshot ommaviy oferta emas. Amaldagi shartlarni savdo bo‘limi tasdiqlaydi.',
   },
   en: {
     skip: 'Skip to catalogue', back: 'About the project', project: 'MAFTUN MAKON · NRG-BI × AL-BINA', language: 'Language',
     title: 'Find your', accent: 'garden beyond the portal.', lead: 'A complete local snapshot of the current official catalogue, without reconstructing hidden or sold apartments.',
     snapshot: 'Official snapshot', captured: 'Verified', offers: 'listings', firstRender: 'On the source’s first render', plans: 'local floor plans',
-    modes: { cards: 'Cards', chess: 'Matrix', 'chess-plus': 'Matrix+' },
+    modes: { cards: 'Cards', chess: 'Matrix' },
     filters: 'Filters', rooms: 'Rooms', allRooms: 'All', areaFrom: 'Area from, m²', areaTo: 'Area to, m²', priceFrom: 'Price from, bn', priceTo: 'Price to, bn', floor: 'Floor', allFloors: 'All floors', building: 'Phase / building', allBuildings: 'All buildings', propertyClass: 'Class', allClasses: 'All classes', reset: 'Reset',
     sort: 'Sort', sorts: { priceAsc: 'Price ↑', priceDesc: 'Price ↓', areaAsc: 'Area ↑', areaDesc: 'Area ↓', floorAsc: 'Floor ↑', floorDesc: 'Floor ↓' }, results: 'found',
-    sourceNote: 'All 204 listings were saved from the live catalogue on 30 August 2026. Prices and promotions are fixed at snapshot time and may change.', official: 'Open official catalogue',
+    sourceNote: 'All 204 listings were saved from the live catalogue on 30 August 2026. Prices and promotions are fixed at snapshot time and may change.',
     active: 'For sale', apartment: 'room', entrance: 'Entrance', completion: 'Catalogue completion', class: 'Class', house: 'Building', plan: 'Open floor plan', unavailablePlan: 'The official floor plan is temporarily unavailable', choose: 'Choose apartment', showMore: 'Show more', price: 'Snapshot price', oldPrice: 'Pre-offer price', perM2: 'per m²', promotion: 'Offer',
-    noResults: 'No listings match these filters.', resetFilters: 'Reset filters', matrix: 'Floor × apartments', matrixHint: 'Use touch or trackpad, the 44 px controls, or ← → Home End keys.', scrollLeft: 'Scroll left', scrollRight: 'Scroll right', selected: 'Selected apartment', close: 'Close', details: 'Details', balcony: 'Balcony', ceiling: 'Ceiling height', studio: 'Studio', yes: 'Yes', no: 'No', finishing: 'Finishing included', officialUnit: 'Official listing', consult: 'Request a consultation',
+    noResults: 'No listings match these filters.', resetFilters: 'Reset filters', matrix: 'Floor × apartments', matrixHint: 'Use touch or trackpad, the 44 px controls, or ← → Home End keys.', scrollLeft: 'Scroll left', scrollRight: 'Scroll right', selected: 'Selected apartment', close: 'Close', details: 'Details', balcony: 'Balcony', ceiling: 'Ceiling height', studio: 'Studio', yes: 'Yes', no: 'No', finishing: 'Finishing included', consult: 'Request a consultation',
     disclaimer: 'The snapshot is not a public offer. Current terms are confirmed by the sales team.',
   },
 } as const;
@@ -119,10 +119,6 @@ function withLanguage(path: string, language: Language) { return `${appBasePath}
 function privacyUrl(language: Language) { return `${withLanguage('/privacy', language)}&project=maftun-makon`; }
 function locale(language: Language) { return language === 'ru' ? 'ru-RU' : language === 'uz' ? 'uz-UZ' : 'en-US'; }
 function money(value: number, language: Language) { return `${new Intl.NumberFormat(locale(language), { maximumFractionDigits: 0 }).format(value)} UZS`; }
-function shortMoney(value: number, language: Language) {
-  const suffix = language === 'ru' ? 'млрд' : language === 'uz' ? 'mlrd' : 'bn';
-  return `${new Intl.NumberFormat(locale(language), { maximumFractionDigits: 2 }).format(value / 1e9)} ${suffix}`;
-}
 function area(value: number, language: Language) { return new Intl.NumberFormat(locale(language), { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(value); }
 function ceilingLabel(value: string, language: Language) {
   const match = value.match(/\d+(?:[.,]\d+)?/);
@@ -336,14 +332,13 @@ function UnitDetail({ unit, language, onClose, onPlan, onLead }: { unit: Unit; l
         <div><dt>{t.finishing}</dt><dd>{unit.repairIncluded ? t.yes : t.no}</dd></div>
       </dl>
       <div className="maftun-unit-detail__price"><small>{t.price}</small><strong>{money(unit.price, language)}</strong><span>{money(unit.pricePerM2, language)} {t.perM2}</span>{unit.oldPrice ? <del>{money(unit.oldPrice, language)}</del> : null}{unit.promotion ? <b>{t.promotion} −{unit.promotion.percent}%</b> : null}</div>
-      <a href={unit.provenance.officialDetail} target="_blank" rel="noreferrer">{t.officialUnit} ↗</a>
       <button className="maftun-unit-detail__cta" type="button" data-lead-trigger onClick={onLead}>{t.consult}<span>↗</span></button>
       </aside>
     </>
   );
 }
 
-function MatrixBuilding({ units, language, plus, selectedId, onSelect }: { units: Unit[]; language: Language; plus: boolean; selectedId?: string; onSelect: (unit: Unit, trigger: HTMLButtonElement) => void }) {
+function MatrixBuilding({ units, language, selectedId, onSelect }: { units: Unit[]; language: Language; selectedId?: string; onSelect: (unit: Unit, trigger: HTMLButtonElement) => void }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const [edges, setEdges] = useState({ start: true, end: false });
   const t = copy[language];
@@ -374,7 +369,7 @@ function MatrixBuilding({ units, language, plus, selectedId, onSelect }: { units
     observer.observe(viewport);
     if (viewport.firstElementChild) observer.observe(viewport.firstElementChild);
     return () => observer.disconnect();
-  }, [plus, units, updateEdges]);
+  }, [units, updateEdges]);
 
   return (
     <section className="maftun-matrix-building" data-building={building}>
@@ -386,7 +381,7 @@ function MatrixBuilding({ units, language, plus, selectedId, onSelect }: { units
         </div>
       </header>
       <div ref={viewportRef} className="maftun-matrix-viewport" tabIndex={0} onKeyDown={onKey} onScroll={updateEdges} aria-label={`${t.matrix}: ${shortBuilding(building)}`}>
-        <div className={`maftun-matrix-table ${plus ? 'is-plus' : ''}`}>
+        <div className="maftun-matrix-table">
           <div className="maftun-matrix-caption"><span>{t.floor}</span><strong>{t.offers}</strong></div>
           {floors.map((floor) => (
             <div className="maftun-matrix-row" key={floor}>
@@ -396,8 +391,8 @@ function MatrixBuilding({ units, language, plus, selectedId, onSelect }: { units
                   <button key={unit.id} type="button" className={selectedId === unit.id ? 'is-selected' : ''} aria-pressed={selectedId === unit.id} aria-label={`${shortBuilding(unit.building)}, № ${unit.number}, ${unit.rooms} ${t.apartment}, ${area(unit.area, language)} м², ${t.floor} ${unit.floor}/${unit.totalFloors}, ${t.entrance} ${unit.entrance}, ${money(unit.price, language)}`} onClick={(event) => onSelect(unit, event.currentTarget)}>
                     <small>№ {unit.number}<i aria-hidden="true" /></small>
                     <strong>{unit.rooms} · {area(unit.area, language)} м²</strong>
-                    <span>{plus ? money(unit.price, language) : shortMoney(unit.price, language)}</span>
-                    {plus ? <em>{t.entrance} {unit.entrance} · {completionLabel(unit, language)}</em> : null}
+                    <span>{money(unit.price, language)}</span>
+                    <em>{t.entrance} {unit.entrance} · {completionLabel(unit, language)}</em>
                   </button>
                 ))}
               </div>
@@ -503,7 +498,7 @@ export function MaftunMakonCatalog({ snapshot, initialLanguage }: { snapshot: Ma
 
       <section className="maftun-catalog-controls" aria-label={t.filters}>
         <div className="maftun-catalog-modes" role="tablist" aria-label={t.filters}>
-          {modeOptions.map((item) => <button data-testid={`maftun-mode-${item}`} id={`maftun-tab-${item}`} key={item} type="button" role="tab" aria-selected={mode === item} aria-controls={`maftun-panel-${item}`} tabIndex={mode === item ? 0 : -1} className={mode === item ? 'is-active' : ''} onClick={() => selectMode(item)} onKeyDown={(event) => onModeKey(event, item)}>{t.modes[item]}</button>)}
+          {modeOptions.map((item) => <button data-testid={`maftun-mode-${item}`} id={`maftun-tab-${item}`} key={item} type="button" role="tab" aria-selected={mode === item} aria-controls="maftun-panel" tabIndex={mode === item ? 0 : -1} className={mode === item ? 'is-active' : ''} onClick={() => selectMode(item)} onKeyDown={(event) => onModeKey(event, item)}>{t.modes[item]}</button>)}
         </div>
         <div className="maftun-catalog-filters">
           <label><span>{t.rooms}</span><select data-testid="maftun-filter-rooms" value={rooms} onChange={(event) => { setRooms(event.target.value); resetPresentation(); }}><option value="all">{t.allRooms}</option>{roomOptions.map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
@@ -520,22 +515,22 @@ export function MaftunMakonCatalog({ snapshot, initialLanguage }: { snapshot: Ma
 
       <section className="maftun-catalog-results" id="maftun-catalog-results" tabIndex={-1}>
         <header><div aria-live="polite"><strong data-testid="maftun-result-count">{filtered.length}</strong><span>{t.results}</span></div><label><span>{t.sort}</span><select data-testid="maftun-sort" value={sort} onChange={(event) => { setSort(event.target.value as Sort); resetPresentation(); }}>{Object.entries(t.sorts).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label></header>
-        <div className="maftun-catalog-source"><span aria-hidden="true">i</span><p>{t.sourceNote}</p><a href={snapshot.source} target="_blank" rel="noreferrer">{t.official} ↗</a></div>
+        <div className="maftun-catalog-source"><span aria-hidden="true">i</span><p>{t.sourceNote}</p></div>
 
-        {!filtered.length ? <div id={`maftun-panel-${mode}`} className="maftun-catalog-empty" role="tabpanel" aria-labelledby={`maftun-tab-${mode}`}><span aria-hidden="true">⌁</span><h2>{t.noResults}</h2><button type="button" onClick={reset}>{t.resetFilters}</button></div> : null}
+        {!filtered.length ? <div id="maftun-panel" className="maftun-catalog-empty" role="tabpanel" aria-labelledby={`maftun-tab-${mode}`}><span aria-hidden="true">⌁</span><h2>{t.noResults}</h2><button type="button" onClick={reset}>{t.resetFilters}</button></div> : null}
 
         {mode === 'cards' && filtered.length ? (
-          <div id="maftun-panel-cards" role="tabpanel" aria-labelledby="maftun-tab-cards">
+          <div id="maftun-panel" role="tabpanel" aria-labelledby="maftun-tab-cards">
             <div className="maftun-unit-grid">{filtered.slice(0, visible).map((unit) => <UnitCard key={unit.id} unit={unit} language={language} onPlan={() => openPlan(unit)} onLead={() => openUnitLead(unit, 'cards:consultation-cta')} />)}</div>
             {visible < filtered.length ? <button data-testid="maftun-show-more" className="maftun-catalog-show-more" type="button" onClick={() => setVisible((value) => value + 12)}><span>{t.showMore}</span><strong>{Math.min(visible, filtered.length)} / {filtered.length}</strong></button> : null}
           </div>
         ) : null}
 
         {mode !== 'cards' && filtered.length ? (
-          <section id={`maftun-panel-${mode}`} className="maftun-matrix" role="tabpanel" aria-labelledby={`maftun-tab-${mode}`}>
-            <header><div><small>{mode === 'chess-plus' ? t.modes['chess-plus'] : t.modes.chess}</small><h2>{t.matrix}</h2><p>{t.matrixHint}</p></div></header>
+          <section id="maftun-panel" className="maftun-matrix" role="tabpanel" aria-labelledby={`maftun-tab-${mode}`}>
+            <header><div><small>{t.modes.chess}</small><h2>{t.matrix}</h2><p>{t.matrixHint}</p></div></header>
             <div className={`maftun-matrix-layout ${selected ? 'has-detail' : ''}`}>
-              <div className="maftun-matrix-groups">{matrixGroups.map((units) => <MatrixBuilding key={units[0].buildingId} units={units} language={language} plus={mode === 'chess-plus'} selectedId={selected?.id} onSelect={selectUnit} />)}</div>
+              <div className="maftun-matrix-groups">{matrixGroups.map((units) => <MatrixBuilding key={units[0].buildingId} units={units} language={language} selectedId={selected?.id} onSelect={selectUnit} />)}</div>
               {selected ? <UnitDetail unit={selected} language={language} onClose={closeDetail} onPlan={() => openPlan(selected)} onLead={() => openUnitLead(selected, `${mode}:detail-consultation-cta`)} /> : null}
             </div>
           </section>

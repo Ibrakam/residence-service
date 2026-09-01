@@ -104,12 +104,7 @@ export default async function Page({ searchParams }: PageProps) {
         telephone: '1360',
         brand: { '@type': 'Organization', name: 'NRG-BI' },
         additionalProperty: [...current.properties, ...current.addressProperties].map(([name, value]) => ({ '@type': 'PropertyValue', name, value })),
-        sameAs: [
-          'https://nrg-bi.uz/uz-ru/landing/jomiy',
-          'https://nrg-bi.uz/uz/landing/jomiy',
-          'https://nrg-bi.uz/uz-ru/news/jomiy-2.1-uspeshno-sdana!',
-          'https://uzbekistan360.uz/ru/location/nrg-jomiy-vid-so-dvoraOWb',
-        ],
+        sameAs: ['https://uzbekistan360.uz/ru/location/nrg-jomiy-vid-so-dvoraOWb'],
       },
       {
         '@type': 'BreadcrumbList',

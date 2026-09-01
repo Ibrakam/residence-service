@@ -11,7 +11,6 @@ type LightboxState = { slides: Slide[]; index: number } | null;
 
 const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
 const languages: Language[] = ['ru', 'uz', 'en'];
-const officialLanding = 'https://nrg-bi.uz/uz-ru/landing/flagman-tashkent';
 const officialBooklet = 'https://s3.bi.group/biclick/content-manager/flagman_booklet_2_9db0a000ca.pdf';
 
 const copy = {
@@ -29,7 +28,7 @@ const copy = {
     locationOverline: '06 · Ташкент', locationTitle: 'В центре Мирзо-Улугбекского района.', locationText: 'Улица Мухаммада Юсуфа, 54. Рядом — городская инфраструктура района, школы, магазины, кафе и общественный транспорт.', map: 'Открыть на карте',
     galleryOverline: '07 · Дом сдан', galleryTitle: 'Flagman сегодня.', galleryText: 'Фактическая фотогалерея готового дома, фасада, холлов и благоустроенной территории.',
     catalogOverline: '08 · Официальный каталог', catalogTitle: '8 актуальных предложений в сохранённом срезе.', catalogText: 'Точные площади, этажи, цены и планировки из официального каталога на 30 августа 2026 года.', catalogNote: 'Цена и статус фиксируются на дату snapshot и могут измениться у официального продавца.',
-    contactOverline: '09 · Персональная консультация', contactTitle: 'Выберите пространство, которое будет вашим.', contactText: 'Оставьте контакты — менеджер проекта подтвердит актуальный статус, гибкие условия оплаты и детали выбранной квартиры.', phone: 'Телефон', source: 'Официальная страница', booklet: 'Официальный буклет', privacy: 'Конфиденциальность', partner: 'Партнёрский проект NRG-BI и AL-BINA',
+    contactOverline: '09 · Персональная консультация', contactTitle: 'Выберите пространство, которое будет вашим.', contactText: 'Оставьте контакты — менеджер проекта подтвердит актуальный статус, гибкие условия оплаты и детали выбранной квартиры.', phone: 'Телефон', booklet: 'Официальный буклет', privacy: 'Конфиденциальность', partner: 'Партнёрский проект NRG-BI и AL-BINA',
   },
   uz: {
     nav: { project: 'Loyiha', architecture: 'Arxitektura', halls: 'Xollar', courtyard: 'Hovli', location: 'Joylashuv' },
@@ -45,7 +44,7 @@ const copy = {
     locationOverline: '06 · Toshkent', locationTitle: 'Mirzo Ulug‘bek tumani markazida.', locationText: 'Muhammad Yusuf ko‘chasi, 54. Yaqinda tuman infratuzilmasi, maktablar, do‘konlar, kafelar va jamoat transporti bor.', map: 'Xaritada ochish',
     galleryOverline: '07 · Uy topshirilgan', galleryTitle: 'Flagman bugun.', galleryText: 'Tayyor uy, fasad, xollar va obodonlashtirilgan hududning haqiqiy fotogalereyasi.',
     catalogOverline: '08 · Rasmiy katalog', catalogTitle: 'Saqlangan snapshotda 8 ta dolzarb taklif.', catalogText: '2026-yil 30-avgustdagi rasmiy katalogdan aniq maydon, qavat, narx va rejalar.', catalogNote: 'Narx va holat snapshot sanasiga tegishli va rasmiy sotuvchida o‘zgarishi mumkin.',
-    contactOverline: '09 · Shaxsiy maslahat', contactTitle: 'Sizniki bo‘ladigan makonni tanlang.', contactText: 'Kontaktlaringizni qoldiring — loyiha menejeri tanlangan xonadon holati, moslashuvchan to‘lov shartlari va tafsilotlarini tasdiqlaydi.', phone: 'Telefon', source: 'Rasmiy sahifa', booklet: 'Rasmiy buklet', privacy: 'Maxfiylik', partner: 'NRG-BI va AL-BINA hamkorlik loyihasi',
+    contactOverline: '09 · Shaxsiy maslahat', contactTitle: 'Sizniki bo‘ladigan makonni tanlang.', contactText: 'Kontaktlaringizni qoldiring — loyiha menejeri tanlangan xonadon holati, moslashuvchan to‘lov shartlari va tafsilotlarini tasdiqlaydi.', phone: 'Telefon', booklet: 'Rasmiy buklet', privacy: 'Maxfiylik', partner: 'NRG-BI va AL-BINA hamkorlik loyihasi',
   },
   en: {
     nav: { project: 'Project', architecture: 'Architecture', halls: 'Lobbies', courtyard: 'Courtyard', location: 'Location' },
@@ -61,7 +60,7 @@ const copy = {
     locationOverline: '06 · Tashkent', locationTitle: 'At the heart of Mirzo Ulugbek district.', locationText: '54 Muhammad Yusuf Street. District infrastructure, schools, shops, cafés and public transport are nearby.', map: 'Open map',
     galleryOverline: '07 · Completed', galleryTitle: 'Flagman today.', galleryText: 'Actual photography of the completed residence, façade, lobbies and landscaped grounds.',
     catalogOverline: '08 · Official catalogue', catalogTitle: '8 current listings in the saved snapshot.', catalogText: 'Exact areas, floors, prices and plans from the official catalogue on 30 August 2026.', catalogNote: 'Prices and status are recorded at snapshot date and may change with the official seller.',
-    contactOverline: '09 · Personal consultation', contactTitle: 'Choose a space to make your own.', contactText: 'Leave your details and the project manager will confirm current status, flexible payment terms and the selected apartment details.', phone: 'Phone', source: 'Official page', booklet: 'Official brochure', privacy: 'Privacy', partner: 'A partnership project by NRG-BI and AL-BINA',
+    contactOverline: '09 · Personal consultation', contactTitle: 'Choose a space to make your own.', contactText: 'Leave your details and the project manager will confirm current status, flexible payment terms and the selected apartment details.', phone: 'Phone', booklet: 'Official brochure', privacy: 'Privacy', partner: 'A partnership project by NRG-BI and AL-BINA',
   },
 } as const;
 
@@ -302,7 +301,7 @@ export function FlagmanPage({ initialLanguage = 'ru' }: { initialLanguage?: Lang
       </section>
     </div>
 
-    <footer className="flagman-footer"><a className="flagman-wordmark" href="#top">FLAGMAN<small>TASHKENT</small></a><nav><a href={officialLanding} target="_blank" rel="noreferrer">{t.source} ↗</a><a href={officialBooklet} target="_blank" rel="noreferrer">{t.booklet} ↗</a><a href={privacyUrl(language)}>{t.privacy}</a></nav><p>{t.partner}</p></footer>
+    <footer className="flagman-footer"><a className="flagman-wordmark" href="#top">FLAGMAN<small>TASHKENT</small></a><nav><a href={officialBooklet} target="_blank" rel="noreferrer">{t.booklet} ↗</a><a href={privacyUrl(language)}>{t.privacy}</a></nav><p>{t.partner}</p></footer>
 
     {lightbox ? <Lightbox state={lightbox} onClose={() => setLightbox(null)} previous={t.previous} next={t.next} closeLabel={t.close} /> : null}
     <LeadModal open={leadOpen} language={language} context="flagman:landing:consultation" projectName="FLAGMAN" hideBrand tagline={t.heroAccent} facts={t.facts.slice(0, 3).map(([value, label]) => `${value} · ${label}`)} submitUrl={leadSubmitUrl()} projectSlug="flagman" privacyUrl={privacyUrl(language)} requireConsent onClose={() => setLeadOpen(false)} />

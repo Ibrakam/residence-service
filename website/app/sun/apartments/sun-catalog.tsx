@@ -26,7 +26,7 @@ import {
   useSunMobile,
 } from '../sun-ui';
 
-type Mode = 'cards' | 'chess' | 'chess-plus';
+type Mode = 'cards' | 'chess';
 type Sort = 'recommended' | 'priceAsc' | 'priceDesc' | 'areaAsc' | 'areaDesc' | 'roomsAsc' | 'roomsDesc' | 'floorAsc' | 'floorDesc' | 'ppmAsc' | 'ppmDesc';
 type Filters = { rooms: string[]; blocks: string[]; floorFrom: string; floorTo: string; areaFrom: string; areaTo: string; priceFrom: string; priceTo: string };
 type Selection = { unit: SunUnit; opener: HTMLButtonElement };
@@ -38,7 +38,7 @@ type MatrixRow = { id: string; block: string; entrance: number; floor: number; u
 type Snapshot = { capturedAt: string; groups?: RawGroup[]; matrixRows?: RawMatrixRow[]; units: SunUnit[] };
 
 const snapshot = snapshotJson as Snapshot;
-const modes: readonly Mode[] = ['cards', 'chess', 'chess-plus'];
+const modes: readonly Mode[] = ['cards', 'chess'];
 const sorts: readonly Sort[] = ['recommended', 'priceAsc', 'priceDesc', 'areaAsc', 'areaDesc', 'roomsAsc', 'roomsDesc', 'floorAsc', 'floorDesc', 'ppmAsc', 'ppmDesc'];
 const defaultFilters: Filters = { rooms: [], blocks: [], floorFrom: '', floorTo: '', areaFrom: '', areaTo: '', priceFrom: '', priceTo: '' };
 
@@ -89,16 +89,15 @@ const copy = {
     eyebrow: 'СОЛНЕЧНЫЙ ИНСТРУМЕНТ · ЗАФИКСИРОВАННЫЙ СРЕЗ', title: '51 квартира. Четыре корпуса.', lead: 'Актуальные цены в UZS и 51 доступная позиция из официального публичного среза. Корпус Б в текущем каталоге отсутствует.', heroLead: 'Помочь с выбором',
     facts: [['51', 'доступная'], ['1–3', 'комнаты'], ['34,61–83,90 м²', 'площадь'], ['867,7 млн–1,966 млрд UZS', 'цена']] as const,
     snapshot: 'Срез', liveWarning: 'Это snapshot, а не обещание наличия в момент обращения.',
-    modes: { cards: 'Карточки', chess: 'Шахматка', 'chess-plus': 'Шахматка+' }, modeLabel: 'Режим каталога', filters: 'Фильтры', reset: 'Сбросить', all: 'Все', selected: 'выбрано', rooms: 'Комнаты', blocks: 'Корпуса', floorRange: 'Этаж', areaRange: 'Площадь, м²', priceRange: 'Цена, UZS', from: 'от', to: 'до', results: 'найдено', filtersAnnouncement: 'Результатов после фильтрации',
+    modes: { cards: 'Карточки', chess: 'Шахматка' }, modeLabel: 'Режим каталога', filters: 'Фильтры', reset: 'Сбросить', all: 'Все', selected: 'выбрано', rooms: 'Комнаты', blocks: 'Корпуса', floorRange: 'Этаж', areaRange: 'Площадь, м²', priceRange: 'Цена, UZS', from: 'от', to: 'до', results: 'найдено', filtersAnnouncement: 'Результатов после фильтрации',
     sort: 'Сортировка', sorts: { recommended: 'По умолчанию / рекомендуемые', priceAsc: 'Цена: сначала ниже', priceDesc: 'Цена: сначала выше', areaAsc: 'Площадь: сначала меньше', areaDesc: 'Площадь: сначала больше', roomsAsc: 'Комнаты: по возрастанию', roomsDesc: 'Комнаты: по убыванию', floorAsc: 'Этаж: сначала ниже', floorDesc: 'Этаж: сначала выше', ppmAsc: 'Цена за м²: сначала ниже', ppmDesc: 'Цена за м²: сначала выше' },
     unit: 'Квартира №', roomsShort: 'комн.', area: 'Площадь', floor: 'Этаж', entrance: 'Подъезд', block: 'Корпус', available: 'Доступна', price: 'Текущая цена', ppm: 'Цена за м²', openPlan: 'Открыть два официальных плана', ask: 'Оставить заявку', showMore: 'Показать ещё', showing: 'Показано', of: 'из',
     emptyTitle: 'По этим параметрам квартир нет.', emptyText: 'Сбросьте фильтры или оставьте заявку — менеджер сверит текущую доступность.', emptyLead: 'Запросить подборку',
     matrixTitle: '47 реальных строк · один подъезд в каждом корпусе.', matrixText: 'Строки 2–11 / 2–13 / 2–14 / 2–13 сохранены даже без доступной квартиры. Фильтры приглушают позиции, не перестраивая физическую топологию.', matched: 'совпадений', row: 'Этаж', noUnits: 'Нет доступной позиции в срезе', scrollLeft: 'Сдвинуть шахматку влево', scrollRight: 'Сдвинуть шахматку вправо', matrixHelp: 'Свайп, трекпад, кнопки, стрелки, Home и End.', openUnit: 'Открыть квартиру',
-    plusHint: 'Шахматка+ добавляет цену за м² и сравнительную панель с двумя официальными планами.',
     detail: 'Детали квартиры', closeDetail: 'Закрыть детали', plans: 'Официальные планы', planOne: 'Официальный план · поверхность 1', planTwo: 'Официальный план · поверхность 2', planOneText: 'Первая опубликованная поверхность плана.', planTwoText: 'Вторая опубликованная поверхность плана.', characteristics: 'Характеристики', matrixLead: 'Уточнить эту квартиру',
     planDialog: 'Два официальных плана квартиры', closePlan: 'Закрыть планы', previousPlan: 'Предыдущий план', nextPlan: 'Следующий план', swipeHint: 'Переключайте стрелками или свайпом.', planLead: 'Уточнить квартиру по плану',
     noCampaign: 'Активной snapshot-акции нет', priceContract: 'regularPrice совпадает с effectivePrice; скидка и таймер не применяются.',
-    footerTitle: 'Нужен точный ответ по конкретной квартире?', footerText: 'Менеджер сверит выбранную позицию с зафиксированным источником и текущей доступностью. Заявка не является бронированием.', privacy: 'Обработка персональных данных', source: 'Официальный источник', top: 'Наверх',
+    footerTitle: 'Нужен точный ответ по конкретной квартире?', footerText: 'Менеджер сверит выбранную позицию с зафиксированным источником и текущей доступностью. Заявка не является бронированием.', privacy: 'Обработка персональных данных', top: 'Наверх',
     formTagline: 'День начинается дома.', formFacts: ['51 доступная квартира', '4 корпуса в каталоге', 'Текущие цены UZS'] as const,
   },
   uz: {
@@ -106,16 +105,15 @@ const copy = {
     eyebrow: 'QUYOSHLI VOSITA · QAYD ETILGAN KESIM', title: '51 xonadon. To‘rt bino.', lead: 'Rasmiy ommaviy kesimdagi dolzarb UZS narxlari va 51 ta mavjud pozitsiya. B binosi joriy katalogda yo‘q.', heroLead: 'Tanlashda yordam olish',
     facts: [['51', 'mavjud'], ['1–3', 'xona'], ['34,61–83,90 m²', 'maydon'], ['867,7 mln–1,966 mlrd UZS', 'narx']] as const,
     snapshot: 'Kesim', liveWarning: 'Bu snapshot, murojaat vaqtida mavjudlik va’dasi emas.',
-    modes: { cards: 'Kartochkalar', chess: 'Shaxmatka', 'chess-plus': 'Shaxmatka+' }, modeLabel: 'Katalog rejimi', filters: 'Filtrlar', reset: 'Tozalash', all: 'Barchasi', selected: 'tanlandi', rooms: 'Xonalar', blocks: 'Binolar', floorRange: 'Qavat', areaRange: 'Maydon, m²', priceRange: 'Narx, UZS', from: 'dan', to: 'gacha', results: 'topildi', filtersAnnouncement: 'Filtrlashdan keyingi natijalar',
+    modes: { cards: 'Kartochkalar', chess: 'Shaxmatka' }, modeLabel: 'Katalog rejimi', filters: 'Filtrlar', reset: 'Tozalash', all: 'Barchasi', selected: 'tanlandi', rooms: 'Xonalar', blocks: 'Binolar', floorRange: 'Qavat', areaRange: 'Maydon, m²', priceRange: 'Narx, UZS', from: 'dan', to: 'gacha', results: 'topildi', filtersAnnouncement: 'Filtrlashdan keyingi natijalar',
     sort: 'Saralash', sorts: { recommended: 'Standart / tavsiya etilgan', priceAsc: 'Narx: arzonidan', priceDesc: 'Narx: qimmatidan', areaAsc: 'Maydon: kichigidan', areaDesc: 'Maydon: kattasidan', roomsAsc: 'Xonalar: o‘sish tartibida', roomsDesc: 'Xonalar: kamayish tartibida', floorAsc: 'Qavat: pastidan', floorDesc: 'Qavat: yuqorisidan', ppmAsc: 'm² narxi: arzonidan', ppmDesc: 'm² narxi: qimmatidan' },
     unit: 'Xonadon №', roomsShort: 'xona', area: 'Maydon', floor: 'Qavat', entrance: 'Kirish', block: 'Bino', available: 'Mavjud', price: 'Joriy narx', ppm: 'm² narxi', openPlan: 'Ikki rasmiy planni ochish', ask: 'Ariza qoldirish', showMore: 'Yana ko‘rsatish', showing: 'Ko‘rsatildi', of: '/',
     emptyTitle: 'Bu parametrlar bo‘yicha xonadon yo‘q.', emptyText: 'Filtrlarni tozalang yoki ariza qoldiring — menejer joriy mavjudlikni tekshiradi.', emptyLead: 'Variantlarni so‘rash',
     matrixTitle: '47 haqiqiy qator · har binoda bitta kirish.', matrixText: '2–11 / 2–13 / 2–14 / 2–13 qatorlari mavjud xonadon bo‘lmasa ham saqlanadi. Filtrlar fizik tuzilmani o‘zgartirmasdan pozitsiyalarni xiralashtiradi.', matched: 'mos', row: 'Qavat', noUnits: 'Kesimda mavjud pozitsiya yo‘q', scrollLeft: 'Shaxmatkani chapga siljitish', scrollRight: 'Shaxmatkani o‘ngga siljitish', matrixHelp: 'Svip, trekpad, tugmalar, strelkalar, Home va End.', openUnit: 'Xonadonni ochish',
-    plusHint: 'Shaxmatka+ m² narxi va ikki rasmiy planli taqqoslash panelini qo‘shadi.',
     detail: 'Xonadon tafsilotlari', closeDetail: 'Tafsilotlarni yopish', plans: 'Rasmiy planlar', planOne: 'Rasmiy plan · 1-yuza', planTwo: 'Rasmiy plan · 2-yuza', planOneText: 'E’lon qilingan planning birinchi yuzasi.', planTwoText: 'E’lon qilingan planning ikkinchi yuzasi.', characteristics: 'Xususiyatlar', matrixLead: 'Bu xonadonni aniqlashtirish',
     planDialog: 'Xonadonning ikki rasmiy plani', closePlan: 'Planlarni yopish', previousPlan: 'Oldingi plan', nextPlan: 'Keyingi plan', swipeHint: 'Strelka yoki svip bilan almashtiring.', planLead: 'Plan bo‘yicha aniqlashtirish',
     noCampaign: 'Snapshotda faol aksiya yo‘q', priceContract: 'regularPrice effectivePrice bilan teng; chegirma va taymer qo‘llanmaydi.',
-    footerTitle: 'Muayyan xonadon bo‘yicha aniq javob kerakmi?', footerText: 'Menejer tanlangan pozitsiyani qayd etilgan manba va joriy mavjudlik bilan solishtiradi. Ariza bron hisoblanmaydi.', privacy: 'Shaxsiy ma’lumotlarni qayta ishlash', source: 'Rasmiy manba', top: 'Yuqoriga',
+    footerTitle: 'Muayyan xonadon bo‘yicha aniq javob kerakmi?', footerText: 'Menejer tanlangan pozitsiyani qayd etilgan manba va joriy mavjudlik bilan solishtiradi. Ariza bron hisoblanmaydi.', privacy: 'Shaxsiy ma’lumotlarni qayta ishlash', top: 'Yuqoriga',
     formTagline: 'Kun uydan boshlanadi.', formFacts: ['51 ta mavjud xonadon', 'Katalogda 4 bino', 'Joriy UZS narxlari'] as const,
   },
   en: {
@@ -123,16 +121,15 @@ const copy = {
     eyebrow: 'SUNLIT TOOL · FROZEN SNAPSHOT', title: '51 apartments. Four buildings.', lead: 'Current UZS prices and 51 available listings from the official public snapshot. Building B is absent from the current catalogue.', heroLead: 'Help me choose',
     facts: [['51', 'available'], ['1–3', 'rooms'], ['34.61–83.90 m²', 'area'], ['UZS 867.7m–1.966bn', 'price']] as const,
     snapshot: 'Snapshot', liveWarning: 'This is a snapshot, not a promise of availability when you enquire.',
-    modes: { cards: 'Cards', chess: 'Matrix', 'chess-plus': 'Matrix+' }, modeLabel: 'Catalogue mode', filters: 'Filters', reset: 'Reset', all: 'All', selected: 'selected', rooms: 'Rooms', blocks: 'Buildings', floorRange: 'Floor', areaRange: 'Area, m²', priceRange: 'Price, UZS', from: 'from', to: 'to', results: 'found', filtersAnnouncement: 'Results after filtering',
+    modes: { cards: 'Cards', chess: 'Matrix' }, modeLabel: 'Catalogue mode', filters: 'Filters', reset: 'Reset', all: 'All', selected: 'selected', rooms: 'Rooms', blocks: 'Buildings', floorRange: 'Floor', areaRange: 'Area, m²', priceRange: 'Price, UZS', from: 'from', to: 'to', results: 'found', filtersAnnouncement: 'Results after filtering',
     sort: 'Sort', sorts: { recommended: 'Default / recommended', priceAsc: 'Price: low to high', priceDesc: 'Price: high to low', areaAsc: 'Area: small to large', areaDesc: 'Area: large to small', roomsAsc: 'Rooms: low to high', roomsDesc: 'Rooms: high to low', floorAsc: 'Floor: low to high', floorDesc: 'Floor: high to low', ppmAsc: 'Price/m²: low to high', ppmDesc: 'Price/m²: high to low' },
     unit: 'Apartment no. ', roomsShort: 'rooms', area: 'Area', floor: 'Floor', entrance: 'Entrance', block: 'Building', available: 'Available', price: 'Current price', ppm: 'Price per m²', openPlan: 'Open both official plans', ask: 'Send a request', showMore: 'Show more', showing: 'Showing', of: 'of',
     emptyTitle: 'No apartments match these parameters.', emptyText: 'Reset the filters or send a request and a manager will check current availability.', emptyLead: 'Request a selection',
     matrixTitle: '47 real rows · one entrance in each building.', matrixText: 'Rows 2–11 / 2–13 / 2–14 / 2–13 remain stable even where no available apartment exists. Filters dim listings without rebuilding the physical topology.', matched: 'matches', row: 'Floor', noUnits: 'No available listing in the snapshot', scrollLeft: 'Move matrix left', scrollRight: 'Move matrix right', matrixHelp: 'Swipe, trackpad, buttons, arrows, Home and End.', openUnit: 'Open apartment',
-    plusHint: 'Matrix+ adds price per m² and a comparison panel with both official plans.',
     detail: 'Apartment details', closeDetail: 'Close details', plans: 'Official plans', planOne: 'Official plan · surface 1', planTwo: 'Official plan · surface 2', planOneText: 'The first published plan surface.', planTwoText: 'The second published plan surface.', characteristics: 'Characteristics', matrixLead: 'Ask about this apartment',
     planDialog: 'Two official apartment plans', closePlan: 'Close plans', previousPlan: 'Previous plan', nextPlan: 'Next plan', swipeHint: 'Use the arrows or swipe to switch.', planLead: 'Ask about this plan',
     noCampaign: 'No active campaign in the snapshot', priceContract: 'regularPrice equals effectivePrice; no discount or countdown applies.',
-    footerTitle: 'Need a precise answer about one apartment?', footerText: 'A manager will check the selected listing against the frozen source and current availability. A request is not a reservation.', privacy: 'Personal data processing', source: 'Official source', top: 'Back to top',
+    footerTitle: 'Need a precise answer about one apartment?', footerText: 'A manager will check the selected listing against the frozen source and current availability. A request is not a reservation.', privacy: 'Personal data processing', top: 'Back to top',
     formTagline: 'The day begins at home.', formFacts: ['51 available apartments', '4 catalogue buildings', 'Current UZS prices'] as const,
   },
 } as const;
@@ -146,7 +143,15 @@ function filterFromUrl(): Filters {
   };
 }
 
-function readMode(): Mode { const value = new URLSearchParams(window.location.search).get('mode'); return value === 'chess' || value === 'chess-plus' ? value : 'cards'; }
+function readMode(): Mode {
+  const url = new URL(window.location.href); const value = url.searchParams.get('mode');
+  if (value === 'chess-plus' || value === 'matrix-plus') {
+    url.searchParams.set('mode', 'chess');
+    window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+    return 'chess';
+  }
+  return value === 'chess' ? 'chess' : 'cards';
+}
 function readSort(): Sort { const value = new URLSearchParams(window.location.search).get('sort') as Sort | null; return value && sorts.includes(value) ? value : 'recommended'; }
 function readVisible() { const value = Number(new URLSearchParams(window.location.search).get('shown')); return Number.isFinite(value) && value >= 9 ? value : 9; }
 
@@ -241,23 +246,23 @@ function UnitDetail({ selection, language, mobile, covered, onClose, onPlan, onL
   return <div className="sunc-detail-layer" role="dialog" aria-modal="true" aria-label={t.detail} aria-hidden={covered || undefined} inert={covered ? true : undefined}><button className="sunc-detail-layer__backdrop" type="button" tabIndex={-1} onClick={onClose} aria-label={t.closeDetail} /><aside ref={panelRef} className="sunc-detail sunc-detail--mobile">{content}</aside></div>;
 }
 
-function Matrix({ rows, units, sorted, matchedIds, mode, language, selection, onSelection, onPlan, onLead }: { rows: MatrixRow[]; units: SunUnit[]; sorted: SunUnit[]; matchedIds: Set<string>; mode: Exclude<Mode, 'cards'>; language: Language; selection: Selection | null; onSelection: (selection: Selection) => void; onPlan: (selection: PlanSelection) => void; onLead: (unit: SunUnit, surface: string, opener: HTMLButtonElement) => void }) {
+function Matrix({ rows, units, sorted, matchedIds, language, selection, onSelection }: { rows: MatrixRow[]; units: SunUnit[]; sorted: SunUnit[]; matchedIds: Set<string>; language: Language; selection: Selection | null; onSelection: (selection: Selection) => void }) {
   const t = copy[language]; const scrollRef = useRef<HTMLDivElement>(null); const [edges, setEdges] = useState({ left: true, right: false });
   const byId = useMemo(() => new Map(units.map((unit) => [unitKeyOf(unit), unit])), [units]); const rank = useMemo(() => new Map(sorted.map((unit, index) => [unitKeyOf(unit), index])), [sorted]);
   const updateEdges = useCallback(() => { const node = scrollRef.current; if (!node) return; setEdges({ left: node.scrollLeft <= 2, right: node.scrollLeft + node.clientWidth >= node.scrollWidth - 2 }); }, []);
   useEffect(() => { const node = scrollRef.current; if (!node) return; updateEdges(); const observer = new ResizeObserver(updateEdges); observer.observe(node); node.addEventListener('scroll', updateEdges, { passive: true }); return () => { observer.disconnect(); node.removeEventListener('scroll', updateEdges); }; }, [updateEdges]);
   const move = (direction: number) => { const node = scrollRef.current; if (!node) return; node.scrollBy({ left: direction * Math.max(320, node.clientWidth * .72), behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); };
   const keyScroll = (event: ReactKeyboardEvent<HTMLDivElement>) => { const node = scrollRef.current; if (!node) return; if (event.key === 'ArrowLeft') { event.preventDefault(); move(-1); } else if (event.key === 'ArrowRight') { event.preventDefault(); move(1); } else if (event.key === 'Home') { event.preventDefault(); node.scrollTo({ left: 0 }); } else if (event.key === 'End') { event.preventDefault(); node.scrollTo({ left: node.scrollWidth }); } };
-  const activate = (unit: SunUnit, opener: HTMLButtonElement) => { rememberSunUnit(unit); if (mode === 'chess-plus') onSelection({ unit, opener }); else if (planSurfaces(unit).length) onPlan({ unit, opener, index: 0 }); else onLead(unit, 'catalog:matrix', opener); };
+  const activate = (unit: SunUnit, opener: HTMLButtonElement) => { rememberSunUnit(unit); onSelection({ unit, opener }); };
   const blocks = ['A', 'Г', 'Д', 'В'];
-  return <section className={`sunc-matrix ${mode === 'chess-plus' ? 'is-plus' : ''}`} aria-labelledby="sunc-matrix-title">
-    <header><div><h2 id="sunc-matrix-title">{t.matrixTitle}</h2><p>{t.matrixText}</p>{mode === 'chess-plus' ? <strong>{t.plusHint}</strong> : null}</div><nav><button type="button" onClick={() => move(-1)} disabled={edges.left} aria-label={t.scrollLeft}>−</button><button type="button" onClick={() => move(1)} disabled={edges.right} aria-label={t.scrollRight}>＋</button></nav></header>
+  return <section className="sunc-matrix" aria-labelledby="sunc-matrix-title">
+    <header><div><h2 id="sunc-matrix-title">{t.matrixTitle}</h2><p>{t.matrixText}</p></div><nav><button type="button" onClick={() => move(-1)} disabled={edges.left} aria-label={t.scrollLeft}>←</button><button type="button" onClick={() => move(1)} disabled={edges.right} aria-label={t.scrollRight}>→</button></nav></header>
     <p className="sunc-matrix__help">{t.matrixHelp}</p>
     <div ref={scrollRef} className="sunc-matrix__scroll" tabIndex={0} onKeyDown={keyScroll} aria-label={t.matrixHelp}>{blocks.map((block) => {
       const blockRows = rows.filter((row) => row.block === block).sort((left, right) => right.floor - left.floor); const blockIds = blockRows.flatMap((row) => row.unitIds); const matches = blockIds.filter((id) => matchedIds.has(id)).length;
       return <section key={block} className="sunc-matrix-panel" aria-labelledby={`sunc-block-${block}`}><header><div><span>{t.block}</span><h3 id={`sunc-block-${block}`}>{block}</h3></div><strong>{matches} {t.matched}</strong></header><div>{blockRows.map((row) => {
         const ids = [...row.unitIds].filter((id) => byId.has(id)).sort((left, right) => (rank.get(left) ?? 999) - (rank.get(right) ?? 999));
-        return <div className="sunc-matrix-row" key={row.id} data-row-id={row.id}><span><small>{t.row}</small>{row.floor}</span><div>{ids.length ? ids.map((id) => { const unit = byId.get(id)!; const matchesFilter = matchedIds.has(id); return <button key={id} type="button" className={`${matchesFilter ? '' : 'is-filtered'} ${selection?.unit.id === unit.id ? 'is-selected' : ''}`} disabled={!matchesFilter} onClick={(event) => activate(unit, event.currentTarget)} aria-label={`${t.openUnit}: ${t.unit}${unit.number}, ${unit.rooms} ${t.roomsShort}, ${formatSunNumber(Number(unit.area), language)} m²`}><strong>№{unit.number}</strong><small>{unit.rooms} {t.roomsShort} · {formatSunNumber(Number(unit.area), language)} m²</small><em>{formatSunPrice(priceOf(unit), language)}</em>{mode === 'chess-plus' ? <i>{formatSunPrice(ppmOf(unit), language)} / m²</i> : null}</button>; }) : <span className="sunc-matrix-row__empty">— <small>{t.noUnits}</small></span>}</div></div>;
+        return <div className="sunc-matrix-row" key={row.id} data-row-id={row.id}><span><small>{t.row}</small>{row.floor}</span><div>{ids.length ? ids.map((id) => { const unit = byId.get(id)!; const matchesFilter = matchedIds.has(id); return <button key={id} type="button" className={`${matchesFilter ? '' : 'is-filtered'} ${selection?.unit.id === unit.id ? 'is-selected' : ''}`} disabled={!matchesFilter} onClick={(event) => activate(unit, event.currentTarget)} aria-label={`${t.openUnit}: ${t.unit}${unit.number}, ${unit.rooms} ${t.roomsShort}, ${formatSunNumber(Number(unit.area), language)} m²`}><strong>№{unit.number}</strong><small>{unit.rooms} {t.roomsShort} · {formatSunNumber(Number(unit.area), language)} m²</small><em>{formatSunPrice(priceOf(unit), language)}</em><i>{formatSunPrice(ppmOf(unit), language)} / m²</i></button>; }) : <span className="sunc-matrix-row__empty">— <small>{t.noUnits}</small></span>}</div></div>;
       })}</div></section>;
     })}</div>
   </section>;
@@ -317,7 +322,7 @@ export function SunCatalog({ initialLanguage }: { initialLanguage: Language }) {
   const openPlan = useCallback((next: PlanSelection) => { rememberSunUnit(next.unit); setPlan(next); }, []);
   const changePlan = useCallback((index: number) => setPlan((current) => current ? { ...current, index } : current), []);
   const modeKey = (event: ReactKeyboardEvent<HTMLButtonElement>, index: number) => { let next = index; if (event.key === 'ArrowRight') next = (index + 1) % modes.length; else if (event.key === 'ArrowLeft') next = (index - 1 + modes.length) % modes.length; else if (event.key === 'Home') next = 0; else if (event.key === 'End') next = modes.length - 1; else return; event.preventDefault(); selectMode(modes[next]); modeRefs.current[next]?.focus(); };
-  const mobileDetailOpen = mode === 'chess-plus' && Boolean(selection) && mobile;
+  const mobileDetailOpen = mode === 'chess' && Boolean(selection) && mobile;
   const rootCovered = menuOpen || mobileDetailOpen;
 
   return <div className="sunc-site" lang={language}>
@@ -344,13 +349,13 @@ export function SunCatalog({ initialLanguage }: { initialLanguage: Language }) {
 
         <div id="sunc-results" role="tabpanel" aria-labelledby={`sunc-tab-${mode}`} tabIndex={0}>{!stableSorted.length ? <section className="sunc-empty"><span>00</span><h2>{t.emptyTitle}</h2><p>{t.emptyText}</p><div><button type="button" onClick={reset}>{t.reset}</button><button type="button" data-lead-trigger onClick={(event) => openLead('catalog:empty', null, event.currentTarget)}>{t.emptyLead}<span>↗</span></button></div></section> : mode === 'cards' ? <>
           <div className="sunc-cards">{stableSorted.slice(0, visible).map((unit) => <article key={unit.id}><button className="sunc-card__plan" type="button" onClick={(event) => openPlan({ unit, opener: event.currentTarget, index: 0 })} aria-label={`${t.openPlan}: ${t.unit}${unit.number}`}><img src={sunAsset(unit.secondPlanPath || unit.primaryPlanPath)} width={unit.planWidth || 1772} height={unit.planHeight || 1772} loading="lazy" alt={`${t.planDialog} · ${t.unit}${unit.number}`} /><span>{t.openPlan}<b>↗</b></span></button><header><div><span>{t.block} {normalizedBlock(blockOf(unit))}</span><h2>{t.unit}{unit.number}</h2></div><em>{t.available}</em></header><UnitFacts unit={unit} language={language} /><div className="sunc-card__price"><small>{t.price}</small><strong>{formatSunPrice(priceOf(unit), language)}</strong><span>{formatSunPrice(ppmOf(unit), language)} / m²</span></div><button className="sunc-card__lead" type="button" data-lead-trigger onClick={(event) => openLead('catalog:card', unit, event.currentTarget)}>{t.ask}<span>↗</span></button></article>)}</div><div className="sunc-showing"><span>{t.showing} {Math.min(visible, stableSorted.length)} {t.of} {stableSorted.length}</span>{visible < stableSorted.length ? <button type="button" onClick={showMore}>{t.showMore}<b>↓</b></button> : null}</div>
-        </> : <div className={`sunc-matrix-shell ${mode === 'chess-plus' && selection ? 'has-detail' : ''}`}><Matrix rows={rows} units={units} sorted={stableSorted} matchedIds={matchedIds} mode={mode} language={language} selection={selection} onSelection={setSelection} onPlan={openPlan} onLead={(unit, surface, opener) => openLead(surface, unit, opener)} />{mode === 'chess-plus' && selection && !mobile ? <UnitDetail selection={selection} language={language} mobile={false} covered={Boolean(plan || lead)} onClose={closeSelection} onPlan={openPlan} onLead={(unit, opener) => openLead('catalog:matrix-plus', unit, opener)} /> : null}</div>}</div>
+        </> : <div className={`sunc-matrix-shell ${selection ? 'has-detail' : ''}`}><Matrix rows={rows} units={units} sorted={stableSorted} matchedIds={matchedIds} language={language} selection={selection} onSelection={setSelection} />{selection && !mobile ? <UnitDetail selection={selection} language={language} mobile={false} covered={Boolean(plan || lead)} onClose={closeSelection} onPlan={openPlan} onLead={(unit, opener) => openLead('catalog:matrix', unit, opener)} /> : null}</div>}</div>
       </section>
 
-      <section className="sunc-footer"><div><span>SUN · HUMAN2HUMAN</span><h2>{t.footerTitle}</h2><p>{t.footerText}</p><button type="button" data-lead-trigger onClick={(event) => openLead('catalog:footer', null, event.currentTarget)}>{t.consult}<b>↗</b></button></div><a href="tel:+998781505500">+998 78 150 55 00 <span>↗</span></a><footer><img src={sunAsset('/sun/logo.svg')} width="380" height="64" alt="SUN" /><nav><a href={`${sunAsset('/privacy')}?project=sun&lang=${language}&from=catalog`}>{t.privacy}</a><a href="https://human2human.uz/catalog/" target="_blank" rel="noopener noreferrer">{t.source}</a><a href="#top">{t.top}</a></nav></footer></section>
+      <section className="sunc-footer"><div><span>SUN · HUMAN2HUMAN</span><h2>{t.footerTitle}</h2><p>{t.footerText}</p><button type="button" data-lead-trigger onClick={(event) => openLead('catalog:footer', null, event.currentTarget)}>{t.consult}<b>↗</b></button></div><a href="tel:+998781505500">+998 78 150 55 00 <span>↗</span></a><footer><img src={sunAsset('/sun/logo.svg')} width="380" height="64" alt="SUN" /><nav><a href={`${sunAsset('/privacy')}?project=sun&lang=${language}&from=catalog`}>{t.privacy}</a><a href="#top">{t.top}</a></nav></footer></section>
     </main>
 
-    {mode === 'chess-plus' && selection && mobile ? <UnitDetail selection={selection} language={language} mobile covered={Boolean(plan || lead)} onClose={closeSelection} onPlan={openPlan} onLead={(unit, opener) => openLead('catalog:matrix-plus', unit, opener)} /> : null}
+    {mode === 'chess' && selection && mobile ? <UnitDetail selection={selection} language={language} mobile covered={Boolean(plan || lead)} onClose={closeSelection} onPlan={openPlan} onLead={(unit, opener) => openLead('catalog:matrix', unit, opener)} /> : null}
     {plan ? <PlanDialog selection={plan} language={language} covered={Boolean(lead)} onClose={closePlan} onChange={changePlan} onLead={(unit, opener) => openLead('catalog:plan', unit, opener)} /> : null}
     {lead ? <LeadModal open language={language} context={sunLeadContext(lead.surface, language, lead.unit)} hideBrand projectName="SUN" tagline={t.formTagline} facts={t.formFacts} submitUrl={sunLeadSubmitUrl()} projectSlug="sun" unitKey={lead.unit?.unitKey} privacyUrl={`${sunAsset('/privacy')}?project=sun&lang=${language}&from=catalog`} requireConsent returnFocusTo={lead.opener} onClose={closeLead} /> : null}
   </div>;

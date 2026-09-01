@@ -44,4 +44,4 @@ try {
   process.exit();
 }
 
-console.log('KAYAN catalogue accessibility fixtures passed: RU/UZ/EN chess and chess-plus names are unique and composite in every Mirador/Ofiyat phase; button state, controls and keyboard contracts are intact.');
+console.log('KAYAN catalogue accessibility fixtures passed: RU/UZ/EN chess names are unique and composite in every Mirador/Ofiyat phase; button state, controls and keyboard contracts are intact.');

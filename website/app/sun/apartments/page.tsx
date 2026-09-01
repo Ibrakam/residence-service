@@ -14,7 +14,7 @@ const sitePath = (path: string) => `${appBasePath}${path}`;
 const copy = {
   ru: {
     title: 'Квартиры SUN — 51 актуальное предложение в четырёх корпусах',
-    description: 'Каталог SUN: 51 доступная квартира, реальные цены в UZS, фильтры, карточки, шахматка и шахматка+ по официальному срезу Human2Human.',
+    description: 'Каталог SUN: 51 доступная квартира, реальные цены в UZS, фильтры, карточки и шахматка по официальному срезу Human2Human.',
     imageAlt: 'Официальная архитектурная визуализация SUN',
     home: 'Главная',
     project: 'SUN',
@@ -22,7 +22,7 @@ const copy = {
   },
   uz: {
     title: 'SUN xonadonlari — to‘rt binoda 51 ta dolzarb taklif',
-    description: 'SUN katalogi: Human2Human rasmiy kesimi asosida 51 ta mavjud xonadon, UZS narxlari, filtrlar, kartochkalar, shaxmatka va shaxmatka+.',
+    description: 'SUN katalogi: Human2Human rasmiy kesimi asosida 51 ta mavjud xonadon, UZS narxlari, filtrlar, kartochkalar va shaxmatka.',
     imageAlt: 'SUN loyihasining rasmiy arxitektura vizualizatsiyasi',
     home: 'Bosh sahifa',
     project: 'SUN',
@@ -30,7 +30,7 @@ const copy = {
   },
   en: {
     title: 'SUN apartments — 51 current listings across four buildings',
-    description: 'The SUN catalogue presents 51 available apartments with numeric UZS prices, filters, cards, Matrix and Matrix+ from the official Human2Human snapshot.',
+    description: 'The SUN catalogue presents 51 available apartments with numeric UZS prices, filters, cards and Matrix from the official Human2Human snapshot.',
     imageAlt: 'Official architectural visualisation of SUN',
     home: 'Home',
     project: 'SUN',

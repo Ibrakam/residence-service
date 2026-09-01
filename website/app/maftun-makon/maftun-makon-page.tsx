@@ -24,7 +24,6 @@ type LightboxState = { slides: Slide[]; index: number } | null;
 
 const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
 const languages: Language[] = ['ru', 'uz', 'en'];
-const officialLanding = 'https://nrg-bi.uz/uz-ru/landing/maftun-makon';
 const storageKey = 'maftun-makon-language-v1';
 const heroAlt: Record<Language, string> = {
   ru: 'Ночной фасад Maftun Makon · официальный рендер',
@@ -52,7 +51,7 @@ const copy = {
       ['Zar', 'Business', 'Камерный акцент'],
     ],
     classesTop: '02 · Три уровня', classesTitle: 'Разный характер. Общий сад.',
-    classesText: 'Официальная структура проекта объединяет Comfort, Comfort+ и Business. Названия частей приводятся по текущему лендингу; каталог сохраняет официальные технические названия домов без выдуманного соответствия.',
+    classesText: 'Структура проекта объединяет Comfort, Comfort+ и Business. Названия частей и технические названия домов приводятся отдельно, без выдуманного соответствия.',
     classItems: [
       ['Comfort', 'Nur, Kaya, Sham, Safa, Tumar, Orin', 'Шесть частей квартала'],
       ['Comfort+', 'Samar', 'Повышенный уровень'],
@@ -64,17 +63,17 @@ const copy = {
     gardenText: 'Закрытые дворы, прогулочные и workout-зоны, детские пространства, видеонаблюдение и охрана 24/7. Не менее 44% территории проекта отведено под озеленение.',
     landscapeCaption: 'Опубликованная фотография готового озеленения · класс и очередь источником не указаны',
     hallTop: '05 · Готовые пространства', hallTitle: 'Холл Business — уже фотография.',
-    hallText: 'Эти кадры опубликованы в официальном разделе «Холлы» для класса Business. Они отделены от концептов и рендеров.',
+    hallText: 'Эти опубликованные кадры показывают холлы класса Business. Они отделены от концептов и рендеров.',
     environmentTop: '06 · Окружение', environmentTitle: 'Новая часть Ташкента растёт рядом.',
-    environmentText: 'Официальный источник перечисляет пять крупных ориентиров без обещаний по времени в пути.',
+    environmentText: 'Материалы проекта перечисляют пять крупных ориентиров без обещаний по времени в пути.',
     places: ['Парк Yangi O‘zbekiston', 'Олимпийская деревня', 'CAEx', 'Central Asian University', 'Новый аэропорт'],
     galleryTop: '07 · Маркированная галерея', galleryTitle: 'Рендеры, фотографии и стройка — отдельно.',
-    galleryText: 'Каждый кадр подписан по типу и контексту официального источника. Используйте стрелки, клавиши или свайп; откройте изображение на весь экран.',
+    galleryText: 'Каждый кадр подписан по типу и контексту. Используйте стрелки, клавиши или свайп; откройте изображение на весь экран.',
     previous: 'Предыдущий кадр', next: 'Следующий кадр', openImage: 'Открыть на весь экран', slide: 'Кадр',
-    constructionNote: 'Последний опубликованный официальный отчёт — июль 2026. На лендинге хранится 17 месячных групп и 78 строительных фотографий.',
+    constructionNote: 'Последний опубликованный официальный отчёт — июль 2026. Исходный архив включает 17 месячных групп и 78 строительных фотографий.',
     contactTop: '08 · Следующий шаг', contactTitle: 'Выберите квартиру за порталом.',
     contactText: 'В локальном snapshot — все 204 предложения, опубликованные официальным каталогом на 30 августа 2026 года.',
-    catalog: 'Открыть каталог', phone: 'Позвонить 1360', source: 'Официальный источник', booklet: 'Официальный буклет', privacy: 'Конфиденциальность',
+    catalog: 'Открыть каталог', phone: 'Позвонить 1360', booklet: 'Официальный буклет', privacy: 'Конфиденциальность',
     formTitle: 'Запросить консультацию', formText: 'Менеджер проекта уточнит ваш сценарий покупки и подготовит актуальную подборку Maftun Makon.',
     footerNote: 'Информация и цены snapshot не являются публичной офертой. Актуальные условия подтверждает отдел продаж.',
   },
@@ -91,7 +90,7 @@ const copy = {
     masterplanCaption: 'Konseptual bosh reja · rasmiy material', chaptersTitle: 'Sakkiz qism — uch hayot darajasi',
     chapters: [['Nur · Kaya · Sham', 'Comfort', 'Bog‘ yo‘nalishining boshlanishi'], ['Safa · Tumar · Orin', 'Comfort', 'Mavzening davomi'], ['Samar', 'Comfort+', 'Alohida bob'], ['Zar', 'Business', 'Kamerali urg‘u']],
     classesTop: '02 · Uch daraja', classesTitle: 'Turli xarakter. Umumiy bog‘.',
-    classesText: 'Loyihaning rasmiy tarkibi Comfort, Comfort+ va Business toifalarini birlashtiradi. Qismlar nomi joriy landingdan, uylarning texnik nomi esa katalogdan aynan olingan.',
+    classesText: 'Loyiha tarkibi Comfort, Comfort+ va Business toifalarini birlashtiradi. Qismlar va uylarning texnik nomlari o‘ylab topilgan mosliksiz, alohida keltirilgan.',
     classItems: [['Comfort', 'Nur, Kaya, Sham, Safa, Tumar, Orin', 'Mavzening olti qismi'], ['Comfort+', 'Samar', 'Yuqori daraja'], ['Business', 'Zar', 'Biznes toifasi']],
     architectureTop: '03 · Arxitektura', architectureTitle: 'Past siluet va keng ufq.',
     architectureText: '4–7 qavatli uylar mavzening sokin miqyosini yaratadi. Rasmiy materiallarda uch toifa uchun turli fasad yechimlari ko‘rsatilgan.',
@@ -99,17 +98,17 @@ const copy = {
     gardenText: 'Yopiq hovlilar, sayr va workout zonalari, bolalar maydonlari, 24/7 videokuzatuv va qo‘riqlash. Hududning kamida 44 foizi ko‘kalamzorlashtiriladi.',
     landscapeCaption: 'Tayyor ko‘kalamzorning e’lon qilingan fotosurati · manbada toifa va navbat ko‘rsatilmagan',
     hallTop: '05 · Tayyor makonlar', hallTitle: 'Business xolli — bu allaqachon fotosurat.',
-    hallText: 'Ushbu kadrlar rasmiy «Xollar» bo‘limida Business toifasi uchun e’lon qilingan. Ular konsept va renderlardan alohida berilgan.',
+    hallText: 'Ushbu e’lon qilingan kadrlar Business toifasi xollarini ko‘rsatadi. Ular konsept va renderlardan alohida berilgan.',
     environmentTop: '06 · Atrof', environmentTitle: 'Toshkentning yangi qismi yonma-yon rivojlanmoqda.',
-    environmentText: 'Rasmiy manba yo‘l vaqti bo‘yicha va’dalarsiz besh yirik mo‘ljalni sanaydi.',
+    environmentText: 'Loyiha materiallarida yo‘l vaqti bo‘yicha va’dalarsiz besh yirik mo‘ljal sanaladi.',
     places: ['Yangi O‘zbekiston bog‘i', 'Olimpiya shaharchasi', 'CAEx', 'Central Asian University', 'Yangi aeroport'],
     galleryTop: '07 · Belgilangan galereya', galleryTitle: 'Render, fotosurat va qurilish — alohida.',
-    galleryText: 'Har bir kadr rasmiy manbadagi turi va kontekstiga ko‘ra belgilangan. Strelka, klaviatura yoki swipe ishlating; tasvirni to‘liq ekranda oching.',
+    galleryText: 'Har bir kadr turi va kontekstiga ko‘ra belgilangan. Strelka, klaviatura yoki swipe ishlating; tasvirni to‘liq ekranda oching.',
     previous: 'Oldingi kadr', next: 'Keyingi kadr', openImage: 'To‘liq ekranda ochish', slide: 'Kadr',
-    constructionNote: 'So‘nggi e’lon qilingan rasmiy hisobot — 2026-yil iyul. Landingda 17 oylik guruh va 78 ta qurilish fotosurati bor.',
+    constructionNote: 'So‘nggi e’lon qilingan rasmiy hisobot — 2026-yil iyul. Asl arxivda 17 oylik guruh va 78 ta qurilish fotosurati bor.',
     contactTop: '08 · Keyingi qadam', contactTitle: 'Portal ortidagi xonadonni tanlang.',
     contactText: 'Mahalliy snapshotda 2026-yil 30-avgustdagi rasmiy katalogning barcha 204 ta taklifi bor.',
-    catalog: 'Katalogni ochish', phone: '1360 ga qo‘ng‘iroq', source: 'Rasmiy manba', booklet: 'Rasmiy buklet', privacy: 'Maxfiylik',
+    catalog: 'Katalogni ochish', phone: '1360 ga qo‘ng‘iroq', booklet: 'Rasmiy buklet', privacy: 'Maxfiylik',
     formTitle: 'Maslahat so‘rash', formText: 'Loyiha menejeri xarid maqsadingizni aniqlab, Maftun Makon bo‘yicha dolzarb variantlarni tayyorlaydi.',
     footerNote: 'Snapshot ma’lumotlari va narxlari ommaviy oferta emas. Amaldagi shartlarni savdo bo‘limi tasdiqlaydi.',
   },
@@ -126,7 +125,7 @@ const copy = {
     masterplanCaption: 'Conceptual masterplan · official material', chaptersTitle: 'Eight parts — three levels of living',
     chapters: [['Nur · Kaya · Sham', 'Comfort', 'The garden route begins'], ['Safa · Tumar · Orin', 'Comfort', 'The quarter continues'], ['Samar', 'Comfort+', 'A distinct chapter'], ['Zar', 'Business', 'A more intimate accent']],
     classesTop: '02 · Three levels', classesTitle: 'Different characters. One garden.',
-    classesText: 'The official project structure brings together Comfort, Comfort+ and Business. Part names follow the current landing page; the catalogue retains official technical building names without an invented mapping.',
+    classesText: 'The project structure brings together Comfort, Comfort+ and Business. Part names and technical building names remain separate, without an invented mapping.',
     classItems: [['Comfort', 'Nur, Kaya, Sham, Safa, Tumar, Orin', 'Six parts of the quarter'], ['Comfort+', 'Samar', 'An elevated level'], ['Business', 'Zar', 'Business class']],
     architectureTop: '03 · Architecture', architectureTitle: 'A low silhouette and a wide horizon.',
     architectureText: 'Buildings of 4–7 storeys set a calm scale. Official materials show different façade treatments for the three classes.',
@@ -134,17 +133,17 @@ const copy = {
     gardenText: 'Enclosed courtyards, walking and workout areas, children’s spaces, and 24/7 video surveillance and security. At least 44% of the site is landscaped.',
     landscapeCaption: 'Published photograph of completed landscaping · the source does not specify class or phase',
     hallTop: '05 · Completed spaces', hallTitle: 'The Business lobby is already a photograph.',
-    hallText: 'These images are published in the official Lobbies section for the Business class. They are kept separate from concepts and renders.',
+    hallText: 'These published images show Business-class lobbies. They are kept separate from concepts and renders.',
     environmentTop: '06 · Surroundings', environmentTitle: 'A new part of Tashkent is growing nearby.',
-    environmentText: 'The official source lists five major landmarks without travel-time promises.',
+    environmentText: 'The project materials list five major landmarks without travel-time promises.',
     places: ['Yangi O‘zbekiston Park', 'Olympic Village', 'CAEx', 'Central Asian University', 'New airport'],
     galleryTop: '07 · Labelled gallery', galleryTitle: 'Renders, photographs and construction — separated.',
-    galleryText: 'Every frame is labelled by type and official-source context. Use arrows, keyboard or swipe, then open an image fullscreen.',
+    galleryText: 'Every frame is labelled by type and context. Use arrows, keyboard or swipe, then open an image fullscreen.',
     previous: 'Previous frame', next: 'Next frame', openImage: 'Open fullscreen', slide: 'Frame',
-    constructionNote: 'The latest published official report is July 2026. The landing page contains 17 monthly groups and 78 construction photographs.',
+    constructionNote: 'The latest published official report is July 2026. The source archive contains 17 monthly groups and 78 construction photographs.',
     contactTop: '08 · Next step', contactTitle: 'Choose an apartment beyond the portal.',
     contactText: 'The local snapshot contains all 204 listings published by the official catalogue on 30 August 2026.',
-    catalog: 'Open catalogue', phone: 'Call 1360', source: 'Official source', booklet: 'Official booklet', privacy: 'Privacy',
+    catalog: 'Open catalogue', phone: 'Call 1360', booklet: 'Official booklet', privacy: 'Privacy',
     formTitle: 'Request a consultation', formText: 'The project manager will clarify your purchase plans and prepare current Maftun Makon options.',
     footerNote: 'Snapshot information and prices are not a public offer. Current terms are confirmed by the sales team.',
   },
@@ -488,7 +487,7 @@ export function MaftunMakonPage({ initialLanguage }: { initialLanguage: Language
 
       <footer className="maftun-footer" aria-hidden={menuOpen || undefined} inert={menuOpen ? true : undefined}>
         <a className="maftun-wordmark" href={withLanguage('/maftun-makon', language)}>MAFTUN <span>MAKON</span></a>
-        <nav><a href={officialLanding} target="_blank" rel="noreferrer">{t.source} ↗</a><a href={asset('/maftun-makon/maftun-makon-official-booklet.pdf')} target="_blank" rel="noreferrer">{t.booklet} ↗</a><a href={privacyUrl(language)}>{t.privacy}</a></nav>
+        <nav><a href={asset('/maftun-makon/maftun-makon-official-booklet.pdf')} target="_blank" rel="noreferrer">{t.booklet} ↗</a><a href={privacyUrl(language)}>{t.privacy}</a></nav>
         <p>{t.footerNote}</p><a href="#top" aria-label="Back to top">↑</a>
       </footer>
 

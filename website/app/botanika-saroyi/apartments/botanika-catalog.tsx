@@ -16,7 +16,7 @@ import { LeadModal, rememberLastViewedApartment } from '@/app/lead-modal';
 import { botanikaLeadSubmitUrl } from '../botanika-lead';
 
 type Language = 'ru' | 'uz' | 'en';
-type Mode = 'cards' | 'chess' | 'chess-plus';
+type Mode = 'cards' | 'chess';
 type Sort = 'priceAsc' | 'priceDesc' | 'areaAsc' | 'areaDesc' | 'floorAsc' | 'floorDesc';
 
 type Unit = {
@@ -119,7 +119,7 @@ type LeadRequest = { unit: Unit | null; context: string };
 
 const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
 const languages: Language[] = ['ru', 'uz', 'en'];
-const modes: Mode[] = ['cards', 'chess', 'chess-plus'];
+const modes: Mode[] = ['cards', 'chess'];
 const languageStorageKey = 'botanika-saroyi-language';
 const emptyFilters: Filters = {
   rooms: '', areaFrom: '', areaTo: '', priceFrom: '', priceTo: '', floor: '', building: '', entrance: '', completion: '',
@@ -130,10 +130,10 @@ const copy = {
     skip: 'К результатам каталога', back: 'О проекте', wordmark: 'BOTANIKA SAROYI', index: 'Индекс резиденций', language: 'Язык', phone: 'Отдел продаж',
     eyebrow: 'Каталог · официальный snapshot 30.08.2026', title: 'Индекс', accent: 'резиденций.', lead: '224 планировки и официальных предложения в датированном snapshot — без подмены внутренних статусов словом «свободно».',
     snapshot: 'Snapshot', proposals: 'предложения', saleRows: 'строки isSale=true', plans: 'локальные планировки', range: 'Диапазон квартир', rangeValue: '36,95–82,25 м² · 1–3 комнаты', plate: 'ЛИСТ', specimen: 'ЭКЗЕМПЛЯР', specimenIndex: 'ИНДЕКС ЭКЗЕМПЛЯРОВ',
-    modes: { cards: 'Карточки', chess: 'Шахматка', 'chess-plus': 'Шахматка+' }, modeLabel: 'Режим каталога',
+    modes: { cards: 'Карточки', chess: 'Шахматка' }, modeLabel: 'Режим каталога',
     filters: 'Фильтры', rooms: 'Комнаты', allRooms: 'Все', areaFrom: 'Площадь от, м²', areaTo: 'Площадь до, м²', priceFrom: 'Цена от, млн UZS', priceTo: 'Цена до, млн UZS', floor: 'Этаж', allFloors: 'Все этажи', building: 'Блок / корпус', allBuildings: 'Все блоки', entrance: 'Подъезд', allEntrances: 'Все подъезды', completion: 'Срок', allCompletions: 'Все сроки', reset: 'Сбросить',
     sort: 'Сортировка', sorts: { priceAsc: 'Цена ↑', priceDesc: 'Цена ↓', areaAsc: 'Площадь ↑', areaDesc: 'Площадь ↓', floorAsc: 'Этаж ↑', floorDesc: 'Этаж ↓' }, results: 'найдено',
-    sourceTitle: 'Происхождение snapshot', sourceNote: 'Все 224 строки квартир сохранены из официального live-каталога 30 августа 2026 года. 223 имеют isSale=true; одна строка бронирования включена официальным интерфейсом в итог 224. Цены, акции и статусы относятся к моменту snapshot.', official: 'Официальный источник',
+    sourceTitle: 'Происхождение snapshot', sourceNote: 'Все 224 строки квартир сохранены из официального live-каталога 30 августа 2026 года. 223 имеют isSale=true; одна строка бронирования включена официальным интерфейсом в итог 224. Цены, акции и статусы относятся к моменту snapshot.',
     apartment: 'Квартира', roomsShort: 'комн.', area: 'Площадь', areaUnit: 'м²', currentPrice: 'Текущая цена по акции', originalPrice: 'Исходная цена', sourcePerM2: 'Цена за м² в источнике', discount: 'Сумма акции', promotion: 'Акция', status: 'Исходный статус', statusNote: 'Workflow-статус в официальном snapshot', floorOf: 'Этаж', entranceShort: 'Подъезд', block: 'Блок', completionShort: 'Сдача', completionSource: 'Срок нормализован по realEstateList', placementDate: 'Исходный placementList', class: 'Класс', business: 'Бизнес', balcony: 'Балкон', ceiling: 'Потолки', studio: 'Студия', finishing: 'Отделка включена', yes: 'Да', no: 'Нет',
     plan: 'Открыть официальную планировку', planAlt: 'Официальная планировка квартиры', choose: 'Уточнить условия', details: 'Открыть детали', showMore: 'Показать ещё', shown: 'Показано', of: 'из',
     noResults: 'По этим параметрам предложений нет.', resetFilters: 'Сбросить фильтры', matrix: 'Блок × подъезд × этаж × квартира', matrixHint: 'Прокручивайте матрицу пальцем или трекпадом, кнопками 44 px либо клавишами ← → Home End.', scrollLeft: 'Прокрутить матрицу влево', scrollRight: 'Прокрутить матрицу вправо', floorColumn: 'Этаж', unitsColumn: 'Квартиры', emptyFloor: 'Нет предложений по фильтру', selected: 'Выбранная квартира', close: 'Закрыть детали', closePlan: 'Закрыть планировку', selectHint: 'Выберите квартиру в матрице, чтобы открыть её паспорт.',
@@ -144,10 +144,10 @@ const copy = {
     skip: 'Katalog natijalariga o‘tish', back: 'Loyiha haqida', wordmark: 'BOTANIKA SAROYI', index: 'Rezidensiyalar indeksi', language: 'Til', phone: 'Savdo bo‘limi',
     eyebrow: 'Katalog · 30.08.2026 rasmiy snapshot', title: 'Rezidensiyalar', accent: 'indeksi.', lead: 'Sanasi ko‘rsatilgan snapshotdagi 224 ta reja va rasmiy taklif — ichki holatlarni «bo‘sh» deb almashtirmasdan.',
     snapshot: 'Snapshot', proposals: 'taklif', saleRows: 'isSale=true qatorlari', plans: 'mahalliy rejalar', range: 'Xonadonlar oralig‘i', rangeValue: '36,95–82,25 m² · 1–3 xona', plate: 'VARAQ', specimen: 'NAMUNA', specimenIndex: 'NAMUNALAR INDEKSI',
-    modes: { cards: 'Kartalar', chess: 'Shaxmatka', 'chess-plus': 'Shaxmatka+' }, modeLabel: 'Katalog ko‘rinishi',
+    modes: { cards: 'Kartalar', chess: 'Shaxmatka' }, modeLabel: 'Katalog ko‘rinishi',
     filters: 'Filtrlar', rooms: 'Xonalar', allRooms: 'Barchasi', areaFrom: 'Maydon, m² dan', areaTo: 'Maydon, m² gacha', priceFrom: 'Narx, mln UZS dan', priceTo: 'Narx, mln UZS gacha', floor: 'Qavat', allFloors: 'Barcha qavatlar', building: 'Blok / korpus', allBuildings: 'Barcha bloklar', entrance: 'Kirish', allEntrances: 'Barcha kirishlar', completion: 'Topshirish muddati', allCompletions: 'Barcha muddatlar', reset: 'Tozalash',
     sort: 'Saralash', sorts: { priceAsc: 'Narx ↑', priceDesc: 'Narx ↓', areaAsc: 'Maydon ↑', areaDesc: 'Maydon ↓', floorAsc: 'Qavat ↑', floorDesc: 'Qavat ↓' }, results: 'topildi',
-    sourceTitle: 'Snapshot kelib chiqishi', sourceNote: '224 ta xonadon qatorining barchasi 2026-yil 30-avgustdagi rasmiy live katalogdan saqlangan. 223 tasida isSale=true; bron qilingan bitta qator rasmiy interfeysdagi 224 ta yakuniy natijaga kiritilgan. Narx, aksiya va holatlar snapshot vaqtiga tegishli.', official: 'Rasmiy manba',
+    sourceTitle: 'Snapshot kelib chiqishi', sourceNote: '224 ta xonadon qatorining barchasi 2026-yil 30-avgustdagi rasmiy live katalogdan saqlangan. 223 tasida isSale=true; bron qilingan bitta qator rasmiy interfeysdagi 224 ta yakuniy natijaga kiritilgan. Narx, aksiya va holatlar snapshot vaqtiga tegishli.',
     apartment: 'Xonadon', roomsShort: 'xonali', area: 'Maydon', areaUnit: 'm²', currentPrice: 'Aksiya bo‘yicha joriy narx', originalPrice: 'Boshlang‘ich narx', sourcePerM2: 'Manbadagi m² narxi', discount: 'Aksiya summasi', promotion: 'Aksiya', status: 'Asl holat', statusNote: 'Rasmiy snapshotdagi workflow holati', floorOf: 'Qavat', entranceShort: 'Kirish', block: 'Blok', completionShort: 'Topshirish', completionSource: 'Muddat realEstateList bo‘yicha normallashtirilgan', placementDate: 'Asl placementList', class: 'Toifa', business: 'Biznes', balcony: 'Balkon', ceiling: 'Shift', studio: 'Studiya', finishing: 'Pardoz kiritilgan', yes: 'Ha', no: 'Yo‘q',
     plan: 'Rasmiy rejani ochish', planAlt: 'Xonadonning rasmiy rejasi', choose: 'Shartlarni aniqlash', details: 'Tafsilotlarni ochish', showMore: 'Yana ko‘rsatish', shown: 'Ko‘rsatildi', of: 'dan',
     noResults: 'Bu parametrlar bo‘yicha taklif yo‘q.', resetFilters: 'Filtrlarni tozalash', matrix: 'Blok × kirish × qavat × xonadon', matrixHint: 'Matritsani barmoq yoki trekpad, 44 px tugmalar yoxud ← → Home End klavishlari bilan suring.', scrollLeft: 'Matritsani chapga surish', scrollRight: 'Matritsani o‘ngga surish', floorColumn: 'Qavat', unitsColumn: 'Xonadonlar', emptyFloor: 'Filtr bo‘yicha taklif yo‘q', selected: 'Tanlangan xonadon', close: 'Tafsilotlarni yopish', closePlan: 'Rejani yopish', selectHint: 'Pasportini ochish uchun matritsadan xonadon tanlang.',
@@ -158,10 +158,10 @@ const copy = {
     skip: 'Skip to catalogue results', back: 'About the project', wordmark: 'BOTANIKA SAROYI', index: 'Residence index', language: 'Language', phone: 'Sales office',
     eyebrow: 'Catalogue · official snapshot 30 Aug 2026', title: 'Residence', accent: 'index.', lead: '224 floor plans and official listings in a dated snapshot, without relabelling every internal workflow state as “available”.',
     snapshot: 'Snapshot', proposals: 'listings', saleRows: 'rows with isSale=true', plans: 'local floor plans', range: 'Apartment range', rangeValue: '36.95–82.25 m² · 1–3 rooms', plate: 'PLATE', specimen: 'SPECIMEN', specimenIndex: 'SPECIMEN INDEX',
-    modes: { cards: 'Cards', chess: 'Matrix', 'chess-plus': 'Matrix+' }, modeLabel: 'Catalogue view',
+    modes: { cards: 'Cards', chess: 'Matrix' }, modeLabel: 'Catalogue view',
     filters: 'Filters', rooms: 'Rooms', allRooms: 'Any', areaFrom: 'Area from, m²', areaTo: 'Area to, m²', priceFrom: 'Price from, million UZS', priceTo: 'Price to, million UZS', floor: 'Floor', allFloors: 'Any floor', building: 'Block / building', allBuildings: 'All blocks', entrance: 'Entrance', allEntrances: 'All entrances', completion: 'Completion', allCompletions: 'All dates', reset: 'Reset',
     sort: 'Sort', sorts: { priceAsc: 'Price ↑', priceDesc: 'Price ↓', areaAsc: 'Area ↑', areaDesc: 'Area ↓', floorAsc: 'Floor ↑', floorDesc: 'Floor ↓' }, results: 'found',
-    sourceTitle: 'Snapshot provenance', sourceNote: 'All 224 apartment rows were saved from the official live catalogue on 30 August 2026. 223 have isSale=true; one booking row is included in the official interface total of 224. Prices, promotions and statuses are fixed at snapshot time.', official: 'Official source',
+    sourceTitle: 'Snapshot provenance', sourceNote: 'All 224 apartment rows were saved from the official live catalogue on 30 August 2026. 223 have isSale=true; one booking row is included in the official interface total of 224. Prices, promotions and statuses are fixed at snapshot time.',
     apartment: 'Apartment', roomsShort: 'room', area: 'Area', areaUnit: 'm²', currentPrice: 'Current campaign price', originalPrice: 'Original price', sourcePerM2: 'Source price per m²', discount: 'Campaign reduction', promotion: 'Campaign', status: 'Source status', statusNote: 'Workflow status in the official snapshot', floorOf: 'Floor', entranceShort: 'Entrance', block: 'Block', completionShort: 'Completion', completionSource: 'Date normalized from realEstateList', placementDate: 'Raw placementList', class: 'Class', business: 'Business', balcony: 'Balcony', ceiling: 'Ceiling', studio: 'Studio', finishing: 'Finishing included', yes: 'Yes', no: 'No',
     plan: 'Open official floor plan', planAlt: 'Official apartment floor plan', choose: 'Check terms', details: 'Open details', showMore: 'Show more', shown: 'Shown', of: 'of',
     noResults: 'No listings match these filters.', resetFilters: 'Reset filters', matrix: 'Block × entrance × floor × apartment', matrixHint: 'Swipe or use a trackpad, the 44 px controls, or the ← → Home End keys to move through the matrix.', scrollLeft: 'Scroll matrix left', scrollRight: 'Scroll matrix right', floorColumn: 'Floor', unitsColumn: 'Apartments', emptyFloor: 'No filtered listings', selected: 'Selected apartment', close: 'Close details', closePlan: 'Close floor plan', selectHint: 'Select an apartment in the matrix to open its specimen passport.',
@@ -228,9 +228,6 @@ function getMobileDrawerSnapshot() {
   return typeof window !== 'undefined' && window.matchMedia(mobileDrawerQuery).matches;
 }
 function getMobileDrawerServerSnapshot() { return false; }
-function officialLanding(language: Language) {
-  return language === 'ru' ? 'https://nrg-bi.uz/uz-ru/landing/botanika-saroyi' : 'https://nrg-bi.uz/uz/landing/botanika-saroyi';
-}
 
 function rememberUnit(unit: Unit) {
   rememberLastViewedApartment({
@@ -427,7 +424,7 @@ function UnitDetail({ unit, language, onClose, onPlan, onLead }: { unit: Unit; l
   );
 }
 
-function MatrixGroup({ units, language, plus, sort, selectedId, onSelect }: { units: Unit[]; language: Language; plus: boolean; sort: Sort; selectedId?: string; onSelect: (unit: Unit, opener: HTMLButtonElement) => void }) {
+function MatrixGroup({ units, language, sort, selectedId, onSelect }: { units: Unit[]; language: Language; sort: Sort; selectedId?: string; onSelect: (unit: Unit, opener: HTMLButtonElement) => void }) {
   const t = copy[language];
   const viewportRef = useRef<HTMLDivElement>(null);
   const [edges, setEdges] = useState({ start: true, end: false });
@@ -466,7 +463,7 @@ function MatrixGroup({ units, language, plus, sort, selectedId, onSelect }: { un
         </div>
       </header>
       <div ref={viewportRef} className="botanika-matrix-viewport" tabIndex={0} onKeyDown={onKeyDown} onScroll={updateEdges} aria-label={`${t.matrix}: ${blockLabel(building, language)}, ${t.entranceShort} ${entrance}`} aria-describedby="botanika-matrix-help">
-        <table className={plus ? 'is-plus' : undefined}>
+        <table>
           <thead><tr><th scope="col">{t.floorColumn}</th><th scope="col">{t.unitsColumn}</th></tr></thead>
           <tbody>{floors.map((floor) => {
             const floorUnits = units.filter((unit) => unit.floor === floor).sort((a, b) => compareUnits(a, b, sort));
@@ -478,7 +475,7 @@ function MatrixGroup({ units, language, plus, sort, selectedId, onSelect }: { un
                     <small><span>№ {unit.number}</span><i data-status={unit.statusOriginal} aria-hidden="true" /></small>
                     <strong>{areaWithUnit(unit.area, language)}</strong>
                     <span>{roomPhrase(unit.rooms, language)} · {shortMoney(unit.price, language)}</span>
-                    {plus ? <em>{dateLabel(unit.completionDate, language)}</em> : null}
+                    <em>{dateLabel(unit.completionDate, language)}</em>
                   </button>
                 ))}</div> : <span className="botanika-matrix-empty">— <span className="botanika-visually-hidden">{t.emptyFloor}</span></span>}</td>
               </tr>
@@ -558,12 +555,11 @@ export function BotanikaCatalog({ snapshot, initialLanguage }: { snapshot: Botan
   const selectUnit = (unit: Unit, opener: HTMLButtonElement) => {
     rememberUnit(unit);
     selectionOpener.current = opener;
-    if (mode === 'chess-plus') setSelected(unit);
-    else setPlanUnit(unit);
+    setSelected(unit);
   };
   const changeMode = (next: Mode) => {
     setMode(next);
-    if (next !== 'chess-plus') setSelected(null);
+    setSelected(null);
   };
   const onModeKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>, index: number) => {
     let next = index;
@@ -608,7 +604,7 @@ export function BotanikaCatalog({ snapshot, initialLanguage }: { snapshot: Botan
 
       <section className="botanika-catalog-controls" aria-labelledby="botanika-filters-title">
         <div className="botanika-catalog-modes" role="tablist" aria-label={t.modeLabel}>{modes.map((item, index) => (
-          <button ref={(element) => { modeRefs.current[index] = element; }} type="button" role="tab" id={`botanika-tab-${item}`} aria-selected={mode === item} aria-controls={`botanika-panel-${item}`} tabIndex={mode === item ? 0 : -1} className={mode === item ? 'is-active' : undefined} onClick={() => changeMode(item)} onKeyDown={(event) => onModeKeyDown(event, index)} key={item}><small>0{index + 1}</small>{t.modes[item]}</button>
+          <button ref={(element) => { modeRefs.current[index] = element; }} type="button" role="tab" id={`botanika-tab-${item}`} aria-selected={mode === item} aria-controls="botanika-panel" tabIndex={mode === item ? 0 : -1} className={mode === item ? 'is-active' : undefined} onClick={() => changeMode(item)} onKeyDown={(event) => onModeKeyDown(event, index)} key={item}><small>0{index + 1}</small>{t.modes[item]}</button>
         ))}</div>
         <div className="botanika-catalog-filter-heading"><div><small>{t.specimenIndex}</small><h2 id="botanika-filters-title">{t.filters}</h2></div><button type="button" onClick={resetFilters}>{t.reset}<span aria-hidden="true">↺</span></button></div>
         <div className="botanika-catalog-filters">
@@ -626,24 +622,24 @@ export function BotanikaCatalog({ snapshot, initialLanguage }: { snapshot: Botan
 
       <section id="botanika-results" className="botanika-catalog-results" aria-labelledby="botanika-results-title">
         <header>
-          <div><small>{t.plate} · {mode === 'cards' ? '01' : mode === 'chess' ? '02' : '03'}</small><h2 id="botanika-results-title"><strong>{filtered.length}</strong> {t.results}</h2></div>
+          <div><small>{t.plate} · {mode === 'cards' ? '01' : '02'}</small><h2 id="botanika-results-title"><strong>{filtered.length}</strong> {t.results}</h2></div>
           <label><span>{t.sort}</span><select value={sort} onChange={(event) => { setSort(event.target.value as Sort); setVisible(12); }}>{(Object.entries(t.sorts) as Array<[Sort, string]>).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
         </header>
-        <aside className="botanika-catalog-source"><span aria-hidden="true">i</span><div><strong>{t.sourceTitle}</strong><p>{t.sourceNote}</p></div><a href={officialLanding(language)} target="_blank" rel="noreferrer">{t.official}<span aria-hidden="true">↗</span></a></aside>
+        <aside className="botanika-catalog-source"><span aria-hidden="true">i</span><div><strong>{t.sourceTitle}</strong><p>{t.sourceNote}</p></div></aside>
 
         {filtered.length === 0 ? (
           <div className="botanika-catalog-empty" role="status"><span aria-hidden="true">∅</span><h2>{t.noResults}</h2><button type="button" onClick={resetFilters}>{t.resetFilters}</button></div>
         ) : mode === 'cards' ? (
-          <div id="botanika-panel-cards" role="tabpanel" aria-labelledby="botanika-tab-cards">
+          <div id="botanika-panel" role="tabpanel" aria-labelledby="botanika-tab-cards">
             <div className="botanika-unit-grid">{filtered.slice(0, visible).map((unit) => <UnitCard unit={unit} language={language} onPlan={() => openPlan(unit)} onLead={() => openLead(unit, 'card-cta')} key={unit.id} />)}</div>
             {visible < filtered.length ? <button className="botanika-catalog-show-more" type="button" onClick={() => setVisible((value) => value + 12)}><span>{t.showMore}</span><strong>{t.shown} {Math.min(visible, filtered.length)} {t.of} {filtered.length}</strong><i aria-hidden="true">↓</i></button> : null}
           </div>
         ) : (
-          <div id={`botanika-panel-${mode}`} className="botanika-matrix" role="tabpanel" aria-labelledby={`botanika-tab-${mode}`}>
+          <div id="botanika-panel" className="botanika-matrix" role="tabpanel" aria-labelledby={`botanika-tab-${mode}`}>
             <header><div><small>{t.modes[mode]}</small><h2>{t.matrix}</h2><p id="botanika-matrix-help">{t.matrixHint}</p></div></header>
-            <div className={`botanika-matrix-layout${mode === 'chess-plus' ? ' has-detail' : ''}`}>
-              <div className="botanika-matrix-groups">{matrixGroups.map((units) => <MatrixGroup key={`${units[0].buildingId}-${units[0].entrance}`} units={units} language={language} plus={mode === 'chess-plus'} sort={sort} selectedId={activeSelected?.id} onSelect={selectUnit} />)}</div>
-              {mode === 'chess-plus' ? activeSelected ? <UnitDetail key={activeSelected.id} unit={activeSelected} language={language} onClose={closeDetail} onPlan={() => openPlan(activeSelected)} onLead={() => openLead(activeSelected, 'matrix-plus-detail')} /> : <aside className="botanika-unit-detail botanika-unit-detail--empty"><span aria-hidden="true">↖</span><p>{t.selectHint}</p></aside> : null}
+            <div className="botanika-matrix-layout has-detail">
+              <div className="botanika-matrix-groups">{matrixGroups.map((units) => <MatrixGroup key={`${units[0].buildingId}-${units[0].entrance}`} units={units} language={language} sort={sort} selectedId={activeSelected?.id} onSelect={selectUnit} />)}</div>
+              {activeSelected ? <UnitDetail key={activeSelected.id} unit={activeSelected} language={language} onClose={closeDetail} onPlan={() => openPlan(activeSelected)} onLead={() => openLead(activeSelected, 'matrix-detail')} /> : <aside className="botanika-unit-detail botanika-unit-detail--empty"><span aria-hidden="true">↖</span><p>{t.selectHint}</p></aside>}
             </div>
           </div>
         )}

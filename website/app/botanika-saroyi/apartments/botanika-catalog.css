@@ -87,7 +87,7 @@
 .botanika-catalog-hero > aside dd { margin: 0; font-size: 10px; font-weight: 650; text-align: right; }
 
 .botanika-catalog-controls { position: relative; z-index: 4; padding: 0 clamp(24px, 5vw, 84px) 66px; background: var(--bot-cat-paper-deep); }
-.botanika-catalog-modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); transform: translateY(-1px); border: 1px solid var(--bot-cat-line); background: var(--bot-cat-paper-light); }
+.botanika-catalog-modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); transform: translateY(-1px); border: 1px solid var(--bot-cat-line); background: var(--bot-cat-paper-light); }
 .botanika-catalog-modes button { display: grid; min-height: 84px; grid-template-columns: 38px 1fr; align-items: center; padding: 0 24px; border: 0; border-right: 1px solid var(--bot-cat-line); background: transparent; color: rgba(23, 27, 23, .52); font: 400 clamp(20px, 2vw, 31px)/1 var(--font-display), serif; text-align: left; cursor: pointer; transition: background .2s ease, color .2s ease; }
 .botanika-catalog-modes button:last-child { border-right: 0; }
 .botanika-catalog-modes button small { color: var(--bot-cat-brass); font: 700 8px/1 var(--font-ui), sans-serif; }
@@ -194,8 +194,8 @@
 .botanika-matrix-viewport tbody td button > strong { font-family: var(--font-display), serif; font-size: 16px; font-weight: 400; }
 .botanika-matrix-viewport tbody td button > span { color: rgba(23, 27, 23, .63); font-size: 8px; }
 .botanika-matrix-viewport tbody td button > em { color: rgba(23, 27, 23, .5); font-size: 7px; font-style: normal; }
-.botanika-matrix-viewport table.is-plus tbody tr { height: 126px; }
-.botanika-matrix-viewport table.is-plus tbody td button { width: 188px; min-height: 110px; flex-basis: 188px; }
+.botanika-matrix-viewport table tbody tr { height: 126px; }
+.botanika-matrix-viewport table tbody td button { width: 188px; min-height: 110px; flex-basis: 188px; }
 .botanika-matrix-viewport tbody td button.is-selected { border-color: var(--bot-cat-green-deep); background: var(--bot-cat-green-deep); color: #fff; }
 .botanika-matrix-viewport tbody td button.is-selected > span,
 .botanika-matrix-viewport tbody td button.is-selected > em { color: rgba(255, 255, 255, .65); }
@@ -347,7 +347,7 @@ body.botanika-catalog-detail-locked { overflow: hidden; }
   .botanika-matrix-viewport tbody th { width: 64px; min-width: 64px; }
   .botanika-matrix-viewport tbody td { min-width: 510px; }
   .botanika-matrix-viewport tbody td button { width: 142px; flex-basis: 142px; }
-  .botanika-matrix-viewport table.is-plus tbody td button { width: 178px; flex-basis: 178px; }
+  .botanika-matrix-viewport table tbody td button { width: 178px; flex-basis: 178px; }
   .botanika-unit-detail .botanika-catalog-plan { min-height: 300px; }
   .botanika-unit-detail .botanika-catalog-plan img { height: 255px; }
   .botanika-plan-lightbox { padding: 70px 12px 16px; }

@@ -341,7 +341,7 @@ async function verifyApplicationContract(catalog) {
   assertIncludes(source.package, ['smoke:regnum-plaza-guard', 'smoke:regnum-plaza-lead-production'], 'Regnum smoke commands');
   assertIncludes(source.builder, ['requestedAtUtc: null', 'completedAtUtc: null', 'timestampBasis', 'width=min(source width, 1000px); no upscaling', 'derivative.width === Math.min(source.width, 1000)'], 'offline provenance builder');
   assertIncludes(source.privacy, ["project === 'regnum-plaza'", "params?.from === 'catalog'", '/regnum-plaza/apartments?lang='], 'privacy routing');
-  assertIncludes(source.privacy, ["'avalon-residence': { name: 'AVALON RESIDENCE', path: '/'", "phoneHref: 'tel:+998781137712'"], 'Legacy Avalon privacy routing');
+  assertIncludes(source.privacy, ["'avalon-residence': { name: 'AVALON RESIDENCE', path: '/avalon', image: '/avalon/avalon-city.webp'", "phoneHref: 'tel:+998781137712'"], 'Legacy Avalon privacy routing');
   assertIncludes(source.sitemap, ["'regnum-plaza'", 'projectRoutes', '`/${project}`', '`/${project}/apartments`'], 'sitemap');
   assertIncludes(source.proxy, ['/regnum-plaza/:path*', 'x-document-language'], 'language proxy');
   assert(source.layout.includes("requestHeaders.get('x-document-language')"), 'Generic document-language header is not consumed');

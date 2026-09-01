@@ -51,10 +51,13 @@ const publicAssetChecks = [
 ];
 
 const rawBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
+const rawAssetPrefix = process.env.NEXT_PUBLIC_ASSET_PREFIX ?? rawBasePath;
 const siteOrigin = (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/+$/, '');
 
 assert.equal(Number(process.versions.node.split('.')[0]), 22, `Base-path deployment smoke must run on Node 22.x, received ${process.versions.node}`);
-assert.match(rawBasePath, /^\/[a-z0-9][a-z0-9-]*$/i, 'NEXT_PUBLIC_APP_BASE_PATH must be one non-root path segment with a leading slash (for production: /tencrop)');
+assert.match(rawBasePath, /^(?:|\/[a-z0-9][a-z0-9-]*)$/i, 'NEXT_PUBLIC_APP_BASE_PATH must be empty or one path segment with a leading slash');
+assert.match(rawAssetPrefix, /^\/[a-z0-9][a-z0-9-]*$/i, 'NEXT_PUBLIC_ASSET_PREFIX must be one non-root path segment with a leading slash');
+if (!rawBasePath) assert.notEqual(rawAssetPrefix, '', 'Root-path production requires an isolated asset prefix');
 assert.ok(siteOrigin, 'NEXT_PUBLIC_SITE_URL is required');
 assert.doesNotThrow(() => new URL(siteOrigin), 'NEXT_PUBLIC_SITE_URL must be an absolute URL');
 assert.ok(existsSync(sourceStandaloneEntry), 'Standalone server is missing; run npm run build with the same base-path environment first');
@@ -156,6 +159,7 @@ function assertRootRelativeAttributes(html, context) {
     for (const name of ['href', 'src', 'action', 'poster']) {
       const value = attrs[name];
       if (value?.startsWith('/') && !value.startsWith('//')) {
+        assert.ok(!value.startsWith('/tencrop'), `${context} still contains the retired /tencrop prefix in ${name}=${value}`);
         assert.ok(isBasePath(value), `${context} contains an unprefixed ${name}=${value}`);
       }
     }
@@ -163,6 +167,7 @@ function assertRootRelativeAttributes(html, context) {
     for (const candidate of attrs.srcset.split(',')) {
       const value = candidate.trim().split(/\s+/, 1)[0];
       if (value?.startsWith('/') && !value.startsWith('//')) {
+        assert.ok(!value.startsWith('/tencrop'), `${context} still contains the retired /tencrop prefix in srcset=${value}`);
         assert.ok(isBasePath(value), `${context} contains an unprefixed srcset URL ${value}`);
       }
     }
@@ -270,6 +275,7 @@ const child = spawn(process.execPath, [
     TMPDIR: tmpdir(),
     NODE_ENV: 'production',
     NEXT_PUBLIC_APP_BASE_PATH: rawBasePath,
+    NEXT_PUBLIC_ASSET_PREFIX: rawAssetPrefix,
     NEXT_PUBLIC_SITE_URL: siteOrigin,
     HOST: '127.0.0.1',
     PORT: String(port),
@@ -308,7 +314,7 @@ try {
     for (const match of body.matchAll(/<(?:link|script)\b[^>]*>/gi)) {
       const tag = attributes(match[0]);
       const value = tag.href ?? tag.src;
-      if (typeof value === 'string' && value.startsWith(`${rawBasePath}/_next/`)) {
+      if (typeof value === 'string' && value.startsWith(`${rawAssetPrefix}/_next/`)) {
         assetPaths.add(value.split('?', 1)[0]);
       }
     }
@@ -379,10 +385,15 @@ try {
   assert.match(robots, new RegExp(`Allow:\\s*${rawBasePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/`), 'robots.txt has the wrong allow path');
   assert.ok(robots.includes(`Sitemap: ${publicPrefix}/sitemap.xml`), 'robots.txt has the wrong sitemap URL');
 
-  await fetchText(localOrigin, '/ofiyat', 404);
-  await fetchText(localOrigin, '/sitemap.xml', 404);
+  if (rawBasePath) {
+    await fetchText(localOrigin, '/ofiyat', 404);
+    await fetchText(localOrigin, '/sitemap.xml', 404);
+  } else {
+    await fetchText(localOrigin, '/tencrop/ofiyat', 404);
+    await fetchText(localOrigin, '/tencrop/sitemap.xml', 404);
+  }
 
-  console.log(`Base-path deployment smoke passed on Node ${process.versions.node}: ${projectRoutes.length} localized HTML pages plus ${projectRoutes.length} RSC navigations, 2 shared pages, ${assetPaths.size} referenced build assets, ${publicAssetChecks.length} public image/floor/PDF/video assets, 414 API items, sitemap and robots all stay below ${rawBasePath}. Reverse-proxy static alias required: ${staticProxyRequired}.`);
+  console.log(`Deployment-path smoke passed on Node ${process.versions.node}: ${projectRoutes.length} localized HTML pages plus ${projectRoutes.length} RSC navigations, 2 shared pages, ${assetPaths.size} referenced build assets below ${rawAssetPrefix}, ${publicAssetChecks.length} public image/floor/PDF/video assets, 414 API items, sitemap and robots. Page base: ${rawBasePath || '/'}; reverse-proxy static alias required: ${staticProxyRequired}.`);
 } catch (error) {
   if (logs()) console.error(`vinext output:\n${logs()}`);
   throw error;

@@ -425,7 +425,7 @@ const sunCopy: Record<Language, PrivacyCopy> = {
 };
 
 const legacyProjects: Record<string, { name: string; path: string; image: string; phoneHref: string; phoneLabel: string }> = {
-  'avalon-residence': { name: 'AVALON RESIDENCE', path: '/', image: '/avalon-city.webp', phoneHref: 'tel:+998781137712', phoneLabel: '+998 78 113 77 12' },
+  'avalon-residence': { name: 'AVALON RESIDENCE', path: '/avalon', image: '/avalon/avalon-city.webp', phoneHref: 'tel:+998781137712', phoneLabel: '+998 78 113 77 12' },
   mirador: { name: 'MIRADOR', path: '/mirador', image: '/kayan/mirador/hero.webp', phoneHref: 'tel:+998785552020', phoneLabel: '+998 78 555 20 20' },
   ofiyat: { name: 'OFIYAT', path: '/ofiyat', image: '/kayan/ofiyat/hero.webp', phoneHref: 'tel:+998785552020', phoneLabel: '+998 78 555 20 20' },
   meros: { name: 'MEROS', path: '/meros', image: '/meros/hero.webp', phoneHref: 'tel:+998785552020', phoneLabel: '+998 78 555 20 20' },

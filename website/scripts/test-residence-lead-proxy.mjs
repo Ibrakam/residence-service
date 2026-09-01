@@ -42,7 +42,7 @@ try {
     unitKey: 'mock-unit-key',
   };
 
-  const success = await POST(new Request('http://localhost/tencrop/v1/leads', {
+  const success = await POST(new Request('http://localhost/v1/leads', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -64,7 +64,7 @@ try {
   assert.deepEqual(received[0].body, lead);
 
   responseMode = 'invalid';
-  const invalid = await POST(new Request('http://localhost/tencrop/v1/leads', {
+  const invalid = await POST(new Request('http://localhost/v1/leads', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(lead),

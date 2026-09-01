@@ -5,11 +5,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const appBasePath = configuredBasePath ? `/${configuredBasePath.replace(/^\/+|\/+$/g, '')}` : '';
   const origin = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://form.tencorp.uz').replace(/\/+$/, '');
   const base = `${origin}${appBasePath}`;
-  const routes = ['', '/privacy'];
+  const routes = ['', '/avalon', '/sanat', '/sanat/flats', '/privacy'];
   const regularRoutes: MetadataRoute.Sitemap = routes.map((route) => ({
     url: `${base}${route}`,
     changeFrequency: route.includes('apartments') ? 'daily' : 'weekly',
-    priority: route === '' ? 1 : .6,
+    priority: route === '' ? 1 : route === '/privacy' ? .6 : .9,
   }));
 
   const projects = ['mirador', 'ofiyat', 'meros', 'sado', 'flagman', '4u', 'voha', 'maftun-makon', 'botanika-saroyi', 'bayterak', 'zamon', 'yangibaxt', 'jomiy', 'regnum-plaza', 'sun'];

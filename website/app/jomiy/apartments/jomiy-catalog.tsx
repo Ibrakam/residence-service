@@ -716,15 +716,11 @@ function compare(a: Unit, b: Unit, sort: Sort, evaluationTime: number) {
 function usePromotionClock(initialEvaluationTime: number, promotionDeadlines: number[]) {
   const [evaluationTime, setEvaluationTime] = useState(initialEvaluationTime);
   useEffect(() => {
-    const immediate = window.setTimeout(() => setEvaluationTime(Date.now()), 0);
     const timer = window.setInterval(
       () => setEvaluationTime(Date.now()),
       60_000,
     );
-    return () => {
-      window.clearTimeout(immediate);
-      window.clearInterval(timer);
-    };
+    return () => window.clearInterval(timer);
   }, []);
   useEffect(() => {
     const now = Date.now();

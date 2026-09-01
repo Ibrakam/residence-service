@@ -591,7 +591,58 @@ const copy = {
 function locale(language: Language) {
   return jomiyLocale(language);
 }
+const uzShortMonths = [
+  "yan",
+  "fev",
+  "mar",
+  "apr",
+  "may",
+  "iyn",
+  "iyl",
+  "avg",
+  "sen",
+  "okt",
+  "noy",
+  "dek",
+] as const;
+
+function uzDateParts(value: string, timeZone: "UTC" | "Asia/Tashkent") {
+  const source = new Date(
+    /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00Z` : value,
+  );
+  const date =
+    timeZone === "Asia/Tashkent"
+      ? new Date(source.getTime() + 5 * 60 * 60 * 1000)
+      : source;
+  return {
+    day: date.getUTCDate(),
+    month: uzShortMonths[date.getUTCMonth()],
+    year: date.getUTCFullYear(),
+    hour: String(date.getUTCHours()).padStart(2, "0"),
+    minute: String(date.getUTCMinutes()).padStart(2, "0"),
+    second: String(date.getUTCSeconds()).padStart(2, "0"),
+  };
+}
+
+function uzDate(value: string, timeZone: "UTC" | "Asia/Tashkent") {
+  const { day, month, year } = uzDateParts(value, timeZone);
+  return `${day}-${month}, ${year}`;
+}
+
+function uzNumber(
+  value: number,
+  maximumFractionDigits = 0,
+  minimumFractionDigits = 0,
+) {
+  const fixed = Math.abs(value).toFixed(maximumFractionDigits);
+  const [rawInteger, rawFraction = ""] = fixed.split(".");
+  const integer = rawInteger.replace(/\B(?=(\d{3})+(?!\d))/g, "\u00a0");
+  const trimmedFraction = rawFraction.replace(/0+$/, "");
+  const fraction = trimmedFraction.padEnd(minimumFractionDigits, "0");
+  return `${value < 0 ? "−" : ""}${integer}${fraction ? `,${fraction}` : ""}`;
+}
 function number(value: number, language: Language, digits = 0) {
+  if (language === "uz") return uzNumber(value, digits);
   return new Intl.NumberFormat(locale(language), {
     maximumFractionDigits: digits,
   }).format(value);
@@ -603,6 +654,7 @@ function shortMoney(value: number, language: Language) {
   return `${number(value / 1e6, language, 1)} ${language === "ru" ? "млн" : language === "uz" ? "mln" : "m"}`;
 }
 function date(value: string, language: Language) {
+  if (language === "uz") return uzDate(value, "UTC");
   return new Intl.DateTimeFormat(locale(language), {
     day: "numeric",
     month: "short",
@@ -613,6 +665,10 @@ function date(value: string, language: Language) {
   );
 }
 function captured(value: string, language: Language) {
+  if (language === "uz") {
+    const parts = uzDateParts(value, "Asia/Tashkent");
+    return `${parts.day}-${parts.month}, ${parts.year}, ${parts.hour}:${parts.minute}`;
+  }
   return new Intl.DateTimeFormat(locale(language), {
     dateStyle: "medium",
     timeStyle: "short",
@@ -620,6 +676,10 @@ function captured(value: string, language: Language) {
   }).format(new Date(value));
 }
 function campaignDeadline(value: string, language: Language) {
+  if (language === "uz") {
+    const parts = uzDateParts(value, "Asia/Tashkent");
+    return `${parts.day}-${parts.month}, ${parts.year}, ${parts.hour}:${parts.minute}:${parts.second} UZT`;
+  }
   const formatted = new Intl.DateTimeFormat(locale(language), {
     day: "numeric",
     month: "short",
@@ -661,10 +721,13 @@ function roomLabel(value: number, language: Language) {
 function ceilingLabel(value: string, language: Language) {
   const matched = value.match(/\d+[,.]\d+/)?.[0]?.replace(",", ".");
   if (!matched) return value;
-  const height = new Intl.NumberFormat(locale(language), {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  }).format(Number(matched));
+  const height =
+    language === "uz"
+      ? uzNumber(Number(matched), 1, 1)
+      : new Intl.NumberFormat(locale(language), {
+          minimumFractionDigits: 1,
+          maximumFractionDigits: 1,
+        }).format(Number(matched));
   const qualifier =
     language === "ru" ? "Не менее" : language === "uz" ? "Kamida" : "At least";
   return `${qualifier} ${height} ${language === "ru" ? "м" : "m"}`;
@@ -2079,10 +2142,12 @@ export function JomiyCatalog({
           <dl>
             <div>
               <dt>
-                {new Intl.DateTimeFormat(locale(language), {
-                  dateStyle: "medium",
-                  timeZone: "Asia/Tashkent",
-                }).format(new Date(snapshot.capturedAt))}
+                {language === "uz"
+                  ? uzDate(snapshot.capturedAt, "Asia/Tashkent")
+                  : new Intl.DateTimeFormat(locale(language), {
+                      dateStyle: "medium",
+                      timeZone: "Asia/Tashkent",
+                    }).format(new Date(snapshot.capturedAt))}
               </dt>
               <dd>{t.snapshot}</dd>
             </div>

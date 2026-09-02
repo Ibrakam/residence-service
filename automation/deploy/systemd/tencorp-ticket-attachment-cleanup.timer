@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily TENCORP terminal ticket attachment retention cleanup
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+RandomizedDelaySec=1h
+Unit=tencorp-ticket-attachment-cleanup.service
+
+[Install]
+WantedBy=timers.target

@@ -2,3 +2,4 @@
 bin/
 coverage.out
 data/raw/
+data/tickets/

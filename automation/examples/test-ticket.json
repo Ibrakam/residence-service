@@ -1,0 +1,9 @@
+{
+  "ticket": {
+    "id": "TNC-LOCAL-SMOKE",
+    "attempt": 1,
+    "title": "Local runner smoke test",
+    "body": "Create website/TICKET_RUNNER_SMOKE.md containing one sentence that says this isolated dry-run succeeded. Do not change any other file.",
+    "attachments": []
+  }
+}

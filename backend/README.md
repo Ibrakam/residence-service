@@ -197,3 +197,111 @@ go vet ./...
 go run ./cmd/import-catalogs -dry-run -data-dir ../website/data
 docker compose config --quiet
 ```
+
+## Telegram-очередь исправлений
+
+`cmd/ticket-bot` — отдельный процесс для закрытой Telegram-группы. Он не
+встраивается в публичный catalog API и не исполняет текст сообщений как shell.
+Процесс принимает сообщения только из точного `TELEGRAM_CHAT_ID` и только от
+положительных numeric user ID из обязательного `TELEGRAM_ALLOWED_USER_IDS`.
+Это comma-separated allowlist без дубликатов; usernames, диапазоны, пустые
+элементы, bot ID и отрицательные значения не принимаются. Даже если ID бота
+ошибочно внесён в allowlist, update с `is_bot=true` всегда игнорируется.
+Неавторизованный update молча фиксируется в offset/dedupe, но не создаёт тикет
+и не получает ответ. Новый top-level тикет обязан начинаться с `/fix` (для
+альбома — в caption). `/help`, `/status` и `/cancel` доступны только allowlist-
+пользователям и являются управляющими командами. Ответ на реальное статусное
+сообщение `TNC-*` можно отправить без `/fix`: пока тикет queued, он дополнится,
+а после claim станет отдельным follow-up. Ответ без `/fix` на любое другое
+сообщение бота молча отклоняется с сохранением offset/dedupe. Сообщения одного
+Telegram media album объединяются по `media_group_id` и получают небольшой
+`ready_after`; запоздавшая часть уже working/terminal альбома становится новым
+queued follow-up и не меняет тело, которое уже получил worker.
+
+Чтобы Telegram действительно передавал боту обычные сообщения группы, а не
+только команды и ответы, для него нужно отключить Group Privacy в BotFather
+либо выдать подходящие права администратора. Проверка `chat_id` в сервисе всё
+равно остаётся обязательной и не заменяется настройками Telegram.
+
+Миграция `0011_ticket_automation.sql` хранит update offset, дедупликацию
+`update_id`/`message_id`, тикеты, сообщения, вложения и единственную worker
+lease. Вложения сначала скачиваются в `TICKET_ATTACHMENT_DIR` с режимом `0600`,
+проверкой размера и SHA-256; только после этого тикет можно claim. Истёкшая
+lease возвращает незавершённый тикет в очередь при следующем claim.
+Миграция `0012_ticket_queue_hardening.sql` добавляет durable status-sync marker,
+хеш finalization token для идемпотентного подтверждения и byte-safe ограничение
+объединяемого текста. Reply дописывается только в ещё queued тикет; после claim
+или при переполнении 65 536 octets он становится отдельным queued follow-up.
+Миграция `0013_ticket_attachment_retention.sql` добавляет состояние `purged` и
+время очистки локального файла без удаления аудита тикета/сообщения.
+
+Секреты задаются только окружением:
+
+```bash
+export DATABASE_URL='postgres://...'
+export TELEGRAM_BOT_TOKEN='...'
+export TELEGRAM_CHAT_ID='...'
+export TELEGRAM_ALLOWED_USER_IDS='123456789,987654321'
+export TICKET_WORKER_API_TOKEN='at-least-32-random-characters'
+export TICKET_PUBLIC_WORKER_BASE_URL='https://form.tencorp.uz/__residence-ticket-worker/'
+export TICKET_ATTACHMENT_RETENTION='720h'
+export TICKET_ATTACHMENT_DISK_WARN_BYTES='5368709120'
+go run ./cmd/ticket-bot
+```
+
+`TICKET_BOT_ADDR` по умолчанию равен `127.0.0.1:8090` и конфигурация
+отказывается стартовать на публичном адресе. Nginx может публиковать только
+`/__residence-ticket-worker/`, удаляя этот prefix перед proxy на loopback.
+Attachment URL строится исключительно из `TICKET_PUBLIC_WORKER_BASE_URL`; Host
+и forwarded-заголовки запроса не используются.
+
+Worker HTTP handlers сохраняют переход в PostgreSQL и сразу отвечают worker'у,
+не ожидая Telegram API. Периодический reporter повторяет все несинхронизированные
+и недавние статусы, поэтому временный сбой Telegram не превращает успешный
+deploy в timeout. Идентичный повтор `complete`/`fail` с тем же lease token после
+потерянного HTTP-ответа подтверждается идемпотентно; другой payload или token
+получает `lease_lost`.
+
+Вложения completed/failed/cancelled тикетов старше
+`TICKET_ATTACHMENT_RETENTION` (по умолчанию 30 дней) очищает отдельная команда:
+
+```bash
+go run ./cmd/ticket-bot cleanup-attachments --dry-run
+go run ./cmd/ticket-bot cleanup-attachments
+```
+
+Она никогда не выбирает queued/working тикеты, проверяет соответствие пути
+`TICKET_ATTACHMENT_DIR/<ticket-id>/<attachment-id>.*`, запрещает symlink и
+выход из корня, после удаления переводит DB-запись в `purged`. При превышении
+`TICKET_ATTACHMENT_DISK_WARN_BYTES` выводится warning; любая небезопасная
+структура каталога останавливает очистку без продолжения.
+
+Worker API `ticket-runner/v1`:
+
+- `GET /healthz` — локальная liveness и версия;
+- authenticated `GET /internal/ticket-runner/health`;
+- `POST /internal/ticket-runner/lease`;
+- `POST /internal/ticket-runner/tickets/{id}/heartbeat`;
+- `POST /internal/ticket-runner/tickets/{id}/progress`;
+- `POST /internal/ticket-runner/tickets/{id}/complete`;
+- `POST /internal/ticket-runner/tickets/{id}/fail`;
+- protected attachment URL из lease response.
+
+Все внутренние запросы требуют `Authorization: Bearer ...`; запросы конкретного
+тикета дополнительно требуют `X-Ticket-Lease`. Bearer должен проверяться Nginx
+или самим сервисом, но не передаваться в URL.
+
+Для безопасного end-to-end теста оператор с bearer может создать обычный
+`[TEST]`-тикет без сообщения пользователя. Текст читается из stdin (или из
+явного `--text`), затем бот публикует нормальный статус и реальный worker
+забирает тикет из той же очереди:
+
+```bash
+printf '%s\n' 'Проверить маленькое изменение без публикации' |
+  go run ./cmd/ticket-bot enqueue-test
+```
+
+Команда обращается только к loopback API и не запускает shell-команд из текста.
+Перед production запуском примените миграцию отдельным release-шагом либо один
+раз включите `TICKET_AUTO_MIGRATE=true`; постоянный production default —
+`false`.

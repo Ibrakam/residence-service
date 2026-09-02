@@ -1,0 +1,161 @@
+import os from "node:os";
+import path from "node:path";
+import fs from "node:fs/promises";
+import crypto from "node:crypto";
+import { runCommand } from "./command.mjs";
+import { verifySealedArtifact } from "./artifact-seal.mjs";
+import { PolicyError } from "./errors.mjs";
+import { isPathInside } from "./sanitize.mjs";
+import {
+  buildVerificationProfile,
+  createSandboxContext,
+  sandboxArgv,
+  verificationRuntimePaths,
+} from "./seatbelt.mjs";
+
+function baseTrustedEnv(additional = {}) {
+  return {
+    HOME: process.env.HOME || os.homedir(),
+    PATH: process.env.PATH || "/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin",
+    LANG: process.env.LANG || "C.UTF-8",
+    LC_ALL: process.env.LC_ALL || "C.UTF-8",
+    TERM: "dumb",
+    NO_COLOR: "1",
+    CI: "1",
+    ...additional,
+  };
+}
+
+export async function runVerification({ config, worktreePath, ticketId, signal, logger }) {
+  const results = [];
+  const resolvedWorktree = await fs.realpath(worktreePath);
+  for (const command of config.verifyCommands) {
+    const cwd = path.resolve(resolvedWorktree, command.cwd);
+    if (cwd !== resolvedWorktree && !isPathInside(resolvedWorktree, cwd)) {
+      throw new PolicyError(`Verification cwd escaped worktree: ${command.name}`);
+    }
+    const executableName = path.basename(command.argv[0]);
+    const isNpmInstall = executableName === "npm" && command.argv[1] === "ci";
+    if (isNpmInstall) {
+      for (const required of ["--ignore-scripts", "--no-audit", "--no-fund"]) {
+        if (!command.argv.includes(required)) throw new PolicyError(`npm ci verification must include ${required}`);
+      }
+    }
+    const sandbox = await createSandboxContext({
+      stateDir: config.stateDir,
+      prefix: `verify-${ticketId}-${command.name}`,
+      profile: ({ tempPath }) => buildVerificationProfile({
+        worktreePath: resolvedWorktree,
+        tempPath,
+        runtimePaths: verificationRuntimePaths(process.env),
+        // Dependency download is the sole network exception. Lint/build and
+        // every other fixed verification command have no network capability.
+        allowNetwork: isNpmInstall,
+      }),
+    });
+    try {
+      const env = baseTrustedEnv({
+        ...config.verificationEnvironment,
+        HOME: sandbox.homePath,
+        TMPDIR: sandbox.tempPath,
+        NPM_CONFIG_CACHE: path.join(sandbox.tempPath, "npm-cache"),
+        NPM_CONFIG_USERCONFIG: path.join(sandbox.tempPath, "empty-user-npmrc"),
+        NPM_CONFIG_GLOBALCONFIG: path.join(sandbox.tempPath, "empty-global-npmrc"),
+        NPM_CONFIG_AUDIT: "false",
+        NPM_CONFIG_FUND: "false",
+        NPM_CONFIG_UPDATE_NOTIFIER: "false",
+      });
+      const result = await runCommand({
+        argv: sandboxArgv(sandbox.profilePath, command.argv),
+        cwd,
+        env,
+        timeoutMs: command.timeoutMs,
+        signal,
+        label: `verify.${command.name}`,
+        logger,
+      });
+      results.push({ name: command.name, ok: true, durationMs: result.durationMs, sandboxed: true, network: isNpmInstall ? "install-only" : "denied" });
+      logger.info("verification.passed", { ticketId, name: command.name, durationMs: result.durationMs, sandboxed: true, networkAllowed: isNpmInstall });
+    } finally {
+      await sandbox.cleanup();
+    }
+  }
+  return results;
+}
+
+export async function validateDeployScript(config, worktreePath) {
+  if (!config.deployScript) throw new PolicyError("No trusted deployment script is configured");
+  if (!path.isAbsolute(config.deployScript)) throw new PolicyError("Deployment script path must be absolute");
+  const lstat = await fs.lstat(config.deployScript);
+  if (!lstat.isFile() || lstat.isSymbolicLink()) throw new PolicyError("Deployment script must be a regular non-symlink file");
+  if ((lstat.mode & 0o111) === 0) throw new PolicyError("Deployment script is not executable");
+  if ((lstat.mode & 0o022) !== 0) throw new PolicyError("Deployment script must not be group/world writable");
+  const currentUid = typeof process.getuid === "function" ? process.getuid() : lstat.uid;
+  if (lstat.uid !== 0 && lstat.uid !== currentUid) throw new PolicyError("Deployment script must be owned by root or the runner user");
+  const real = await fs.realpath(config.deployScript);
+  if (real === path.resolve(worktreePath) || isPathInside(worktreePath, real)) {
+    throw new PolicyError("Deployment script must be outside the agent worktree");
+  }
+  const pin = config.deployScriptPin;
+  if (!pin || pin.realPath !== real || pin.uid !== lstat.uid || pin.dev !== lstat.dev || pin.ino !== lstat.ino) {
+    throw new PolicyError("Deployment script identity changed after runner startup");
+  }
+  const digest = crypto.createHash("sha256").update(await fs.readFile(real)).digest("hex");
+  if (digest !== pin.sha256) throw new PolicyError("Deployment script content changed after runner startup");
+  return real;
+}
+
+export async function runDeployment({ config, worktreePath, ticketId, commitSha, artifactSeal, signal, logger }) {
+  const script = await validateDeployScript(config, worktreePath);
+  if (!artifactSeal) throw new PolicyError("A sealed build artifact is required for deployment");
+  await verifySealedArtifact(artifactSeal);
+  const result = await runCommand({
+    argv: [script, ...config.deployArgs],
+    cwd: config.repoRoot,
+    env: baseTrustedEnv({
+      ...config.deployEnvironment,
+      TICKET_RUNNER_COMMIT_SHA: commitSha,
+      TICKET_RUNNER_TICKET_ID: ticketId,
+      TICKET_RUNNER_WORKTREE: worktreePath,
+      TICKET_RUNNER_ARTIFACT_DIR: artifactSeal.artifactPath,
+      TICKET_RUNNER_ARTIFACT_MANIFEST: artifactSeal.manifestPath,
+      TICKET_RUNNER_ARTIFACT_SHA256: artifactSeal.manifestSha256,
+    }),
+    timeoutMs: config.deployTimeoutMs,
+    signal,
+    label: "deploy.trusted_script",
+    logger,
+  });
+  return { ok: true, durationMs: result.durationMs };
+}
+
+export async function runSmokeChecks({ config, ticketId, signal, logger }) {
+  const checks = [];
+  for (const url of config.smokeUrls) {
+    const startedAt = Date.now();
+    const timeout = AbortSignal.timeout(config.smokeTimeoutMs);
+    const combined = signal ? AbortSignal.any([signal, timeout]) : timeout;
+    let response;
+    try {
+      response = await fetch(url, {
+        method: "GET",
+        headers: { Accept: "text/html,application/json;q=0.9,*/*;q=0.1", "User-Agent": "avalon-ticket-runner-smoke/0.1" },
+        redirect: "manual",
+        signal: combined,
+      });
+    } catch (cause) {
+      throw new PolicyError(`Production smoke request failed for ${url.hostname}`, { cause });
+    }
+    if (response.body) await response.body.cancel();
+    const durationMs = Date.now() - startedAt;
+    if (response.status < 200 || response.status >= 400) {
+      throw new PolicyError(`Production smoke returned HTTP ${response.status} for ${url.hostname}`);
+    }
+    const check = { host: url.hostname, path: url.pathname, status: response.status, durationMs };
+    checks.push(check);
+    logger.info("smoke.passed", { ticketId, ...check });
+  }
+  return checks;
+}
+
+export { baseTrustedEnv };

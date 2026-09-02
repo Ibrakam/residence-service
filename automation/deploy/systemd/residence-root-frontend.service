@@ -1,0 +1,47 @@
+[Unit]
+Description=Residence Vinext standalone frontend on direct project routes
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=60s
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=residence-frontend
+Group=residence-frontend
+WorkingDirectory=/var/www/residence-service/root-current/frontend
+EnvironmentFile=/etc/residence-frontend/root-frontend.env
+ExecStartPre=/usr/bin/test -f /var/www/residence-service/root-current/frontend/server.js
+ExecStart=/usr/bin/node /var/www/residence-service/root-current/frontend/server.js
+Restart=on-failure
+RestartSec=3s
+TimeoutStartSec=30s
+TimeoutStopSec=20s
+KillSignal=SIGTERM
+UMask=0027
+
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectClock=true
+ProtectHostname=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectProc=invisible
+ProcSubset=pid
+RestrictSUIDSGID=true
+RestrictNamespaces=true
+RestrictRealtime=true
+LockPersonality=true
+InaccessiblePaths=/etc/residence-service /etc/tencorp-ticket-bot
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

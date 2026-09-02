@@ -30,10 +30,11 @@
   isolation:isolate;
 }
 .ofiyat-explorer {
+  --ofiyat-panel-width:clamp(336px,24vw,392px);
   position:absolute;
   inset:0;
   display:grid;
-  grid-template-columns:minmax(0,1fr) clamp(370px,28vw,448px);
+  grid-template-columns:minmax(0,1fr) var(--ofiyat-panel-width);
   overflow:hidden;
   background:
     radial-gradient(circle at 28% 18%,rgba(63,103,151,.34),transparent 34%),
@@ -147,7 +148,7 @@
 .ofiyat-explorer__block-controls {
   position:absolute;
   z-index:7;
-  right:calc(clamp(370px,28vw,448px) + 24px);
+  right:calc(var(--ofiyat-panel-width) + 24px);
   bottom:24px;
   left:24px;
   display:flex;
@@ -177,20 +178,93 @@
   display:flex;
   min-height:0;
   flex-direction:column;
-  justify-content:center;
-  padding:108px clamp(24px,2.35vw,39px) 55px;
-  overflow:auto;
+  justify-content:flex-start;
+  padding:106px clamp(24px,2.1vw,34px) 34px;
+  overflow-x:hidden;
+  overflow-y:auto;
   border-left:1px solid rgba(224,191,123,.24);
-  background:linear-gradient(180deg,rgba(9,20,39,.97),rgba(5,12,25,.985));
-  box-shadow:-32px 0 72px rgba(1,7,16,.23);
+  background:
+    radial-gradient(circle at 113% 14%,rgba(211,177,104,.13),transparent 29%),
+    linear-gradient(180deg,rgba(9,21,41,.97),rgba(5,12,25,.99));
+  box-shadow:-24px 0 64px rgba(1,7,16,.2);
   scrollbar-width:thin;
   scrollbar-color:rgba(218,185,117,.44) transparent;
 }
+.ofiyat-explorer__panel::before {
+  position:absolute;
+  top:17%;
+  right:-1px;
+  width:168px;
+  aspect-ratio:1;
+  border:1px solid rgba(227,196,129,.075);
+  border-radius:50%;
+  content:'';
+  pointer-events:none;
+}
+.ofiyat-explorer__panel::after {
+  position:absolute;
+  right:25px;
+  bottom:22px;
+  content:'OFIYAT';
+  color:rgba(237,214,165,.055);
+  font-family:var(--font-display),Georgia,serif;
+  font-size:54px;
+  font-weight:400;
+  letter-spacing:-.055em;
+  pointer-events:none;
+}
+.ofiyat-explorer__panel>* { position:relative; z-index:1; }
+.ofiyat-explorer__progress {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:6px;
+  flex:0 0 auto;
+  margin:0 0 clamp(38px,5.5vh,58px);
+  padding:0;
+  list-style:none;
+}
+.ofiyat-explorer__progress>li {
+  position:relative;
+  display:grid;
+  gap:7px;
+  padding-top:10px;
+  border-top:1px solid rgba(240,218,171,.18);
+  color:rgba(248,243,233,.32);
+}
+.ofiyat-explorer__progress>li[data-active='true'] { border-color:rgba(222,189,120,.58); color:rgba(248,243,233,.72); }
+.ofiyat-explorer__progress>li[data-current='true'] { color:#f4dfa9; }
+.ofiyat-explorer__progress>li[data-current='true']::before {
+  position:absolute;
+  top:-3px;
+  left:0;
+  width:5px;
+  height:5px;
+  border-radius:50%;
+  background:#e2bf76;
+  box-shadow:0 0 13px rgba(226,191,118,.72);
+  content:'';
+}
+.ofiyat-explorer__progress i { font-size:7px; font-style:normal; font-weight:850; letter-spacing:.14em; }
+.ofiyat-explorer__progress b { font-size:6.5px; font-weight:720; letter-spacing:.06em; line-height:1.25; text-transform:uppercase; }
+.ofiyat-explorer__empty { margin-top:clamp(24px,4vh,42px); }
 .ofiyat-explorer__empty>small,.ofiyat-explorer__step>small { color:#d9b870; font-size:7px; font-weight:850; letter-spacing:.19em; text-transform:uppercase; }
-.ofiyat-explorer__empty h2,.ofiyat-explorer__step h2 { margin:20px 0 17px; color:#f8f3e9; font-family:var(--font-display),Georgia,serif; font-size:clamp(29px,2.7vw,43px); font-weight:400; letter-spacing:-.035em; line-height:.94; outline:none; }
-.ofiyat-explorer__empty p,.ofiyat-explorer__panel header p,.ofiyat-explorer__fallback { margin:0; color:rgba(248,243,233,.61); font-size:9px; line-height:1.72; }
+.ofiyat-explorer__empty h2,.ofiyat-explorer__step h2 { margin:17px 0 15px; color:#f8f3e9; font-family:var(--font-display),Georgia,serif; font-size:clamp(29px,2.35vw,38px); font-weight:400; letter-spacing:-.035em; line-height:.94; outline:none; }
+.ofiyat-explorer__step h2:focus { outline:1px solid rgba(239,216,168,.82); outline-offset:6px; }
+.ofiyat-explorer__empty p,.ofiyat-explorer__panel header p,.ofiyat-explorer__fallback { margin:0; color:rgba(248,243,233,.66); font-size:10px; line-height:1.7; }
 .ofiyat-explorer__inventory-state { margin:14px 0 0; padding:11px 12px; border-left:2px solid #c59c55; background:rgba(212,178,108,.07); color:rgba(248,243,233,.72); font-size:8px; line-height:1.65; }
-.ofiyat-explorer__empty>a { display:flex; min-height:48px; align-items:center; justify-content:space-between; margin-top:29px; padding:0 15px; border:1px solid rgba(225,194,130,.48); color:#f3dda9; font-size:7px; font-weight:850; letter-spacing:.12em; text-transform:uppercase; }
+.ofiyat-explorer__overview {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  margin-top:29px;
+  border-top:1px solid rgba(240,218,171,.16);
+  border-bottom:1px solid rgba(240,218,171,.16);
+}
+.ofiyat-explorer__overview article { display:grid; min-width:0; align-content:center; gap:5px; min-height:82px; padding:11px 9px; border-left:1px solid rgba(240,218,171,.12); }
+.ofiyat-explorer__overview article:first-child { padding-left:0; border-left:0; }
+.ofiyat-explorer__overview strong { color:#ead39b; font-family:var(--font-display),Georgia,serif; font-size:25px; font-weight:400; line-height:1; }
+.ofiyat-explorer__overview span { color:rgba(248,243,233,.5); font-size:6.5px; font-weight:730; letter-spacing:.06em; line-height:1.35; text-transform:uppercase; }
+.ofiyat-explorer__empty>a { display:flex; min-height:48px; align-items:center; justify-content:space-between; margin-top:21px; padding:0 15px; border:1px solid rgba(225,194,130,.48); color:#f3dda9; font-size:7px; font-weight:850; letter-spacing:.12em; text-transform:uppercase; transition:background .2s ease,border-color .2s ease,color .2s ease; }
+.ofiyat-explorer__empty>a:hover { border-color:#e2bf76; background:#d5ae62; color:#0b1425; }
 .ofiyat-explorer__empty>a span { font-size:17px; }
 .ofiyat-explorer__panel>header { display:grid; grid-template-columns:54px 1fr; gap:11px 17px; align-items:center; margin-bottom:30px; padding-bottom:22px; border-bottom:1px solid rgba(245,224,179,.14); }
 .ofiyat-explorer__panel>header>div { grid-row:1/3; display:grid; width:54px; height:54px; place-items:center; border:1px solid rgba(229,198,133,.46); }
@@ -241,7 +315,6 @@
 .ofiyat-explorer__actions button { background:transparent; color:#f3dda9; }
 .ofiyat-explorer__actions a span { font-size:17px; }
 .ofiyat-explorer__unavailable { color:rgba(248,243,233,.65); font-size:9px; line-height:1.7; }
-.ofiyat-explorer__source { position:absolute; z-index:9; right:21px; bottom:18px; width:calc(clamp(370px,28vw,448px) - 42px); margin:0; color:rgba(248,243,233,.37); font-size:5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
 .kayan-site--ofiyat .kayan-sr-only { position:absolute!important; width:1px!important; height:1px!important; padding:0!important; overflow:hidden!important; clip:rect(0,0,0,0)!important; white-space:nowrap!important; border:0!important; }
 
 .ofiyat-mobile-hero { display:none; }
@@ -278,13 +351,15 @@
 @keyframes ofiyat-radiance-pass { 0%,18% { transform:translateX(-58%); opacity:0; } 35% { opacity:.82; } 58% { opacity:.35; } 74%,100% { transform:translateX(58%); opacity:0; } }
 
 @media(max-width:1100px) and (min-width:768px) {
-  .ofiyat-hero--explorer { min-height:760px; }
+  .ofiyat-hero--explorer { height:max(100svh,calc(95px + (100vw * 2359 / 4096) + 430px)); min-height:0; }
   .ofiyat-explorer { display:block; }
   .ofiyat-explorer__canvas { position:absolute; top:78px; left:0; width:100%; }
   .ofiyat-explorer__intro { top:100px; width:41vw; }
   .ofiyat-explorer__intro h1 { margin-top:13px; font-size:36px; }
   .ofiyat-explorer__intro p { font-size:8px; }
   .kayan-site--ofiyat .ofiyat-explorer__panel { position:absolute; top:calc(78px + (100vw * 2359 / 4096) + 7px); right:10px; bottom:10px; left:10px; display:block; padding:21px 24px 35px; border:1px solid rgba(224,191,123,.24); box-shadow:0 -22px 58px rgba(1,7,16,.25); }
+  .ofiyat-explorer__progress { margin-bottom:20px; }
+  .ofiyat-explorer__empty { margin-top:0; }
   .ofiyat-explorer__panel>header { grid-template-columns:50px 1fr auto; margin-bottom:17px; padding-bottom:14px; }
   .ofiyat-explorer__panel>header>div { grid-row:1/3; width:50px; height:50px; }
   .ofiyat-explorer__panel>header>button { grid-column:3; grid-row:1/3; align-self:center; min-height:44px; }
@@ -294,8 +369,7 @@
   .ofiyat-explorer__choices.is-floors { grid-template-columns:repeat(7,minmax(44px,1fr)); }
   .ofiyat-explorer__units { grid-template-columns:repeat(2,minmax(0,1fr)); max-height:145px; }
   .ofiyat-explorer__actions { max-width:520px; }
-  .ofiyat-explorer__block-controls { right:18px; bottom:calc(100svh - (78px + (100vw * 2359 / 4096)) + 16px); left:18px; }
-  .ofiyat-explorer__source { right:31px; bottom:19px; width:auto; max-width:60%; }
+  .ofiyat-explorer__block-controls { top:calc(78px + (100vw * 2359 / 4096) - 60px); right:18px; bottom:auto; left:18px; }
 }
 
 @media(max-width:767px) {

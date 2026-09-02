@@ -56,17 +56,20 @@ const copy = {
     imageAlt: 'Рендер Ofiyat в синий час с семью интерактивными визуальными блоками',
     canvas: 'Выбор визуального блока Ofiyat на рендере',
     block: 'Блок', selectBlock: 'Выбрать блок', selected: 'Выбран', controls: 'Альтернативный выбор блока',
-    chooseFirst: 'Сначала выберите один из семи блоков на фасаде.',
-    mapping: 'Официальная связь блока с очередью или подъездом не опубликована. Поэтому следующий выбор выполняется явно.',
+    chooseFirst: 'Выберите блок на фасаде.',
+    mapping: 'Коснитесь нужной части здания. Затем выберите очередь, подъезд и этаж — контекст сохранится до каталога.',
+    selectionContext: 'Блок задаёт визуальный контекст; очередь, подъезд и этаж выбираются отдельно.',
+    progressLabel: 'Этапы выбора квартиры', steps: ['Фасад', 'Очередь / подъезд', 'Этаж', 'Квартира'],
+    overview: 'Навигация по проекту', facadeAreas: 'зон фасада', phasesCount: 'жилые очереди', homesAvailable: 'квартир свободно',
     phaseTitle: 'Выберите очередь', phaseLabel: 'Жилые очереди Ofiyat', phaseOne: 'I очередь', phaseTwo: 'II очередь', available: 'свободно',
     entranceTitle: 'Выберите подъезд', entranceLabel: 'Подъезды выбранной очереди', entrance: 'Подъезд',
     floorTitle: 'Выберите этаж', floorLabel: 'Этажи выбранного подъезда', floor: 'Этаж',
     unitsTitle: 'Официальная структура этажа', unitsLabel: 'Квартиры и статусы выбранного этажа',
-    fallback: 'KAYAN не публикует для Ofiyat отдельную схему этажа. Ниже показана подтверждённая структура этажа из режима «Помещения» — без выдуманной графики.',
+    fallback: 'Для Ofiyat отдельная схема этажа недоступна. Ниже показана подтверждённая структура этажа из режима «Помещения» — без выдуманной графики.',
     unit: 'Квартира', area: 'м²', rooms: 'комн.', noRooms: 'тип не указан',
     statuses: { available: 'Свободно', reserved: 'Бронь', sold: 'Продано', unavailable: 'Не продаётся' },
-    open: 'Открыть точную квартиру', consult: 'Уточнить условия', parking: 'Перейти к паркингу',
-    back: 'Назад', clear: 'Начать заново', source: 'Источник: авторизованная витрина KAYAN · read-only capture 01.09.2026',
+    open: 'Открыть точную квартиру', consult: 'Уточнить условия',
+    back: 'Назад', clear: 'Начать заново',
     renderLabel: 'Архитектурный рендер', unavailable: 'Для этого выбора нет подтверждённых квартир.',
     imageError: 'Рендер временно недоступен. Используйте доступные кнопки блоков 1–7.',
     inventoryLoading: 'Загружаем подтверждённую структуру квартир…',
@@ -81,17 +84,20 @@ const copy = {
     imageAlt: 'Ko‘k shafaq paytidagi Ofiyat renderi va yettita interaktiv vizual blok',
     canvas: 'Ofiyat renderida vizual blokni tanlash',
     block: 'Blok', selectBlock: 'Blokni tanlash', selected: 'Tanlandi', controls: 'Blokni muqobil tanlash',
-    chooseFirst: 'Avval fasaddagi yettita blokdan birini tanlang.',
-    mapping: 'Blokning bosqich yoki kirish bilan rasmiy bog‘liqligi e’lon qilinmagan. Keyingi tanlovlar alohida bajariladi.',
+    chooseFirst: 'Fasaddagi blokni tanlang.',
+    mapping: 'Binoning kerakli qismiga teging. So‘ng bosqich, kirish va qavatni tanlang — kontekst kataloggacha saqlanadi.',
+    selectionContext: 'Blok vizual kontekstni belgilaydi; bosqich, kirish va qavat alohida tanlanadi.',
+    progressLabel: 'Xonadon tanlash bosqichlari', steps: ['Fasad', 'Bosqich / kirish', 'Qavat', 'Xonadon'],
+    overview: 'Loyiha bo‘ylab navigatsiya', facadeAreas: 'fasad zonasi', phasesCount: 'turar joy bosqichi', homesAvailable: 'xonadon mavjud',
     phaseTitle: 'Bosqichni tanlang', phaseLabel: 'Ofiyat turar joy bosqichlari', phaseOne: 'I bosqich', phaseTwo: 'II bosqich', available: 'mavjud',
     entranceTitle: 'Kirishni tanlang', entranceLabel: 'Tanlangan bosqich kirishlari', entrance: 'Kirish',
     floorTitle: 'Qavatni tanlang', floorLabel: 'Tanlangan kirish qavatlari', floor: 'Qavat',
     unitsTitle: 'Qavatning rasmiy tuzilmasi', unitsLabel: 'Tanlangan qavatdagi xonadonlar va holatlar',
-    fallback: 'KAYAN Ofiyat uchun alohida qavat sxemasini e’lon qilmagan. Quyida «Xonalar» rejimidan tasdiqlangan qavat tuzilmasi ko‘rsatilgan — to‘qib chiqarilgan grafikasiz.',
+    fallback: 'Ofiyat uchun alohida qavat sxemasi mavjud emas. Quyida «Xonalar» rejimidan tasdiqlangan qavat tuzilmasi ko‘rsatilgan — to‘qib chiqarilgan grafikasiz.',
     unit: 'Xonadon', area: 'm²', rooms: 'xona', noRooms: 'turi ko‘rsatilmagan',
     statuses: { available: 'Mavjud', reserved: 'Band', sold: 'Sotilgan', unavailable: 'Sotuvda emas' },
-    open: 'Aniq xonadonni ochish', consult: 'Shartlarni aniqlash', parking: 'Parkingga o‘tish',
-    back: 'Orqaga', clear: 'Qayta boshlash', source: 'Manba: KAYAN avtorizatsiyalangan vitrinasining faqat o‘qish capture’i · 01.09.2026',
+    open: 'Aniq xonadonni ochish', consult: 'Shartlarni aniqlash',
+    back: 'Orqaga', clear: 'Qayta boshlash',
     renderLabel: 'Arxitektura renderi', unavailable: 'Bu tanlov uchun tasdiqlangan xonadonlar yo‘q.',
     imageError: 'Render hozircha mavjud emas. 1–7 blok tugmalaridan foydalaning.',
     inventoryLoading: 'Tasdiqlangan xonadonlar tuzilmasi yuklanmoqda…',
@@ -106,17 +112,20 @@ const copy = {
     imageAlt: 'Blue-hour render of Ofiyat with seven interactive visual blocks',
     canvas: 'Choose a visual block of Ofiyat on the render',
     block: 'Block', selectBlock: 'Choose block', selected: 'Selected', controls: 'Alternative block selection',
-    chooseFirst: 'Start by choosing one of the seven blocks on the façade.',
-    mapping: 'No official block-to-phase or block-to-entrance association is published, so the next choices are explicit.',
+    chooseFirst: 'Choose a block on the façade.',
+    mapping: 'Touch the relevant part of the building, then choose a phase, entrance and floor. Your context stays with you through to the catalogue.',
+    selectionContext: 'The block sets the visual context; phase, entrance and floor are selected separately.',
+    progressLabel: 'Apartment selection steps', steps: ['Façade', 'Phase / entrance', 'Floor', 'Apartment'],
+    overview: 'Project navigation', facadeAreas: 'façade zones', phasesCount: 'residential phases', homesAvailable: 'homes available',
     phaseTitle: 'Choose a phase', phaseLabel: 'Ofiyat residential phases', phaseOne: 'Phase I', phaseTwo: 'Phase II', available: 'available',
     entranceTitle: 'Choose an entrance', entranceLabel: 'Entrances in the selected phase', entrance: 'Entrance',
     floorTitle: 'Choose a floor', floorLabel: 'Floors in the selected entrance', floor: 'Floor',
     unitsTitle: 'Official floor structure', unitsLabel: 'Apartments and statuses on the selected floor',
-    fallback: 'KAYAN does not publish a separate Ofiyat floor-plan asset. The confirmed floor structure from “Properties” is shown below, without invented graphics.',
+    fallback: 'A separate Ofiyat floor-plan asset is unavailable. The confirmed floor structure from “Properties” is shown below, without invented graphics.',
     unit: 'Apartment', area: 'm²', rooms: 'rooms', noRooms: 'type not stated',
     statuses: { available: 'Available', reserved: 'Reserved', sold: 'Sold', unavailable: 'Not for sale' },
-    open: 'Open exact apartment', consult: 'Ask about terms', parking: 'Open parking',
-    back: 'Back', clear: 'Start again', source: 'Source: authenticated KAYAN storefront · read-only capture 1 Sep 2026',
+    open: 'Open exact apartment', consult: 'Ask about terms',
+    back: 'Back', clear: 'Start again',
     renderLabel: 'Architectural render', unavailable: 'No confirmed apartments match this selection.',
     imageError: 'The render is temporarily unavailable. Use the accessible block buttons 1–7.',
     inventoryLoading: 'Loading the confirmed apartment structure…',
@@ -139,14 +148,6 @@ function catalogHrefFor(catalogHref: string, selection: OfiyatExplorerSelection)
   if (selection.entrance) url.searchParams.set('entrance', selection.entrance);
   if (selection.floor !== undefined) url.searchParams.set('floor', String(selection.floor));
   if (selection.unitNumber) url.searchParams.set('unit', selection.unitNumber);
-  return url.origin === localOrigin ? `${url.pathname}${url.search}${url.hash}` : url.toString();
-}
-
-function parkingHref(catalogHref: string) {
-  const localOrigin = 'https://ofiyat.local';
-  const url = new URL(catalogHref, localOrigin);
-  for (const key of ['block', 'entrance', 'floor', 'unit']) url.searchParams.delete(key);
-  url.searchParams.set('phase', 'parking');
   return url.origin === localOrigin ? `${url.pathname}${url.search}${url.hash}` : url.toString();
 }
 
@@ -204,6 +205,17 @@ export function OfiyatBlockExplorer({
     .filter((unit) => unit.phaseSlug === selectedPhase && unit.entrance === selectedEntrance && unit.floor === selectedFloor)
     .sort((a, b) => statusRank[a.status] - statusRank[b.status] || numericUnit(a, b)), [residentialUnits, selectedEntrance, selectedFloor, selectedPhase]);
   const selectedUnit = floorUnits.find((unit) => unit.sourceKey === selectedUnitKey) ?? null;
+  const availableHomes = useMemo(
+    () => phases.reduce((total, phase) => total + phase.available, 0),
+    [phases],
+  );
+  const activeStep = selectedBlock === null
+    ? 1
+    : selectedPhase === null || selectedEntrance === null
+      ? 2
+      : selectedFloor === null
+        ? 3
+        : 4;
 
   const selection = useMemo<OfiyatExplorerSelection | null>(() => selectedBlock === null ? null : ({
     block: selectedBlock,
@@ -350,7 +362,7 @@ export function OfiyatBlockExplorer({
         data-visible={activeBlock === block.number}
         style={{ left: `${(block.tooltip.x / OFIYAT_SELECTOR_VIEW_BOX.width) * 100}%`, top: `${(block.tooltip.y / OFIYAT_SELECTOR_VIEW_BOX.height) * 100}%` }}
       >{t.block} <b>{block.number}</b>{selectedBlock === block.number ? <small>{t.selected}</small> : null}</span>)}
-      <span className="ofiyat-explorer__render-label">{t.renderLabel} · KAYAN / FRAME 4</span>
+      <span className="ofiyat-explorer__render-label">{t.renderLabel}</span>
       {imageFailed ? <p className="ofiyat-explorer__image-error" role="status">{t.imageError}</p> : null}
     </div>
 
@@ -375,17 +387,27 @@ export function OfiyatBlockExplorer({
       >{block.number}</button>)}
     </div>
 
-    <section id={panelId} className="ofiyat-explorer__panel" aria-label={selectedBlock === null ? t.chooseFirst : t.mapping}>
+    <section id={panelId} className="ofiyat-explorer__panel" aria-label={selectedBlock === null ? t.chooseFirst : t.selectionContext}>
+      <ol className="ofiyat-explorer__progress" aria-label={t.progressLabel}>
+        {t.steps.map((label, index) => <li key={label} data-active={index + 1 <= activeStep} data-current={index + 1 === activeStep} aria-current={index + 1 === activeStep ? 'step' : undefined}>
+          <i aria-hidden="true">{String(index + 1).padStart(2, '0')}</i><b>{label}</b>
+        </li>)}
+      </ol>
       {selectedBlock === null ? <div className="ofiyat-explorer__empty">
         <small>01 / 04</small>
         <h2>{t.chooseFirst}</h2>
         <p id={helpId}>{t.mapping}</p>
         {inventoryState !== 'ready' ? <p className="ofiyat-explorer__inventory-state" role="status">{inventoryMessage}</p> : null}
-        <a href={inventoryState === 'error' ? catalogHref : parkingHref(catalogHref)}>{inventoryState === 'error' ? t.openCatalog : t.parking}<span>↗</span></a>
+        <div className="ofiyat-explorer__overview" aria-label={t.overview}>
+          <article><strong>07</strong><span>{t.facadeAreas}</span></article>
+          <article><strong>02</strong><span>{t.phasesCount}</span></article>
+          <article><strong>{inventoryState === 'ready' ? String(availableHomes).padStart(2, '0') : '—'}</strong><span>{t.homesAvailable}</span></article>
+        </div>
+        <a href={catalogHref}>{t.openCatalog}<span>↗</span></a>
       </div> : <>
         <header>
           <div><small>{t.block}</small><strong>{selectedBlock}</strong></div>
-          <p id={helpId}>{t.mapping}</p>
+          <p id={helpId}>{t.selectionContext}</p>
           <button type="button" onClick={clearAll}>{t.clear}</button>
         </header>
 
@@ -422,7 +444,6 @@ export function OfiyatBlockExplorer({
         </div>}
       </>}
     </section>
-    <p className="ofiyat-explorer__source">{t.source}</p>
     <span className="kayan-sr-only" role="status" aria-live="polite">{liveMessage}</span>
   </div>;
 }

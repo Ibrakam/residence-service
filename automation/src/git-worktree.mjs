@@ -3,8 +3,14 @@ import crypto from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 import { runCommand } from "./command.mjs";
-import { ConfigError, PolicyError, RemoteMovedError, RunnerError } from "./errors.mjs";
-import { assertSafeChangedPaths, isPathInside, safeSlug, scanAddedLinesForSecrets } from "./sanitize.mjs";
+import { ConfigError, PolicyError, PublishingUncertainError, RemoteMovedError, RunnerError } from "./errors.mjs";
+import {
+  assertSafeChangedPaths,
+  assertSingleResidenceProject,
+  isPathInside,
+  safeSlug,
+  scanAddedLinesForSecrets,
+} from "./sanitize.mjs";
 
 function trustedGitEnv(extra = {}) {
   const env = {
@@ -13,6 +19,7 @@ function trustedGitEnv(extra = {}) {
     LANG: process.env.LANG || "C.UTF-8",
     LC_ALL: process.env.LC_ALL || "C.UTF-8",
     GIT_TERMINAL_PROMPT: "0",
+    GH_PROMPT_DISABLED: "1",
     GIT_CONFIG_NOSYSTEM: "1",
     GIT_CONFIG_GLOBAL: "/dev/null",
     GIT_ATTR_NOSYSTEM: "1",
@@ -37,6 +44,20 @@ function parseGitModes(text) {
     if (mode && filename) modes.set(filename, mode);
   }
   return modes;
+}
+
+function parseGitIndexEntries(text) {
+  const entries = new Map();
+  for (const record of splitNul(text)) {
+    const tab = record.indexOf("\t");
+    if (tab < 0) continue;
+    const [mode, oid, stage] = record.slice(0, tab).split(/\s+/);
+    const filename = record.slice(tab + 1);
+    if (mode && /^[a-f0-9]{40,64}$/.test(oid || "") && stage === "0" && filename) {
+      entries.set(filename, { mode, oid });
+    }
+  }
+  return entries;
 }
 
 async function realpathExisting(value, label) {
@@ -81,6 +102,38 @@ export class GitWorkspace {
     });
   }
 
+  async assertGitHubCredentialHelper() {
+    const pin = this.config.githubCliPin;
+    if (!this.config.githubCredentialHelperEnabled || !pin) {
+      throw new ConfigError("The pinned GitHub credential helper is unavailable");
+    }
+    const linkStat = await fs.lstat(pin.configuredPath);
+    const realPath = await fs.realpath(pin.configuredPath);
+    const stat = await fs.stat(realPath);
+    if (linkStat.dev !== pin.linkDev || linkStat.ino !== pin.linkIno || linkStat.mode !== pin.linkMode
+      || realPath !== pin.realPath || !stat.isFile() || (stat.mode & 0o111) === 0
+      || stat.uid !== pin.uid || stat.dev !== pin.dev || stat.ino !== pin.ino || stat.mode !== pin.mode
+      || (stat.mode & 0o022) !== 0) {
+      throw new ConfigError("The fixed GitHub CLI identity or permissions changed after runner startup");
+    }
+    const digest = sha256(await fs.readFile(realPath));
+    if (digest !== pin.sha256) throw new ConfigError("The fixed GitHub CLI content changed after runner startup");
+    return realPath;
+  }
+
+  async gitRemote(argv, options = {}) {
+    if (!this.config.githubCredentialHelperEnabled) return this.git(argv, options);
+    const githubCli = await this.assertGitHubCredentialHelper();
+    return this.git([
+      "-c", "credential.helper=",
+      "-c", `credential.https://github.com.helper=!${githubCli} auth git-credential`,
+      "-c", "credential.useHttpPath=true",
+      "-c", "http.sslVerify=true",
+      "-c", "http.followRedirects=initial",
+      ...argv,
+    ], options);
+  }
+
   async initialize() {
     this.repoRoot = await realpathExisting(this.config.repoRoot, "RUNNER_REPO_ROOT");
     const topLevel = (await this.git(["rev-parse", "--show-toplevel"], { cwd: this.repoRoot, label: "git.validate_root" })).stdout.trim();
@@ -94,7 +147,18 @@ export class GitWorkspace {
     await fs.mkdir(this.worktreeRoot, { recursive: true, mode: 0o700 });
     await fs.chmod(this.worktreeRoot, 0o700);
     this.worktreeRoot = await fs.realpath(this.worktreeRoot);
-    await this.git(["remote", "get-url", "origin"], { label: "git.validate_origin" });
+    const origin = (await this.git(["remote", "get-url", "origin"], { label: "git.validate_origin" })).stdout.trim();
+    if (this.config.dryRun === false) {
+      if (!this.config.expectedOrigin || origin !== this.config.expectedOrigin) {
+        throw new ConfigError("Production repository origin does not match the fixed approved origin");
+      }
+      const localKeys = splitNul((await this.git(["config", "--local", "--null", "--name-only", "--list"], {
+        label: "git.validate_production_config",
+      })).stdout).map((key) => key.toLowerCase());
+      const unsafeKey = localKeys.find((key) => /^(?:credential\.|http\.|url\.|include\.|includeif\.|core\.(?:sshcommand|gitproxy)|remote\.origin\.pushurl)/.test(key));
+      if (unsafeKey) throw new ConfigError(`Production repository contains a forbidden local Git setting: ${unsafeKey}`);
+      if (this.config.githubCredentialHelperEnabled) await this.assertGitHubCredentialHelper();
+    }
     const common = (await this.git(["rev-parse", "--git-common-dir"], { cwd: this.repoRoot, label: "git.resolve_common_dir" })).stdout.trim();
     this.commonGitDir = await realpathExisting(path.resolve(this.repoRoot, common), "Repository common git dir");
   }
@@ -122,7 +186,7 @@ export class GitWorkspace {
     throw new PolicyError("Worktree is not registered in the trusted root repository");
   }
 
-  async captureWorktreeContext(worktreePath, baseSha) {
+  async captureWorktreeContext(worktreePath, expectedHeadSha) {
     const resolvedWorktree = await fs.realpath(worktreePath);
     const pointerPath = path.join(resolvedWorktree, ".git");
     const pointerStat = await fs.lstat(pointerPath);
@@ -139,7 +203,7 @@ export class GitWorkspace {
     if (resolvedCommon !== this.commonGitDir) throw new PolicyError("Worktree common-dir escaped the trusted root repository");
     const headPath = path.join(gitDir, "HEAD");
     const headBytes = await readSmallFile(headPath, "Worktree HEAD");
-    if (headBytes.toString("utf8").trim() !== baseSha) throw new PolicyError("Worktree HEAD file does not match the recorded base");
+    if (headBytes.toString("utf8").trim() !== expectedHeadSha) throw new PolicyError("Worktree HEAD file does not match the recorded recovery checkpoint");
     const configPath = path.join(this.commonGitDir, "config");
     const configBytes = await readSmallFile(configPath, "Repository git config");
     const gitDirStat = await fs.lstat(gitDir);
@@ -200,7 +264,7 @@ export class GitWorkspace {
   }
 
   async fetchBase(signal) {
-    await this.git(["fetch", "--no-tags", "origin", "+refs/heads/main:refs/remotes/origin/main"], {
+    await this.gitRemote(["fetch", "--no-tags", "origin", "+refs/heads/main:refs/remotes/origin/main"], {
       label: "git.fetch_origin_main",
       signal,
       timeoutMs: this.config.commandTimeoutMs,
@@ -217,20 +281,23 @@ export class GitWorkspace {
     return result;
   }
 
-  async validateWorktree(worktreePath, baseSha) {
+  async validateWorktree(worktreePath, baseSha, expectedHeadSha = baseSha) {
     const resolved = await realpathExisting(worktreePath, "Recovered worktree");
     if (!isPathInside(this.worktreeRoot, resolved)) throw new PolicyError("Recovered worktree is outside RUNNER_WORKTREE_ROOT");
-    await this.captureWorktreeContext(resolved, baseSha);
+    await this.captureWorktreeContext(resolved, expectedHeadSha);
     const topLevel = (await this.worktreeGit(resolved, ["rev-parse", "--show-toplevel"], { label: "git.validate_worktree" })).stdout.trim();
     if (await fs.realpath(topLevel) !== resolved) throw new PolicyError("Recovered directory is not a worktree top-level");
     const head = (await this.worktreeGit(resolved, ["rev-parse", "HEAD^{commit}"], { label: "git.worktree_head" })).stdout.trim();
-    if (head !== baseSha) throw new PolicyError("Recovered worktree HEAD does not equal its recorded origin/main base");
+    if (head !== expectedHeadSha) throw new PolicyError("Recovered worktree HEAD does not equal its durable checkpoint");
     return resolved;
   }
 
   async prepareWorktree(ticket, previousState, signal) {
     if (previousState?.worktreePath && previousState?.baseSha) {
-      const worktreePath = await this.validateWorktree(previousState.worktreePath, previousState.baseSha);
+      const expectedHeadSha = /^[a-f0-9]{40,64}$/.test(previousState.commitSha || "")
+        ? previousState.commitSha
+        : previousState.baseSha;
+      const worktreePath = await this.validateWorktree(previousState.worktreePath, previousState.baseSha, expectedHeadSha);
       this.logger.info("worktree.recovered", { ticketId: ticket.id, worktreePath, baseSha: previousState.baseSha });
       return { worktreePath, baseSha: previousState.baseSha, recovered: true };
     }
@@ -278,13 +345,25 @@ export class GitWorkspace {
     } catch (cause) {
       throw new PolicyError(cause.message, { cause });
     }
+    const maxChangedFiles = this.config.maxChangedFiles ?? 25;
+    if (normalized.length > maxChangedFiles) {
+      throw new PolicyError(`Ticket changes ${normalized.length} files; maximum is ${maxChangedFiles}`);
+    }
+    if (this.config.enforceSingleProjectScope === true) {
+      try {
+        assertSingleResidenceProject(normalized);
+      } catch (cause) {
+        throw new PolicyError(cause.message, { cause });
+      }
+    }
 
     await this.worktreeGit(worktreePath, ["add", "-A", "--"], { label: "git.stage", signal });
     await this.worktreeGit(worktreePath, ["diff", "--cached", "--check"], { label: "git.staged_diff_check", signal });
-    const stagedModes = parseGitModes((await this.worktreeGit(worktreePath, ["ls-files", "--stage", "-z", "--", ...normalized], {
+    const stagedIndex = parseGitIndexEntries((await this.worktreeGit(worktreePath, ["ls-files", "--stage", "-z", "--", ...normalized], {
       label: "git.staged_modes",
       signal,
     })).stdout);
+    const stagedModes = new Map([...stagedIndex].map(([filename, entry]) => [filename, entry.mode]));
     const baseModes = parseGitModes((await this.worktreeGit(worktreePath, ["ls-tree", "-r", "-z", baseSha, "--", ...normalized], {
       label: "git.base_modes",
       signal,
@@ -300,6 +379,34 @@ export class GitWorkspace {
       if (modes.some((mode) => mode !== "100644")) {
         throw new PolicyError(`Unsupported git file mode in ticket change: ${changedPath}`);
       }
+      const stagedEntry = stagedIndex.get(changedPath);
+      if (stagedEntry) {
+        const blobSizeText = (await this.git(["cat-file", "-s", stagedEntry.oid], {
+          cwd: this.repoRoot,
+          label: "git.staged_blob_size",
+          signal,
+        })).stdout.trim();
+        const blobSize = Number.parseInt(blobSizeText, 10);
+        const maxChangedBlobBytes = this.config.maxChangedBlobBytes ?? 16 * 1024 * 1024;
+        if (!Number.isSafeInteger(blobSize) || blobSize < 0 || blobSize > maxChangedBlobBytes) {
+          throw new PolicyError(`Changed blob exceeds the ${maxChangedBlobBytes}-byte limit: ${changedPath}`);
+        }
+      }
+    }
+    const numstat = (await this.worktreeGit(worktreePath, ["diff", "--cached", "--numstat", "--no-renames", "-z", "--"], {
+      label: "git.changed_line_count",
+      signal,
+    })).stdout;
+    let changedLines = 0;
+    for (const record of splitNul(numstat)) {
+      const match = /^(\d+|-)\t(\d+|-)\t/.exec(record);
+      if (!match) throw new PolicyError("Git returned an invalid changed-line count");
+      if (match[1] !== "-") changedLines += Number.parseInt(match[1], 10);
+      if (match[2] !== "-") changedLines += Number.parseInt(match[2], 10);
+    }
+    const maxChangedLines = this.config.maxChangedLines ?? 3_000;
+    if (!Number.isSafeInteger(changedLines) || changedLines > maxChangedLines) {
+      throw new PolicyError(`Ticket changes ${changedLines} lines; maximum is ${maxChangedLines}`);
     }
     const diff = (await this.worktreeGit(worktreePath, ["diff", "--cached", "--no-ext-diff", "--unified=0", "--"], {
       label: "git.secret_scan_diff",
@@ -383,22 +490,49 @@ export class GitWorkspace {
     await this.assertWorktreeIntegrity(worktreePath);
     await this.fetchBase(signal);
     const observed = (await this.git(["rev-parse", "refs/remotes/origin/main^{commit}"], { label: "git.remote_main_before_push" })).stdout.trim();
+    if (observed === commitSha) return { alreadyPublished: true };
     if (observed !== baseSha) throw new RemoteMovedError();
     const parent = (await this.git(["rev-parse", `${commitSha}^1^{commit}`], { cwd: this.repoRoot, label: "git.push_commit_parent" })).stdout.trim();
     if (parent !== baseSha) throw new PolicyError("Runner commit changed or is not a direct child of the recorded base");
 
-    await this.git([
-      "push",
-      "--no-verify",
-      "--porcelain",
-      `--force-with-lease=refs/heads/main:${baseSha}`,
-      "origin",
-      `${commitSha}:refs/heads/main`,
-    ], { cwd: this.repoRoot, label: "git.push_commit_main", signal, timeoutMs: this.config.commandTimeoutMs });
+    try {
+      await this.gitRemote([
+        "push",
+        "--no-verify",
+        "--porcelain",
+        `--force-with-lease=refs/heads/main:${baseSha}`,
+        "origin",
+        `${commitSha}:refs/heads/main`,
+      ], { cwd: this.repoRoot, label: "git.push_commit_main", signal, timeoutMs: this.config.commandTimeoutMs });
+    } catch (cause) {
+      try {
+        await this.fetchBase(signal);
+        const reconciled = (await this.git(["rev-parse", "refs/remotes/origin/main^{commit}"], { label: "git.remote_main_after_push_error" })).stdout.trim();
+        if (reconciled === commitSha) return { reconciledAfterError: true };
+        if (reconciled === baseSha) throw cause;
+      } catch (reconcileCause) {
+        if (reconcileCause === cause) throw cause;
+      }
+      throw new PublishingUncertainError("Git push result could not be reconciled against origin/main", { cause });
+    }
 
+    try {
+      await this.fetchBase(signal);
+      const published = (await this.git(["rev-parse", "refs/remotes/origin/main^{commit}"], { label: "git.remote_main_after_push" })).stdout.trim();
+      if (published !== commitSha) throw new PublishingUncertainError("origin/main did not resolve to the pushed commit");
+    } catch (cause) {
+      if (cause instanceof PublishingUncertainError) throw cause;
+      throw new PublishingUncertainError("Git push succeeded but origin/main verification was unavailable", { cause });
+    }
+    return { alreadyPublished: false };
+  }
+
+  async resolveOriginMain(signal) {
     await this.fetchBase(signal);
-    const published = (await this.git(["rev-parse", "refs/remotes/origin/main^{commit}"], { label: "git.remote_main_after_push" })).stdout.trim();
-    if (published !== commitSha) throw new RunnerError("origin/main did not resolve to the pushed commit", { code: "PUSH_VERIFICATION_FAILED" });
+    return (await this.git(["rev-parse", "refs/remotes/origin/main^{commit}"], {
+      label: "git.resolve_origin_main",
+      signal,
+    })).stdout.trim();
   }
 
   async rollbackPush({ worktreePath, baseSha, commitSha, signal }) {
@@ -407,7 +541,7 @@ export class GitWorkspace {
     if (observed !== commitSha) {
       throw new RemoteMovedError("origin/main moved after this ticket push; rollback was not attempted");
     }
-    await this.git([
+    await this.gitRemote([
       "push",
       "--no-verify",
       "--porcelain",

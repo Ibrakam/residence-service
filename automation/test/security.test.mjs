@@ -2,9 +2,20 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { buildAgentPrompt, buildCodexArgs, parseCodexEvent } from "../src/codex-runner.mjs";
-import { DEFAULT_VERIFY_COMMANDS, parseEnvFile, validateStaticConfig } from "../src/config.mjs";
+import {
+  DEFAULT_DOCKER_IMAGE,
+  DEFAULT_DOCKER_HOST_PIN,
+  DEFAULT_VERIFY_COMMANDS,
+  PRODUCTION_ENABLE_CONFIRMATION,
+  PRODUCTION_PUBLIC_ORIGIN,
+  PRODUCTION_WORKER_API_URL,
+  parseEnvFile,
+  validateStaticConfig,
+} from "../src/config.mjs";
+import { assertContainerStoppedInspect, FIXED_NPM_CI_ARGS } from "../src/docker-verification.mjs";
 import { createLogger } from "../src/logger.mjs";
 import { runCommand } from "../src/command.mjs";
 import {
@@ -14,7 +25,8 @@ import {
   defaultCodexSensitivePaths,
   sandboxArgv,
 } from "../src/seatbelt.mjs";
-import { runVerification, validateDeployScript } from "../src/verification.mjs";
+import { deploymentFailureIsUncertain, queryDeploymentStatus, runVerification, validateDeployScript } from "../src/verification.mjs";
+import { CommandError } from "../src/errors.mjs";
 import { cleanupSealedArtifact, sealBuildArtifact, verifySealedArtifact } from "../src/artifact-seal.mjs";
 import {
   assertSafeChangedPaths,
@@ -22,6 +34,8 @@ import {
   safeTicketId,
   scanAddedLinesForSecrets,
 } from "../src/sanitize.mjs";
+
+const AUTOMATION_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 test("prompt treats the ticket as escaped untrusted data and is passed separately from argv", () => {
   const ticket = {
@@ -49,14 +63,83 @@ test("prompt treats the ticket as escaped untrusted data and is passed separatel
   assert.equal(args.includes("workspace-write"), false);
 });
 
-test("production push/deploy mode is disabled at configuration validation", () => {
-  assert.throws(() => validateStaticConfig({
+test("production mode requires every explicit fixed opt-in", async () => {
+  const productionConfig = {
     codexBin: process.execPath,
     heartbeatIntervalMs: 5_000,
     leaseSeconds: 30,
-    testMode: true,
+    testMode: false,
+    serverBaseUrl: new URL(PRODUCTION_WORKER_API_URL),
+    productionPublicUrl: new URL(`${PRODUCTION_PUBLIC_ORIGIN}/`),
+    apiToken: "fixture-token",
     dryRun: false,
-  }), /Automatic push\/deploy is disabled/);
+    autoDeployEnabled: false,
+    autoDeployConfirmation: "",
+    expectedOrigin: "fixture-origin",
+    requiredExpectedOrigin: "fixture-origin",
+    dockerBin: process.execPath,
+    requiredDockerBinPath: process.execPath,
+    dockerImage: DEFAULT_DOCKER_IMAGE,
+    dockerPlatform: DEFAULT_DOCKER_HOST_PIN.platform,
+    dockerArchitecture: DEFAULT_DOCKER_HOST_PIN.architecture,
+    dockerChildImage: DEFAULT_DOCKER_HOST_PIN.childImage,
+    dockerExpectedImageId: DEFAULT_DOCKER_HOST_PIN.imageId,
+    dockerMemory: "4g",
+    dockerCpus: "3",
+    githubCredentialHelperEnabled: true,
+    githubCliBin: process.execPath,
+    requiredGithubCliPath: process.execPath,
+    deployScript: process.execPath,
+    requiredDeployScriptPath: process.execPath,
+    requiredDeployOwnerUid: typeof process.getuid === "function" ? process.getuid() : 0,
+    requiredDeployMode: (await fs.stat(process.execPath)).mode & 0o777,
+    deployArgs: [],
+    deployEnvAllowlist: [],
+    deployEnvironment: {},
+    smokeUrls: [new URL(`${PRODUCTION_PUBLIC_ORIGIN}/`)],
+    allowedPrefixes: ["website"],
+    keepSuccessfulWorktrees: false,
+  };
+
+  assert.throws(() => validateStaticConfig({ ...productionConfig }), /RUNNER_AUTO_DEPLOY_ENABLED=true/);
+  assert.throws(() => validateStaticConfig({
+    ...productionConfig,
+    autoDeployEnabled: true,
+  }), /RUNNER_AUTO_DEPLOY_CONFIRM/);
+  assert.throws(() => validateStaticConfig({
+    ...productionConfig,
+    autoDeployEnabled: true,
+    autoDeployConfirmation: PRODUCTION_ENABLE_CONFIRMATION,
+    serverBaseUrl: new URL("https://example.test/worker/"),
+  }), /fixed worker API URL/);
+  assert.throws(() => validateStaticConfig({
+    ...productionConfig,
+    autoDeployEnabled: true,
+    autoDeployConfirmation: PRODUCTION_ENABLE_CONFIRMATION,
+    deployArgs: ["from-ticket"],
+  }), /must be empty/);
+  assert.throws(() => validateStaticConfig({
+    ...productionConfig,
+    autoDeployEnabled: true,
+    autoDeployConfirmation: PRODUCTION_ENABLE_CONFIRMATION,
+    smokeUrls: [new URL("https://example.test/")],
+  }), /Production smoke URLs/);
+  assert.throws(() => validateStaticConfig({
+    ...productionConfig,
+    autoDeployEnabled: true,
+    autoDeployConfirmation: PRODUCTION_ENABLE_CONFIRMATION,
+    keepSuccessfulWorktrees: true,
+  }), /RUNNER_KEEP_SUCCESSFUL_WORKTREES=false/);
+
+  const valid = {
+    ...productionConfig,
+    autoDeployEnabled: true,
+    autoDeployConfirmation: PRODUCTION_ENABLE_CONFIRMATION,
+  };
+  assert.doesNotThrow(() => validateStaticConfig(valid));
+  assert.match(valid.dockerBinPin.sha256, /^[a-f0-9]{64}$/);
+  assert.match(valid.githubCliPin.sha256, /^[a-f0-9]{64}$/);
+  assert.match(valid.deployScriptPin.sha256, /^[a-f0-9]{64}$/);
 });
 
 test("JSONL parser captures thread id and final response", () => {
@@ -65,6 +148,12 @@ test("JSONL parser captures thread id and final response", () => {
   parseCodexEvent('{"type":"item.completed","item":{"type":"agent_message","text":"Fixed reset"}}', state);
   assert.equal(state.threadId, "thread-1");
   assert.equal(state.finalResponse, "Fixed reset");
+});
+
+test("artifact export requires a confirmed stopped verifier PID namespace", () => {
+  assert.doesNotThrow(() => assertContainerStoppedInspect({ State: { Running: false } }));
+  assert.throws(() => assertContainerStoppedInspect({ State: { Running: true } }), /shutdown could not be confirmed/);
+  assert.throws(() => assertContainerStoppedInspect({}), /shutdown could not be confirmed/);
 });
 
 test("path and secret policies reject sensitive changes", () => {
@@ -79,6 +168,14 @@ test("path and secret policies reject sensitive changes", () => {
   assert.throws(() => assertSafeChangedPaths(["website/.env.production"], {
     allowedPrefixes: ["website"],
     deniedPatterns: [/(^|\/)\.env(?:\.|$)/],
+  }), /denied by policy/);
+  assert.throws(() => assertSafeChangedPaths(["website/app/v1/leads/route.ts"], {
+    allowedPrefixes: ["website"],
+    deniedPatterns: [/^website\/app\/(?:api|v1)(?:\/|$)/],
+  }), /denied by policy/);
+  assert.throws(() => assertSafeChangedPaths(["website/proxy.ts"], {
+    allowedPrefixes: ["website"],
+    deniedPatterns: [/^website\/proxy\.(?:ts|js|mts|mjs)$/],
   }), /denied by policy/);
   const fakeTelegramToken = "1234567890:AAExampleTokenForTestsOnly_123456789";
   const fakeJwt = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0LXVzZXIifQ.signatureForTestsOnly";
@@ -117,7 +214,8 @@ test("default dependency install cannot run lifecycle scripts", async (t) => {
     packages: { "": { name: "sandbox-install-fixture", version: "1.0.0", hasInstallScript: true } },
   }));
   const install = DEFAULT_VERIFY_COMMANDS.find((command) => command.name === "website-install");
-  assert.deepEqual(install.argv, ["npm", "ci", "--ignore-scripts", "--no-audit", "--no-fund"]);
+  assert.deepEqual(install.argv, ["npm", "ci", "--include=dev", "--ignore-scripts", "--no-audit", "--no-fund"]);
+  assert.deepEqual(FIXED_NPM_CI_ARGS, install.argv);
   await runVerification({
     config: {
       stateDir: path.join(root, "state"),
@@ -130,6 +228,25 @@ test("default dependency install cannot run lifecycle scripts", async (t) => {
     logger: createLogger({ runnerId: "test", stream: { write() {} } }),
   });
   await assert.rejects(fs.access(path.join(worktree, "pwned")));
+});
+
+test("launchd does not leak NODE_ENV=production into dependency installation", async () => {
+  const template = await fs.readFile(path.join(AUTOMATION_ROOT, "launchd", "com.tencorp.residence-ticket-runner.plist.template"), "utf8");
+  assert.doesNotMatch(template, /<key>NODE_ENV<\/key>/);
+});
+
+test("root deployer preserves nginx-readable immutable releases and disk reserve", async () => {
+  const script = await fs.readFile(path.join(AUTOMATION_ROOT, "deploy", "deploy-residence-root.sh"), "utf8");
+  assert.match(script, /readonly MIN_FREE_KB=10485760/);
+  assert.match(script, /find "\$STAGING_RELEASE\/frontend" -type d -exec chmod 0555/);
+  assert.match(script, /find "\$STAGING_RELEASE\/frontend" -type f -exec chmod 0444/);
+  assert.match(script, /chmod 0755 "\$STAGING_RELEASE\/frontend"/);
+  assert.match(script, /runuser -u "\$NGINX_USER" -- \/usr\/bin\/test -r/);
+  assert.match(script, /Rechecking origin\/main immediately before the production switch/);
+  assert.ok(script.indexOf('smoke_routes "$PUBLIC_ORIGIN" 5') < script.indexOf('"$FINAL_RELEASE/DEPLOY_CONFIRMED"'));
+  for (const project of ["4u", "bayterak", "botanika-saroyi", "flagman", "jomiy", "maftun-makon", "meros", "mirador", "ofiyat", "regnum-plaza", "sado", "sun", "voha", "yangibaxt", "zamon"]) {
+    assert.match(script, new RegExp(`\\n  ${project.replaceAll("-", "\\-")}\\n`));
+  }
 });
 
 test("Seatbelt runs lint/build while denying outside-home reads and all verification network", async (t) => {
@@ -253,6 +370,53 @@ test("trusted deploy wrapper identity and SHA-256 are rechecked before execution
   await assert.rejects(validateDeployScript(config, worktree), /content changed/);
 });
 
+test("deployment status accepts only the fixed deployed/not-deployed/unknown contract", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "ticket-deploy-status-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const worktree = path.join(root, "worktree");
+  const wrapper = path.join(root, "trusted-wrapper");
+  await fs.mkdir(worktree);
+  await fs.writeFile(wrapper, `#!/bin/sh
+[ "$1" = "--status" ] || exit 64
+case "$2" in
+  ${"a".repeat(40)}) echo deployed; exit 0 ;;
+  ${"b".repeat(40)}) echo not-deployed; exit 3 ;;
+  *) exit 75 ;;
+esac
+`, { mode: 0o700 });
+  const stat = await fs.lstat(wrapper);
+  const crypto = await import("node:crypto");
+  const config = {
+    deployScript: wrapper,
+    deployScriptPin: {
+      realPath: await fs.realpath(wrapper),
+      sha256: crypto.createHash("sha256").update(await fs.readFile(wrapper)).digest("hex"),
+      uid: stat.uid,
+      dev: stat.dev,
+      ino: stat.ino,
+      mode: stat.mode,
+    },
+    repoRoot: root,
+    deployTimeoutMs: 5_000,
+  };
+  assert.equal(await queryDeploymentStatus({ config, worktreePath: worktree, commitSha: "a".repeat(40) }), "deployed");
+  assert.equal(await queryDeploymentStatus({ config, worktreePath: worktree, commitSha: "b".repeat(40) }), "not-deployed");
+  await assert.rejects(queryDeploymentStatus({ config, worktreePath: worktree, commitSha: "c".repeat(40) }), /could not be queried authoritatively/);
+});
+
+test("timeout, signal, and unknown deploy exits require reconciliation", () => {
+  assert.equal(deploymentFailureIsUncertain(new CommandError("unknown", { exitCode: 75 })), true);
+  assert.equal(deploymentFailureIsUncertain(new CommandError("timeout", { exitCode: null, timedOut: true })), true);
+  assert.equal(deploymentFailureIsUncertain(new CommandError("killed", { exitCode: null })), true);
+  assert.equal(deploymentFailureIsUncertain(new CommandError("aborted", { exitCode: 143 }), { signalAborted: true }), true);
+  assert.equal(deploymentFailureIsUncertain(new CommandError("ordinary failure", { exitCode: 7 })), true);
+  assert.equal(deploymentFailureIsUncertain(new CommandError("missing marker", { exitCode: 3 })), true);
+  assert.equal(deploymentFailureIsUncertain(new CommandError("authoritative failure", {
+    exitCode: 3,
+    stderr: "DEPLOYMENT_NOT_DEPLOYED\n",
+  })), false);
+});
+
 test("detached verifier mutator cannot change the sealed deployment artifact", async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "ticket-artifact-seal-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
@@ -263,7 +427,7 @@ test("detached verifier mutator cannot change the sealed deployment artifact", a
   const target = path.join(artifact, "server.js");
   await fs.writeFile(target, "sealed-original\n");
   await fs.writeFile(path.join(artifact, "package.json"), "{}\n");
-  await fs.writeFile(path.join(artifact, "STANDALONE_RUNTIME.json"), "{}\n");
+  await fs.writeFile(path.join(artifact, "STANDALONE_RUNTIME.json"), '{"schemaVersion":2,"packages":[]}\n');
   const mutator = `const {spawn}=require("child_process");const code='setTimeout(()=>require("fs").writeFileSync(${JSON.stringify(target)},"late-mutation\\n"),350)';const child=spawn(process.execPath,["-e",code],{detached:true,stdio:"ignore"});child.unref();`;
   const config = {
     stateDir: path.join(root, "state"),
@@ -285,6 +449,24 @@ test("detached verifier mutator cannot change the sealed deployment artifact", a
   });
   await new Promise((resolve) => setTimeout(resolve, 800));
   assert.equal(await fs.readFile(path.join(seal.artifactPath, "server.js"), "utf8"), "sealed-original\n");
+  assert.equal((await fs.stat(seal.artifactPath)).mode & 0o777, 0o555);
+  assert.equal((await fs.stat(path.join(seal.artifactPath, "server.js"))).mode & 0o777, 0o444);
   assert.equal(await verifySealedArtifact(seal), true);
   await cleanupSealedArtifact(seal);
+});
+
+test("cross-architecture deployment seal rejects native runtime binaries", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "ticket-native-artifact-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const worktree = path.join(root, "worktree");
+  const artifact = path.join(worktree, "website", "dist", "standalone");
+  await fs.mkdir(path.join(artifact, "dist", "client"), { recursive: true });
+  await fs.writeFile(path.join(artifact, "server.js"), "ok\n");
+  await fs.writeFile(path.join(artifact, "native-addon.node"), Buffer.from([0x7f, 0x45, 0x4c, 0x46]));
+  await assert.rejects(sealBuildArtifact({
+    config: { stateDir: path.join(root, "state") },
+    worktreePath: worktree,
+    ticketId: "NATIVE",
+    commitSha: "d".repeat(40),
+  }), /native runtime file/);
 });

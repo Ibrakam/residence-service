@@ -1,0 +1,4 @@
+# Replace the key fields with the contents of
+# ~/.ssh/tencorp_ticket_deploy_ed25519.pub, then append this single line to
+# /root/.ssh/authorized_keys. Keep `restrict` and the forced command unchanged.
+restrict,command="/usr/local/sbin/residence-ticket-deploy-gate" ssh-ed25519 REPLACE_WITH_DEDICATED_PUBLIC_KEY tencorp-ticket-deploy

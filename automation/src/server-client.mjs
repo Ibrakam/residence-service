@@ -144,7 +144,9 @@ export class TicketServerClient {
       body: {
         summary: cleanText(result.summary || "Ticket completed", 12_000),
         commitSha: cleanText(result.commitSha || "", 128),
-        productionUrl: result.deployment?.deployed && this.config.smokeUrls[0] ? this.config.smokeUrls[0].toString() : "",
+        productionUrl: result.deployment?.deployed && this.config.productionPublicUrl
+          ? this.config.productionPublicUrl.toString()
+          : "",
       },
       leaseToken,
     });

@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -16,6 +17,8 @@ const FIXED_BUILD_ENV = {
   NEXT_PUBLIC_CATALOG_API_URL: "/residence-api/catalog",
 };
 
+const FIXED_NPM_CI_ARGS = ["npm", "ci", "--include=dev", "--ignore-scripts", "--no-audit", "--no-fund"];
+
 function dockerEnv(homePath) {
   return {
     HOME: homePath,
@@ -28,11 +31,11 @@ function dockerEnv(homePath) {
   };
 }
 
-export function buildDockerCreateArgs(config, containerName) {
+export function buildDockerCreateArgs(config, containerName, volumeName) {
   return [
     "create",
     "--name", containerName,
-    "--platform", "linux/amd64",
+    "--platform", config.dockerPlatform,
     "--network", "bridge",
     "--cap-drop", "ALL",
     "--security-opt", "no-new-privileges:true",
@@ -41,13 +44,16 @@ export function buildDockerCreateArgs(config, containerName) {
     "--cpus", config.dockerCpus || "3",
     "--read-only",
     "--user", "1000:1000",
-    "--workdir", "/workspace/source/website",
-    "--tmpfs", "/workspace:rw,exec,nosuid,nodev,size=6442450944,mode=1777",
+    // Keep the configured workdir at the already-owned volume root. Docker
+    // otherwise pre-creates /workspace/source/website as root before uid 1000
+    // can stream the source archive into the volume.
+    "--workdir", "/workspace",
+    "--mount", `type=volume,source=${volumeName},target=/workspace,volume-nocopy`,
     "--tmpfs", "/tmp:rw,exec,nosuid,nodev,size=1073741824,mode=1777",
     "--tmpfs", "/home/node/.npm:rw,nosuid,nodev,size=1073741824,mode=0700,uid=1000,gid=1000",
     "--stop-timeout", "5",
     "--entrypoint", "/usr/bin/sleep",
-    config.dockerImage,
+    config.dockerChildImage,
     "infinity",
   ];
 }
@@ -68,7 +74,11 @@ function parseInspect(stdout, label) {
   return parsed;
 }
 
-export function assertHardenedContainerInspect(inspect, config) {
+export function assertHardenedContainerInspect(inspect, config, {
+  volumeName,
+  expectedNetworkMode = "bridge",
+  workspaceReadOnly = false,
+} = {}) {
   const host = inspect.HostConfig || {};
   if (Array.isArray(host.Binds) && host.Binds.length > 0) throw new PolicyError("Verifier container unexpectedly has a host bind mount");
   if (Array.isArray(inspect.Mounts) && inspect.Mounts.some((mount) => mount.Type === "bind")) {
@@ -79,15 +89,61 @@ export function assertHardenedContainerInspect(inspect, config) {
   if (!Array.isArray(host.SecurityOpt) || !host.SecurityOpt.some((entry) => entry === "no-new-privileges:true")) {
     throw new PolicyError("Verifier container is missing no-new-privileges");
   }
-  if (host.NetworkMode !== "default" && host.NetworkMode !== "bridge") throw new PolicyError("Verifier container has an unexpected network mode");
+  if (host.NetworkMode !== expectedNetworkMode && !(expectedNetworkMode === "bridge" && host.NetworkMode === "default")) {
+    throw new PolicyError("Verifier container has an unexpected network mode");
+  }
   if (inspect.Config?.User !== "1000:1000") throw new PolicyError("Verifier container is not running as the unprivileged node uid");
   if (inspect.Platform && inspect.Platform !== "linux") throw new PolicyError("Verifier container is not Linux");
   const image = String(inspect.Image || "");
   if (!image.startsWith("sha256:")) throw new PolicyError("Verifier container image did not resolve to an immutable image id");
-  if (config.dockerPlatform !== "linux/amd64") throw new PolicyError("Production verifier platform must remain linux/amd64");
+  if (!/^linux\/(?:arm64|amd64)$/.test(config.dockerPlatform)
+    || config.dockerArchitecture !== config.dockerPlatform.slice("linux/".length)) {
+    throw new PolicyError("Production verifier platform is not the reviewed native Linux host mapping");
+  }
+  if (image !== config.dockerExpectedImageId) {
+    throw new PolicyError("Verifier container did not resolve to the reviewed child image id");
+  }
+  const workspaceMount = Array.isArray(inspect.Mounts)
+    ? inspect.Mounts.find((mount) => mount.Destination === "/workspace")
+    : null;
+  if (!workspaceMount || workspaceMount.Type !== "volume" || workspaceMount.Name !== volumeName
+    || workspaceMount.RW !== !workspaceReadOnly) {
+    throw new PolicyError("Verifier workspace is not the expected runner-owned Docker volume");
+  }
 }
 
-async function dockerCommand({ config, args, cwd, homePath, signal, timeoutMs, label, logger, captureLimit }) {
+export function assertRunnerVolumeInspect(inspect, volumeName, ticketLabel) {
+  if (!inspect || inspect.Name !== volumeName || inspect.Scope !== "local"
+    || inspect.Labels?.["com.tencorp.ticket-runner"] !== "true"
+    || inspect.Labels?.["com.tencorp.ticket"] !== ticketLabel) {
+    throw new PolicyError("Docker workspace volume identity or labels are invalid");
+  }
+}
+
+export function assertContainerStoppedInspect(inspect) {
+  if (!inspect || inspect.State?.Running !== false) {
+    throw new PolicyError("Verifier container shutdown could not be confirmed before artifact export");
+  }
+}
+
+export async function assertPinnedDockerCli(config) {
+  const pin = config.dockerBinPin;
+  if (!pin) throw new PolicyError("Pinned Docker CLI identity is unavailable");
+  const linkStat = await fs.lstat(pin.configuredPath);
+  const realPath = await fs.realpath(pin.configuredPath);
+  const stat = await fs.stat(realPath);
+  if (linkStat.dev !== pin.linkDev || linkStat.ino !== pin.linkIno || linkStat.mode !== pin.linkMode
+    || realPath !== pin.realPath || !stat.isFile() || (stat.mode & 0o111) === 0
+    || stat.uid !== pin.uid || stat.dev !== pin.dev || stat.ino !== pin.ino || stat.mode !== pin.mode
+    || (stat.mode & 0o022) !== 0) {
+    throw new PolicyError("Docker CLI identity or permissions changed after runner startup");
+  }
+  const digest = crypto.createHash("sha256").update(await fs.readFile(realPath)).digest("hex");
+  if (digest !== pin.sha256) throw new PolicyError("Docker CLI content changed after runner startup");
+  return realPath;
+}
+
+async function dockerCommand({ config, args, cwd, homePath, signal, timeoutMs, label, logger, captureLimit, inputFile }) {
   return runCommand({
     argv: [config.dockerBin, ...args],
     cwd,
@@ -97,7 +153,21 @@ async function dockerCommand({ config, args, cwd, homePath, signal, timeoutMs, l
     label,
     logger,
     captureLimit,
+    inputFile,
   });
+}
+
+async function removeVolume({ config, volumeName, jobRoot, homePath, logger }) {
+  await dockerCommand({
+    config,
+    args: ["volume", "rm", volumeName],
+    cwd: jobRoot,
+    homePath,
+    signal: AbortSignal.timeout(30_000),
+    timeoutMs: 30_000,
+    label: "docker.remove_verifier_volume",
+    logger,
+  }).catch((error) => logger?.warn("docker.volume_cleanup_failed", { error: safeError(error) }));
 }
 
 async function stopContainer({ config, containerName, jobRoot, homePath, logger }) {
@@ -125,9 +195,20 @@ async function stopContainer({ config, containerName, jobRoot, homePath, logger 
       logger,
     }).catch(() => {});
   }
+  const inspection = parseInspect((await dockerCommand({
+    config,
+    args: ["inspect", containerName],
+    cwd: jobRoot,
+    homePath,
+    signal: AbortSignal.timeout(20_000),
+    timeoutMs: 20_000,
+    label: "docker.confirm_verifier_stopped",
+    logger,
+  })).stdout, "docker inspect after stop");
+  assertContainerStoppedInspect(inspection);
 }
 
-async function removeContainer({ config, containerName, jobRoot, homePath, logger }) {
+async function removeContainer({ config, containerName, jobRoot, homePath, logger, suppressMissing = false }) {
   await dockerCommand({
     config,
     args: ["rm", "--force", "--volumes", containerName],
@@ -137,7 +218,10 @@ async function removeContainer({ config, containerName, jobRoot, homePath, logge
     timeoutMs: 30_000,
     label: "docker.remove_verifier",
     logger,
-  }).catch((error) => logger?.warn("docker.cleanup_failed", { error: safeError(error) }));
+  }).catch((error) => {
+    if (suppressMissing && /no such container/i.test(`${error?.stderr || ""} ${error?.message || ""}`)) return;
+    logger?.warn("docker.cleanup_failed", { error: safeError(error) });
+  });
 }
 
 export async function runDockerVerification({
@@ -150,6 +234,7 @@ export async function runDockerVerification({
   logger,
 }) {
   if (!/^[a-f0-9]{40,64}$/.test(treeSha)) throw new PolicyError("Docker verification requires an exact staged tree id");
+  await assertPinnedDockerCli(config);
   const jobsRoot = path.join(path.resolve(config.stateDir), "docker-jobs");
   await makePrivateDirectory(jobsRoot);
   const jobRoot = await fs.mkdtemp(path.join(jobsRoot, `${safeSlug(ticketId)}-`));
@@ -161,35 +246,127 @@ export async function runDockerVerification({
   await makePrivateDirectory(exportRoot);
   const archivePath = path.join(jobRoot, "source.tar");
   if (!isPathInside(jobsRoot, archivePath)) throw new PolicyError("Docker verifier archive escaped its trusted job root");
-  const containerName = `avalon-ticket-${safeSlug(ticketId)}-${process.pid}-${Date.now()}`.toLowerCase().slice(0, 120);
+  const uniqueName = `${safeSlug(ticketId)}-${process.pid}-${Date.now()}`.toLowerCase().slice(0, 80);
+  const ticketLabel = safeSlug(ticketId).toLowerCase();
+  const containerName = `avalon-ticket-${uniqueName}`;
+  const initContainerName = `avalon-ticket-init-${uniqueName}`;
+  const exporterName = `avalon-ticket-export-${uniqueName}`;
+  const volumeName = `avalon-ticket-workspace-${uniqueName}`;
+  let volumeCreated = false;
   let containerCreated = false;
   let containerStopped = false;
+  let exporterCreated = false;
   let artifactSeal = null;
   const results = [];
   try {
     await gitWorkspace.exportTreeArchive({ worktreePath, treeSha, destination: archivePath, signal });
     await fs.chmod(archivePath, 0o600);
 
-    const imageInspection = parseInspect((await dockerCommand({
+    let indexManifest;
+    try {
+      indexManifest = JSON.parse((await dockerCommand({
+        config,
+        args: ["manifest", "inspect", config.dockerImage],
+        cwd: jobRoot,
+        homePath,
+        signal,
+        timeoutMs: 60_000,
+        label: "docker.inspect_pinned_index_manifest",
+        logger,
+      })).stdout);
+    } catch (cause) {
+      throw new RunnerError("Could not read the reviewed OCI index manifest", {
+        code: "DOCKER_INVALID_RESPONSE",
+        cause,
+      });
+    }
+    const expectedChildDigest = config.dockerChildImage.split("@").at(-1);
+    const matchingDescriptors = Array.isArray(indexManifest?.manifests)
+      ? indexManifest.manifests.filter((descriptor) => descriptor?.platform?.os === "linux"
+        && descriptor?.platform?.architecture === config.dockerArchitecture)
+      : [];
+    if (matchingDescriptors.length !== 1 || matchingDescriptors[0].digest !== expectedChildDigest) {
+      throw new PolicyError("Reviewed OCI index does not map the native platform to the pinned child manifest");
+    }
+
+    const childInspection = parseInspect((await dockerCommand({
       config,
-      args: ["image", "inspect", config.dockerImage],
+      args: ["image", "inspect", "--platform", config.dockerPlatform, config.dockerChildImage],
       cwd: jobRoot,
       homePath,
       signal,
       timeoutMs: 30_000,
-      label: "docker.inspect_pinned_image",
+      label: "docker.inspect_pinned_child_image",
       logger,
-    })).stdout, "docker image inspect");
-    if (imageInspection.Architecture !== "amd64" || imageInspection.Os !== "linux") {
-      throw new PolicyError("Pinned verifier image must be linux/amd64");
+    })).stdout, "docker child image inspect");
+    if (childInspection.Architecture !== config.dockerArchitecture || childInspection.Os !== "linux"
+      || childInspection.Id !== config.dockerExpectedImageId) {
+      throw new PolicyError("Pinned verifier child manifest does not match the reviewed architecture and image id");
     }
-    if (!Array.isArray(imageInspection.RepoDigests) || !imageInspection.RepoDigests.includes(config.dockerImage.replace(/^docker\.io\/library\//, ""))) {
-      throw new PolicyError("Local verifier image does not match the configured immutable digest");
+    if (!Array.isArray(childInspection.RepoDigests)
+      || !childInspection.RepoDigests.includes(config.dockerChildImage.replace(/^docker\.io\/library\//, ""))) {
+      throw new PolicyError("Local verifier child image does not match the reviewed child manifest digest");
     }
+
+    const createdVolume = (await dockerCommand({
+      config,
+      args: [
+        "volume", "create",
+        "--label", "com.tencorp.ticket-runner=true",
+        "--label", `com.tencorp.ticket=${ticketLabel}`,
+        volumeName,
+      ],
+      cwd: jobRoot,
+      homePath,
+      signal,
+      timeoutMs: 30_000,
+      label: "docker.create_verifier_volume",
+      logger,
+    })).stdout.trim();
+    if (createdVolume !== volumeName) throw new PolicyError("Docker created an unexpected workspace volume");
+    volumeCreated = true;
+    const volumeInspection = parseInspect((await dockerCommand({
+      config,
+      args: ["volume", "inspect", volumeName],
+      cwd: jobRoot,
+      homePath,
+      signal,
+      timeoutMs: 30_000,
+      label: "docker.inspect_verifier_volume",
+      logger,
+    })).stdout, "docker volume inspect");
+    assertRunnerVolumeInspect(volumeInspection, volumeName, ticketLabel);
 
     await dockerCommand({
       config,
-      args: buildDockerCreateArgs(config, containerName),
+      args: [
+        "run", "--rm", "--name", initContainerName,
+        "--platform", config.dockerPlatform,
+        "--network", "none",
+        "--read-only",
+        "--cap-drop", "ALL",
+        "--cap-add", "CHOWN",
+        "--security-opt", "no-new-privileges:true",
+        "--pids-limit", "64",
+        "--memory", "128m",
+        "--cpus", "1",
+        "--user", "0:0",
+        "--mount", `type=volume,source=${volumeName},target=/workspace,volume-nocopy`,
+        "--entrypoint", "/bin/sh",
+        config.dockerChildImage,
+        "-eu", "-c", "chmod 0700 /workspace && chown 1000:1000 /workspace",
+      ],
+      cwd: jobRoot,
+      homePath,
+      signal,
+      timeoutMs: 60_000,
+      label: "docker.initialize_verifier_volume",
+      logger,
+    });
+
+    await dockerCommand({
+      config,
+      args: buildDockerCreateArgs(config, containerName, volumeName),
       cwd: jobRoot,
       homePath,
       signal,
@@ -208,19 +385,23 @@ export async function runDockerVerification({
       label: "docker.inspect_verifier",
       logger,
     })).stdout, "docker inspect");
-    assertHardenedContainerInspect(containerInspection, config);
+    assertHardenedContainerInspect(containerInspection, config, { volumeName });
 
     await dockerCommand({ config, args: ["start", containerName], cwd: jobRoot, homePath, signal, timeoutMs: 30_000, label: "docker.start_verifier", logger });
-    await dockerCommand({ config, args: ["cp", archivePath, `${containerName}:/workspace/source.tar`], cwd: jobRoot, homePath, signal, timeoutMs: 60_000, label: "docker.copy_source", logger });
     await dockerCommand({
       config,
-      args: ["exec", containerName, "/bin/sh", "-eu", "-c", "mkdir -p /workspace/source && tar -xf /workspace/source.tar -C /workspace/source && rm /workspace/source.tar"],
+      args: [
+        "exec", "--interactive", containerName,
+        "/bin/sh", "-eu", "-c",
+        "mkdir -p /workspace/source && tar --extract --file=- --directory=/workspace/source --no-same-owner --no-same-permissions --delay-directory-restore",
+      ],
       cwd: jobRoot,
       homePath,
       signal,
       timeoutMs: 60_000,
-      label: "docker.extract_source",
+      label: "docker.stream_source",
       logger,
+      inputFile: archivePath,
     });
 
     const installStartedAt = Date.now();
@@ -230,7 +411,7 @@ export async function runDockerVerification({
         "exec", "--workdir", "/workspace/source/website",
         "--env", "HOME=/tmp/home", "--env", "CI=1", "--env", "NPM_CONFIG_CACHE=/tmp/npm-cache",
         "--env", "NPM_CONFIG_USERCONFIG=/tmp/empty-user-npmrc", "--env", "NPM_CONFIG_GLOBALCONFIG=/tmp/empty-global-npmrc",
-        containerName, "npm", "ci", "--ignore-scripts", "--no-audit", "--no-fund",
+        containerName, ...FIXED_NPM_CI_ARGS,
       ],
       cwd: jobRoot,
       homePath,
@@ -239,7 +420,7 @@ export async function runDockerVerification({
       label: "docker.website_install",
       logger,
     });
-    results.push({ name: "website-install", ok: true, durationMs: Date.now() - installStartedAt, isolated: "docker", network: "install-only", platform: "linux/amd64" });
+    results.push({ name: "website-install", ok: true, durationMs: Date.now() - installStartedAt, isolated: "docker", network: "install-only", platform: config.dockerPlatform });
 
     await dockerCommand({ config, args: ["network", "disconnect", "bridge", containerName], cwd: jobRoot, homePath, signal, timeoutMs: 30_000, label: "docker.disconnect_network", logger });
     const disconnected = parseInspect((await dockerCommand({
@@ -272,7 +453,7 @@ export async function runDockerVerification({
         label: `docker.${name}`,
         logger,
       });
-      results.push({ name, ok: true, durationMs: Date.now() - startedAt, isolated: "docker", network: "denied", platform: "linux/amd64" });
+      results.push({ name, ok: true, durationMs: Date.now() - startedAt, isolated: "docker", network: "denied", platform: config.dockerPlatform });
     }
 
     // Stop the complete PID namespace before reading build output. This kills
@@ -281,7 +462,50 @@ export async function runDockerVerification({
     containerStopped = true;
     await dockerCommand({
       config,
-      args: ["cp", `${containerName}:/workspace/source/website/dist/standalone`, exportRoot],
+      args: [
+        "create", "--name", exporterName,
+        "--platform", config.dockerPlatform,
+        "--network", "none",
+        "--read-only",
+        "--cap-drop", "ALL",
+        "--security-opt", "no-new-privileges:true",
+        "--pids-limit", "64",
+        "--memory", "256m",
+        "--cpus", "1",
+        "--user", "1000:1000",
+        "--mount", `type=volume,source=${volumeName},target=/workspace,readonly,volume-nocopy`,
+        "--tmpfs", "/tmp:rw,nosuid,nodev,size=67108864,mode=1777",
+        "--entrypoint", "/usr/bin/sleep",
+        config.dockerChildImage,
+        "infinity",
+      ],
+      cwd: jobRoot,
+      homePath,
+      signal,
+      timeoutMs: 60_000,
+      label: "docker.create_exporter",
+      logger,
+    });
+    exporterCreated = true;
+    const exporterInspection = parseInspect((await dockerCommand({
+      config,
+      args: ["inspect", exporterName],
+      cwd: jobRoot,
+      homePath,
+      signal,
+      timeoutMs: 30_000,
+      label: "docker.inspect_exporter",
+      logger,
+    })).stdout, "docker exporter inspect");
+    assertHardenedContainerInspect(exporterInspection, config, {
+      volumeName,
+      expectedNetworkMode: "none",
+      workspaceReadOnly: true,
+    });
+    await dockerCommand({ config, args: ["start", exporterName], cwd: jobRoot, homePath, signal, timeoutMs: 30_000, label: "docker.start_exporter", logger });
+    await dockerCommand({
+      config,
+      args: ["cp", `${exporterName}:/workspace/source/website/dist/standalone`, exportRoot],
       cwd: jobRoot,
       homePath,
       signal,
@@ -291,7 +515,14 @@ export async function runDockerVerification({
     });
     const sourcePath = path.join(exportRoot, "standalone");
     artifactSeal = await sealExternalBuildArtifact({ config, sourcePath, trustedSourceRoot: exportRoot, ticketId, treeSha });
-    return { verification: results, artifactSeal, imageId: imageInspection.Id, platform: "linux/amd64" };
+    return {
+      verification: results,
+      artifactSeal,
+      imageId: childInspection.Id,
+      imageIndex: config.dockerImage,
+      imageChild: config.dockerChildImage,
+      platform: config.dockerPlatform,
+    };
   } catch (cause) {
     throw new RunnerError("Production Docker verification failed closed", {
       code: "DOCKER_VERIFICATION_FAILED",
@@ -300,9 +531,12 @@ export async function runDockerVerification({
     });
   } finally {
     if (containerCreated && !containerStopped) await stopContainer({ config, containerName, jobRoot, homePath, logger });
+    if (exporterCreated) await removeContainer({ config, containerName: exporterName, jobRoot, homePath, logger });
     if (containerCreated) await removeContainer({ config, containerName, jobRoot, homePath, logger });
+    await removeContainer({ config, containerName: initContainerName, jobRoot, homePath, logger, suppressMissing: true });
+    if (volumeCreated) await removeVolume({ config, volumeName, jobRoot, homePath, logger });
     await fs.rm(jobRoot, { recursive: true, force: true }).catch(() => {});
   }
 }
 
-export { FIXED_BUILD_ENV };
+export { FIXED_BUILD_ENV, FIXED_NPM_CI_ARGS };

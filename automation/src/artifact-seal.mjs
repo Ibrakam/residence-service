@@ -20,6 +20,106 @@ function portablePath(relativePath) {
   return relativePath.split(path.sep).join("/");
 }
 
+const MACH_O_THIN_MAGIC = new Set(["feedface", "cefaedfe", "feedfacf", "cffaedfe"]);
+const MACH_O_FAT_MAGIC = new Set(["cafebabe", "bebafeca", "cafebabf", "bfbafeca"]);
+const REVIEWED_PURE_RUNTIME_PACKAGES = new Set(["react"]);
+
+async function hasNativeExecutableHeader(filename, stat) {
+  const handle = await fsp.open(filename, "r");
+  const prefix = Buffer.alloc(Math.min(Math.max(stat.size, 0), 64));
+  let bytesRead = 0;
+  try {
+    ({ bytesRead } = await handle.read(prefix, 0, prefix.length, 0));
+    if (bytesRead >= 16 && prefix.subarray(0, 4).equals(Buffer.from([0x7f, 0x45, 0x4c, 0x46]))
+      && (prefix[4] === 1 || prefix[4] === 2)
+      && (prefix[5] === 1 || prefix[5] === 2)
+      && prefix[6] === 1) return true;
+
+    if (bytesRead >= 4) {
+      const magic = prefix.subarray(0, 4).toString("hex");
+      if (MACH_O_THIN_MAGIC.has(magic)) return true;
+      if (MACH_O_FAT_MAGIC.has(magic) && bytesRead >= 8) {
+        const swapped = magic === "bebafeca" || magic === "bfbafeca";
+        const architectureCount = swapped ? prefix.readUInt32LE(4) : prefix.readUInt32BE(4);
+        // A Java class also begins CAFEBABE; requiring a plausible Mach-O fat
+        // architecture count avoids rejecting ordinary JVM data by magic alone.
+        if (architectureCount >= 1 && architectureCount <= 64) return true;
+      }
+    }
+
+    if (bytesRead >= 64 && prefix[0] === 0x4d && prefix[1] === 0x5a) {
+      const peOffset = prefix.readUInt32LE(0x3c);
+      if (peOffset <= stat.size - 4) {
+        const signature = Buffer.alloc(4);
+        const result = await handle.read(signature, 0, signature.length, peOffset);
+        if (result.bytesRead === 4 && signature.equals(Buffer.from([0x50, 0x45, 0x00, 0x00]))) return true;
+      }
+    }
+    return false;
+  } finally {
+    await handle.close();
+  }
+}
+
+async function assertPureRuntimeClosure(rootPath) {
+  const manifestPath = path.join(rootPath, "STANDALONE_RUNTIME.json");
+  let manifest;
+  try {
+    manifest = JSON.parse(await fsp.readFile(manifestPath, "utf8"));
+  } catch (cause) {
+    throw new PolicyError("Standalone runtime closure manifest is missing or invalid", { cause });
+  }
+  if (manifest?.schemaVersion !== 2 || !Array.isArray(manifest.packages)) {
+    throw new PolicyError("Standalone runtime closure manifest has an unsupported schema");
+  }
+  const seen = new Set();
+  for (const entry of manifest.packages) {
+    if (!entry || typeof entry !== "object" || typeof entry.name !== "string"
+      || !REVIEWED_PURE_RUNTIME_PACKAGES.has(entry.name) || seen.has(entry.name)) {
+      throw new PolicyError("Standalone runtime closure contains an unreviewed or duplicate package");
+    }
+    seen.add(entry.name);
+  }
+}
+
+async function assertPlatformNeutralArtifact(rootPath) {
+  const canonicalRoot = await fsp.realpath(rootPath);
+  const scannedRealFiles = new Set();
+  async function inspectFile(absolute, displayPath) {
+    const realFile = await fsp.realpath(absolute);
+    if (realFile !== canonicalRoot && !isPathInside(canonicalRoot, realFile)) {
+      throw new PolicyError(`Artifact symlink escapes its root: ${displayPath}`);
+    }
+    if (scannedRealFiles.has(realFile)) return;
+    scannedRealFiles.add(realFile);
+    const stat = await fsp.stat(realFile);
+    if (!stat.isFile()) return;
+    if (/\.(?:node|dylib|dll|exe|so(?:\.[0-9]+)*)$/i.test(path.basename(realFile))
+      || /\.(?:node|dylib|dll|exe|so(?:\.[0-9]+)*)$/i.test(displayPath)) {
+      throw new PolicyError(`Standalone artifact contains a native runtime file: ${displayPath}`);
+    }
+    if (await hasNativeExecutableHeader(realFile, stat)) {
+      throw new PolicyError(`Standalone artifact contains native executable content: ${displayPath}`);
+    }
+  }
+  async function visit(directory) {
+    const children = await fsp.readdir(directory, { withFileTypes: true });
+    for (const child of children) {
+      const absolute = path.join(directory, child.name);
+      const stat = await fsp.lstat(absolute);
+      if (stat.isDirectory() && !stat.isSymbolicLink()) {
+        await visit(absolute);
+      } else if (stat.isFile() && !stat.isSymbolicLink()) {
+        await inspectFile(absolute, portablePath(path.relative(rootPath, absolute)));
+      } else if (stat.isSymbolicLink()) {
+        await inspectFile(absolute, portablePath(path.relative(rootPath, absolute)));
+      }
+    }
+  }
+  await visit(rootPath);
+  await assertPureRuntimeClosure(rootPath);
+}
+
 export async function createArtifactManifest(rootPath) {
   const root = await fsp.realpath(rootPath);
   const entries = [];
@@ -64,9 +164,9 @@ async function makeReadOnly(directory) {
     const stat = await fsp.lstat(absolute);
     if (stat.isDirectory() && !stat.isSymbolicLink()) {
       await makeReadOnly(absolute);
-      await fsp.chmod(absolute, 0o500);
+      await fsp.chmod(absolute, 0o555);
     } else if (stat.isFile() && !stat.isSymbolicLink()) {
-      await fsp.chmod(absolute, 0o400);
+      await fsp.chmod(absolute, 0o444);
     }
   }
 }
@@ -102,8 +202,9 @@ async function sealArtifactSource({ config, sourcePath, ticketId, sealId }) {
       preserveTimestamps: true,
       verbatimSymlinks: true,
     });
+    await assertPlatformNeutralArtifact(artifactPath);
     await makeReadOnly(artifactPath);
-    await fsp.chmod(artifactPath, 0o500);
+    await fsp.chmod(artifactPath, 0o555);
     const manifest = await createArtifactManifest(artifactPath);
     const manifestText = JSON.stringify(manifest);
     const manifestSha256 = manifestDigest(manifestText);

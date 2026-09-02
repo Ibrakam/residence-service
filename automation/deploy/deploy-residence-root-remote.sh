@@ -1,29 +1,41 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 set -Eeuo pipefail
 umask 0077
+
+export PATH="/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin"
+export LANG=C
+export LC_ALL=C
+unset BASH_ENV ENV CDPATH GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY \
+  GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_SSH GIT_SSH_COMMAND SSH_ASKPASS
 
 readonly REMOTE_HOST="root@46.62.227.229"
 readonly SSH_BIN="/usr/bin/ssh"
 readonly RSYNC_BIN="/usr/bin/rsync"
 readonly NODE_BIN="/usr/local/bin/node"
-readonly SSH_KEY="/Users/ibragimkadamzanov/.ssh/id_ed25519"
+readonly SSH_KEY="/Users/ibragimkadamzanov/.ssh/tencorp_ticket_deploy_ed25519"
+readonly LEGACY_ROOT_PUBLIC_KEY="/Users/ibragimkadamzanov/.ssh/id_ed25519.pub"
+readonly SSH_KEYGEN_BIN="/usr/bin/ssh-keygen"
 readonly KNOWN_HOSTS="/Users/ibragimkadamzanov/.ssh/known_hosts"
 readonly EXPECTED_ORIGIN="https://github.com/Ibrakam/residence-service.git"
-readonly REMOTE_REPOSITORY="/srv/residence-deploy/repository"
 readonly REMOTE_WORKTREE_ROOT="/srv/residence-deploy/worktrees"
-readonly REMOTE_DEPLOYER="/usr/local/sbin/deploy-residence-root"
-readonly REMOTE_LINK_DEST="/var/www/residence-service/root-current/frontend"
+readonly STATUS_CONFIRM_ATTEMPTS=6
+readonly STATUS_CONFIRM_DELAY_SECONDS=5
 
 LOCAL_WORKTREE=""
 COMMIT=""
 REMOTE_WORKTREE=""
+REMOTE_WORKTREE_NAME=""
 REMOTE_PREPARED=0
+DEPLOYMENT_CONFIRMED=0
 
 readonly -a SSH_OPTIONS=(
+  -F /dev/null
   -i "$SSH_KEY"
   -o BatchMode=yes
+  -o ClearAllForwardings=yes
   -o IdentitiesOnly=yes
+  -o RequestTTY=no
   -o StrictHostKeyChecking=yes
   -o "UserKnownHostsFile=${KNOWN_HOSTS}"
   -o ConnectTimeout=10
@@ -44,14 +56,48 @@ die() {
 usage() {
   cat >&2 <<'EOF'
 Usage: deploy-residence-root-remote.sh [WORKTREE COMMIT]
+       deploy-residence-root-remote.sh --status COMMIT
 
 With no arguments, WORKTREE and COMMIT are read from TICKET_RUNNER_WORKTREE
-and TICKET_RUNNER_COMMIT_SHA. The script accepts no remote host override.
+and TICKET_RUNNER_COMMIT_SHA. Status mode performs only a durable production
+marker query. The script accepts no remote host override.
 EOF
 }
 
 require_command() {
   command -v "$1" >/dev/null 2>&1 || die "required command is unavailable: $1"
+}
+
+validate_ssh_material() {
+  local key_mode key_owner known_hosts_mode known_hosts_owner
+  local legacy_public_mode legacy_public_owner dedicated_public legacy_public
+  local command
+
+  for command in id realpath stat "$SSH_BIN" "$SSH_KEYGEN_BIN"; do
+    require_command "$command"
+  done
+  [[ -f "$SSH_KEY" && ! -L "$SSH_KEY" ]] || die "fixed SSH identity is missing or is a symlink"
+  [[ -f "$LEGACY_ROOT_PUBLIC_KEY" && ! -L "$LEGACY_ROOT_PUBLIC_KEY" ]] || die "personal root public-key reference is missing or unsafe"
+  [[ -f "$KNOWN_HOSTS" && ! -L "$KNOWN_HOSTS" ]] || die "fixed known_hosts file is missing or is a symlink"
+  key_mode="$(stat -f '%Lp' "$SSH_KEY")"
+  key_owner="$(stat -f '%u' "$SSH_KEY")"
+  [[ "$key_owner" == "$(id -u)" ]] || die "fixed SSH identity must be owned by the runner user"
+  (( (8#$key_mode & 0077) == 0 )) || die "fixed SSH identity must not be accessible by group or others"
+  known_hosts_mode="$(stat -f '%Lp' "$KNOWN_HOSTS")"
+  known_hosts_owner="$(stat -f '%u' "$KNOWN_HOSTS")"
+  [[ "$known_hosts_owner" == "$(id -u)" ]] || die "fixed known_hosts file must be owned by the runner user"
+  (( (8#$known_hosts_mode & 0022) == 0 )) || die "fixed known_hosts file must not be writable by group or others"
+  legacy_public_mode="$(stat -f '%Lp' "$LEGACY_ROOT_PUBLIC_KEY")"
+  legacy_public_owner="$(stat -f '%u' "$LEGACY_ROOT_PUBLIC_KEY")"
+  [[ "$legacy_public_owner" == "$(id -u)" ]] || die "personal root public-key reference must be owned by the runner user"
+  (( (8#$legacy_public_mode & 0022) == 0 )) || die "personal root public-key reference must not be writable by group or others"
+
+  dedicated_public="$(SSH_ASKPASS_REQUIRE=never "$SSH_KEYGEN_BIN" -y -P '' -f "$SSH_KEY" </dev/null)" \
+    || die "fixed SSH identity is unreadable, encrypted, or invalid"
+  [[ "$dedicated_public" =~ ^ssh-ed25519\ [A-Za-z0-9+/=]+$ ]] || die "fixed SSH identity must be Ed25519"
+  legacy_public="$(/usr/bin/awk 'NF >= 2 { print $1 " " $2; exit }' "$LEGACY_ROOT_PUBLIC_KEY")"
+  [[ "$legacy_public" =~ ^ssh-ed25519\ [A-Za-z0-9+/=]+$ ]] || die "personal root public-key reference is malformed"
+  [[ "$dedicated_public" != "$legacy_public" ]] || die "dedicated deploy identity duplicates the personal root SSH key"
 }
 
 ssh_remote() {
@@ -66,41 +112,7 @@ cleanup_remote_worktree() {
   set +e
   if (( REMOTE_PREPARED == 1 )); then
     log "Removing exact remote worktree ${REMOTE_WORKTREE}"
-    ssh_remote bash -s -- "$REMOTE_WORKTREE" <<'REMOTE_CLEANUP'
-set -Eeuo pipefail
-umask 0027
-
-readonly repository="/srv/residence-deploy/repository"
-readonly worktree_root="/srv/residence-deploy/worktrees"
-readonly repository_lock="/run/lock/residence-root-remote-worktree.lock"
-readonly worktree="$1"
-
-case "$worktree" in
-  "${worktree_root}"/*) ;;
-  *)
-    printf 'Refusing unsafe cleanup path: %s\n' "$worktree" >&2
-    exit 1
-    ;;
-esac
-[[ "$(dirname -- "$worktree")" == "$worktree_root" ]] || {
-  printf 'Cleanup path is not a direct child of %s\n' "$worktree_root" >&2
-  exit 1
-}
-exec 8>"$repository_lock"
-flock -w 120 8 || {
-  printf 'Timed out waiting for remote repository lock\n' >&2
-  exit 1
-}
-if [[ -d "$repository/.git" ]]; then
-  git -C "$repository" worktree remove --force -- "$worktree" 2>/dev/null || true
-fi
-if [[ -e "$worktree" || -L "$worktree" ]]; then
-  rm -rf --one-file-system -- "$worktree"
-fi
-if [[ -d "$repository/.git" ]]; then
-  git -C "$repository" worktree prune --expire=now
-fi
-REMOTE_CLEANUP
+    ssh_remote cleanup "$REMOTE_WORKTREE"
     cleanup_status=$?
     if (( cleanup_status != 0 )); then
       log "CRITICAL: remote worktree cleanup failed; remove only this exact path manually: ${REMOTE_WORKTREE}"
@@ -109,6 +121,12 @@ REMOTE_CLEANUP
 
   if (( original_status != 0 )); then
     exit "$original_status"
+  fi
+  if (( DEPLOYMENT_CONFIRMED == 1 )); then
+    # A cleanup transport failure after a confirmed atomic deployment must not
+    # be misreported upstream as a failed deployment (which could roll back
+    # source main while production is already on the new commit).
+    exit 0
   fi
   exit "$cleanup_status"
 }
@@ -206,90 +224,88 @@ VERIFY_SEAL
 }
 
 prepare_remote_worktree() {
-  ssh_remote bash -s -- "$COMMIT" "$REMOTE_WORKTREE" <<'REMOTE_PREPARE'
-set -Eeuo pipefail
-umask 0027
-
-readonly expected_origin="https://github.com/Ibrakam/residence-service.git"
-readonly repository="/srv/residence-deploy/repository"
-readonly deployment_root="/srv/residence-deploy"
-readonly worktree_root="/srv/residence-deploy/worktrees"
-readonly repository_lock="/run/lock/residence-root-remote-worktree.lock"
-readonly commit="$1"
-readonly worktree="$2"
-
-[[ "$commit" =~ ^[0-9a-f]{40}$ ]] || {
-  printf 'Invalid deployment commit\n' >&2
-  exit 1
-}
-case "$worktree" in
-  "${worktree_root}"/*) ;;
-  *)
-    printf 'Invalid remote worktree path\n' >&2
-    exit 1
-    ;;
-esac
-[[ "$(dirname -- "$worktree")" == "$worktree_root" ]] || {
-  printf 'Remote worktree must be a direct child of its fixed root\n' >&2
-  exit 1
-}
-[[ ! -e "$worktree" && ! -L "$worktree" ]] || {
-  printf 'Remote worktree already exists\n' >&2
-  exit 1
+  ssh_remote prepare "$COMMIT" "$REMOTE_WORKTREE"
 }
 
-install -d -o root -g root -m 0750 "$deployment_root" "$worktree_root"
-exec 8>"$repository_lock"
-flock -w 120 8 || {
-  printf 'Timed out waiting for remote repository lock\n' >&2
-  exit 1
-}
-if [[ ! -d "$repository/.git" ]]; then
-  [[ ! -e "$repository" && ! -L "$repository" ]] || {
-    printf 'Unexpected object at trusted repository path\n' >&2
-    exit 1
-  }
-  GIT_TERMINAL_PROMPT=0 git clone --quiet --no-checkout "$expected_origin" "$repository"
-fi
+query_remote_deployment_status() {
+  local commit="$1"
+  local output=""
+  local transport_status=0
 
-[[ "$(stat -c '%u' "$repository")" == "0" ]] || {
-  printf 'Trusted repository is not root-owned\n' >&2
-  exit 1
-}
-repository_mode="$(stat -c '%a' "$repository")"
-(( (8#$repository_mode & 0022) == 0 )) || {
-  printf 'Trusted repository is writable by group or others\n' >&2
-  exit 1
-}
-[[ "$(git -C "$repository" remote get-url origin)" == "$expected_origin" ]] || {
-  printf 'Trusted repository origin mismatch\n' >&2
-  exit 1
+  if output="$(ssh_remote status "$commit")"; then
+    transport_status=0
+  else
+    transport_status=$?
+  fi
+
+  if (( transport_status == 0 )) && [[ "$output" == "deployed ${commit}" ]]; then
+    return 0
+  fi
+  if (( transport_status == 3 )) && [[ "$output" == "not-deployed" ]]; then
+    return 3
+  fi
+
+  log "Remote status query was not authoritative (transport status ${transport_status})"
+  return 75
 }
 
-GIT_TERMINAL_PROMPT=0 git -C "$repository" fetch --quiet --prune --no-tags origin \
-  '+refs/heads/main:refs/remotes/origin/main'
-origin_commit="$(git -C "$repository" rev-parse --verify 'refs/remotes/origin/main^{commit}')"
-[[ "$origin_commit" == "$commit" ]] || {
-  printf 'Remote origin/main does not match requested commit\n' >&2
-  exit 1
-}
-git -C "$repository" cat-file -e "${commit}^{commit}"
-git -C "$repository" worktree prune --expire=now
-git -C "$repository" worktree add --quiet --detach "$worktree" "$commit"
+confirm_remote_deployment() {
+  local commit="$1"
+  local attempts="${2:-$STATUS_CONFIRM_ATTEMPTS}"
+  local delay_seconds="${3:-$STATUS_CONFIRM_DELAY_SECONDS}"
+  local attempt status=75
 
-[[ "$(stat -c '%u' "$worktree")" == "0" ]] || {
-  printf 'Created worktree is not root-owned\n' >&2
-  exit 1
+  for (( attempt = 1; attempt <= attempts; attempt += 1 )); do
+    if query_remote_deployment_status "$commit"; then
+      return 0
+    else
+      status=$?
+    fi
+    if (( attempt < attempts )); then
+      /bin/sleep "$delay_seconds"
+    fi
+  done
+  return "$status"
 }
-install -d -o root -g root -m 0755 "$worktree/website/dist"
-install -d -o residence-frontend -g residence-frontend -m 0750 \
-  "$worktree/website/dist/standalone"
-REMOTE_PREPARE
+
+deployment_status_unknown() {
+  log "DEPLOYMENT_STATUS_UNKNOWN: $*"
+  exit 75
+}
+
+status_only() {
+  local commit="$1"
+  local status
+
+  if query_remote_deployment_status "$commit"; then
+    printf 'deployed\n'
+    return 0
+  else
+    status=$?
+  fi
+  if (( status == 3 )); then
+    printf 'not-deployed\n'
+    return 3
+  fi
+  deployment_status_unknown "could not establish the production marker for ${commit}"
 }
 
 main() {
   local supplied_worktree supplied_commit top_level head_commit origin_url origin_commit
-  local artifact manifest artifact_digest timestamp short_commit ticket_component rsync_shell key_mode
+  local artifact manifest artifact_digest timestamp short_commit ticket_component rsync_shell
+  local deploy_transport_status=0 preflight_status confirmation_status
+
+  if [[ "${1:-}" == "--status" ]]; then
+    if (( $# != 2 )); then
+      usage
+      exit 64
+    fi
+    [[ "$2" =~ ^[0-9a-fA-F]{40}$ ]] || die "COMMIT must contain exactly 40 hexadecimal characters"
+    COMMIT="$(printf '%s' "$2" | /usr/bin/tr '[:upper:]' '[:lower:]')"
+    validate_ssh_material
+    status_only "$COMMIT"
+    return
+  fi
 
   if (( $# == 0 )); then
     supplied_worktree="${TICKET_RUNNER_WORKTREE:-}"
@@ -304,15 +320,12 @@ main() {
 
   [[ -n "$supplied_worktree" ]] || die "WORKTREE is required"
   [[ "$supplied_commit" =~ ^[0-9a-fA-F]{40}$ ]] || die "COMMIT must contain exactly 40 hexadecimal characters"
-  COMMIT="$(printf '%s' "$supplied_commit" | tr '[:upper:]' '[:lower:]')"
+  COMMIT="$(printf '%s' "$supplied_commit" | /usr/bin/tr '[:upper:]' '[:lower:]')"
 
   for command in date find git id realpath stat "$RSYNC_BIN" "$SSH_BIN" "$NODE_BIN" tr; do
     require_command "$command"
   done
-  [[ -f "$SSH_KEY" && ! -L "$SSH_KEY" ]] || die "fixed SSH identity is missing or is a symlink"
-  [[ -f "$KNOWN_HOSTS" && ! -L "$KNOWN_HOSTS" ]] || die "fixed known_hosts file is missing or is a symlink"
-  key_mode="$(stat -f '%Lp' "$SSH_KEY")"
-  (( (8#$key_mode & 0077) == 0 )) || die "fixed SSH identity must not be accessible by group or others"
+  validate_ssh_material
 
   LOCAL_WORKTREE="$(realpath "$supplied_worktree")"
   [[ -d "$LOCAL_WORKTREE" ]] || die "WORKTREE is not a directory"
@@ -337,11 +350,25 @@ main() {
   [[ -n "$artifact" && -n "$manifest" && -n "$artifact_digest" ]] || die "sealed artifact path, manifest, and digest are required"
   validate_local_artifact "$artifact" "$manifest" "$artifact_digest"
 
+  # A retry after a lost SSH acknowledgement is idempotent: the immutable
+  # production marker is authoritative, not the prior transport exit code.
+  if query_remote_deployment_status "$COMMIT"; then
+    DEPLOYMENT_CONFIRMED=1
+    log "Remote production already reports commit ${COMMIT}; no upload is needed"
+    return 0
+  else
+    preflight_status=$?
+  fi
+  if (( preflight_status == 75 )); then
+    deployment_status_unknown "could not establish the production marker before deployment"
+  fi
+
   timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
   short_commit="${COMMIT:0:7}"
   ticket_component="${TICKET_RUNNER_TICKET_ID:-manual}"
   [[ "$ticket_component" =~ ^[0-9]{1,18}$ ]] || ticket_component="manual"
-  REMOTE_WORKTREE="${REMOTE_WORKTREE_ROOT}/${timestamp}-${short_commit}-${ticket_component}-$$"
+  REMOTE_WORKTREE_NAME="${timestamp}-${short_commit}-${ticket_component}-$$"
+  REMOTE_WORKTREE="${REMOTE_WORKTREE_ROOT}/${REMOTE_WORKTREE_NAME}"
 
   trap cleanup_remote_worktree EXIT
   trap 'exit 130' INT
@@ -353,28 +380,50 @@ main() {
   REMOTE_PREPARED=1
   prepare_remote_worktree
 
-  # macOS openrsync does not implement --chown. Add it to the fixed remote
-  # rsync command instead; matching ownership also permits safe hard-link reuse
-  # from the current immutable frontend release.
-  rsync_shell="${SSH_BIN} -i ${SSH_KEY} -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=${KNOWN_HOSTS} -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o LogLevel=ERROR"
+  rsync_shell="${SSH_BIN} -F /dev/null -i ${SSH_KEY} -o BatchMode=yes -o ClearAllForwardings=yes -o IdentitiesOnly=yes -o RequestTTY=no -o StrictHostKeyChecking=yes -o UserKnownHostsFile=${KNOWN_HOSTS} -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o LogLevel=ERROR"
   log "Transferring the prebuilt standalone artifact"
   "$RSYNC_BIN" \
-    --archive \
+    --recursive \
+    --links \
+    --times \
+    --chmod=Du=rwx,Dgo=,Fu=rw,Fgo= \
     --delete-delay \
     --delay-updates \
     --safe-links \
-    --link-dest="$REMOTE_LINK_DEST" \
-    --rsync-path="/usr/bin/rsync --chown=residence-frontend:residence-frontend" \
     --rsh="$rsync_shell" \
-    -- "$artifact/" "${REMOTE_HOST}:${REMOTE_WORKTREE}/website/dist/standalone/"
+    -- "$artifact/" "${REMOTE_HOST}:${REMOTE_WORKTREE_NAME}/website/dist/standalone/"
 
-  log "Invoking the fixed server-side deployment gate"
-  ssh_remote "$REMOTE_DEPLOYER" "$REMOTE_WORKTREE" "$COMMIT"
-  log "Remote deployment completed for ${COMMIT}"
+  log "Requesting deployment through the forced-command SSH gate"
+  if ssh_remote deploy "$REMOTE_WORKTREE" "$COMMIT"; then
+    deploy_transport_status=0
+  else
+    deploy_transport_status=$?
+    log "Deploy transport returned ${deploy_transport_status}; querying the immutable production marker"
+  fi
+  if confirm_remote_deployment "$COMMIT"; then
+    confirmation_status=0
+  else
+    confirmation_status=$?
+  fi
+  if (( confirmation_status == 75 )); then
+    deployment_status_unknown "could not establish the production marker after deploy transport status ${deploy_transport_status}"
+  fi
+  if (( confirmation_status == 3 )); then
+    # This is the only failure contract that authorizes the local runner to
+    # roll origin/main back. Keep the marker and exit code machine-exact.
+    printf 'DEPLOYMENT_NOT_DEPLOYED\n' >&2
+    exit 3
+  fi
+  if (( confirmation_status != 0 )); then
+    deployment_status_unknown "unexpected production status ${confirmation_status} after deploy transport status ${deploy_transport_status}"
+  fi
+  DEPLOYMENT_CONFIRMED=1
+  log "Remote deployment marker confirms ${COMMIT}"
 }
 
-trap cleanup_remote_worktree EXIT
-trap 'exit 130' INT
-trap 'exit 143' TERM
-
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  trap cleanup_remote_worktree EXIT
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
+  main "$@"
+fi

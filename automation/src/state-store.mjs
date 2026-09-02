@@ -40,9 +40,35 @@ export class StateStore {
     const destination = this.ticketStatePath(ticketId, attempt);
     const temporary = `${destination}.${process.pid}.tmp`;
     const payload = `${JSON.stringify({ version: 1, ...state, updatedAt: new Date().toISOString() }, null, 2)}\n`;
-    await fs.writeFile(temporary, payload, { mode: 0o600, flag: "wx" });
+    const handle = await fs.open(temporary, "wx", 0o600);
+    try {
+      await handle.writeFile(payload);
+      await handle.sync();
+    } finally {
+      await handle.close();
+    }
     await fs.rename(temporary, destination);
-    await fs.chmod(destination, 0o600);
+    const directory = await fs.open(this.ticketDir, "r");
+    try {
+      await directory.sync();
+    } finally {
+      await directory.close();
+    }
+  }
+
+  async listTicketStates() {
+    const entries = await fs.readdir(this.ticketDir, { withFileTypes: true });
+    const states = [];
+    for (const entry of entries) {
+      if (!entry.isFile() || entry.isSymbolicLink() || !/^[A-Za-z0-9._-]+\.attempt-[1-9][0-9]*\.json$/.test(entry.name)) continue;
+      const filename = path.join(this.ticketDir, entry.name);
+      const stat = await fs.lstat(filename);
+      if (!stat.isFile() || stat.isSymbolicLink() || (stat.mode & 0o077) !== 0) {
+        throw new Error(`Unsafe ticket state file: ${entry.name}`);
+      }
+      states.push(JSON.parse(await fs.readFile(filename, "utf8")));
+    }
+    return states;
   }
 
   async writeTestResult(ticketId, result) {

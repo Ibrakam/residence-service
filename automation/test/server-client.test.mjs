@@ -33,6 +33,7 @@ test("server client retains proxy base path and matches the Go worker contract",
     leaseSeconds: 180,
     ticketBodyMaxChars: 40_000,
     smokeUrls: [new URL("https://form.tencorp.uz/health")],
+    productionPublicUrl: new URL("https://form.tencorp.uz/"),
   };
   const client = new TicketServerClient(config, { warn() {} });
   const lease = await client.lease();
@@ -53,7 +54,7 @@ test("server client retains proxy base path and matches the Go worker contract",
   assert.deepEqual(requests[3].body, {
     summary: "Fixed it",
     commitSha: "abc123",
-    productionUrl: "https://form.tencorp.uz/health",
+    productionUrl: "https://form.tencorp.uz/",
   });
   assert.deepEqual(requests[4].body, { summary: "Example failure" });
 });

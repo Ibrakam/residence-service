@@ -9,6 +9,8 @@
   "scripts": {
     "start": "node src/index.mjs",
     "check": "node --check src/index.mjs",
-    "test": "node --test"
+    "test": "node --test",
+    "test:docker": "RUN_DOCKER_INTEGRATION=1 node --test test/docker-integration.test.mjs",
+    "test:docker:website": "RUN_DOCKER_WEBSITE_INTEGRATION=1 node --test test/docker-website-integration.test.mjs"
   }
 }

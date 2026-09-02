@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import crypto from "node:crypto";
 import { runCommand } from "./command.mjs";
 import { verifySealedArtifact } from "./artifact-seal.mjs";
-import { PolicyError } from "./errors.mjs";
+import { CommandError, PolicyError, PublishingUncertainError } from "./errors.mjs";
 import { isPathInside } from "./sanitize.mjs";
 import {
   buildVerificationProfile,
@@ -37,7 +37,7 @@ export async function runVerification({ config, worktreePath, ticketId, signal, 
     const executableName = path.basename(command.argv[0]);
     const isNpmInstall = executableName === "npm" && command.argv[1] === "ci";
     if (isNpmInstall) {
-      for (const required of ["--ignore-scripts", "--no-audit", "--no-fund"]) {
+      for (const required of ["--include=dev", "--ignore-scripts", "--no-audit", "--no-fund"]) {
         if (!command.argv.includes(required)) throw new PolicyError(`npm ci verification must include ${required}`);
       }
     }
@@ -63,8 +63,10 @@ export async function runVerification({ config, worktreePath, ticketId, signal, 
         NPM_CONFIG_GLOBALCONFIG: path.join(sandbox.tempPath, "empty-global-npmrc"),
         NPM_CONFIG_AUDIT: "false",
         NPM_CONFIG_FUND: "false",
+        NPM_CONFIG_PRODUCTION: "false",
         NPM_CONFIG_UPDATE_NOTIFIER: "false",
       });
+      if (isNpmInstall) delete env.NODE_ENV;
       const result = await runCommand({
         argv: sandboxArgv(sandbox.profilePath, command.argv),
         cwd,
@@ -90,14 +92,19 @@ export async function validateDeployScript(config, worktreePath) {
   if (!lstat.isFile() || lstat.isSymbolicLink()) throw new PolicyError("Deployment script must be a regular non-symlink file");
   if ((lstat.mode & 0o111) === 0) throw new PolicyError("Deployment script is not executable");
   if ((lstat.mode & 0o022) !== 0) throw new PolicyError("Deployment script must not be group/world writable");
-  const currentUid = typeof process.getuid === "function" ? process.getuid() : lstat.uid;
-  if (lstat.uid !== 0 && lstat.uid !== currentUid) throw new PolicyError("Deployment script must be owned by root or the runner user");
+  const requiredOwnerUid = Number.isSafeInteger(config.requiredDeployOwnerUid) ? config.requiredDeployOwnerUid : lstat.uid;
+  if (lstat.uid !== requiredOwnerUid) throw new PolicyError(`Deployment script must be owned by uid ${requiredOwnerUid}`);
+  const requiredMode = Number.isSafeInteger(config.requiredDeployMode) ? config.requiredDeployMode : (lstat.mode & 0o777);
+  if ((lstat.mode & 0o777) !== requiredMode) throw new PolicyError(`Deployment script must have mode ${requiredMode.toString(8)}`);
   const real = await fs.realpath(config.deployScript);
+  if (config.requiredDeployScriptPath && real !== path.resolve(config.requiredDeployScriptPath)) {
+    throw new PolicyError("Deployment script is not the fixed trusted wrapper");
+  }
   if (real === path.resolve(worktreePath) || isPathInside(worktreePath, real)) {
     throw new PolicyError("Deployment script must be outside the agent worktree");
   }
   const pin = config.deployScriptPin;
-  if (!pin || pin.realPath !== real || pin.uid !== lstat.uid || pin.dev !== lstat.dev || pin.ino !== lstat.ino) {
+  if (!pin || pin.realPath !== real || pin.uid !== lstat.uid || pin.dev !== lstat.dev || pin.ino !== lstat.ino || pin.mode !== lstat.mode) {
     throw new PolicyError("Deployment script identity changed after runner startup");
   }
   const digest = crypto.createHash("sha256").update(await fs.readFile(real)).digest("hex");
@@ -105,28 +112,69 @@ export async function validateDeployScript(config, worktreePath) {
   return real;
 }
 
+export function deploymentFailureIsUncertain(cause, { signalAborted = false } = {}) {
+  if (!(cause instanceof CommandError)) return false;
+  const definiteNotDeployed = cause.exitCode === 3
+    && /(?:^|\n)DEPLOYMENT_NOT_DEPLOYED(?:\n|$)/.test(`${cause.stdout}\n${cause.stderr}`);
+  return signalAborted || !definiteNotDeployed;
+}
+
 export async function runDeployment({ config, worktreePath, ticketId, commitSha, artifactSeal, signal, logger }) {
   const script = await validateDeployScript(config, worktreePath);
   if (!artifactSeal) throw new PolicyError("A sealed build artifact is required for deployment");
   await verifySealedArtifact(artifactSeal);
-  const result = await runCommand({
-    argv: [script, ...config.deployArgs],
-    cwd: config.repoRoot,
-    env: baseTrustedEnv({
-      ...config.deployEnvironment,
-      TICKET_RUNNER_COMMIT_SHA: commitSha,
-      TICKET_RUNNER_TICKET_ID: ticketId,
-      TICKET_RUNNER_WORKTREE: worktreePath,
-      TICKET_RUNNER_ARTIFACT_DIR: artifactSeal.artifactPath,
-      TICKET_RUNNER_ARTIFACT_MANIFEST: artifactSeal.manifestPath,
-      TICKET_RUNNER_ARTIFACT_SHA256: artifactSeal.manifestSha256,
-    }),
-    timeoutMs: config.deployTimeoutMs,
-    signal,
-    label: "deploy.trusted_script",
-    logger,
-  });
+  let result;
+  try {
+    result = await runCommand({
+      argv: [script, ...config.deployArgs],
+      cwd: config.repoRoot,
+      env: baseTrustedEnv({
+        ...config.deployEnvironment,
+        TICKET_RUNNER_COMMIT_SHA: commitSha,
+        TICKET_RUNNER_TICKET_ID: ticketId,
+        TICKET_RUNNER_WORKTREE: worktreePath,
+        TICKET_RUNNER_ARTIFACT_DIR: artifactSeal.artifactPath,
+        TICKET_RUNNER_ARTIFACT_MANIFEST: artifactSeal.manifestPath,
+        TICKET_RUNNER_ARTIFACT_SHA256: artifactSeal.manifestSha256,
+      }),
+      timeoutMs: config.deployTimeoutMs,
+      signal,
+      label: "deploy.trusted_script",
+      logger,
+    });
+  } catch (cause) {
+    if (deploymentFailureIsUncertain(cause, { signalAborted: Boolean(signal?.aborted) })) {
+      throw new PublishingUncertainError("Deployment transport ended before production state could be confirmed", { cause });
+    }
+    throw cause;
+  }
   return { ok: true, durationMs: result.durationMs };
+}
+
+export async function queryDeploymentStatus({ config, worktreePath, commitSha, signal, logger }) {
+  if (!/^[a-f0-9]{40}$/.test(commitSha)) throw new PolicyError("Deployment status requires a full commit SHA");
+  const script = await validateDeployScript(config, worktreePath);
+  try {
+    const result = await runCommand({
+      argv: [script, "--status", commitSha],
+      cwd: config.repoRoot,
+      env: baseTrustedEnv(),
+      timeoutMs: Math.min(config.deployTimeoutMs, 60_000),
+      signal,
+      label: "deploy.query_status",
+      logger,
+    });
+    if (result.stdout.trim() !== "deployed") {
+      throw new PublishingUncertainError("Deployment status wrapper returned an invalid success response");
+    }
+    return "deployed";
+  } catch (cause) {
+    if (cause instanceof CommandError && cause.exitCode === 3 && cause.stdout.trim() === "not-deployed") {
+      return "not-deployed";
+    }
+    if (cause instanceof PublishingUncertainError) throw cause;
+    throw new PublishingUncertainError("Production commit marker could not be queried authoritatively", { cause });
+  }
 }
 
 export async function runSmokeChecks({ config, ticketId, signal, logger }) {

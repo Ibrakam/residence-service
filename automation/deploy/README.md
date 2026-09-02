@@ -44,24 +44,46 @@ deployment command may switch a release.
    then transfer only the completed `website/dist/standalone` tree into the
    matching detached worktree for the same commit. Do not build on production.
 
-For automated runs, `deploy-residence-root-remote.sh` performs step 4 using the
-fixed host, SSH identity, repository origin, and server paths. Install it outside
-the agent-editable repository as
-`/usr/local/libexec/tencorp/deploy-residence-root-remote`, owned by `root:admin`
-and mode `0750`. The runner user must be an `admin` group member but must not
-have write access to that installed file. The runner passes its worktree and
-commit through
+For automated runs, install the reviewed `deploy-residence-root-remote.sh`
+outside the agent-editable checkout at the runner's fixed
+`$RUNNER_STATE_DIR/bin/deploy-residence-root-remote` path. It must be a
+runner-owned, non-symlink file with mode `0700`; the runner pins its device,
+inode, mode, and SHA-256 at startup and checks them again immediately before
+execution. Do not grant the runner an interactive root login or membership in
+an administrative group. The runner passes its worktree and commit through
 `TICKET_RUNNER_WORKTREE` and `TICKET_RUNNER_COMMIT_SHA`; an operator may instead
 provide the same two values as positional arguments.
 
-The wrapper independently validates local and remote `origin/main`, creates one
-exact root-managed worktree below `/srv/residence-deploy/worktrees`, transfers
-only `website/dist/standalone`, invokes the server-side gate, and removes that
-exact worktree on exit. Its rsync uses the active frontend as `--link-dest` and
-forces `residence-frontend` ownership on the remote artifact without recursively
-changing ownership of hard-linked production files. Git worktree mutation and
-deployment share `/run/lock/residence-root-remote-worktree.lock`, preventing a
-fetch/remove race with the active deployment worktree.
+The wrapper uses only the fixed dedicated
+`~/.ssh/tencorp_ticket_deploy_ed25519` identity. It must never use or copy the
+personal `~/.ssh/id_ed25519` key. On the server that public key is bound with
+`restrict` and a forced command to the root-owned
+`/usr/local/sbin/residence-ticket-deploy-gate`; it cannot start a shell or
+override the host, command, path, SSH configuration, or rsync program. Follow
+the complete provisioning and acceptance procedure in the
+[dedicated forced-command setup](ssh/README.md).
+
+The forced-command protocol permits only `prepare COMMIT WORKTREE`, an exact
+write-only rrsync transfer into the prepared
+`WORKTREE/website/dist/standalone/`, `deploy WORKTREE COMMIT`, `status COMMIT`,
+and `cleanup WORKTREE`. The wrapper independently validates local and remote
+`origin/main`, creates one root-managed worktree directly below
+`/srv/residence-deploy/worktrees`, transfers only the sealed standalone
+artifact without owner, group, device, or special-file rsync capabilities,
+invokes the fixed root-side deployer, and removes that exact worktree on exit.
+Git worktree mutation and deployment share
+`/run/lock/residence-root-remote-worktree.lock`, preventing a fetch/remove race
+with the active deployment worktree.
+
+An SSH deploy response alone is never success. The wrapper queries the
+immutable active-release `DEPLOY_CONFIRMED` marker, which the root deployer
+creates only after all local and public smokes pass; the gate additionally
+proves the active service MainPID cwd is that exact release before returning
+an authoritative positive or negative result. Its standalone
+`--status COMMIT` reconciliation mode returns only `deployed` with status 0,
+`not-deployed` with status 3, or status 75 with
+`DEPLOYMENT_STATUS_UNKNOWN` on stderr. An unknown result must stop automation;
+it must not trigger a source rollback until a later authoritative status query.
 
 The deployer deliberately requires:
 
@@ -71,29 +93,42 @@ The deployer deliberately requires:
 - a complete standalone runtime manifest;
 - a root-owned worktree with no group/world write permission;
 - an existing, valid `root-current` release for automatic rollback;
+- artifact size plus a fixed 10 GiB free-space reserve on the release filesystem;
 - a free fixed candidate port, `127.0.0.1:4399`.
 
 Example after the artifact has been transferred to the server-side worktree:
 
 ```bash
 sudo /usr/local/sbin/deploy-residence-root \
-  /srv/residence-deploy/worktrees/0123456789abcdef0123456789abcdef01234567 \
+  /srv/residence-deploy/worktrees/20260903T010203Z-0123456-manual-12345 \
   0123456789abcdef0123456789abcdef01234567
 ```
 
-The script uses a non-blocking `flock`, rsyncs to an `.incoming-*` directory
-with `--link-dest` against the current frontend, checks ownership, and renames
+The root-side deployer uses a non-blocking `flock`, rsyncs to an `.incoming-*`
+directory with `--link-dest` against the current frontend, checks ownership,
+normalizes the public tree to read-only directories/files while keeping the
+frontend root traversable by nginx, verifies access as `www-data`, and renames
 the completed directory into place. It then:
 
 1. starts the candidate as a hardened transient systemd service on port 4399;
-2. runs local GET-only smoke checks against inferred routes plus the default
-   `/4u/apartments` and `/sun` canaries;
+2. runs local GET-only smoke checks against `/` plus the landing and apartments
+   route of every direct residence project; a missing route source is fatal;
 3. stops the candidate;
 4. atomically switches `root-current`;
 5. restarts `residence-root-frontend` and verifies its actual process working
    directory is the new release;
 6. repeats the smokes on port 4320 and through
-   `https://form.tencorp.uz`.
+   `https://form.tencorp.uz`;
+7. atomically writes `DEPLOY_CONFIRMED` only after every check passes.
+
+A legacy active release without both deployment markers is intentionally
+`unknown`, so the normal wrapper refuses the first automatic publication.
+With the runner stopped, bootstrap one reviewed release through the same
+dedicated forced-command `prepare`/write-only-rsync/`deploy` protocol,
+bypassing only the wrapper's preflight status query. Do not synthesize markers
+on a legacy release: the root deployer must validate the commit and seal, run
+all smokes, switch atomically, and create the late marker. Confirm `status
+COMMIT` before enabling the unattended LaunchAgent.
 
 Any failure after the symlink switch restores the exact previous symlink,
 restarts the old release, and performs a local rollback smoke. Failed immutable
@@ -209,9 +244,12 @@ public route is required.
 1. Copy `automation/.env.example` outside the repository, replace placeholders,
    and set mode `0600`. Store the bearer token in the separate file referenced
    by `RUNNER_API_TOKEN_FILE`, also mode `0600`; never put it in a plist.
-2. Install the reviewed remote wrapper at the absolute path configured by
-   `RUNNER_DEPLOY_SCRIPT`. Keep it outside the repository and do not make it
-   writable by the agent.
+2. Install the reviewed remote wrapper as the runner-owned mode-`0700`
+   `$RUNNER_STATE_DIR/bin/deploy-residence-root-remote` non-symlink, and set
+   `RUNNER_DEPLOY_SCRIPT` to that exact absolute path. Keep it outside the
+   repository and outside the agent sandbox. Provision its dedicated SSH key
+   and forced-command server entry exactly as described in
+   [`ssh/README.md`](ssh/README.md).
 3. Create the configured state directory and its `logs` and `worktrees`
    children with mode `0700`.
 4. Render and validate the single reviewed LaunchAgent with
@@ -255,6 +293,7 @@ rollback may replace or delete that directory.
 Run these checks after any template change:
 
 ```bash
+automation/deploy/test-forced-command-gate.sh
 sudo systemd-analyze verify /etc/systemd/system/residence-root-frontend.service
 sudo systemd-analyze verify /etc/systemd/system/tencorp-ticket-bot.service
 sudo systemd-analyze verify /etc/systemd/system/tencorp-ticket-attachment-cleanup.service

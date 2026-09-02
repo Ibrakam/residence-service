@@ -35,6 +35,12 @@ export class RemoteMovedError extends RunnerError {
   }
 }
 
+export class PublishingUncertainError extends RunnerError {
+  constructor(message = "Published state could not be reconciled safely", options = {}) {
+    super(message, { code: "PUBLISH_RECONCILIATION_REQUIRED", retryable: false, ...options });
+  }
+}
+
 export class PolicyError extends RunnerError {
   constructor(message, options = {}) {
     super(message, { code: "POLICY_REJECTED", ...options });

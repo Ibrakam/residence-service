@@ -9,6 +9,7 @@ readonly CURRENT_LINK="${SERVICE_ROOT}/root-current"
 readonly SERVICE_UNIT="residence-root-frontend.service"
 readonly SERVICE_USER="residence-frontend"
 readonly SERVICE_GROUP="residence-frontend"
+readonly NGINX_USER="www-data"
 readonly SERVICE_ENV_FILE="/etc/residence-frontend/root-frontend.env"
 readonly DEPLOY_LOCK="/run/lock/residence-root-deploy.lock"
 readonly REPOSITORY_LOCK="/run/lock/residence-root-remote-worktree.lock"
@@ -17,6 +18,8 @@ readonly CANDIDATE_PORT="4399"
 readonly PRODUCTION_PORT="4320"
 readonly PUBLIC_ORIGIN="https://form.tencorp.uz"
 readonly HOST_HEADER="form.tencorp.uz"
+readonly EXPECTED_ORIGIN="https://github.com/Ibrakam/residence-service.git"
+readonly MIN_FREE_KB=10485760
 
 WORKTREE=""
 COMMIT=""
@@ -30,6 +33,23 @@ CURRENT_SWITCHED=0
 DEPLOYMENT_CONFIRMED=0
 
 declare -a SMOKE_ROUTES=()
+readonly -a DIRECT_PROJECTS=(
+  4u
+  bayterak
+  botanika-saroyi
+  flagman
+  jomiy
+  maftun-makon
+  meros
+  mirador
+  ofiyat
+  regnum-plaza
+  sado
+  sun
+  voha
+  yangibaxt
+  zamon
+)
 
 log() {
   printf '[deploy-residence-root] %s\n' "$*" >&2
@@ -163,6 +183,17 @@ add_smoke_route() {
   SMOKE_ROUTES+=("$candidate")
 }
 
+verify_origin_main() {
+  local origin_url origin_commit
+
+  origin_url="$(git -C "$WORKTREE" remote get-url origin)"
+  [[ "$origin_url" == "$EXPECTED_ORIGIN" ]] || die "WORKTREE origin does not match the approved repository"
+  GIT_TERMINAL_PROMPT=0 git -C "$WORKTREE" fetch --quiet --no-tags origin \
+    '+refs/heads/main:refs/remotes/origin/main'
+  origin_commit="$(git -C "$WORKTREE" rev-parse --verify 'refs/remotes/origin/main^{commit}')"
+  [[ "$origin_commit" == "$COMMIT" ]] || die "origin/main (${origin_commit}) does not equal COMMIT (${COMMIT})"
+}
+
 deployed_commit() {
   local marker="${PREVIOUS_RELEASE}/DEPLOY_COMMIT"
   local value=""
@@ -192,31 +223,11 @@ deployed_commit() {
 infer_smoke_routes() {
   local base_commit=""
   local parent_commit=""
-  local changed_files=""
   local project route
-  local -a projects=(
-    4u
-    bayterak
-    botanika-saroyi
-    flagman
-    jomiy
-    kayan
-    maftun-makon
-    meros
-    mirador
-    ofiyat
-    regnum-plaza
-    sado
-    sun
-    voha
-    yangibaxt
-    zamon
-  )
 
-  # Always exercise one catalog and one distinct landing route. Project routes
-  # inferred from the deployed diff are appended below.
-  add_smoke_route "/4u/apartments"
-  add_smoke_route "/sun"
+  # Every release must keep every direct project landing and catalog healthy,
+  # not only the project inferred from the current diff.
+  add_smoke_route "/"
 
   base_commit="$(deployed_commit || true)"
   if [[ -n "$base_commit" ]] && ! git -C "$WORKTREE" merge-base --is-ancestor "$base_commit" "$COMMIT"; then
@@ -227,31 +238,14 @@ infer_smoke_routes() {
     base_commit="$parent_commit"
   fi
 
-  if [[ -n "$base_commit" ]]; then
-    changed_files="$(git -C "$WORKTREE" diff --name-only "$base_commit" "$COMMIT" -- website)"
-  else
-    changed_files="$(git -C "$WORKTREE" diff-tree --root --no-commit-id --name-only -r "$COMMIT" -- website)"
-  fi
-
-  for project in "${projects[@]}"; do
-    if ! grep -Eq "(^|/)${project}(/|[-.])" <<< "$changed_files"; then
-      continue
-    fi
-
-    if [[ "$project" == "kayan" ]]; then
-      # The production Nginx contract intentionally rejects /kayan and the
-      # current /kayan/ application response redirects there. Keep the global
-      # canaries rather than accepting that dead redirect as a healthy smoke.
-      continue
-    fi
-
+  for project in "${DIRECT_PROJECTS[@]}"; do
     route="/${project}"
-    if [[ -f "${WORKTREE}/website/app/${project}/page.tsx" || -f "${WORKTREE}/website/app/${project}/page.jsx" ]]; then
-      add_smoke_route "$route"
-    fi
-    if [[ -f "${WORKTREE}/website/app/${project}/apartments/page.tsx" || -f "${WORKTREE}/website/app/${project}/apartments/page.jsx" ]]; then
-      add_smoke_route "${route}/apartments"
-    fi
+    [[ -f "${WORKTREE}/website/app/${project}/page.tsx" || -f "${WORKTREE}/website/app/${project}/page.jsx" ]] \
+      || die "required landing source is missing for ${project}"
+    [[ -f "${WORKTREE}/website/app/${project}/apartments/page.tsx" || -f "${WORKTREE}/website/app/${project}/apartments/page.jsx" ]] \
+      || die "required apartments source is missing for ${project}"
+    add_smoke_route "$route"
+    add_smoke_route "${route}/apartments"
   done
 
   log "Smoke routes: ${SMOKE_ROUTES[*]}"
@@ -285,7 +279,7 @@ validate_artifact() {
   unsafe_entry="$(find "$artifact" -mindepth 1 ! -type d ! -type f ! -type l -print -quit)"
   [[ -z "$unsafe_entry" ]] || die "artifact contains a non-file/directory/symlink entry: $unsafe_entry"
 
-  writable_entry="$(find "$artifact" -mindepth 1 -perm /0022 -print -quit)"
+  writable_entry="$(find "$artifact" -mindepth 1 ! -type l -perm /0022 -print -quit)"
   [[ -z "$writable_entry" ]] || die "artifact contains a group/world-writable entry: $writable_entry"
 
   sensitive_entry="$(find "$artifact" -type f \( \
@@ -302,6 +296,33 @@ validate_artifact() {
       *) die "artifact symlink escapes standalone root: $link" ;;
     esac
   done < <(find "$artifact" -type l -print0)
+}
+
+assert_release_capacity() {
+  local artifact="$1"
+  local artifact_kb available_kb required_kb
+
+  artifact_kb="$(du -sk -- "$artifact" | awk '{print $1}')"
+  available_kb="$(df -Pk -- "$RELEASES_DIR" | awk 'NR == 2 {print $4}')"
+  [[ "$artifact_kb" =~ ^[0-9]+$ && "$available_kb" =~ ^[0-9]+$ ]] \
+    || die "could not determine artifact size and release filesystem capacity"
+  required_kb=$((MIN_FREE_KB + artifact_kb))
+  log "Capacity preflight: artifact=${artifact_kb} KiB available=${available_kb} KiB required=${required_kb} KiB"
+  (( available_kb >= required_kb )) \
+    || die "release filesystem needs artifact size plus a 10 GiB safety reserve"
+}
+
+assert_nginx_can_read_artifact() {
+  local frontend="$1"
+  local representative_asset
+
+  representative_asset="$(find "$frontend/dist/client/residence-assets/_next/static" -type f -print -quit)"
+  [[ -n "$representative_asset" ]] || die "could not find a framework asset for nginx permission validation"
+  runuser -u "$NGINX_USER" -- /usr/bin/test -x "$frontend" \
+    || die "nginx user cannot traverse the release frontend directory"
+  runuser -u "$NGINX_USER" -- /usr/bin/test -r "$representative_asset" \
+    || die "nginx user cannot read the release framework assets"
+  log "Nginx permission preflight passed for ${representative_asset}"
 }
 
 start_candidate() {
@@ -461,7 +482,7 @@ on_exit() {
 }
 
 main() {
-  local supplied_worktree artifact top_level owner_uid mode origin_commit head_commit
+  local supplied_worktree artifact top_level owner_uid mode head_commit
   local timestamp short_commit current_target bad_owner
 
   if (( $# != 2 )); then
@@ -474,12 +495,13 @@ main() {
   [[ "$2" =~ ^[0-9a-fA-F]{40}$ ]] || die "COMMIT must contain exactly 40 hexadecimal characters"
   COMMIT="${2,,}"
 
-  for command in awk basename chmod chown curl date find flock getent git grep head id install ln mktemp mv readlink realpath rm rsync sed sleep ss stat systemctl systemd-run; do
+  for command in awk basename chmod chown curl date df du find flock getent git grep head id install ln mktemp mv readlink realpath rm rsync runuser sed sleep ss stat sync systemctl systemd-run; do
     require_command "$command"
   done
   [[ -x "$NODE_BIN" ]] || die "Node runtime is unavailable at ${NODE_BIN}"
   [[ -r "$SERVICE_ENV_FILE" ]] || die "service environment file is missing: ${SERVICE_ENV_FILE}"
   id "$SERVICE_USER" >/dev/null 2>&1 || die "service user does not exist: ${SERVICE_USER}"
+  id "$NGINX_USER" >/dev/null 2>&1 || die "nginx user does not exist: ${NGINX_USER}"
   getent group "$SERVICE_GROUP" >/dev/null 2>&1 || die "service group does not exist: ${SERVICE_GROUP}"
 
   exec 9>"$DEPLOY_LOCK"
@@ -503,10 +525,7 @@ main() {
   git -C "$WORKTREE" diff --cached --quiet -- || die "WORKTREE has staged changes"
 
   log "Refreshing origin/main for provenance validation"
-  GIT_TERMINAL_PROMPT=0 git -C "$WORKTREE" fetch --quiet --no-tags origin \
-    '+refs/heads/main:refs/remotes/origin/main'
-  origin_commit="$(git -C "$WORKTREE" rev-parse --verify 'refs/remotes/origin/main^{commit}')"
-  [[ "$origin_commit" == "$COMMIT" ]] || die "origin/main (${origin_commit}) does not equal COMMIT (${COMMIT})"
+  verify_origin_main
 
   [[ -L "$CURRENT_LINK" ]] || die "current release pointer is not a symlink: ${CURRENT_LINK}"
   current_target="$(readlink -f -- "$CURRENT_LINK")"
@@ -520,6 +539,7 @@ main() {
   artifact="${WORKTREE}/website/dist/standalone"
   validate_artifact "$artifact"
   infer_smoke_routes
+  assert_release_capacity "$artifact"
 
   timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
   short_commit="${COMMIT:0:7}"
@@ -532,7 +552,7 @@ main() {
   [[ ! -e "$STAGING_RELEASE" && ! -L "$STAGING_RELEASE" ]] || die "staging path already exists: ${STAGING_RELEASE}"
 
   install -d -o root -g root -m 0755 "$RELEASES_DIR" "$STAGING_RELEASE"
-  install -d -o "$SERVICE_USER" -g "$SERVICE_GROUP" -m 0750 "$STAGING_RELEASE/frontend"
+  install -d -o "$SERVICE_USER" -g "$SERVICE_GROUP" -m 0755 "$STAGING_RELEASE/frontend"
 
   log "Copying prebuilt standalone artifact into ${RELEASE_ID}"
   rsync \
@@ -544,8 +564,16 @@ main() {
     --link-dest="${CURRENT_LINK}/frontend" \
     -- "$artifact/" "$STAGING_RELEASE/frontend/"
 
+  # The upload spool is deliberately private. Normalize the copied public
+  # application tree after rsync so nginx can traverse/read it without making
+  # any release content writable.
+  find "$STAGING_RELEASE/frontend" -type d -exec chmod 0555 -- {} +
+  find "$STAGING_RELEASE/frontend" -type f -exec chmod 0444 -- {} +
+  chmod 0755 "$STAGING_RELEASE/frontend"
+
   bad_owner="$(find "$STAGING_RELEASE/frontend" \( ! -user "$SERVICE_USER" -o ! -group "$SERVICE_GROUP" \) -print -quit)"
   [[ -z "$bad_owner" ]] || die "rsync produced an entry with unexpected ownership: $bad_owner"
+  assert_nginx_can_read_artifact "$STAGING_RELEASE/frontend"
   printf '%s\n' "$COMMIT" > "$STAGING_RELEASE/DEPLOY_COMMIT"
   printf '%s\n' "$RELEASE_ID" > "$STAGING_RELEASE/DEPLOY_RELEASE"
   chown root:root "$STAGING_RELEASE/DEPLOY_COMMIT" "$STAGING_RELEASE/DEPLOY_RELEASE"
@@ -560,6 +588,8 @@ main() {
   smoke_asset_contract "http://127.0.0.1:${CANDIDATE_PORT}" "/4u/apartments"
   stop_candidate
 
+  log "Rechecking origin/main immediately before the production switch"
+  verify_origin_main
   log "Switching root-current atomically to ${FINAL_RELEASE}"
   atomic_switch "$FINAL_RELEASE"
   CURRENT_SWITCHED=1
@@ -570,6 +600,15 @@ main() {
   smoke_routes "$PUBLIC_ORIGIN" 5
   smoke_asset_contract "$PUBLIC_ORIGIN" "/4u/apartments"
 
+  # DEPLOY_COMMIT identifies release content, while DEPLOY_CONFIRMED is the
+  # durable publication authority. Never create it until every post-switch and
+  # public smoke has passed.
+  printf '%s\n' "$COMMIT" > "$FINAL_RELEASE/.DEPLOY_CONFIRMED.$$"
+  chown root:root "$FINAL_RELEASE/.DEPLOY_CONFIRMED.$$"
+  chmod 0444 "$FINAL_RELEASE/.DEPLOY_CONFIRMED.$$"
+  sync -f "$FINAL_RELEASE/.DEPLOY_CONFIRMED.$$"
+  mv -T -- "$FINAL_RELEASE/.DEPLOY_CONFIRMED.$$" "$FINAL_RELEASE/DEPLOY_CONFIRMED"
+  sync -f "$FINAL_RELEASE"
   DEPLOYMENT_CONFIRMED=1
   log "Deployment completed: commit=${COMMIT} release=${FINAL_RELEASE}"
 }

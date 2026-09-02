@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import fs from "node:fs";
 import { CommandError } from "./errors.mjs";
 import { safeExcerpt } from "./sanitize.mjs";
 
@@ -28,6 +29,7 @@ export function runCommand({
   cwd,
   env = process.env,
   input,
+  inputFile,
   timeoutMs = 10 * 60_000,
   signal,
   label = "command",
@@ -37,6 +39,8 @@ export function runCommand({
   if (!Array.isArray(argv) || argv.length === 0 || argv.some((part) => typeof part !== "string")) {
     throw new TypeError("argv must be a non-empty string array");
   }
+  if (input !== undefined && inputFile !== undefined) throw new TypeError("input and inputFile are mutually exclusive");
+  if (inputFile !== undefined && (typeof inputFile !== "string" || !inputFile)) throw new TypeError("inputFile must be a non-empty path");
 
   const startedAt = Date.now();
   logger?.info("command.started", { label, cwd });
@@ -46,11 +50,12 @@ export function runCommand({
     let stderr = "";
     let settled = false;
     let timedOut = false;
+    let inputStream = null;
 
     const child = spawn(argv[0], argv.slice(1), {
       cwd,
       env,
-      stdio: [input === undefined ? "ignore" : "pipe", "pipe", "pipe"],
+      stdio: [input === undefined && inputFile === undefined ? "ignore" : "pipe", "pipe", "pipe"],
       detached: true,
     });
 
@@ -59,6 +64,7 @@ export function runCommand({
       settled = true;
       clearTimeout(timeout);
       signal?.removeEventListener("abort", abortHandler);
+      inputStream?.destroy();
       const durationMs = Date.now() - startedAt;
       if (error) {
         logger?.error("command.failed", { label, durationMs, error: { name: error.name, code: error.code, message: error.message } });
@@ -115,6 +121,14 @@ export function runCommand({
     if (input !== undefined) {
       child.stdin.on("error", () => {});
       child.stdin.end(input);
+    } else if (inputFile !== undefined) {
+      child.stdin.on("error", () => {});
+      inputStream = fs.createReadStream(inputFile);
+      inputStream.on("error", (cause) => {
+        terminateProcessGroup(child, "SIGTERM");
+        finish(new CommandError(`${label} could not read its fixed input file`, { cause }));
+      });
+      inputStream.pipe(child.stdin);
     }
   });
 }

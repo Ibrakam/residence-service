@@ -192,7 +192,7 @@ exit 0
 STUB_RSYNC
 cat > "$integration_bin/ssh-keygen" <<'STUB_KEYGEN'
 #!/bin/sh
-printf 'ssh-ed25519 AAAATESTDEDICATEDKEYFORWRAPPERCONTRACT\n'
+printf 'ssh-ed25519 AAAATESTDEDICATEDKEYFORWRAPPERCONTRACT residence-ticket-deploy\n'
 STUB_KEYGEN
 chmod 0700 "$integration_bin/ssh" "$integration_bin/rsync" "$integration_bin/ssh-keygen"
 

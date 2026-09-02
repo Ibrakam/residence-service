@@ -242,6 +242,9 @@ test("root deployer preserves nginx-readable immutable releases and disk reserve
   assert.match(script, /find "\$STAGING_RELEASE\/frontend" -type f -exec chmod 0444/);
   assert.match(script, /chmod 0755 "\$STAGING_RELEASE\/frontend"/);
   assert.match(script, /runuser -u "\$NGINX_USER" -- \/usr\/bin\/test -r/);
+  assert.match(script, /asset_file="\$\{resolved_frontend\}\/dist\/client\$\{asset_request_path\}"/);
+  assert.match(script, /smoke_asset_contract "http:\/\/127\.0\.0\.1:\$\{CANDIDATE_PORT\}" "\/4u\/apartments" "\$FINAL_RELEASE\/frontend"/);
+  assert.match(script, /smoke_asset_contract "\$PUBLIC_ORIGIN" "\/4u\/apartments"/);
   assert.match(script, /Rechecking origin\/main immediately before the production switch/);
   assert.ok(script.indexOf('smoke_routes "$PUBLIC_ORIGIN" 5') < script.indexOf('"$FINAL_RELEASE/DEPLOY_CONFIRMED"'));
   for (const project of ["4u", "bayterak", "botanika-saroyi", "flagman", "jomiy", "maftun-makon", "meros", "mirador", "ofiyat", "regnum-plaza", "sado", "sun", "voha", "yangibaxt", "zamon"]) {

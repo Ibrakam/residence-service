@@ -383,7 +383,8 @@ smoke_routes() {
 smoke_asset_contract() {
   local origin="$1"
   local route="$2"
-  local html_file headers_file asset_path status content_type
+  local frontend="${3:-}"
+  local html_file headers_file asset_path asset_request_path asset_file resolved_frontend resolved_asset status content_type
 
   html_file="$(mktemp /run/residence-asset-html.XXXXXX)"
   headers_file="$(mktemp /run/residence-asset-headers.XXXXXX)"
@@ -411,6 +412,40 @@ smoke_asset_contract() {
   if [[ "$asset_path" != /residence-assets/_next/static/* ]]; then
     rm -f -- "$html_file" "$headers_file"
     die "rendered HTML has no production-prefixed framework asset: ${origin}${route}"
+  fi
+
+  # The standalone Node candidate renders the final production-prefixed URLs,
+  # but framework assets are intentionally served by Nginx from dist/client.
+  # Before the atomic switch, prove that the exact rendered asset exists in
+  # the candidate release and is readable by Nginx. The public-origin check
+  # below separately proves the live HTTP mapping and content type.
+  if [[ -n "$frontend" ]]; then
+    [[ -d "$frontend" && ! -L "$frontend" ]] || {
+      rm -f -- "$html_file" "$headers_file"
+      die "framework asset smoke received an unsafe frontend directory"
+    }
+    resolved_frontend="$(realpath -e -- "$frontend")"
+    asset_request_path="${asset_path%%\?*}"
+    asset_file="${resolved_frontend}/dist/client${asset_request_path}"
+    [[ -f "$asset_file" ]] || {
+      rm -f -- "$html_file" "$headers_file"
+      die "rendered framework asset is absent from the candidate release: ${asset_request_path}"
+    }
+    resolved_asset="$(realpath -e -- "$asset_file")"
+    case "$resolved_asset" in
+      "${resolved_frontend}"/*) ;;
+      *)
+        rm -f -- "$html_file" "$headers_file"
+        die "rendered framework asset escapes the candidate release"
+        ;;
+    esac
+    runuser -u "$NGINX_USER" -- /usr/bin/test -r "$resolved_asset" || {
+      rm -f -- "$html_file" "$headers_file"
+      die "rendered framework asset is not readable by Nginx: ${asset_request_path}"
+    }
+    rm -f -- "$html_file" "$headers_file"
+    log "Framework asset file smoke passed: ${asset_request_path}"
+    return 0
   fi
 
   status="$(curl \
@@ -585,7 +620,7 @@ main() {
   log "Starting isolated candidate on 127.0.0.1:${CANDIDATE_PORT}"
   start_candidate "$FINAL_RELEASE/frontend"
   smoke_routes "http://127.0.0.1:${CANDIDATE_PORT}" 30
-  smoke_asset_contract "http://127.0.0.1:${CANDIDATE_PORT}" "/4u/apartments"
+  smoke_asset_contract "http://127.0.0.1:${CANDIDATE_PORT}" "/4u/apartments" "$FINAL_RELEASE/frontend"
   stop_candidate
 
   log "Rechecking origin/main immediately before the production switch"
@@ -596,7 +631,7 @@ main() {
   systemctl restart "$SERVICE_UNIT"
   wait_for_service_release "$FINAL_RELEASE/frontend" 30
   smoke_routes "http://127.0.0.1:${PRODUCTION_PORT}" 30
-  smoke_asset_contract "http://127.0.0.1:${PRODUCTION_PORT}" "/4u/apartments"
+  smoke_asset_contract "http://127.0.0.1:${PRODUCTION_PORT}" "/4u/apartments" "$FINAL_RELEASE/frontend"
   smoke_routes "$PUBLIC_ORIGIN" 5
   smoke_asset_contract "$PUBLIC_ORIGIN" "/4u/apartments"
 

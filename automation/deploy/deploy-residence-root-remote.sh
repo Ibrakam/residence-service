@@ -70,7 +70,7 @@ require_command() {
 
 validate_ssh_material() {
   local key_mode key_owner known_hosts_mode known_hosts_owner
-  local legacy_public_mode legacy_public_owner dedicated_public legacy_public
+  local legacy_public_mode legacy_public_owner dedicated_public dedicated_public_raw legacy_public
   local command
 
   for command in id realpath stat "$SSH_BIN" "$SSH_KEYGEN_BIN"; do
@@ -92,8 +92,11 @@ validate_ssh_material() {
   [[ "$legacy_public_owner" == "$(id -u)" ]] || die "personal root public-key reference must be owned by the runner user"
   (( (8#$legacy_public_mode & 0022) == 0 )) || die "personal root public-key reference must not be writable by group or others"
 
-  dedicated_public="$(SSH_ASKPASS_REQUIRE=never "$SSH_KEYGEN_BIN" -y -P '' -f "$SSH_KEY" </dev/null)" \
+  dedicated_public_raw="$(SSH_ASKPASS_REQUIRE=never "$SSH_KEYGEN_BIN" -y -P '' -f "$SSH_KEY" </dev/null)" \
     || die "fixed SSH identity is unreadable, encrypted, or invalid"
+  # OpenSSH may preserve the private key comment in `ssh-keygen -y` output.
+  # Compare only the canonical key type and base64 payload.
+  dedicated_public="$(printf '%s\n' "$dedicated_public_raw" | /usr/bin/awk 'NF >= 2 { print $1 " " $2; exit }')"
   [[ "$dedicated_public" =~ ^ssh-ed25519\ [A-Za-z0-9+/=]+$ ]] || die "fixed SSH identity must be Ed25519"
   legacy_public="$(/usr/bin/awk 'NF >= 2 { print $1 " " $2; exit }' "$LEGACY_ROOT_PUBLIC_KEY")"
   [[ "$legacy_public" =~ ^ssh-ed25519\ [A-Za-z0-9+/=]+$ ]] || die "personal root public-key reference is malformed"

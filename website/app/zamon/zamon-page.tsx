@@ -26,7 +26,6 @@ const appBasePath = configuredBasePath ? `/${configuredBasePath.replace(/^\/+|\/
 const languages: Language[] = ['ru', 'uz', 'en'];
 const storageKey = 'zamon-language';
 const introKey = 'zamon-intro-seen-v1';
-const officialBooklet = '/zamon/documents/zamon-booklet-2026-03.pdf';
 const panorama = 'https://uzbekistan360.uz/ru/location/nrg-zamon-vid-s-ptichego-poljotappC';
 
 const media: Record<Layer, Slide[]> = {
@@ -398,7 +397,7 @@ export function ZamonPage({ initialLanguage }: { initialLanguage: Language }) {
       <section id="contacts" className="zamon-contacts" tabIndex={-1}><div data-zamon-reveal><p className="zamon-overline">{t.contactsIndex}</p><h2>{t.contactsTitle}</h2><p>{t.contactsText}</p></div><address><small>{t.offices}</small><span>{t.officeOne}</span><span>{t.officeTwo}</span><a href="tel:+998781137712">+998 78 113 77 12</a></address><div className="zamon-contacts__actions"><button className="zamon-button is-solid" type="button" data-lead-trigger onClick={() => openLead('contacts-consultation')}>{t.consult}<span>↗</span></button><a className="zamon-button" href="tel:+998781137712">{t.phone}<span>↗</span></a></div></section>
     </main>
 
-    <footer className="zamon-footer"><a className="zamon-name" href={withLanguage('/zamon', language)}><strong>Zamon</strong><span>NRG-BI</span></a><p>{t.disclaimer}</p><nav aria-label={t.footerNavigation}><a href={`${asset(officialBooklet)}?lang=${language}`} target="_blank" rel="noreferrer" data-return-url={withLanguage('/zamon', language)} title={t.bookletContext}>{t.booklet} ↗</a><a href={panorama} target="_blank" rel="noreferrer">{t.panorama} ↗</a><a href={privacyUrl(language)}>{t.privacy}</a><a href="#zamon-content" onClick={(event) => goToAnchor(event, 'zamon-content')}>{t.top} ↑</a></nav></footer>
+    <footer className="zamon-footer"><a className="zamon-name" href={withLanguage('/zamon', language)}><strong>Zamon</strong><span>NRG-BI</span></a><p>{t.disclaimer}</p><nav aria-label={t.footerNavigation}><a href={panorama} target="_blank" rel="noreferrer">{t.panorama} ↗</a><a href={privacyUrl(language)}>{t.privacy}</a><a href="#zamon-content" onClick={(event) => goToAnchor(event, 'zamon-content')}>{t.top} ↑</a></nav></footer>
 
     {leadContext ? <div className="zamon-lead-host" data-project-slug="zamon" data-context={leadContext}><LeadModal open language={language} context={leadContext} brandName="NRG-BI" projectName="ZAMON" tagline={t.formTagline} facts={t.formFacts} submitUrl={zamonLeadSubmitUrl()} projectSlug="zamon" privacyUrl={privacyUrl(language)} requireConsent onClose={() => setLeadContext(undefined)} /></div> : null}
   </div>;

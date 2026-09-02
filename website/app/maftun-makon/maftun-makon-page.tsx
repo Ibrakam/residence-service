@@ -487,7 +487,7 @@ export function MaftunMakonPage({ initialLanguage }: { initialLanguage: Language
 
       <footer className="maftun-footer" aria-hidden={menuOpen || undefined} inert={menuOpen ? true : undefined}>
         <a className="maftun-wordmark" href={withLanguage('/maftun-makon', language)}>MAFTUN <span>MAKON</span></a>
-        <nav><a href={asset('/maftun-makon/maftun-makon-official-booklet.pdf')} target="_blank" rel="noreferrer">{t.booklet} ↗</a><a href={privacyUrl(language)}>{t.privacy}</a></nav>
+        <nav><a href={privacyUrl(language)}>{t.privacy}</a></nav>
         <p>{t.footerNote}</p><a href="#top" aria-label="Back to top">↑</a>
       </footer>
 

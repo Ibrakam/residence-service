@@ -454,7 +454,6 @@ export function YangiBaxtPage({ initialLanguage }: { initialLanguage: Language }
       <footer className="yb-footer" aria-hidden={mobileMenuOpen || undefined} inert={mobileMenuOpen ? true : undefined}>
         <div><strong>YANGI BAXT</strong><span>{t.heroLead}</span></div>
         <nav aria-label={t.sources}>
-          <a href={asset('/yangibaxt/documents/yangibaxt-official.pdf')} target="_blank" rel="noreferrer">{t.booklet} ↗</a>
           <a href={`${appBasePath}/privacy?project=yangibaxt&lang=${language}&from=landing`}>{t.privacy} ↗</a>
         </nav>
         <p>{t.disclaimer}</p><a href="#top">{t.top} ↑</a>

@@ -10,7 +10,6 @@ type LightboxState = { images: Array<{ src: string; alt: string }>; index: numbe
 
 const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
 const languages: Language[] = ['ru', 'uz', 'en'];
-const bookletUrl = 'https://s3.bi.group/biclick/content-manager/Sad_O_buklet_compressed_2_88c7f6fe2a.pdf';
 const panoramaUrl = 'https://360.bi-group.org/2021/tashkent/index.html#pano668067/13.6/28.3/90.0';
 
 const copy = {
@@ -232,7 +231,7 @@ export function SadoPage({ initialAvailable, snapshotGeneratedAt }: { initialAva
 
     <section className="sado-section sado-function"><div className="sado-section__head"><p className="sado-kicker is-dark">{t.functionKicker}</p><h2>{t.functionTitle}<em>{t.functionAccent}</em></h2></div><div className="sado-function__grid">{t.functionItems.map(([title, description], index) => <article key={title}><button type="button" onClick={() => openGallery(functionImages, index, t.functionTitle)} aria-label={`${t.galleryOpen}: ${title}`}><img src={asset(functionImages[index])} alt={title} loading="lazy" /><span>↗</span></button><small>0{index + 1}</small><h3>{title}</h3><p>{description}</p></article>)}</div></section>
 
-    <section id="location" className="sado-section sado-location"><div className="sado-location__image"><img src={asset('/sado/location.webp')} alt="Sad'O" loading="lazy" /><div><span>41°17′ N</span><span>69°22′ E</span></div></div><div className="sado-location__content"><p className="sado-kicker">{t.locationKicker}</p><h2>{t.locationTitle}<em>{t.locationAccent}</em></h2><p>{t.locationCopy}</p><ul>{t.nearby.map((item, index) => <li key={item}><small>0{index + 1}</small>{item}</li>)}</ul><div className="sado-location__links"><a href={bookletUrl} target="_blank" rel="noreferrer">{t.booklet}<span>↓</span></a></div></div></section>
+    <section id="location" className="sado-section sado-location"><div className="sado-location__image"><img src={asset('/sado/location.webp')} alt="Sad'O" loading="lazy" /><div><span>41°17′ N</span><span>69°22′ E</span></div></div><div className="sado-location__content"><p className="sado-kicker">{t.locationKicker}</p><h2>{t.locationTitle}<em>{t.locationAccent}</em></h2><p>{t.locationCopy}</p><ul>{t.nearby.map((item, index) => <li key={item}><small>0{index + 1}</small>{item}</li>)}</ul></div></section>
 
     <section id="progress" className="sado-section sado-progress"><div className="sado-section__head"><p className="sado-kicker is-dark">{t.progressKicker}</p><h2>{t.progressTitle}<em>{t.progressAccent}</em></h2><p>{t.progressCopy}</p></div><div className="sado-progress__gallery">{constructionImages.map((src, index) => <button key={src} type="button" onClick={() => openGallery(constructionImages, index, t.progressTitle)} aria-label={`${t.galleryOpen}: ${index + 1}`}><img src={asset(src)} alt="Sad'O" loading="lazy" /><span>0{index + 1}</span></button>)}</div><div className="sado-progress__links"><a href={panoramaUrl} target="_blank" rel="noreferrer"><small>LIVE 360</small>{t.panorama}<span>↗</span></a><div aria-disabled="true"><small>{t.camera}</small>{t.cameraUnavailable}<span>—</span></div></div></section>
 

@@ -27,7 +27,6 @@ const languages: Language[] = ['ru', 'uz', 'en'];
 const classKeys: ClassKey[] = ['comfort', 'business'];
 const storageKey = 'bayterak-language';
 const introKey = 'bayterak-intro-seen-v1';
-const officialBooklet = '/bayterak/documents/bayterak-booklet-2026-08.pdf';
 const panorama = 'https://uzbekistan360.uz/ru/location/nrg-bi-bayterakHcY';
 
 const gallerySlides: Slide[] = [
@@ -530,7 +529,7 @@ export function BayterakPage({ initialLanguage }: { initialLanguage: Language })
       <section className="bayterak-contact" data-bayterak-reveal><div><p className="bayterak-overline">{t.contactIndex}</p><h2>{t.contactTitle}</h2><p>{t.contactText}</p></div><div className="bayterak-contact__actions"><button className="bayterak-button is-solid" type="button" data-lead-trigger onClick={() => openLead('contact-consultation')}>{t.consult}<span>↗</span></button><a className="bayterak-button" href="tel:+998781137712">{t.phone}<span>↗</span></a></div></section>
     </main>
 
-    <footer className="bayterak-footer"><a className="bayterak-mark" href={withLanguage('/bayterak', language)}><span>BAY</span><span>TERAK</span></a><p>{t.disclaimer}</p><nav aria-label={t.footerNavigation}><a href={asset(officialBooklet)} target="_blank" rel="noreferrer">{t.booklet} ↗</a><a href={panorama} target="_blank" rel="noreferrer">{t.panorama} ↗</a><a href={privacyUrl(language)}>{t.privacy}</a><a href="#bayterak-content" onClick={(event) => goToAnchor(event, 'bayterak-content')}>{t.top} ↑</a></nav></footer>
+    <footer className="bayterak-footer"><a className="bayterak-mark" href={withLanguage('/bayterak', language)}><span>BAY</span><span>TERAK</span></a><p>{t.disclaimer}</p><nav aria-label={t.footerNavigation}><a href={panorama} target="_blank" rel="noreferrer">{t.panorama} ↗</a><a href={privacyUrl(language)}>{t.privacy}</a><a href="#bayterak-content" onClick={(event) => goToAnchor(event, 'bayterak-content')}>{t.top} ↑</a></nav></footer>
 
     {leadContext ? <div className="bayterak-lead-host" data-project-slug="bayterak" data-context={leadContext}><LeadModal open language={language} context={leadContext} brandName="NRG-BI" projectName="BAYTERAK" tagline={t.formTagline} facts={t.formFacts} submitUrl={bayterakLeadSubmitUrl()} projectSlug="bayterak" privacyUrl={privacyUrl(language)} requireConsent onClose={() => setLeadContext(undefined)} /></div> : null}
   </div>;

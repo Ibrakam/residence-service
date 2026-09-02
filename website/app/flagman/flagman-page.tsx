@@ -11,7 +11,6 @@ type LightboxState = { slides: Slide[]; index: number } | null;
 
 const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
 const languages: Language[] = ['ru', 'uz', 'en'];
-const officialBooklet = 'https://s3.bi.group/biclick/content-manager/flagman_booklet_2_9db0a000ca.pdf';
 
 const copy = {
   ru: {
@@ -301,7 +300,7 @@ export function FlagmanPage({ initialLanguage = 'ru' }: { initialLanguage?: Lang
       </section>
     </div>
 
-    <footer className="flagman-footer"><a className="flagman-wordmark" href="#top">FLAGMAN<small>TASHKENT</small></a><nav><a href={officialBooklet} target="_blank" rel="noreferrer">{t.booklet} ↗</a><a href={privacyUrl(language)}>{t.privacy}</a></nav><p>{t.partner}</p></footer>
+    <footer className="flagman-footer"><a className="flagman-wordmark" href="#top">FLAGMAN<small>TASHKENT</small></a><nav><a href={privacyUrl(language)}>{t.privacy}</a></nav><p>{t.partner}</p></footer>
 
     {lightbox ? <Lightbox state={lightbox} onClose={() => setLightbox(null)} previous={t.previous} next={t.next} closeLabel={t.close} /> : null}
     <LeadModal open={leadOpen} language={language} context="flagman:landing:consultation" projectName="FLAGMAN" hideBrand tagline={t.heroAccent} facts={t.facts.slice(0, 3).map(([value, label]) => `${value} · ${label}`)} submitUrl={leadSubmitUrl()} projectSlug="flagman" privacyUrl={privacyUrl(language)} requireConsent onClose={() => setLeadOpen(false)} />

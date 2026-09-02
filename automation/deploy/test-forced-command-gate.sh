@@ -71,7 +71,9 @@ if grep -Eq 'ssh_remote[[:space:]]+(bash|sh)|bash -s|--rsync-path|--link-dest' "
 fi
 grep -Fq 'ssh_remote cleanup "$REMOTE_WORKTREE"' "$WRAPPER" || fail "cleanup is not routed through the gate"
 grep -Fq 'ssh_remote status "$commit"' "$WRAPPER" || fail "deployment status is not routed through the gate"
-grep -Fq 'exec "$RRSYNC" -wo -no-lock "$WORKTREE_ROOT"' "$GATE" || fail "gate does not use write-only rrsync"
+grep -Fq 'exec "$RSYNC" \' "$GATE" || fail "gate does not exec the fixed write-side rsync server"
+grep -Fq 'target="${worktree_name}/website/dist/standalone/"' "$GATE" \
+  || fail "gate does not reconstruct the exact standalone upload target"
 grep -Fq 'exec "$DEPLOYER" "$worktree" "$commit"' "$GATE" || fail "gate does not exec the fixed deployer"
 grep -Fq "readonly RSYNC_COMMAND_PREFIX='rsync --server --delete-delay -l -r -t --dirs --delay-updates --safe-links . '" "$GATE" \
   || fail "gate does not pin the exact least-privilege rsync wire command"

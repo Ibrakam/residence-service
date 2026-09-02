@@ -38,7 +38,7 @@ readonly SERVICE_UNIT="residence-root-frontend.service"
 readonly DEPLOYER="/usr/local/sbin/deploy-residence-root"
 readonly REPOSITORY_LOCK="/run/lock/residence-root-remote-worktree.lock"
 readonly DEPLOY_LOCK="/run/lock/residence-root-deploy.lock"
-readonly RRSYNC="/usr/bin/rrsync"
+readonly RSYNC="/usr/bin/rsync"
 readonly GIT="/usr/bin/git"
 readonly FLOCK="/usr/bin/flock"
 readonly REALPATH="/usr/bin/realpath"
@@ -285,11 +285,32 @@ validate_rsync_command() {
 
 run_restricted_rsync() {
   local original="$1"
+  local worktree_name target
 
   exec 8>"$REPOSITORY_LOCK"
   "$FLOCK" -w 120 8 || die "timed out waiting for repository lock"
+  assert_safe_directory "$WORKTREE_ROOT" "worktree root"
   validate_rsync_command "$original"
-  exec "$RRSYNC" -wo -no-lock "$WORKTREE_ROOT"
+  worktree_name="$(/usr/bin/basename -- "$PARSED_RSYNC_WORKTREE")"
+  target="${worktree_name}/website/dist/standalone/"
+
+  # Ubuntu's packaged rrsync rejects the stock macOS rsync wire flag
+  # `--dirs`, even though the underlying rsync supports it. Do not pass the
+  # caller's command to a shell or relax the protocol: reconstruct the single
+  # reviewed write-side server command from the validated worktree name.
+  cd -- "$WORKTREE_ROOT"
+  exec "$RSYNC" \
+    --server \
+    --delete-delay \
+    -l \
+    -r \
+    -t \
+    --dirs \
+    --delay-updates \
+    --safe-links \
+    -- \
+    . \
+    "$target"
 }
 
 deploy_worktree() {

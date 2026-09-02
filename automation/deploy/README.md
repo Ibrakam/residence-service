@@ -64,7 +64,7 @@ the complete provisioning and acceptance procedure in the
 [dedicated forced-command setup](ssh/README.md).
 
 The forced-command protocol permits only `prepare COMMIT WORKTREE`, an exact
-write-only rrsync transfer into the prepared
+validated write-only rsync transfer into the prepared
 `WORKTREE/website/dist/standalone/`, `deploy WORKTREE COMMIT`, `status COMMIT`,
 and `cleanup WORKTREE`. The wrapper independently validates local and remote
 `origin/main`, creates one root-managed worktree directly below

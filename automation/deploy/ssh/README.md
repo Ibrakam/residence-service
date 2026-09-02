@@ -26,8 +26,10 @@ on the runner Mac; only its public half is installed on the server.
    `residence-ticket-deploy-gate.sh` as
    `/usr/local/sbin/residence-ticket-deploy-gate`, owned by `root:root` and
    mode `0755`. Keep `/usr/local/sbin/deploy-residence-root` root-owned,
-   non-symlinked, and non-writable by group or others. Confirm that
-   `/usr/bin/rrsync` exists.
+   non-symlinked, and non-writable by group or others. Confirm that the fixed
+   `/usr/bin/rsync` executable exists. The gate reconstructs one exact
+   write-side rsync server command after validating the prepared worktree;
+   it never evaluates the caller's command through a shell.
 
 3. Replace the placeholder in
    `tencorp-ticket-deploy.authorized_keys.example` with the base64 field from

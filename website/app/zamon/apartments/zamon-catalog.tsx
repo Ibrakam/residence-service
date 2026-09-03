@@ -13,7 +13,7 @@ import {
 } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { LeadModal, rememberLiveCatalogUnit } from '@/app/lead-modal';
-import { catalogLeadIdentity, useLiveCatalogSnapshot } from '@/app/live-catalog';
+import { catalogLeadIdentity, parseCatalogDate, useLiveCatalogSnapshot } from '@/app/live-catalog';
 import { zamonLeadSubmitUrl } from '../zamon-lead';
 
 type Language = 'ru' | 'uz' | 'en';
@@ -193,14 +193,15 @@ function roomPhrase(value: number, language: Language) {
   if (language === 'en') return `${value} ${value === 1 ? 'room' : 'rooms'}`;
   return `${value} ${copy[language].roomsShort}`;
 }
-function parseDate(value: string) {
-  return new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00Z` : value);
-}
 function dateLabel(value: string, language: Language) {
-  return new Intl.DateTimeFormat(locale(language), { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(parseDate(value));
+  const date = parseCatalogDate(value, true);
+  if (!date) return language === 'ru' ? 'Уточняется' : language === 'uz' ? 'Aniqlanmoqda' : 'To be confirmed';
+  return new Intl.DateTimeFormat(locale(language), { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(date);
 }
 function capturedLabel(value: string, language: Language) {
-  return new Intl.DateTimeFormat(locale(language), { dateStyle: 'long', timeStyle: 'short', timeZone: 'Asia/Tashkent' }).format(new Date(value));
+  const date = parseCatalogDate(value);
+  if (!date) return language === 'ru' ? 'Последние доступные данные' : language === 'uz' ? 'So‘nggi mavjud ma’lumotlar' : 'Latest available data';
+  return new Intl.DateTimeFormat(locale(language), { dateStyle: 'long', timeStyle: 'short', timeZone: 'Asia/Tashkent' }).format(date);
 }
 function classLabel(value: string, language: Language) {
   if (/комфорт|comfort/i.test(value)) return 'Comfort';
@@ -602,7 +603,7 @@ export function ZamonCatalog({ snapshot: embeddedSnapshot, initialLanguage }: { 
   const rooms = useMemo(() => Array.from(new Set(snapshot.units.map((unit) => unit.rooms))).sort((a, b) => a - b), [snapshot.units]);
   const floors = useMemo(() => Array.from(new Set(snapshot.units.map((unit) => unit.floor))).sort((a, b) => a - b), [snapshot.units]);
   const entrances = useMemo(() => Array.from(new Set(snapshot.units.map((unit) => unit.entrance))).sort((a, b) => a - b), [snapshot.units]);
-  const completions = useMemo(() => Array.from(new Set(snapshot.units.map((unit) => unit.completionDate))).sort(), [snapshot.units]);
+  const completions = useMemo(() => Array.from(new Set(snapshot.units.map((unit) => unit.completionDate).filter((value) => parseCatalogDate(value, true)))).sort(), [snapshot.units]);
   const statuses = useMemo(() => snapshot.statusSummary.map((item) => item.status), [snapshot.statusSummary]);
 
   const filtered = useMemo(() => {

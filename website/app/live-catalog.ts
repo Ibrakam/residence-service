@@ -66,6 +66,15 @@ export function catalogLeadIdentity(unit: unknown): { unitKey?: string } {
   return {};
 }
 
+export function parseCatalogDate(value: unknown, dateOnlyAtNoonUTC = false): Date | null {
+  if (typeof value !== 'string' || !value.trim()) return null;
+  const normalized = dateOnlyAtNoonUTC && /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? `${value}T12:00:00Z`
+    : value;
+  const date = new Date(normalized);
+  return Number.isFinite(date.getTime()) ? date : null;
+}
+
 type CatalogState<T> = {
   data: T;
   dataSource: CatalogDataSource;

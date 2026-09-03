@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { catalogLeadIdentity, mergeLiveCatalogUnits } from '../app/live-catalog.ts';
+import { catalogLeadIdentity, mergeLiveCatalogUnits, parseCatalogDate } from '../app/live-catalog.ts';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const source = await readFile(new URL('../app/live-catalog.ts', import.meta.url), 'utf8');
@@ -85,6 +85,8 @@ const embedded = [{
   price: 1,
   oldPrice: 2,
   regularPrice: 2,
+  completionDate: '2028-06-30',
+  sourcePlacementCompletionDate: '2028-06-30',
   plan: '/foreign-plan.webp',
   sourcePlan: 'https://example.invalid/private-plan',
   thumbnail: '/foreign-thumb.webp',
@@ -125,6 +127,7 @@ assert.equal(unmatched.status, 'reserved');
 assert.equal(unmatched.price, 990_000_000);
 assert.equal(unmatched.oldPrice, 0, 'a second price must not be invented from the single normalized price');
 assert.equal(unmatched.regularPrice, 0, 'a regular price must remain absent until the API models it');
+assert.equal(unmatched.completionDate, '', 'an unmatched live unit must not inherit another unit completion date');
 assert.equal(unmatched.plan, '');
 assert.equal(unmatched.sourcePlan, '');
 assert.equal(unmatched.thumbnail, '');
@@ -140,6 +143,9 @@ assert.equal(mergeLiveCatalogUnits('safe-project', embedded, live).length, 1, 's
 
 assert.deepEqual(catalogLeadIdentity({ id: 'embedded-id', sourceKey: 'nrg:unit:42' }), { unitKey: 'nrg:unit:42' });
 assert.deepEqual(catalogLeadIdentity({ id: 'embedded-id' }), {}, 'embedded presentation IDs must never be submitted as CRM identities');
+assert.equal(parseCatalogDate(''), null, 'missing completion dates from unmatched live units must not reach Intl.DateTimeFormat');
+assert.equal(parseCatalogDate('not-a-date'), null, 'malformed catalogue dates must not reach Intl.DateTimeFormat');
+assert.equal(parseCatalogDate('2028-06-30', true)?.toISOString(), '2028-06-30T12:00:00.000Z');
 
 const leadModal = await readFile(new URL('../app/lead-modal.tsx', import.meta.url), 'utf8');
 assert.match(leadModal, /if \(projectSlug\)[\s\S]*typeof value\.unitKey !== 'string'/, 'project-scoped history must require a canonical unit key');

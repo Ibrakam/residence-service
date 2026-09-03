@@ -13,7 +13,7 @@ import {
   useState,
 } from "react";
 import { LeadModal, rememberLiveCatalogUnit } from "@/app/lead-modal";
-import { catalogLeadIdentity, useLiveCatalogSnapshot } from "@/app/live-catalog";
+import { catalogLeadIdentity, parseCatalogDate, useLiveCatalogSnapshot } from "@/app/live-catalog";
 import { jomiyLeadSubmitUrl } from "../jomiy-lead";
 import {
   lockJomiyBody,
@@ -655,17 +655,19 @@ function shortMoney(value: number, language: Language) {
   return `${number(value / 1e6, language, 1)} ${language === "ru" ? "млн" : language === "uz" ? "mln" : "m"}`;
 }
 function date(value: string, language: Language) {
+  const parsed = parseCatalogDate(value, true);
+  if (!parsed) return language === "ru" ? "Уточняется" : language === "uz" ? "Aniqlanmoqda" : "To be confirmed";
   if (language === "uz") return uzDate(value, "UTC");
   return new Intl.DateTimeFormat(locale(language), {
     day: "numeric",
     month: "short",
     year: "numeric",
     timeZone: "UTC",
-  }).format(
-    new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00Z` : value),
-  );
+  }).format(parsed);
 }
 function captured(value: string, language: Language) {
+  const parsed = parseCatalogDate(value);
+  if (!parsed) return language === "ru" ? "Последние доступные данные" : language === "uz" ? "So‘nggi mavjud ma’lumotlar" : "Latest available data";
   if (language === "uz") {
     const parts = uzDateParts(value, "Asia/Tashkent");
     return `${parts.day}-${parts.month}, ${parts.year}, ${parts.hour}:${parts.minute}`;
@@ -674,9 +676,11 @@ function captured(value: string, language: Language) {
     dateStyle: "medium",
     timeStyle: "short",
     timeZone: "Asia/Tashkent",
-  }).format(new Date(value));
+  }).format(parsed);
 }
 function campaignDeadline(value: string, language: Language) {
+  const parsed = parseCatalogDate(value);
+  if (!parsed) return language === "ru" ? "Уточняется" : language === "uz" ? "Aniqlanmoqda" : "To be confirmed";
   if (language === "uz") {
     const parts = uzDateParts(value, "Asia/Tashkent");
     return `${parts.day}-${parts.month}, ${parts.year}, ${parts.hour}:${parts.minute}:${parts.second} UZT`;
@@ -690,7 +694,7 @@ function campaignDeadline(value: string, language: Language) {
     second: "2-digit",
     hourCycle: "h23",
     timeZone: "Asia/Tashkent",
-  }).format(new Date(value));
+  }).format(parsed);
   return `${formatted} UZT`;
 }
 function status(unit: Unit, language: Language) {

@@ -13,7 +13,7 @@ import {
   useState,
 } from "react";
 import { LeadModal, rememberLiveCatalogUnit } from "@/app/lead-modal";
-import { catalogLeadIdentity, useLiveCatalogSnapshot } from "@/app/live-catalog";
+import { catalogLeadIdentity, parseCatalogDate, useLiveCatalogSnapshot } from "@/app/live-catalog";
 import { yangiBaxtLeadSubmitUrl } from "../yangibaxt-lead";
 import {
   lockYangiBaxtBody,
@@ -576,21 +576,23 @@ function shortMoney(value: number, language: Language) {
   return `${number(value / 1e6, language, 1)} ${language === "ru" ? "млн" : language === "uz" ? "mln" : "m"}`;
 }
 function date(value: string, language: Language) {
+  const parsed = parseCatalogDate(value, true);
+  if (!parsed) return language === "ru" ? "Уточняется" : language === "uz" ? "Aniqlanmoqda" : "To be confirmed";
   return new Intl.DateTimeFormat(locale(language), {
     day: "numeric",
     month: "short",
     year: "numeric",
     timeZone: "UTC",
-  }).format(
-    new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00Z` : value),
-  );
+  }).format(parsed);
 }
 function captured(value: string, language: Language) {
+  const parsed = parseCatalogDate(value);
+  if (!parsed) return language === "ru" ? "Последние доступные данные" : language === "uz" ? "So‘nggi mavjud ma’lumotlar" : "Latest available data";
   return new Intl.DateTimeFormat(locale(language), {
     dateStyle: "medium",
     timeStyle: "short",
     timeZone: "Asia/Tashkent",
-  }).format(new Date(value));
+  }).format(parsed);
 }
 function status(unit: Unit, language: Language) {
   return (

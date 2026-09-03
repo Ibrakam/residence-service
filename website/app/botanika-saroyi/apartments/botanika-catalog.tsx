@@ -13,7 +13,7 @@ import {
 } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { LeadModal, rememberLiveCatalogUnit } from '@/app/lead-modal';
-import { catalogLeadIdentity, useLiveCatalogSnapshot } from '@/app/live-catalog';
+import { catalogLeadIdentity, parseCatalogDate, useLiveCatalogSnapshot } from '@/app/live-catalog';
 import { botanikaLeadSubmitUrl } from '../botanika-lead';
 
 type Language = 'ru' | 'uz' | 'en';
@@ -198,11 +198,14 @@ function compareUnits(a: Unit, b: Unit, sort: Sort) {
   return b.floor - a.floor || numberTie;
 }
 function dateLabel(value: string, language: Language) {
-  const date = new Date(`${value}T12:00:00Z`);
+  const date = parseCatalogDate(value, true);
+  if (!date) return language === 'ru' ? 'Уточняется' : language === 'uz' ? 'Aniqlanmoqda' : 'To be confirmed';
   return new Intl.DateTimeFormat(locale(language), { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(date);
 }
 function capturedLabel(value: string, language: Language) {
-  return new Intl.DateTimeFormat(locale(language), { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(value));
+  const date = parseCatalogDate(value);
+  if (!date) return language === 'ru' ? 'Последние доступные данные' : language === 'uz' ? 'So‘nggi mavjud ma’lumotlar' : 'Latest available data';
+  return new Intl.DateTimeFormat(locale(language), { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(date);
 }
 function blockLabel(value: string, language: Language) {
   const suffix = value.match(/2\s*-\s*([12])$/)?.[1];
@@ -499,7 +502,7 @@ export function BotanikaCatalog({ snapshot: embeddedSnapshot, initialLanguage }:
   const planRows = snapshot.units.filter((unit) => Boolean(unit.plan)).length;
 
   const blocks = snapshot.filterSummary.blocks;
-  const completions = useMemo(() => Array.from(new Set(snapshot.units.map((unit) => unit.completionDate))).sort(), [snapshot.units]);
+  const completions = useMemo(() => Array.from(new Set(snapshot.units.map((unit) => unit.completionDate).filter((value) => parseCatalogDate(value, true)))).sort(), [snapshot.units]);
 
   const filtered = useMemo(() => {
     const priceFrom = filters.priceFrom ? Number(filters.priceFrom) * 1e6 : -Infinity;

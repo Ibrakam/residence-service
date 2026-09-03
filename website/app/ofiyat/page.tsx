@@ -34,6 +34,7 @@ export default async function OfiyatPage({ searchParams }: PageProps) {
   const structuredData = {
     '@context': 'https://schema.org', '@type': 'ApartmentComplex', name: 'OFIYAT',
     address: { '@type': 'PostalAddress', streetAddress: 'Фаргона йули, 33–35', addressLocality: 'Ташкент', addressCountry: 'UZ' },
+    geo: { '@type': 'GeoCoordinates', latitude: 41.280106, longitude: 69.307629 },
     telephone: '+998781137712', image: `${appBasePath}/kayan/ofiyat/frame-4-desktop.webp`,
   };
   return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} /><KayanProjectPage slug="ofiyat" initialProject={bundle.project} initialLanguage={language} /></>;

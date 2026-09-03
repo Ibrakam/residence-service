@@ -766,7 +766,7 @@ function OfiyatProjectPage({ initialProject, initialLanguage }: { initialProject
     </section>
 
     <section id="location" className="ofiyat-location">
-      <div className="ofiyat-location__copy" data-reveal><p>{o.mapKicker}</p><h2>{o.mapTitle}<br /><em>{o.mapAccent}</em></h2><span>{copy.address}</span><a href="https://yandex.uz/navi/10335/tashkent/?from=navi&lang=ru&ll=69.307171%2C41.332023&mode=whatshere&whatshere%5Bpoint%5D=69.307171%2C41.332023&whatshere%5Bzoom%5D=18&z=15" target="_blank" rel="noreferrer">{o.route}<b>↗</b></a></div>
+      <div className="ofiyat-location__copy" data-reveal><p>{o.mapKicker}</p><h2>{o.mapTitle}<br /><em>{o.mapAccent}</em></h2><span>{copy.address}</span><a href="https://yandex.uz/navi/10335/tashkent/?from=navi&lang=ru&ll=69.307629%2C41.280106&mode=whatshere&whatshere%5Bpoint%5D=69.307629%2C41.280106&whatshere%5Bzoom%5D=18&z=15" target="_blank" rel="noreferrer">{o.route}<b>↗</b></a></div>
       <figure data-reveal><ProjectImage src="/kayan/ofiyat/aerial.webp" alt={`${o.renderLabel} · ${copy.chapters[0].title}`} /><i aria-hidden="true"><span>OFIYAT</span></i></figure>
     </section>
 

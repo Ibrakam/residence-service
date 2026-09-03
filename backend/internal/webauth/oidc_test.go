@@ -124,6 +124,28 @@ func (fake *fakeOIDCServer) claimsForCode(code string) map[string]any {
 		claims["iat"] = now.Add(10 * time.Minute).Unix()
 	case "invalid-picture":
 		claims["picture"] = "http://insecure.example/photo"
+	case "string-id":
+		claims["id"] = "556677"
+	case "string-phone-verification":
+		claims["phone_number_verified"] = "true"
+	case "numeric-phone-verification":
+		claims["phone_number_verified"] = 1
+	case "numeric-phone":
+		claims["phone_number"] = int64(998901234567)
+	case "malformed-optional-profile":
+		claims["name"] = map[string]any{"unexpected": true}
+		claims["given_name"] = []string{"unexpected"}
+		claims["family_name"] = true
+		claims["preferred_username"] = 123
+		claims["picture"] = false
+	case "invalid-id":
+		claims["id"] = "55.6677"
+	case "unverified-phone-string":
+		claims["phone_number_verified"] = "false"
+	case "invalid-phone-verification":
+		claims["phone_number_verified"] = "yes"
+	case "invalid-phone-type":
+		claims["phone_number"] = map[string]any{"number": "998901234567"}
 	}
 	return claims
 }
@@ -201,6 +223,28 @@ func TestOIDCExchangeAllowsTelegramTokenWithoutNonceClaim(t *testing.T) {
 	}
 }
 
+func TestOIDCExchangeAcceptsSafeTelegramClaimEncodings(t *testing.T) {
+	for _, code := range []string{
+		"string-id", "string-phone-verification", "numeric-phone-verification",
+		"numeric-phone", "malformed-optional-profile",
+	} {
+		t.Run(code, func(t *testing.T) {
+			fake := newFakeOIDCServer(t)
+			provider := newOIDCClientForFake(t, fake)
+			identity, err := provider.Exchange(context.Background(), code, "test-verifier", fake.nonce)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if identity.TelegramID != 556677 || identity.PhoneNumber != "+998901234567" || !identity.PhoneNumberVerified {
+				t.Fatalf("identity = %#v", identity)
+			}
+			if code == "malformed-optional-profile" && (identity.Name != "Telegram user 556677" || identity.GivenName != "" || identity.FamilyName != "" || identity.Username != "" || identity.PictureURL != "") {
+				t.Fatalf("optional profile fallback identity = %#v", identity)
+			}
+		})
+	}
+}
+
 func TestOIDCExchangeRejectsInvalidSecurityClaims(t *testing.T) {
 	tests := []struct {
 		code          string
@@ -217,7 +261,11 @@ func TestOIDCExchangeRejectsInvalidSecurityClaims(t *testing.T) {
 		{"wrong-alg", "expected-nonce", ErrOIDCToken},
 		{"wrong-token-type", "expected-nonce", ErrOIDCToken},
 		{"unverified-phone", "expected-nonce", ErrPhoneNotShared},
+		{"unverified-phone-string", "expected-nonce", ErrPhoneNotShared},
+		{"invalid-phone-verification", "expected-nonce", ErrPhoneNotShared},
+		{"invalid-phone-type", "expected-nonce", ErrPhoneNotShared},
 		{"missing-phone", "expected-nonce", ErrPhoneNotShared},
+		{"invalid-id", "expected-nonce", ErrInvalidOIDCProfile},
 		{"invalid-picture", "expected-nonce", ErrInvalidOIDCProfile},
 	}
 	for _, item := range tests {

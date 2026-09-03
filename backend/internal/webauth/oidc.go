@@ -2,6 +2,7 @@ package webauth
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -103,18 +104,19 @@ func (provider *TelegramOIDC) Exchange(ctx context.Context, code, verifier, expe
 	if idToken.Issuer != provider.issuer || len(idToken.Audience) != 1 || idToken.Audience[0] != provider.clientID || idToken.Expiry.IsZero() {
 		return TelegramIdentity{}, errOIDCMetadata
 	}
+	// The cryptographic verifier above has already validated and decoded the
+	// standard OIDC claims. Keep provider-specific values raw here so harmless
+	// serializer differences in optional Telegram profile fields cannot reject
+	// an otherwise valid login.
 	var claims struct {
-		Subject             string `json:"sub"`
-		Nonce               string `json:"nonce"`
-		TelegramID          int64  `json:"id"`
-		Name                string `json:"name"`
-		GivenName           string `json:"given_name"`
-		FamilyName          string `json:"family_name"`
-		Username            string `json:"preferred_username"`
-		PictureURL          string `json:"picture"`
-		PhoneNumber         string `json:"phone_number"`
-		PhoneNumberVerified bool   `json:"phone_number_verified"`
-		IssuedAt            int64  `json:"iat"`
+		TelegramID          json.RawMessage `json:"id"`
+		Name                json.RawMessage `json:"name"`
+		GivenName           json.RawMessage `json:"given_name"`
+		FamilyName          json.RawMessage `json:"family_name"`
+		Username            json.RawMessage `json:"preferred_username"`
+		PictureURL          json.RawMessage `json:"picture"`
+		PhoneNumber         json.RawMessage `json:"phone_number"`
+		PhoneNumberVerified json.RawMessage `json:"phone_number_verified"`
 	}
 	if err := idToken.Claims(&claims); err != nil {
 		return TelegramIdentity{}, errOIDCClaims
@@ -123,38 +125,104 @@ func (provider *TelegramOIDC) Exchange(ctx context.Context, code, verifier, expe
 	// advertise or guarantee a nonce claim. The callback is still bound by
 	// state, the browser cookie, a one-time transaction, and S256 PKCE. If
 	// Telegram does return a nonce, require it to match the transaction exactly.
-	if claims.Nonce != "" && claims.Nonce != expectedNonce {
+	if idToken.Nonce != "" && idToken.Nonce != expectedNonce {
 		return TelegramIdentity{}, errOIDCNonce
 	}
 	now := time.Now()
-	if claims.IssuedAt <= 0 || time.Unix(claims.IssuedAt, 0).After(now.Add(2*time.Minute)) {
+	if idToken.IssuedAt.Unix() <= 0 || idToken.IssuedAt.After(now.Add(2*time.Minute)) {
 		return TelegramIdentity{}, errOIDCIssuedAt
 	}
-	phone, ok := normalizePhone(claims.PhoneNumber)
-	if !claims.PhoneNumberVerified || !ok {
-		return TelegramIdentity{}, ErrPhoneNotShared
-	}
-	if claims.Subject == "" || !validProfileText(claims.Subject, 255) || claims.TelegramID <= 0 || !validProfileText(claims.Name, 255) || !validProfileText(claims.GivenName, 255) || !validProfileText(claims.FamilyName, 255) || !validProfileText(claims.Username, 64) {
+	telegramID, ok := positiveDecimalClaim(claims.TelegramID)
+	if !ok {
 		return TelegramIdentity{}, ErrInvalidOIDCProfile
 	}
-	if claims.Name == "" {
-		claims.Name = strings.TrimSpace(strings.Join([]string{claims.GivenName, claims.FamilyName}, " "))
+	phoneValue, ok := phoneClaim(claims.PhoneNumber)
+	if !verifiedClaim(claims.PhoneNumberVerified) || !ok {
+		return TelegramIdentity{}, ErrPhoneNotShared
 	}
-	if claims.Name == "" {
-		claims.Name = "Telegram user " + strconv.FormatInt(claims.TelegramID, 10)
+	phone, ok := normalizePhone(phoneValue)
+	if !ok {
+		return TelegramIdentity{}, ErrPhoneNotShared
 	}
-	if claims.PictureURL != "" {
-		picture, err := url.Parse(claims.PictureURL)
-		if err != nil || picture.Scheme != "https" || picture.Hostname() == "" || picture.User != nil || len(claims.PictureURL) > 2048 {
+	name, _ := optionalStringClaim(claims.Name)
+	givenName, _ := optionalStringClaim(claims.GivenName)
+	familyName, _ := optionalStringClaim(claims.FamilyName)
+	username, _ := optionalStringClaim(claims.Username)
+	pictureURL, _ := optionalStringClaim(claims.PictureURL)
+	if idToken.Subject == "" || !validProfileText(idToken.Subject, 255) || !validProfileText(name, 255) || !validProfileText(givenName, 255) || !validProfileText(familyName, 255) || !validProfileText(username, 64) {
+		return TelegramIdentity{}, ErrInvalidOIDCProfile
+	}
+	if name == "" {
+		name = strings.TrimSpace(strings.Join([]string{givenName, familyName}, " "))
+	}
+	if name == "" {
+		name = "Telegram user " + strconv.FormatInt(telegramID, 10)
+	}
+	if pictureURL != "" {
+		picture, err := url.Parse(pictureURL)
+		if err != nil || picture.Scheme != "https" || picture.Hostname() == "" || picture.User != nil || len(pictureURL) > 2048 {
 			return TelegramIdentity{}, ErrInvalidOIDCProfile
 		}
 	}
 	return TelegramIdentity{
-		Issuer: provider.issuer, Subject: claims.Subject, TelegramID: claims.TelegramID,
-		Name: claims.Name, GivenName: claims.GivenName, FamilyName: claims.FamilyName,
-		Username: claims.Username, PictureURL: claims.PictureURL,
+		Issuer: provider.issuer, Subject: idToken.Subject, TelegramID: telegramID,
+		Name: name, GivenName: givenName, FamilyName: familyName,
+		Username: username, PictureURL: pictureURL,
 		PhoneNumber: phone, PhoneNumberVerified: true,
 	}, nil
+}
+
+func optionalStringClaim(raw json.RawMessage) (string, bool) {
+	if len(raw) == 0 || string(raw) == "null" {
+		return "", false
+	}
+	var value string
+	if err := json.Unmarshal(raw, &value); err != nil {
+		return "", false
+	}
+	return value, true
+}
+
+func positiveDecimalClaim(raw json.RawMessage) (int64, bool) {
+	value, quoted := optionalStringClaim(raw)
+	if !quoted {
+		value = string(raw)
+	}
+	if value == "" || len(value) > 19 {
+		return 0, false
+	}
+	for _, character := range value {
+		if character < '0' || character > '9' {
+			return 0, false
+		}
+	}
+	parsed, err := strconv.ParseInt(value, 10, 64)
+	return parsed, err == nil && parsed > 0
+}
+
+func phoneClaim(raw json.RawMessage) (string, bool) {
+	if value, ok := optionalStringClaim(raw); ok {
+		return value, true
+	}
+	value := string(raw)
+	if value == "" {
+		return "", false
+	}
+	for _, character := range value {
+		if character < '0' || character > '9' {
+			return "", false
+		}
+	}
+	return value, true
+}
+
+func verifiedClaim(raw json.RawMessage) bool {
+	switch string(raw) {
+	case "true", "1":
+		return true
+	}
+	value, ok := optionalStringClaim(raw)
+	return ok && (value == "true" || value == "1")
 }
 
 func normalizePhone(value string) (string, bool) {

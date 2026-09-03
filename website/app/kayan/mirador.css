@@ -1172,20 +1172,22 @@
 /* On desktop and tablet the panorama is the primary hero action. Keep the
    editorial identity in the sky above the masks and remove duplicate CTAs. */
 @media(min-width:768px) {
-  .kayan-site--mirador .kayan-hero__copy {
-    top:clamp(122px,15vh,158px);
+  /* Keep these hero refinements stronger than the shared Mirador rules even
+     when Next emits the shared stylesheet after this project stylesheet. */
+  .kayan-site--mirador .kayan-hero>.kayan-hero__copy {
+    top:clamp(150px,18vh,180px);
     left:clamp(34px,4.5vw,72px);
     width:min(430px,42vw);
     pointer-events:none;
   }
 
-  .kayan-site--mirador .kayan-hero__copy h1 {
+  .kayan-site--mirador .kayan-hero>.kayan-hero__copy h1 {
     margin:18px 0 18px;
     font-size:clamp(42px,min(4.25vw,7.2vh),68px);
     line-height:.82;
   }
 
-  .kayan-site--mirador .kayan-hero__copy>span {
+  .kayan-site--mirador .kayan-hero>.kayan-hero__copy>span {
     max-width:360px;
     padding-left:15px;
     font-size:9px;

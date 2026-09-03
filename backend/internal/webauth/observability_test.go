@@ -107,6 +107,13 @@ func TestObservabilityEmitsOnlySanitizedEventCodes(t *testing.T) {
 	}{
 		{name: "exchange", err: ErrOIDCExchange},
 		{name: "token", err: ErrOIDCToken},
+		{name: "token-type", err: errOIDCTokenType},
+		{name: "id-token", err: errOIDCIDToken},
+		{name: "verify", err: errOIDCVerification},
+		{name: "metadata", err: errOIDCMetadata},
+		{name: "claims", err: errOIDCClaims},
+		{name: "nonce", err: errOIDCNonce},
+		{name: "issued-at", err: errOIDCIssuedAt},
 		{name: "profile", err: ErrInvalidOIDCProfile},
 	} {
 		failureServer, failureStore, failureProvider := newServer(t)
@@ -189,8 +196,11 @@ func TestObservabilityEmitsOnlySanitizedEventCodes(t *testing.T) {
 		"login_callback/expired": false, "login_callback/phone_required": false,
 		"login_callback/provider_failed": false, "login_callback/account_blocked": false,
 		"login_callback/oidc_exchange_failed": false, "login_callback/oidc_token_failed": false,
-		"login_callback/oidc_profile_failed": false,
-		"login_callback/store_failed":        false, "logout/store_failed": false,
+		"login_callback/oidc_token_type_failed": false, "login_callback/oidc_id_token_failed": false,
+		"login_callback/oidc_verify_failed": false, "login_callback/oidc_metadata_failed": false,
+		"login_callback/oidc_claims_failed": false, "login_callback/oidc_nonce_failed": false,
+		"login_callback/oidc_issued_at_failed": false, "login_callback/oidc_profile_failed": false,
+		"login_callback/store_failed": false, "logout/store_failed": false,
 		"logout_all/store_failed": false, "bot_webhook/send_failed": false,
 	}
 	allowedFields := map[string]bool{"time": true, "level": true, "msg": true, "event": true, "outcome": true}
@@ -224,6 +234,9 @@ func TestObservabilityEmitsOnlySanitizedEventCodes(t *testing.T) {
 		"private-message-marker", "Sensitive Person", "private_username", "+998909998877",
 		"8877665544332211", "8877665544", "authorization-code-secret", "phone-code-secret", "provider-code-secret",
 		"exchange-failure-code-secret", "token-failure-code-secret", "profile-failure-code-secret",
+		"token-type-failure-code-secret", "id-token-failure-code-secret", "verify-failure-code-secret",
+		"metadata-failure-code-secret", "claims-failure-code-secret", "nonce-failure-code-secret",
+		"issued-at-failure-code-secret",
 		"blocked-code-secret", "store-code-secret", "expired-code-secret", testConfig().OIDCClientSecret,
 		botConfig.BotToken, botConfig.BotWebhookSecret, startState, startBinding, sessionToken,
 		expiredState, expiredBinding, phoneState, phoneBinding, providerState, providerBinding,

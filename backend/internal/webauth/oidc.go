@@ -3,6 +3,7 @@ package webauth
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -19,6 +20,14 @@ var (
 	ErrOIDCToken          = errors.New("oidc token validation failed")
 	ErrPhoneNotShared     = errors.New("verified phone number is required")
 	ErrInvalidOIDCProfile = errors.New("oidc profile is invalid")
+
+	errOIDCTokenType    = fmt.Errorf("%w: token_type", ErrOIDCToken)
+	errOIDCIDToken      = fmt.Errorf("%w: id_token", ErrOIDCToken)
+	errOIDCVerification = fmt.Errorf("%w: verification", ErrOIDCToken)
+	errOIDCMetadata     = fmt.Errorf("%w: metadata", ErrOIDCToken)
+	errOIDCClaims       = fmt.Errorf("%w: claims", ErrOIDCToken)
+	errOIDCNonce        = fmt.Errorf("%w: nonce", ErrOIDCToken)
+	errOIDCIssuedAt     = fmt.Errorf("%w: issued_at", ErrOIDCToken)
 )
 
 type identityProvider interface {
@@ -81,18 +90,18 @@ func (provider *TelegramOIDC) Exchange(ctx context.Context, code, verifier, expe
 		return TelegramIdentity{}, ErrOIDCExchange
 	}
 	if !strings.EqualFold(token.TokenType, "Bearer") {
-		return TelegramIdentity{}, ErrOIDCToken
+		return TelegramIdentity{}, errOIDCTokenType
 	}
 	rawIDToken, ok := token.Extra("id_token").(string)
 	if !ok || len(rawIDToken) < 128 || len(rawIDToken) > 32<<10 {
-		return TelegramIdentity{}, ErrOIDCToken
+		return TelegramIdentity{}, errOIDCIDToken
 	}
 	idToken, err := provider.verifier.Verify(ctx, rawIDToken)
 	if err != nil {
-		return TelegramIdentity{}, ErrOIDCToken
+		return TelegramIdentity{}, errOIDCVerification
 	}
 	if idToken.Issuer != provider.issuer || len(idToken.Audience) != 1 || idToken.Audience[0] != provider.clientID || idToken.Expiry.IsZero() {
-		return TelegramIdentity{}, ErrOIDCToken
+		return TelegramIdentity{}, errOIDCMetadata
 	}
 	var claims struct {
 		Subject             string `json:"sub"`
@@ -108,18 +117,18 @@ func (provider *TelegramOIDC) Exchange(ctx context.Context, code, verifier, expe
 		IssuedAt            int64  `json:"iat"`
 	}
 	if err := idToken.Claims(&claims); err != nil {
-		return TelegramIdentity{}, ErrOIDCToken
+		return TelegramIdentity{}, errOIDCClaims
 	}
 	// Telegram's authorization-code documentation and discovery metadata do not
 	// advertise or guarantee a nonce claim. The callback is still bound by
 	// state, the browser cookie, a one-time transaction, and S256 PKCE. If
 	// Telegram does return a nonce, require it to match the transaction exactly.
 	if claims.Nonce != "" && claims.Nonce != expectedNonce {
-		return TelegramIdentity{}, ErrOIDCToken
+		return TelegramIdentity{}, errOIDCNonce
 	}
 	now := time.Now()
 	if claims.IssuedAt <= 0 || time.Unix(claims.IssuedAt, 0).After(now.Add(2*time.Minute)) {
-		return TelegramIdentity{}, ErrOIDCToken
+		return TelegramIdentity{}, errOIDCIssuedAt
 	}
 	phone, ok := normalizePhone(claims.PhoneNumber)
 	if !claims.PhoneNumberVerified || !ok {

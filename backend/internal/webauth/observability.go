@@ -25,6 +25,13 @@ const (
 	outcomeProviderFailed      outcomeCode = "provider_failed"
 	outcomeOIDCExchangeFailed  outcomeCode = "oidc_exchange_failed"
 	outcomeOIDCTokenFailed     outcomeCode = "oidc_token_failed"
+	outcomeOIDCTokenTypeFailed outcomeCode = "oidc_token_type_failed"
+	outcomeOIDCIDTokenFailed   outcomeCode = "oidc_id_token_failed"
+	outcomeOIDCVerifyFailed    outcomeCode = "oidc_verify_failed"
+	outcomeOIDCMetadataFailed  outcomeCode = "oidc_metadata_failed"
+	outcomeOIDCClaimsFailed    outcomeCode = "oidc_claims_failed"
+	outcomeOIDCNonceFailed     outcomeCode = "oidc_nonce_failed"
+	outcomeOIDCIssuedAtFailed  outcomeCode = "oidc_issued_at_failed"
 	outcomeOIDCProfileFailed   outcomeCode = "oidc_profile_failed"
 	outcomeAccountBlocked      outcomeCode = "account_blocked"
 	outcomeSendFailed          outcomeCode = "send_failed"
@@ -39,6 +46,20 @@ func providerFailureOutcome(err error) outcomeCode {
 	switch {
 	case errors.Is(err, ErrOIDCExchange):
 		return outcomeOIDCExchangeFailed
+	case errors.Is(err, errOIDCTokenType):
+		return outcomeOIDCTokenTypeFailed
+	case errors.Is(err, errOIDCIDToken):
+		return outcomeOIDCIDTokenFailed
+	case errors.Is(err, errOIDCVerification):
+		return outcomeOIDCVerifyFailed
+	case errors.Is(err, errOIDCMetadata):
+		return outcomeOIDCMetadataFailed
+	case errors.Is(err, errOIDCClaims):
+		return outcomeOIDCClaimsFailed
+	case errors.Is(err, errOIDCNonce):
+		return outcomeOIDCNonceFailed
+	case errors.Is(err, errOIDCIssuedAt):
+		return outcomeOIDCIssuedAtFailed
 	case errors.Is(err, ErrOIDCToken):
 		return outcomeOIDCTokenFailed
 	case errors.Is(err, ErrInvalidOIDCProfile):

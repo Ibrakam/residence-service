@@ -307,7 +307,7 @@ at server scope, every proxied/static exception must include
 `tencorp-auth-exempt.conf` (or an equivalent reviewed `auth_request off`):
 
 - `/__auth/*`, including the secret-header-validated Telegram bot webhook and
-  the four fixed, versioned UI assets under `/__auth/assets/`;
+  the six fixed, versioned UI assets under `/__auth/assets/`;
 - exact `/privacy` and its path-only `/privacy/` redirect;
 - exact `/robots.txt`, replaced with `User-agent: *` and `Disallow: /`;
 - Certbot's `/.well-known/acme-challenge/` location;
@@ -354,7 +354,7 @@ location = /robots.txt {
 
 Proxy exact `/privacy` to the auth gateway with
 `tencorp-auth-public-proxy.conf`; its localized legal HTML contains inline CSS,
-no JavaScript, and references only the four fixed auth assets. Keep the
+no JavaScript, and references only the six fixed auth assets. Keep the
 dedicated `/__auth/assets/` proxy public and immutable, but never exempt a main
 application asset prefix or JavaScript chunk that can contain catalog data.
 
@@ -377,7 +377,7 @@ Required unauthenticated public checks:
   `Cache-Control: private, no-store`;
 - `/residence-api/catalog/` and `/api/kayan/ofiyat-explorer` return 401;
 - protected POST routes return 401 without forwarding a body upstream;
-- all four `/__auth/assets/` files remain 200 with their exact image/font
+- all six `/__auth/assets/` files remain 200 with their exact image/font
   content type, HSTS, and `public, max-age=31536000, immutable`, never
   `private` or `no-store`;
 - direct public access to `/__tencorp-auth/check` does not expose the internal

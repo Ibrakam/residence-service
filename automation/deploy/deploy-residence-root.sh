@@ -715,6 +715,8 @@ smoke_public_unauthenticated_contract() {
 
   smoke_public_immutable_auth_asset '/__auth/assets/brand-city-v1.webp' 'image/webp'
   smoke_public_immutable_auth_asset '/__auth/assets/manrope-cyrillic-v1.woff2' 'font/woff2'
+  smoke_public_immutable_auth_asset '/__auth/assets/golos-cyrillic-v1.woff2' 'font/woff2'
+  smoke_public_immutable_auth_asset '/__auth/assets/golos-latin-v1.woff2' 'font/woff2'
   smoke_public_immutable_auth_asset '/__auth/assets/cormorant-cyrillic-v1.woff2' 'font/woff2'
   smoke_public_immutable_auth_asset '/__auth/assets/cormorant-italic-cyrillic-v1.woff2' 'font/woff2'
 

@@ -2,16 +2,15 @@ package ui
 
 import (
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
 )
 
 // Model contains the request-scoped values needed by the authorization pages.
-// Language is the explicit URL language and takes precedence over
-// AcceptLanguage. ReturnTo is always normalized to a same-origin relative URL
-// before it is rendered.
+// Language is an optional explicit URL language. When it is absent or invalid,
+// pages deliberately open in Russian. ReturnTo is always normalized to a
+// same-origin relative URL before it is rendered.
 type Model struct {
 	Language       string
 	AcceptLanguage string
@@ -42,44 +41,11 @@ const (
 	languageEN language = "en"
 )
 
-func resolveLanguage(explicit, acceptLanguage string) language {
+func resolveLanguage(explicit, _ string) language {
 	if selected, ok := languageFromTag(explicit); ok {
 		return selected
 	}
-
-	selected := languageRU
-	bestQuality := -1.0
-	bestPosition := len(strings.Split(acceptLanguage, ",")) + 1
-	for position, item := range strings.Split(acceptLanguage, ",") {
-		parts := strings.Split(item, ";")
-		candidate, ok := languageFromTag(parts[0])
-		if !ok {
-			continue
-		}
-
-		quality := 1.0
-		for _, parameter := range parts[1:] {
-			name, value, found := strings.Cut(strings.TrimSpace(parameter), "=")
-			if !found || !strings.EqualFold(strings.TrimSpace(name), "q") {
-				continue
-			}
-			parsed, err := strconv.ParseFloat(strings.TrimSpace(value), 64)
-			if err != nil || parsed < 0 || parsed > 1 {
-				quality = 0
-			} else {
-				quality = parsed
-			}
-		}
-		if quality <= 0 {
-			continue
-		}
-		if quality > bestQuality || (quality == bestQuality && position < bestPosition) {
-			selected = candidate
-			bestQuality = quality
-			bestPosition = position
-		}
-	}
-	return selected
+	return languageRU
 }
 
 func languageFromTag(value string) (language, bool) {

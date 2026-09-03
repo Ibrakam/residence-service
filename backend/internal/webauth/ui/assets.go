@@ -18,6 +18,12 @@ var tencorpCity []byte
 //go:embed assets/manrope-cyrillic.woff2
 var manropeCyrillic []byte
 
+//go:embed assets/golos-cyrillic.woff2
+var golosCyrillic []byte
+
+//go:embed assets/golos-latin.woff2
+var golosLatin []byte
+
 //go:embed assets/cormorant-normal.woff2
 var cormorantNormal []byte
 
@@ -32,6 +38,8 @@ type embeddedAsset struct {
 var embeddedAssets = map[string]embeddedAsset{
 	"brand-city-v1.webp":                 {contentType: "image/webp", content: tencorpCity},
 	"manrope-cyrillic-v1.woff2":          {contentType: "font/woff2", content: manropeCyrillic},
+	"golos-cyrillic-v1.woff2":            {contentType: "font/woff2", content: golosCyrillic},
+	"golos-latin-v1.woff2":               {contentType: "font/woff2", content: golosLatin},
 	"cormorant-cyrillic-v1.woff2":        {contentType: "font/woff2", content: cormorantNormal},
 	"cormorant-italic-cyrillic-v1.woff2": {contentType: "font/woff2", content: cormorantItalic},
 }

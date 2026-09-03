@@ -36,14 +36,20 @@ func TestServeAssetContract(t *testing.T) {
 }
 
 func TestServeAssetSupportsHEADFontsAndRejectsUnknownNames(t *testing.T) {
-	headRequest := httptest.NewRequest(http.MethodHead, "/__auth/assets/manrope-cyrillic-v1.woff2", nil)
-	headResponse := httptest.NewRecorder()
-	ServeAsset(headResponse, headRequest, "manrope-cyrillic-v1.woff2")
-	if headResponse.Code != http.StatusOK || headResponse.Body.Len() != 0 {
-		t.Fatalf("HEAD response = %d with %d bytes", headResponse.Code, headResponse.Body.Len())
-	}
-	if got := headResponse.Header().Get("Content-Type"); got != "font/woff2" {
-		t.Fatalf("font Content-Type = %q", got)
+	for _, name := range []string{
+		"manrope-cyrillic-v1.woff2",
+		"golos-cyrillic-v1.woff2",
+		"golos-latin-v1.woff2",
+	} {
+		headRequest := httptest.NewRequest(http.MethodHead, "/__auth/assets/"+name, nil)
+		headResponse := httptest.NewRecorder()
+		ServeAsset(headResponse, headRequest, name)
+		if headResponse.Code != http.StatusOK || headResponse.Body.Len() != 0 {
+			t.Fatalf("HEAD %s response = %d with %d bytes", name, headResponse.Code, headResponse.Body.Len())
+		}
+		if got := headResponse.Header().Get("Content-Type"); got != "font/woff2" {
+			t.Fatalf("%s Content-Type = %q", name, got)
+		}
 	}
 
 	unknownRequest := httptest.NewRequest(http.MethodGet, "/__auth/assets/missing.svg", nil)

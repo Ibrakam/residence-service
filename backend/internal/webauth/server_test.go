@@ -563,10 +563,17 @@ func TestLoginUsesValidatedOriginalURIAndSecurityHeaders(t *testing.T) {
 	server, _, _ := testServer(t)
 	request := httptest.NewRequest(http.MethodGet, "https://form.tencorp.uz/__auth/login", nil)
 	request.Header.Set("X-Original-URI", "/mirador/unit/42?from=ad")
+	request.Header.Set("Accept-Language", "en-US,en;q=0.9")
 	response := httptest.NewRecorder()
 	server.Handler().ServeHTTP(response, request)
 	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `name="return_to" value="/mirador/unit/42?from=ad"`) {
 		t.Fatalf("login response = %d %s", response.Code, response.Body.String())
+	}
+	if !strings.Contains(response.Body.String(), `<html lang="ru"`) || !strings.Contains(response.Body.String(), "Войти через Telegram") {
+		t.Fatal("login without an explicit language must default to Russian")
+	}
+	if got := response.Header().Get("Content-Language"); got != "ru" {
+		t.Fatalf("Content-Language = %q, want ru", got)
 	}
 	binding := responseCookie(t, response, BindingCookie)
 	csrfToken := formCSRFToken(binding.Value)

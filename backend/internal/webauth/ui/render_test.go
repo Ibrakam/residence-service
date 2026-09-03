@@ -24,6 +24,7 @@ func TestRenderLoginContract(t *testing.T) {
 	}
 
 	body := recorder.Body.String()
+	assertContains(t, body, `<body class="login-page">`)
 	assertContains(t, body, `<html lang="ru" dir="ltr">`)
 	assertContains(t, body, `Войти через Telegram`)
 	assertContains(t, body, `method="post" action="/__auth/telegram/start"`)
@@ -39,6 +40,9 @@ func TestRenderLoginContract(t *testing.T) {
 	assertContains(t, body, `class="brand-stage__wordmark"`)
 	assertContains(t, body, `viewBox="0 0 230.34 59.17"`)
 	assertContains(t, body, `url("/__auth/assets/brand-city-v1.webp")`)
+	assertContains(t, body, `url("/__auth/assets/golos-cyrillic-v1.woff2")`)
+	assertContains(t, body, `url("/__auth/assets/golos-latin-v1.woff2")`)
+	assertContains(t, body, `:where(.login-page) .auth-card h1`)
 
 	if strings.Contains(strings.ToLower(body), "<script") {
 		t.Fatal("authorization UI must not contain inline or external scripts")
@@ -98,9 +102,10 @@ func TestLanguageSelection(t *testing.T) {
 		contentLanguage string
 	}{
 		{name: "explicit Uzbek wins", model: Model{Language: "uz", AcceptLanguage: "en"}, wantLanguage: "uz", wantText: "Telegram orqali kiring", contentLanguage: "uz"},
-		{name: "English regional accept", model: Model{AcceptLanguage: "en-GB,en;q=0.8,ru;q=0.5"}, wantLanguage: "en", wantText: "Sign in with Telegram", contentLanguage: "en"},
-		{name: "quality preference", model: Model{Language: "de", AcceptLanguage: "ru;q=0.4, uz-Latn-UZ;q=0.9"}, wantLanguage: "uz", wantText: "Telegram orqali kiring", contentLanguage: "uz"},
-		{name: "default Russian", model: Model{AcceptLanguage: "de,fr;q=0.8"}, wantLanguage: "ru", wantText: "Войти через Telegram", contentLanguage: "ru"},
+		{name: "explicit English wins", model: Model{Language: "en", AcceptLanguage: "ru"}, wantLanguage: "en", wantText: "Sign in with Telegram", contentLanguage: "en"},
+		{name: "English browser defaults to Russian", model: Model{AcceptLanguage: "en-GB,en;q=0.8"}, wantLanguage: "ru", wantText: "Войти через Telegram", contentLanguage: "ru"},
+		{name: "Uzbek browser defaults to Russian", model: Model{AcceptLanguage: "uz-Latn-UZ,uz;q=0.9"}, wantLanguage: "ru", wantText: "Войти через Telegram", contentLanguage: "ru"},
+		{name: "invalid explicit language defaults to Russian", model: Model{Language: "de", AcceptLanguage: "en"}, wantLanguage: "ru", wantText: "Войти через Telegram", contentLanguage: "ru"},
 	}
 
 	for _, test := range tests {

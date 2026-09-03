@@ -38,6 +38,17 @@ test('Uysot POST exception is exact, bounded, and preserves the required order s
   assert.throws(() => parseUysotReadOnlyBody(JSON.stringify({ page: 1, size: 10, orders: {}, houseId: [1074], delete: true })), /unexpected keys/);
   assert.throws(() => parseUysotReadOnlyBody(JSON.stringify({ page: 1, size: 10, orders: {}, houseId: [1] })), /1074/);
   assert.equal(classifyRequest(getProvider('uysot'), { method: 'POST', url: 'https://service.app.uysot.uz/v1/smart-catalog/table', postData: input }).action, 'continue-read-post');
+  assert.deepEqual(
+    classifyRequest(getProvider('uysot'), {
+      method: 'POST',
+      url: 'https://app.uysot.uz/.well-known/vercel/security/request-challenge',
+      postData: 'opaque-browser-verification-body',
+    }),
+    { action: 'continue-browser-verification' },
+    'the exact Uysot host checkpoint may pass through without reading or retaining its opaque body',
+  );
+  assert.equal(classifyRequest(getProvider('uysot'), { method: 'POST', url: 'https://app.uysot.uz/.well-known/vercel/security/request-challenge?unexpected=1', postData: '{}' }).action, 'block');
+  assert.equal(classifyRequest(getProvider('uysot'), { method: 'POST', url: 'https://service.app.uysot.uz/.well-known/vercel/security/request-challenge', postData: '{}' }).action, 'block');
   assert.equal(classifyRequest(getProvider('uysot'), { method: 'POST', url: 'https://service.app.uysot.uz/v1/smart-catalog/delete', postData: input }).action, 'block');
   assert.ok(getProvider('uysot').launchFlags.includes('--enable-unsafe-swiftshader'));
 });

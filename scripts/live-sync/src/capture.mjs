@@ -29,6 +29,12 @@ export function classifyRequest(provider, request) {
   if (provider.id === 'uysot' && method === 'POST') {
     let url;
     try { url = new URL(request.url); } catch { return { action: 'block', reason: 'invalid URL' }; }
+    const verification = provider.browserVerificationPost;
+    if (verification && url.origin === verification.origin && url.pathname === verification.path && !url.search && !url.hash) {
+      // Let the real browser complete the host's own checkpoint. The collector
+      // never reads, logs, rewrites, or persists this request body or response.
+      return { action: 'continue-browser-verification' };
+    }
     if (url.origin !== 'https://service.app.uysot.uz' || url.pathname !== '/v1/smart-catalog/table' || url.search) {
       return { action: 'block', reason: 'non-allowlisted POST' };
     }
@@ -199,6 +205,7 @@ export async function captureFromAuthorizedTab(provider, {
       cookiesRead: false,
       unsafeMethodsBlocked: true,
       exactReadPostException: provider.id === 'uysot' ? '/v1/smart-catalog/table' : null,
+      exactBrowserVerificationException: provider.browserVerificationPost?.path ?? null,
     },
     blocked,
     errors,

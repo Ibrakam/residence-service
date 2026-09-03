@@ -24,6 +24,11 @@ public BI sales-picker source.
 ## Safety boundary
 
 - Browser collection attaches only to a loopback CDP endpoint.
+- Uysot may run its own exact, queryless Vercel browser checkpoint POST before
+  loading the showroom. That request is passed through unchanged, while its
+  opaque body and response are never read, logged, rewritten, or persisted.
+  Interactive checkpoints are never solved by the collector and require the
+  operator to complete them in the existing browser session.
 - Kayan and Uysot reuse server-side persistent Chrome profiles. No collector
   calls cookie, request-header, Storage, localStorage, or sessionStorage APIs.
 - Every browser request is checked against an exact host/path/method/query-key

@@ -67,6 +67,10 @@ export const providers = Object.freeze({
       requestKeys: Object.freeze(['houseId', 'orders', 'page', 'size']),
       forcedBody: Object.freeze({ page: 1, size: 500, orders: Object.freeze({}), houseId: Object.freeze([1074]) }),
     }),
+    browserVerificationPost: Object.freeze({
+      origin: 'https://app.uysot.uz',
+      path: '/.well-known/vercel/security/request-challenge',
+    }),
     requiredProbeIds: Object.freeze(['houses', 'buildings', 'showroom', 'catalog-table']),
     outputFiles: Object.freeze(['avalon-units.json']),
     baseline: Object.freeze({ minimumUnits: 268, requiredBuildings: ['B1', 'A', 'B2'] }),

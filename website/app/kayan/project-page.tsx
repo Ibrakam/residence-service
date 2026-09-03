@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Lenis from 'lenis';
 import { LeadModal, rememberLastViewedApartment } from '@/app/lead-modal';
+import { liveCatalogAPIBase } from '@/app/live-catalog';
 import { catalogUnitAriaLabel } from './catalog-accessibility';
 import { selectCatalogTimestamp } from './catalog-timestamp';
 import { catalogUnitQuery, resolveCompositeCatalogUnit } from './catalog-url-state';
@@ -98,7 +99,7 @@ type Layout = {
 export type CatalogBundle = { project: Project; units: Unit[]; layouts: Layout[] };
 
 const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
-const liveAPI = process.env.NEXT_PUBLIC_CATALOG_API_URL?.replace(/\/$/, '') ?? '';
+const liveAPI = liveCatalogAPIBase();
 const languages: KayanLanguage[] = ['ru', 'uz', 'en'];
 
 const ui = {
@@ -114,7 +115,7 @@ const ui = {
     onlyAvailable: 'Только свободные', onlyAvailableHint: 'скрыть проданные и забронированные', objects: 'объектов', floor: 'Этаж', level: 'Уровень',
     empty: 'По выбранным параметрам объектов нет.', corridor: 'холл · лифты · лестница', driveway: 'проезд', apartment: 'Квартира', parking: 'Машиноместо',
     area: 'Площадь', entrance: 'Подъезд', status: 'Статус', cost: 'Стоимость', askTerms: 'Уточнить условия', pickSimilar: 'Подобрать похожую', noPlan: 'Планировка для этого объекта пока не опубликована.',
-    sourceLive: 'данные API обновлены сейчас', sourceSnapshot: 'проверенный снимок каталога', selectObject: 'Выберите объект', layoutExample: 'Типовая планировка', layoutDisclaimer: 'Пример планировки проекта. Фактическая схема выбранной квартиры уточняется у менеджера.', expandPlan: 'Увеличить', closePlan: 'Закрыть планировку', swipe: 'Листайте вбок', scrollBack: 'Прокрутить шахматку влево', scrollForward: 'Прокрутить шахматку вправо',
+    sourceLive: 'данные обновлены автоматически', sourceSnapshot: 'последние доступные данные', selectObject: 'Выберите объект', layoutExample: 'Типовая планировка', layoutDisclaimer: 'Пример планировки проекта. Фактическая схема выбранной квартиры уточняется у менеджера.', expandPlan: 'Увеличить', closePlan: 'Закрыть планировку', swipe: 'Листайте вбок', scrollBack: 'Прокрутить шахматку влево', scrollForward: 'Прокрутить шахматку вправо',
     entranceFilter: 'Подъезд', floorFilter: 'Этаж', sort: 'Сортировка', allEntrances: 'Все подъезды', allFloors: 'Все этажи', sortStatus: 'Сначала свободные', sortPrice: 'Сначала дешевле', sortArea: 'По площади', sortFloor: 'С верхних этажей', showMore: 'Показать ещё', showing: 'Показано', ofObjects: 'из', filters: 'Фильтры каталога', blockContext: 'Блок', phaseContext: 'Очередь', catalogContext: 'Каталог',
     statusLabels: { available: 'Свободно', reserved: 'Бронь', sold: 'Продано', unavailable: 'Не продаётся' },
   },
@@ -130,7 +131,7 @@ const ui = {
     onlyAvailable: 'Faqat mavjud', onlyAvailableHint: 'sotilgan va band obyektlarni yashirish', objects: 'obyekt', floor: 'Qavat', level: 'Daraja',
     empty: 'Tanlangan parametrlarga mos obyekt yo‘q.', corridor: 'xoll · liftlar · zina', driveway: 'yo‘lak', apartment: 'Xonadon', parking: 'Parking o‘rni',
     area: 'Maydon', entrance: 'Kirish', status: 'Holat', cost: 'Narxi', askTerms: 'Shartlarni aniqlash', pickSimilar: 'O‘xshashini tanlash', noPlan: 'Bu obyektning rejasi hozircha e’lon qilinmagan.',
-    sourceLive: 'API ma’lumotlari hozir yangilandi', sourceSnapshot: 'tekshirilgan katalog nusxasi', selectObject: 'Obyektni tanlang', layoutExample: 'Namunaviy reja', layoutDisclaimer: 'Bu loyiha rejasining namunasi. Tanlangan xonadonning aniq rejasi menejer bilan aniqlashtiriladi.', expandPlan: 'Kattalashtirish', closePlan: 'Rejani yopish', swipe: 'Yon tomonga suring', scrollBack: 'Jadvalni chapga surish', scrollForward: 'Jadvalni o‘ngga surish',
+    sourceLive: 'ma’lumotlar avtomatik yangilandi', sourceSnapshot: 'so‘nggi mavjud ma’lumotlar', selectObject: 'Obyektni tanlang', layoutExample: 'Namunaviy reja', layoutDisclaimer: 'Bu loyiha rejasining namunasi. Tanlangan xonadonning aniq rejasi menejer bilan aniqlashtiriladi.', expandPlan: 'Kattalashtirish', closePlan: 'Rejani yopish', swipe: 'Yon tomonga suring', scrollBack: 'Jadvalni chapga surish', scrollForward: 'Jadvalni o‘ngga surish',
     entranceFilter: 'Kirish', floorFilter: 'Qavat', sort: 'Saralash', allEntrances: 'Barcha kirishlar', allFloors: 'Barcha qavatlar', sortStatus: 'Avval mavjudlar', sortPrice: 'Avval arzonlari', sortArea: 'Maydon bo‘yicha', sortFloor: 'Yuqori qavatlardan', showMore: 'Yana ko‘rsatish', showing: 'Ko‘rsatildi', ofObjects: 'jami', filters: 'Katalog filtrlari', blockContext: 'Blok', phaseContext: 'Bosqich', catalogContext: 'Katalog',
     statusLabels: { available: 'Mavjud', reserved: 'Band', sold: 'Sotilgan', unavailable: 'Sotuvda emas' },
   },
@@ -146,14 +147,14 @@ const ui = {
     onlyAvailable: 'Available only', onlyAvailableHint: 'hide sold and reserved properties', objects: 'properties', floor: 'Floor', level: 'Level',
     empty: 'No properties match the selected filters.', corridor: 'lobby · lifts · stairs', driveway: 'driveway', apartment: 'Apartment', parking: 'Parking space',
     area: 'Area', entrance: 'Entrance', status: 'Status', cost: 'Price', askTerms: 'Ask about terms', pickSimilar: 'Find a similar home', noPlan: 'A plan for this property has not been published yet.',
-    sourceLive: 'live API data', sourceSnapshot: 'verified catalogue snapshot', selectObject: 'Select a property', layoutExample: 'Representative layout', layoutDisclaimer: 'Project layout example. Confirm the selected apartment’s exact plan with the project manager.', expandPlan: 'Enlarge', closePlan: 'Close layout', swipe: 'Swipe sideways', scrollBack: 'Scroll the grid left', scrollForward: 'Scroll the grid right',
+    sourceLive: 'automatically updated', sourceSnapshot: 'latest available data', selectObject: 'Select a property', layoutExample: 'Representative layout', layoutDisclaimer: 'Project layout example. Confirm the selected apartment’s exact plan with the project manager.', expandPlan: 'Enlarge', closePlan: 'Close layout', swipe: 'Swipe sideways', scrollBack: 'Scroll the grid left', scrollForward: 'Scroll the grid right',
     entranceFilter: 'Entrance', floorFilter: 'Floor', sort: 'Sort', allEntrances: 'All entrances', allFloors: 'All floors', sortStatus: 'Available first', sortPrice: 'Lowest price', sortArea: 'By area', sortFloor: 'Highest floors', showMore: 'Show more', showing: 'Showing', ofObjects: 'of', filters: 'Catalogue filters', blockContext: 'Block', phaseContext: 'Phase', catalogContext: 'Catalogue',
     statusLabels: { available: 'Available', reserved: 'Reserved', sold: 'Sold', unavailable: 'Not for sale' },
   },
 } as const;
 
 async function fetchJSON<T>(url: string, signal: AbortSignal): Promise<T> {
-  const response = await fetch(url, { signal });
+  const response = await fetch(url, { cache: 'no-store', credentials: 'include', signal });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return response.json() as Promise<T>;
 }
@@ -167,21 +168,37 @@ async function fetchLiveBundle(slug: KayanProjectSlug, signal: AbortSignal): Pro
     const page = await fetchJSON<{ items: Unit[]; total: number }>(`${liveAPI}/v1/projects/${slug}/units?limit=${limit}&offset=${offset}`, signal);
     units.push(...page.items);
     if (units.length >= page.total) break;
+    if (!page.items.length) throw new Error('catalog response is partial');
   }
+  if (units.length !== project.totalUnits) throw new Error('catalog response is partial');
   return { project, units, layouts: layouts.items };
 }
 
 function useCatalogBundle(slug: KayanProjectSlug, initialBundle: CatalogBundle) {
   const [bundle, setBundle] = useState(initialBundle);
-  const [dataSource, setDataSource] = useState<'snapshot' | 'live'>('snapshot');
+  const [dataSource, setDataSource] = useState<'embedded' | 'live'>('embedded');
 
   useEffect(() => {
-    if (!liveAPI) return;
-    const controller = new AbortController();
-    fetchLiveBundle(slug, controller.signal)
-      .then((next) => { setBundle(next); setDataSource('live'); })
-      .catch(() => setDataSource('snapshot'));
-    return () => controller.abort();
+    let controller: AbortController | null = null;
+    const refresh = () => {
+      if (document.visibilityState === 'hidden') return;
+      controller?.abort();
+      controller = new AbortController();
+      fetchLiveBundle(slug, controller.signal)
+        .then((next) => { setBundle(next); setDataSource('live'); })
+        .catch(() => undefined);
+    };
+    const onVisibility = () => { if (document.visibilityState === 'visible') refresh(); };
+    refresh();
+    const interval = window.setInterval(refresh, 60_000);
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('online', refresh);
+    return () => {
+      controller?.abort();
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('online', refresh);
+    };
   }, [slug]);
 
   return { bundle, dataSource };
@@ -189,15 +206,29 @@ function useCatalogBundle(slug: KayanProjectSlug, initialBundle: CatalogBundle) 
 
 function useProjectSummary(slug: KayanProjectSlug, initialProject: Project) {
   const [project, setProject] = useState(initialProject);
-  const [dataSource, setDataSource] = useState<'snapshot' | 'live'>('snapshot');
+  const [dataSource, setDataSource] = useState<'embedded' | 'live'>('embedded');
 
   useEffect(() => {
-    if (!liveAPI) return;
-    const controller = new AbortController();
-    fetchJSON<Project>(`${liveAPI}/v1/projects/${slug}`, controller.signal)
-      .then((next) => { setProject(next); setDataSource('live'); })
-      .catch(() => setDataSource('snapshot'));
-    return () => controller.abort();
+    let controller: AbortController | null = null;
+    const refresh = () => {
+      if (document.visibilityState === 'hidden') return;
+      controller?.abort();
+      controller = new AbortController();
+      fetchJSON<Project>(`${liveAPI}/v1/projects/${slug}`, controller.signal)
+        .then((next) => { setProject(next); setDataSource('live'); })
+        .catch(() => undefined);
+    };
+    const onVisibility = () => { if (document.visibilityState === 'visible') refresh(); };
+    refresh();
+    const interval = window.setInterval(refresh, 60_000);
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('online', refresh);
+    return () => {
+      controller?.abort();
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('online', refresh);
+    };
   }, [slug]);
 
   return { project, dataSource };
@@ -533,7 +564,7 @@ const ofiyatLandingUi = {
     phasesKicker: 'ВЫБОР ОЧЕРЕДИ', phasesTitle: 'Две очереди.', phasesAccent: 'Один ритм жизни.', phasesLead: 'Сравните актуальное наличие в каждой очереди и отдельно выберите парковочное место.',
     available: 'свободно', openPhase: 'Смотреть объекты',
     catalogKicker: 'КАТАЛОГ КВАРТИР', catalogTitle: 'Пространство, которое', catalogAccent: 'подходит вашему дню.', catalogLead: 'Карточки с крупными планировками и шахматка — всё для удобного выбора на одной странице.', catalogCta: 'Открыть каталог',
-    dataLive: 'Актуальные данные API', dataSnapshot: 'Проверенный снимок каталога', plansMarked: 'Типовые планы честно отмечены как примеры',
+    dataLive: 'Данные обновляются автоматически', dataSnapshot: 'Последние доступные данные', plansMarked: 'Типовые планы честно отмечены как примеры',
     mapKicker: 'РАСПОЛОЖЕНИЕ', mapTitle: 'Город рядом —', mapAccent: 'без суеты.', route: 'Построить маршрут',
   },
   uz: {
@@ -552,7 +583,7 @@ const ofiyatLandingUi = {
     phasesKicker: 'BOSQICHNI TANLASH', phasesTitle: 'Ikki bosqich.', phasesAccent: 'Bitta hayot ritmi.', phasesLead: 'Har bir bosqichdagi dolzarb takliflarni solishtiring va parking o‘rnini alohida tanlang.',
     available: 'mavjud', openPhase: 'Obyektlarni ko‘rish',
     catalogKicker: 'XONADONLAR KATALOGI', catalogTitle: 'Kuningizga mos', catalogAccent: 'makonni toping.', catalogLead: 'Yirik rejali kartalar va shaxmatka — qulay tanlov uchun bitta sahifada.', catalogCta: 'Katalogni ochish',
-    dataLive: 'Dolzarb API ma’lumotlari', dataSnapshot: 'Tekshirilgan katalog nusxasi', plansMarked: 'Namunaviy rejalar misol sifatida aniq belgilangan',
+    dataLive: 'Ma’lumotlar avtomatik yangilanadi', dataSnapshot: 'So‘nggi mavjud ma’lumotlar', plansMarked: 'Namunaviy rejalar misol sifatida aniq belgilangan',
     mapKicker: 'JOYLASHUV', mapTitle: 'Shahar yaqin —', mapAccent: 'ortiqcha shovqinsiz.', route: 'Yo‘nalish qurish',
   },
   en: {
@@ -571,7 +602,7 @@ const ofiyatLandingUi = {
     phasesKicker: 'CHOOSE A PHASE', phasesTitle: 'Two phases.', phasesAccent: 'One rhythm of life.', phasesLead: 'Compare current availability in both phases and choose a parking space separately.',
     available: 'available', openPhase: 'View properties',
     catalogKicker: 'APARTMENT CATALOGUE', catalogTitle: 'A space that fits', catalogAccent: 'the way you live.', catalogLead: 'Large-layout cards and an availability grid make choosing simple on one page.', catalogCta: 'Open the catalogue',
-    dataLive: 'Current API data', dataSnapshot: 'Verified catalogue snapshot', plansMarked: 'Representative plans are clearly labelled as examples',
+    dataLive: 'Automatically updated data', dataSnapshot: 'Latest available data', plansMarked: 'Representative plans are clearly labelled as examples',
     mapKicker: 'LOCATION', mapTitle: 'The city close —', mapAccent: 'without the rush.', route: 'Build a route',
   },
 } as const;
@@ -927,6 +958,9 @@ export function KayanCatalogPage({ slug, initialBundle, snapshotGeneratedAt, ini
   const t = ui[language];
   const copy = config.copy[language];
   const displayCatalogTimestamp = selectCatalogTimestamp(bundle.project.updatedAt, snapshotGeneratedAt);
+  const leadFacts = slug === 'meros'
+    ? [`${objectCountLabel(bundle.project.availableUnits, language)} · ${t.available}`, ...copy.facts.slice(1, 3).map((fact) => `${fact.value} · ${fact.label}`)]
+    : copy.facts.slice(0, 3).map((fact) => `${fact.value} · ${fact.label}`);
 
   const updateCatalogQuery = (changes: Record<string, string | undefined>) => {
     const url = new URL(window.location.href);
@@ -1217,7 +1251,7 @@ export function KayanCatalogPage({ slug, initialBundle, snapshotGeneratedAt, ini
 
     {expandedCardUnit ? <CatalogPlanLightbox unit={expandedCardUnit} layout={expandedCardLayout} language={language} onClose={() => setExpandedCardUnitID(null)} /> : null}
     <ProjectFooter slug={slug} language={language} routeContext={catalogRouteContext} />
-    {leadOpen ? <LeadModal open language={language} context={leadContext} onClose={() => setLeadOpen(false)} projectName={config.name} hideBrand tagline={copy.tagline} facts={copy.facts.slice(0, 3).map((fact) => `${fact.value} · ${fact.label}`)} submitUrl={leadSubmitUrl()} projectSlug={slug} unitKey={selectedUnit?.sourceKey} privacyUrl={privacyRoute(slug, language, catalogRouteContext)} requireConsent /> : null}
+    {leadOpen ? <LeadModal open language={language} context={leadContext} onClose={() => setLeadOpen(false)} projectName={config.name} hideBrand tagline={copy.tagline} facts={leadFacts} submitUrl={leadSubmitUrl()} projectSlug={slug} unitKey={selectedUnit?.sourceKey} privacyUrl={privacyRoute(slug, language, catalogRouteContext)} requireConsent /> : null}
   </main>;
 }
 

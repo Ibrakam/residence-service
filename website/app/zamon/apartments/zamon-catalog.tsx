@@ -12,7 +12,8 @@ import {
   useSyncExternalStore,
 } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { LeadModal, rememberLastViewedApartment } from '@/app/lead-modal';
+import { LeadModal, rememberLiveCatalogUnit } from '@/app/lead-modal';
+import { catalogLeadIdentity, useLiveCatalogSnapshot } from '@/app/live-catalog';
 import { zamonLeadSubmitUrl } from '../zamon-lead';
 
 type Language = 'ru' | 'uz' | 'en';
@@ -124,53 +125,53 @@ const emptyFilters: Filters = {
 const copy = {
   ru: {
     skip: 'К результатам каталога', back: 'О проекте', home: 'Главная Zamon', language: 'Язык', sales: 'Отдел продаж', nav: 'Навигация каталога',
-    eyebrow: 'Хронология света · каталог на 30.08.2026', title: 'Реестр', accent: 'света.', actualPhoto: 'Реальная фотография сданной I очереди',
-    leadBefore: 'В официальной подборке на дату каталога —', leadAfter: 'позиций. Для каждой указаны планировка, цена, срок и статус из официального источника.',
-    snapshot: 'Каталог на', captured: 'Зафиксировано', proposals: 'позиций', saleRows: 'Статус «Свободно»', localPlans: 'Официальные планировки', classesSummary: 'Комфорт', blocksLabel: 'Блоки в каталоге',
+    eyebrow: 'Хронология света · каталог обновляется', title: 'Реестр', accent: 'света.', actualPhoto: 'Реальная фотография сданной I очереди',
+    leadBefore: 'В актуальной официальной подборке —', leadAfter: 'позиций. Для каждой указаны планировка, цена, срок и статус из официального источника.',
+    snapshot: 'Актуальные данные', captured: 'Обновлено', proposals: 'позиций', saleRows: 'Статус «Свободно»', localPlans: 'Официальные планировки', classesSummary: 'Комфорт', blocksLabel: 'Блоки в каталоге',
     consult: 'Получить консультацию', sourceTitle: 'О данных каталога',
-    sourceNoteBefore: 'Все', sourceNoteAfter: 'записей получены из одной официальной выгрузки 30.08.2026 в 20:15 по времени Ташкента. Технические статусы не подтверждают юридическую доступность; цена со скидкой и акция относятся к моменту фиксации.',
+    sourceNoteBefore: 'Все', sourceNoteAfter: 'записей обновляются автоматически из официального каталога. Технические статусы не подтверждают юридическую доступность.',
     modes: { cards: 'Карточки', chess: 'Шахматка' }, modeLabel: 'Режим каталога',
     filters: 'Фильтры', filterIndex: 'ПАРАМЕТРЫ КАТАЛОГА', filterGroupOne: 'Квартира и цена', filterGroupTwo: 'Дом и срок', rooms: 'Комнаты', allRooms: 'Все', areaFrom: 'Площадь от, м²', areaTo: 'Площадь до, м²', priceFrom: 'Цена по акции от, млн UZS', priceTo: 'Цена по акции до, млн UZS', floor: 'Этаж', allFloors: 'Все этажи', building: 'Блок', allBuildings: 'Все блоки', entrance: 'Подъезд', allEntrances: 'Все подъезды', completion: 'Срок сдачи', allCompletions: 'Все сроки', statusFilter: 'Статус в каталоге', allStatuses: 'Все статусы', studio: 'Студия', any: 'Любой вариант', yes: 'Да', no: 'Нет', reset: 'Сбросить',
     sort: 'Сортировка', sorts: { source: 'Порядок официального каталога', priceAsc: 'Цена ↑', priceDesc: 'Цена ↓', areaAsc: 'Площадь ↑', areaDesc: 'Площадь ↓', floorAsc: 'Этаж ↑', floorDesc: 'Этаж ↓', roomsAsc: 'Комнаты ↑', roomsDesc: 'Комнаты ↓', numberAsc: 'Номер ↑', numberDesc: 'Номер ↓' }, results: 'найдено', folio: 'КВАРТИРА',
-    apartment: 'Квартира', roomsShort: 'комн.', area: 'Площадь', areaUnit: 'м²', currentPrice: 'Цена по акции на 30.08.2026', originalPrice: 'Цена до скидки', perM2: 'Цена за м² · рассчитана от цены по акции', campaign: 'Скидка на дату каталога', campaignUntil: 'до', status: 'Статус', statusNote: 'Статус в официальном каталоге на 30.08.2026', class: 'Класс', floorOf: 'Этаж', entranceShort: 'Подъезд', block: 'Блок', completionShort: 'Срок сдачи', normalized: 'filter/realEstateList · срок', rawPlacement: 'placementList · исходная дата', finishing: 'Ремонт', noFinishing: 'Без ремонта', studioFlag: 'Студия', ceiling: 'Высота потолка', balcony: 'Балкон', datedCampaign: 'Условия относятся к 30.08.2026 и требуют подтверждения',
-    unitData: 'Источник и идентификатор', rawStatus: 'Исходный статус / isSale', rawCeiling: 'heightOfWall · исходное значение', pricingSource: 'Источник цены', statusLedger: 'Статусы официального каталога · не гарантия юридической доступности',
+    apartment: 'Квартира', roomsShort: 'комн.', area: 'Площадь', areaUnit: 'м²', currentPrice: 'Актуальная цена', originalPrice: 'Цена до скидки', perM2: 'Цена за м² · рассчитана от цены по акции', campaign: 'Текущая скидка', campaignUntil: 'до', status: 'Статус', statusNote: 'Актуальный статус', class: 'Класс', floorOf: 'Этаж', entranceShort: 'Подъезд', block: 'Блок', completionShort: 'Срок сдачи', normalized: 'filter/realEstateList · срок', rawPlacement: 'Дата обновления', finishing: 'Ремонт', noFinishing: 'Без ремонта', studioFlag: 'Студия', ceiling: 'Высота потолка', balcony: 'Балкон', datedCampaign: 'Условия подтверждает отдел продаж',
+    unitData: 'Источник и идентификатор', rawStatus: 'Статус', rawCeiling: 'heightOfWall · исходное значение', pricingSource: 'Источник цены', statusLedger: 'Статусы официального каталога · не гарантия юридической доступности',
     plan: 'Открыть планировку', planAlt: 'Официальная планировка квартиры', choose: 'Уточнить условия', showMore: 'Показать ещё', shown: 'Показано', of: 'из',
     noResults: 'По этим параметрам предложений нет.', resetFilters: 'Сбросить фильтры', matrix: 'Блок × подъезд × этаж × квартира', matrixHint: 'Прокручивайте пальцем или трекпадом, заметными кнопками либо клавишами ← → Home End. Полоса прокрутки остаётся видимой.', scrollLeft: 'Прокрутить матрицу влево', scrollRight: 'Прокрутить матрицу вправо', floorColumn: 'Этаж', unitsColumn: 'Квартиры', emptyFloor: 'Нет предложений по фильтру', height: 'этажей', selected: 'Выбранная квартира', close: 'Закрыть детали', closePlan: 'Закрыть планировку', selectHint: 'Выберите квартиру в матрице, чтобы открыть её паспорт.',
-    disclaimer: 'Каталог датирован 30.08.2026 и не является публичной офертой. Наличие и актуальные условия подтверждает отдел продаж.', privacy: 'Политика конфиденциальности', up: 'Наверх',
+    disclaimer: 'Каталог обновляется автоматически и не является публичной офертой. Наличие и актуальные условия подтверждает отдел продаж.', privacy: 'Политика конфиденциальности', up: 'Наверх',
     statuses: { 'Снятие резерва': 'Снятие резерва', 'Свободно': 'Свободно', 'Расторжение': 'Расторжение', 'Снятие брони': 'Снятие брони', 'Бронирование': 'Бронирование' },
   },
   uz: {
     skip: 'Katalog natijalariga o‘tish', back: 'Loyiha haqida', home: 'Zamon bosh sahifasi', language: 'Til', sales: 'Savdo bo‘limi', nav: 'Katalog navigatsiyasi',
-    eyebrow: 'Yorug‘lik xronologiyasi · 30.08.2026 katalogi', title: 'Yorug‘lik', accent: 'reyestri.', actualPhoto: 'Topshirilgan I bosqichning haqiqiy fotosurati',
-    leadBefore: 'Katalog sanasidagi rasmiy tanlovda', leadAfter: 'ta pozitsiya bor. Har birida reja, narx, muddat va rasmiy manbadagi holat ko‘rsatilgan.',
-    snapshot: 'Katalog sanasi', captured: 'Qayd etilgan vaqt', proposals: 'pozitsiya', saleRows: '«Bo‘sh» holati', localPlans: 'Rasmiy rejalar', classesSummary: 'Komfort', blocksLabel: 'Katalogdagi bloklar',
+    eyebrow: 'Yorug‘lik xronologiyasi · katalog yangilanadi', title: 'Yorug‘lik', accent: 'reyestri.', actualPhoto: 'Topshirilgan I bosqichning haqiqiy fotosurati',
+    leadBefore: 'Dolzarb ma’lumotlardagi rasmiy tanlovda', leadAfter: 'ta pozitsiya bor. Har birida reja, narx, muddat va rasmiy manbadagi holat ko‘rsatilgan.',
+    snapshot: 'Dolzarb ma’lumotlar', captured: 'So‘nggi yangilanish', proposals: 'pozitsiya', saleRows: '«Bo‘sh» holati', localPlans: 'Rasmiy rejalar', classesSummary: 'Komfort', blocksLabel: 'Katalogdagi bloklar',
     consult: 'Maslahat olish', sourceTitle: 'Katalog ma’lumotlari haqida',
-    sourceNoteBefore: 'Barcha', sourceNoteAfter: 'ta yozuv bitta rasmiy yuklamadan 30.08.2026 soat 20:15 da Toshkent vaqti bilan olingan. Texnik holatlar huquqiy mavjudlikni tasdiqlamaydi; chegirmali narx va aksiya qayd etilgan paytga tegishli.',
+    sourceNoteBefore: 'Barcha', sourceNoteAfter: 'ta yozuv rasmiy katalogdan avtomatik yangilanadi. Texnik holatlar huquqiy mavjudlikni tasdiqlamaydi.',
     modes: { cards: 'Kartalar', chess: 'Shaxmatka' }, modeLabel: 'Katalog ko‘rinishi',
     filters: 'Filtrlar', filterIndex: 'KATALOG PARAMETRLARI', filterGroupOne: 'Xonadon va narx', filterGroupTwo: 'Uy va muddat', rooms: 'Xonalar', allRooms: 'Barchasi', areaFrom: 'Maydon, m² dan', areaTo: 'Maydon, m² gacha', priceFrom: 'Aksiya narxi, mln UZS dan', priceTo: 'Aksiya narxi, mln UZS gacha', floor: 'Qavat', allFloors: 'Barcha qavatlar', building: 'Blok', allBuildings: 'Barcha bloklar', entrance: 'Kirish', allEntrances: 'Barcha kirishlar', completion: 'Topshirish muddati', allCompletions: 'Barcha muddatlar', statusFilter: 'Katalogdagi holat', allStatuses: 'Barcha holatlar', studio: 'Studiya', any: 'Istalgan variant', yes: 'Ha', no: 'Yo‘q', reset: 'Tozalash',
     sort: 'Saralash', sorts: { source: 'Rasmiy katalog tartibi', priceAsc: 'Narx ↑', priceDesc: 'Narx ↓', areaAsc: 'Maydon ↑', areaDesc: 'Maydon ↓', floorAsc: 'Qavat ↑', floorDesc: 'Qavat ↓', roomsAsc: 'Xonalar ↑', roomsDesc: 'Xonalar ↓', numberAsc: 'Raqam ↑', numberDesc: 'Raqam ↓' }, results: 'topildi', folio: 'XONADON',
-    apartment: 'Xonadon', roomsShort: 'xonali', area: 'Maydon', areaUnit: 'm²', currentPrice: '30.08.2026 dagi aksiya narxi', originalPrice: 'Chegirmagacha narx', perM2: 'm² narxi · aksiya narxi asosida', campaign: 'Katalog sanasidagi chegirma', campaignUntil: 'gacha', status: 'Holat', statusNote: '30.08.2026 rasmiy katalogidagi holat', class: 'Toifa', floorOf: 'Qavat', entranceShort: 'Kirish', block: 'Blok', completionShort: 'Topshirish muddati', normalized: 'filter/realEstateList · muddat', rawPlacement: 'placementList · asl sana', finishing: 'Pardoz', noFinishing: 'Pardozsiz', studioFlag: 'Studiya', ceiling: 'Shift balandligi', balcony: 'Balkon', datedCampaign: 'Shartlar 30.08.2026 sanasiga tegishli va tasdiqlanishi kerak',
-    unitData: 'Manba va identifikator', rawStatus: 'Asl holat / isSale', rawCeiling: 'heightOfWall · asl qiymat', pricingSource: 'Narx manbasi', statusLedger: 'Rasmiy katalog holatlari · huquqiy mavjudlik kafolati emas',
+    apartment: 'Xonadon', roomsShort: 'xonali', area: 'Maydon', areaUnit: 'm²', currentPrice: 'Amaldagi narx', originalPrice: 'Chegirmagacha narx', perM2: 'm² narxi · aksiya narxi asosida', campaign: 'Dolzarb ma’lumotlardagi chegirma', campaignUntil: 'gacha', status: 'Holat', statusNote: 'Amaldagi holat', class: 'Toifa', floorOf: 'Qavat', entranceShort: 'Kirish', block: 'Blok', completionShort: 'Topshirish muddati', normalized: 'filter/realEstateList · muddat', rawPlacement: 'Yangilanish sanasi', finishing: 'Pardoz', noFinishing: 'Pardozsiz', studioFlag: 'Studiya', ceiling: 'Shift balandligi', balcony: 'Balkon', datedCampaign: 'Shartlarni savdo bo‘limi tasdiqlaydi',
+    unitData: 'Manba va identifikator', rawStatus: 'Holat', rawCeiling: 'heightOfWall · asl qiymat', pricingSource: 'Narx manbasi', statusLedger: 'Rasmiy katalog holatlari · huquqiy mavjudlik kafolati emas',
     plan: 'Rejani ochish', planAlt: 'Xonadonning rasmiy rejasi', choose: 'Shartlarni aniqlash', showMore: 'Yana ko‘rsatish', shown: 'Ko‘rsatildi', of: 'dan',
     noResults: 'Bu parametrlar bo‘yicha taklif yo‘q.', resetFilters: 'Filtrlarni tozalash', matrix: 'Blok × kirish × qavat × xonadon', matrixHint: 'Barmoq yoki trekpad, ko‘rinadigan tugmalar yoxud ← → Home End klavishlari bilan suring. Surish chizig‘i ko‘rinib turadi.', scrollLeft: 'Matritsani chapga surish', scrollRight: 'Matritsani o‘ngga surish', floorColumn: 'Qavat', unitsColumn: 'Xonadonlar', emptyFloor: 'Filtr bo‘yicha taklif yo‘q', height: 'qavat', selected: 'Tanlangan xonadon', close: 'Tafsilotlarni yopish', closePlan: 'Rejani yopish', selectHint: 'Pasportini ochish uchun matritsadan xonadon tanlang.',
-    disclaimer: 'Katalog 30.08.2026 sanasiga tegishli va ommaviy oferta emas. Mavjudlik hamda amaldagi shartlarni savdo bo‘limi tasdiqlaydi.', privacy: 'Maxfiylik siyosati', up: 'Yuqoriga',
+    disclaimer: 'Katalog avtomatik yangilanadi va ommaviy oferta emas. Mavjudlik hamda amaldagi shartlarni savdo bo‘limi tasdiqlaydi.', privacy: 'Maxfiylik siyosati', up: 'Yuqoriga',
     statuses: { 'Снятие резерва': 'Rezervni olib tashlash', 'Свободно': 'Bo‘sh', 'Расторжение': 'Shartnomani bekor qilish', 'Снятие брони': 'Bronni olib tashlash', 'Бронирование': 'Bron qilish' },
   },
   en: {
     skip: 'Skip to catalogue results', back: 'About the project', home: 'Zamon home', language: 'Language', sales: 'Sales office', nav: 'Catalogue navigation',
-    eyebrow: 'Chronology of light · catalogue as of 30 Aug 2026', title: 'Light', accent: 'register.', actualPhoto: 'Actual photograph of completed phase I',
-    leadBefore: 'The official selection on the catalogue date contains', leadAfter: 'entries. Each shows a plan, price, completion date and status from the official source.',
-    snapshot: 'Catalogue as of', captured: 'Captured', proposals: 'entries', saleRows: '“Available” status', localPlans: 'Official plans', classesSummary: 'Comfort', blocksLabel: 'Blocks in catalogue',
+    eyebrow: 'Chronology of light · catalogue updates automatically', title: 'Light', accent: 'register.', actualPhoto: 'Actual photograph of completed phase I',
+    leadBefore: 'The current official selection contains', leadAfter: 'entries. Each shows a plan, price, completion date and status from the official source.',
+    snapshot: 'Current catalogue', captured: 'Updated', proposals: 'entries', saleRows: '“Available” status', localPlans: 'Official plans', classesSummary: 'Comfort', blocksLabel: 'Blocks in catalogue',
     consult: 'Request a consultation', sourceTitle: 'About the catalogue data',
-    sourceNoteBefore: 'All', sourceNoteAfter: 'records came from one official export captured on 30 Aug 2026 at 20:15 Tashkent time. Technical statuses do not confirm legal availability; promotional pricing and the campaign reflect the capture time.',
+    sourceNoteBefore: 'All', sourceNoteAfter: 'records update automatically from the official catalogue. Technical statuses do not confirm legal availability.',
     modes: { cards: 'Cards', chess: 'Matrix' }, modeLabel: 'Catalogue view',
     filters: 'Filters', filterIndex: 'CATALOGUE PARAMETERS', filterGroupOne: 'Apartment and price', filterGroupTwo: 'Building and completion', rooms: 'Rooms', allRooms: 'Any', areaFrom: 'Area from, m²', areaTo: 'Area to, m²', priceFrom: 'Promotional price from, million UZS', priceTo: 'Promotional price to, million UZS', floor: 'Floor', allFloors: 'Any floor', building: 'Block', allBuildings: 'All blocks', entrance: 'Entrance', allEntrances: 'All entrances', completion: 'Completion date', allCompletions: 'All dates', statusFilter: 'Catalogue status', allStatuses: 'All statuses', studio: 'Studio', any: 'Any option', yes: 'Yes', no: 'No', reset: 'Reset',
     sort: 'Sort', sorts: { source: 'Official catalogue order', priceAsc: 'Price ↑', priceDesc: 'Price ↓', areaAsc: 'Area ↑', areaDesc: 'Area ↓', floorAsc: 'Floor ↑', floorDesc: 'Floor ↓', roomsAsc: 'Rooms ↑', roomsDesc: 'Rooms ↓', numberAsc: 'Number ↑', numberDesc: 'Number ↓' }, results: 'found', folio: 'APARTMENT',
-    apartment: 'Apartment', roomsShort: 'room', area: 'Area', areaUnit: 'm²', currentPrice: 'Promotional price on 30 Aug 2026', originalPrice: 'Price before discount', perM2: 'Price per m² · derived from promotional price', campaign: 'Discount on catalogue date', campaignUntil: 'until', status: 'Status', statusNote: 'Status in the official catalogue on 30 Aug 2026', class: 'Class', floorOf: 'Floor', entranceShort: 'Entrance', block: 'Block', completionShort: 'Completion date', normalized: 'filter/realEstateList · completion', rawPlacement: 'placementList · original date', finishing: 'Finishing', noFinishing: 'No finishing', studioFlag: 'Studio', ceiling: 'Ceiling height', balcony: 'Balcony', datedCampaign: 'Terms reflect 30 Aug 2026 and require confirmation',
-    unitData: 'Source and identifier', rawStatus: 'Original status / isSale', rawCeiling: 'heightOfWall · original value', pricingSource: 'Price source', statusLedger: 'Official catalogue statuses · not a guarantee of legal availability',
+    apartment: 'Apartment', roomsShort: 'room', area: 'Area', areaUnit: 'm²', currentPrice: 'Current price', originalPrice: 'Price before discount', perM2: 'Price per m² · derived from promotional price', campaign: 'Current discount', campaignUntil: 'until', status: 'Status', statusNote: 'Current official status', class: 'Class', floorOf: 'Floor', entranceShort: 'Entrance', block: 'Block', completionShort: 'Completion date', normalized: 'filter/realEstateList · completion', rawPlacement: 'Last update', finishing: 'Finishing', noFinishing: 'No finishing', studioFlag: 'Studio', ceiling: 'Ceiling height', balcony: 'Balcony', datedCampaign: 'The sales team confirms current terms',
+    unitData: 'Source and identifier', rawStatus: 'Status', rawCeiling: 'heightOfWall · original value', pricingSource: 'Price source', statusLedger: 'Official catalogue statuses · not a guarantee of legal availability',
     plan: 'Open floor plan', planAlt: 'Official apartment floor plan', choose: 'Check terms', showMore: 'Show more', shown: 'Shown', of: 'of',
     noResults: 'No listings match these filters.', resetFilters: 'Reset filters', matrix: 'Block × entrance × floor × apartment', matrixHint: 'Swipe or use a trackpad, the visible controls, or the ← → Home End keys. The scrollbar remains visible.', scrollLeft: 'Scroll matrix left', scrollRight: 'Scroll matrix right', floorColumn: 'Floor', unitsColumn: 'Apartments', emptyFloor: 'No filtered listings', height: 'floors', selected: 'Selected apartment', close: 'Close details', closePlan: 'Close floor plan', selectHint: 'Select an apartment in the matrix to open its register entry.',
-    disclaimer: 'The catalogue is dated 30 Aug 2026 and is not a public offer. The sales team confirms availability and current terms.', privacy: 'Privacy policy', up: 'Back to top',
+    disclaimer: 'The catalogue updates automatically and is not a public offer. The sales team confirms availability and current terms.', privacy: 'Privacy policy', up: 'Back to top',
     statuses: { 'Снятие резерва': 'Reservation release', 'Свободно': 'Available', 'Расторжение': 'Termination', 'Снятие брони': 'Booking release', 'Бронирование': 'Booking' },
   },
 } as const;
@@ -316,22 +317,7 @@ function useLanguage(initialLanguage: Language) {
 }
 
 function rememberUnit(unit: Unit) {
-  rememberLastViewedApartment({
-    uuid: unit.id,
-    number: unit.number,
-    rooms: unit.rooms,
-    area: unit.area,
-    floor: unit.floor,
-    maxFloor: unit.totalFloors,
-    entrance: unit.entrance,
-    block: unit.building,
-    blockName: unit.building,
-    blockId: unit.buildingId,
-    price: unit.price,
-    normalizedDeadline: unit.completionDate,
-    sourceStatus: unit.statusOriginal,
-    studio: unit.studio,
-  }, 'zamon');
+  rememberLiveCatalogUnit(unit, 'zamon');
 }
 
 function unitContext(unit: Unit, surface: string, language: Language) {
@@ -593,7 +579,8 @@ function MatrixGroup({ units, language, sort, selectedId, floorMin, onSelect }: 
   );
 }
 
-export function ZamonCatalog({ snapshot, initialLanguage }: { snapshot: ZamonSnapshot; initialLanguage: Language }) {
+export function ZamonCatalog({ snapshot: embeddedSnapshot, initialLanguage }: { snapshot: ZamonSnapshot; initialLanguage: Language }) {
+  const { data: snapshot } = useLiveCatalogSnapshot('zamon', embeddedSnapshot);
   const [language, setLanguage] = useLanguage(initialLanguage);
   const [mode, setMode] = useState<Mode>('cards');
   const [sort, setSort] = useState<Sort>('source');
@@ -723,7 +710,7 @@ export function ZamonCatalog({ snapshot, initialLanguage }: { snapshot: ZamonSna
         </div>
         <figure className="zamon-catalog-hero__photo"><img src={asset('/zamon/images/hero-phase-one.webp')} alt={t.actualPhoto} fetchPriority="high" decoding="async" /><figcaption><span>01</span>{t.actualPhoto}</figcaption></figure>
         <aside aria-label={t.snapshot}>
-          <small>{t.snapshot} · 30.08.2026</small>
+          <small>{t.snapshot}</small>
           <strong>{snapshot.officialTotalAtCapture}</strong><span>{t.proposals}</span>
           <dl>
             <div><dt>{t.captured}</dt><dd>{capturedLabel(snapshot.capturedAt, language)}</dd></div>
@@ -789,7 +776,7 @@ export function ZamonCatalog({ snapshot, initialLanguage }: { snapshot: ZamonSna
       <footer className="zamon-catalog-footer"><a className="zamon-catalog-wordmark" href={withLanguage('/zamon', language)}><strong>Zamon</strong><span>NRG-BI</span></a><p>{t.disclaimer}</p><a href={privacyUrl(language)}>{t.privacy}</a><a href="#zamon-catalog-title" aria-label={t.up}>↑</a></footer>
 
       {planUnit ? <PlanLightbox unit={planUnit} language={language} onClose={closePlan} /> : null}
-      {leadRequest ? <div className="zamon-catalog-lead-host" data-project-slug="zamon" data-context={leadRequest.context} data-unit-uuid={leadRequest.unit?.id}><LeadModal open language={language} context={leadRequest.context} brandName="NRG-BI" projectName="ZAMON" tagline={leadRequest.unit ? `${roomPhrase(leadRequest.unit.rooms, language)} · ${areaWithUnit(leadRequest.unit.area, language)} · № ${leadRequest.unit.number}` : `${snapshot.officialTotalAtCapture} · ${t.proposals}`} facts={leadRequest.unit ? [classLabel(leadRequest.unit.propertyClass, language), `${leadRequest.unit.floor}/${leadRequest.unit.totalFloors} · ${t.floorOf}`, money(leadRequest.unit.price, language)] : [t.classesSummary, `${areaWithUnit(snapshot.filters.area.min, language)}—${areaWithUnit(snapshot.filters.area.max, language)}`, capturedLabel(snapshot.capturedAt, language)]} submitUrl={zamonLeadSubmitUrl()} projectSlug="zamon" unitId={leadRequest.unit?.id} privacyUrl={privacyUrl(language)} requireConsent onClose={() => setLeadRequest(null)} /></div> : null}
+      {leadRequest ? <div className="zamon-catalog-lead-host" data-project-slug="zamon" data-context={leadRequest.context} data-unit-uuid={leadRequest.unit?.id}><LeadModal open language={language} context={leadRequest.context} brandName="NRG-BI" projectName="ZAMON" tagline={leadRequest.unit ? `${roomPhrase(leadRequest.unit.rooms, language)} · ${areaWithUnit(leadRequest.unit.area, language)} · № ${leadRequest.unit.number}` : `${snapshot.officialTotalAtCapture} · ${t.proposals}`} facts={leadRequest.unit ? [classLabel(leadRequest.unit.propertyClass, language), `${leadRequest.unit.floor}/${leadRequest.unit.totalFloors} · ${t.floorOf}`, money(leadRequest.unit.price, language)] : [t.classesSummary, `${areaWithUnit(snapshot.filters.area.min, language)}—${areaWithUnit(snapshot.filters.area.max, language)}`, capturedLabel(snapshot.capturedAt, language)]} submitUrl={zamonLeadSubmitUrl()} projectSlug="zamon" {...catalogLeadIdentity(leadRequest.unit)} privacyUrl={privacyUrl(language)} requireConsent onClose={() => setLeadRequest(null)} /></div> : null}
     </main>
   );
 }

@@ -1,6 +1,9 @@
 # Единый каталог жилых комплексов
 
-Go API и PostgreSQL объединяют versioned snapshots всех готовых сайтов. Импорт работает только с сохранёнными JSON: он не обращается к CRM, официальным API или реальному lead backend.
+Go API и PostgreSQL объединяют каталоги всех готовых сайтов. Исторический
+versioned-import остаётся bootstrap/recovery-механизмом, а
+[`cmd/sync-catalogs`](./docs/catalog-live-sync.md) безопасно координирует
+регулярные server-side capture wrappers из уже авторизованных CRM-сессий.
 
 ## Проверенный охват
 
@@ -64,7 +67,8 @@ go run ./cmd/api
 - `GET /v1/projects/{slug}/availability` — агрегаты статусов;
 - `GET /v1/projects/{slug}/floor-schemes` — sanitized versioned-артефакт официальных поэтажных схем;
 - `GET /v1/units/{id}` — карточка помещения;
-- `GET /v1/sync/status` — результат последней синхронизации.
+- `GET /v1/sync/status` — результат последней синхронизации;
+- `GET /v1/sync/catalog-status` — freshness, последняя попытка/успех и безопасный error code по каждому live-провайдеру и проекту;
 - `POST /v1/leads` — локальное хранение валидированной заявки, только когда явно включено.
 
 Пример каталога свободных трёхкомнатных квартир Ofiyat II:
@@ -80,14 +84,17 @@ GET /v1/projects/ofiyat/units?phase=phase-2&status=available&rooms=3&limit=50
 ## Как устроен импорт
 
 ```text
-официальные источники
-        ↓ отдельный проверяемый capture/build этап
-versioned catalog/client JSON snapshots
-        ↓ Go adapters + normalizer/importer
+авторизованные официальные источники
+        ↓ provider capture в одноразовый private staging
+полный catalog JSON candidate
+        ↓ completeness/freshness guard + атомарный importer
 PostgreSQL: projects → phases → units/layouts
         ↓ read-only Go API
 сайты всех ЖК
 ```
+
+Для production-планировщика, fail-closed capture contract, dry-run, systemd и
+machine-readable health см. [`docs/catalog-live-sync.md`](./docs/catalog-live-sync.md).
 
 Импорт атомарный и идемпотентный. Каждое помещение получает стабильный opaque `sourceKey`; отсутствующие записи помечаются неактивными только для доказанно полного snapshot. Изменения цены и статуса пишутся в историю. Контрольные суммы, provenance и результаты запусков сохраняются в БД. `*-client.json`, включая SUN, обнаруживаются автоматически.
 

@@ -61,3 +61,35 @@ func TestFloorSchemeRouteAndOpenAPIContract(t *testing.T) {
 		}
 	}
 }
+
+func TestCatalogProviderStatusRouteAndOpenAPIContract(t *testing.T) {
+	handler := New(nil, slog.New(slog.NewTextHandler(io.Discard, nil)), "")
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/v1/sync/catalog-status", nil)
+	handler.ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("catalog provider status path is not registered as a GET route: status=%d", recorder.Code)
+	}
+
+	body, err := os.ReadFile(filepath.Join("..", "..", "openapi", "openapi.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	document := string(body)
+	for _, required := range []string{
+		"/v1/sync/catalog-status:",
+		"operationId: getCatalogProviderSyncStatus",
+		"CatalogProviderSyncStatus:",
+		"CatalogProjectSyncStatus:",
+		"lastAttemptAt:",
+		"lastSuccessAt:",
+		"lastCapturedAt:",
+		"freshness:",
+		"errorCode:",
+		"command output and credentials are never exposed",
+	} {
+		if !strings.Contains(document, required) {
+			t.Errorf("OpenAPI catalog provider status contract is missing %q", required)
+		}
+	}
+}

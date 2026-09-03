@@ -15,23 +15,23 @@ const ogImage = `${normalizedBasePath}/zamon/images/hero-phase-one.webp`;
 
 const meta = {
   ru: {
-    title: (count: number) => `Квартиры Zamon — каталог на 30 августа 2026 · ${count} позиций`,
-    description: (count: number) => `Каталог Zamon на 30 августа 2026: ${count} позиций в блоках 2-2 и 3-1 с официальными планировками, ценами по акции, этажами, сроками и статусами источника.`,
-    listName: 'Квартиры Zamon — каталог на 30 августа 2026',
+    title: 'Квартиры Zamon — актуальный каталог',
+    description: 'Актуальный каталог Zamon с планировками, ценами, этажами, сроками и автоматически обновляемыми статусами.',
+    listName: 'Квартиры Zamon — актуальный каталог',
     apartment: (rooms: number, number: string) => `${rooms}-комнатная квартира №${number}`,
     imageAlt: 'Реальная фотография сданной I очереди Zamon',
   },
   uz: {
-    title: (count: number) => `Zamon xonadonlari — 2026-yil 30-avgust katalogi · ${count} pozitsiya`,
-    description: (count: number) => `Zamon katalogi 2026-yil 30-avgust holatiga: 2-2 va 3-1 bloklaridagi ${count} pozitsiya, rasmiy rejalar, aksiya narxlari, qavatlar, muddatlar va manbadagi holatlar bilan.`,
-    listName: 'Zamon xonadonlari — 2026-yil 30-avgust katalogi',
+    title: 'Zamon xonadonlari — yangilanadigan katalog',
+    description: 'Zamon katalogidagi rejalar, narxlar, qavatlar, muddatlar va holatlar avtomatik yangilanadi.',
+    listName: 'Zamon xonadonlari — yangilanadigan katalog',
     apartment: (rooms: number, number: string) => `${rooms} xonali №${number} xonadon`,
     imageAlt: 'Zamon topshirilgan I bosqichining haqiqiy fotosurati',
   },
   en: {
-    title: (count: number) => `Zamon apartments — 30 August 2026 catalogue · ${count} entries`,
-    description: (count: number) => `Zamon catalogue as of 30 August 2026: ${count} entries in blocks 2-2 and 3-1 with official plans, promotional prices, floors, completion dates and source statuses.`,
-    listName: 'Zamon apartments — catalogue as of 30 August 2026',
+    title: 'Zamon apartments — live catalogue',
+    description: 'The Zamon catalogue has automatically updated plans, prices, floors, completion dates and statuses.',
+    listName: 'Zamon apartments — live catalogue',
     apartment: (rooms: number, number: string) => `${rooms}-room apartment no. ${number}`,
     imageAlt: 'Actual photograph of Zamon completed phase I',
   },
@@ -57,10 +57,9 @@ const address = {
 
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
   const language = languageOf((await searchParams)?.lang);
-  const data = publicClientPayload(snapshot) as unknown as ZamonSnapshot;
   const current = meta[language];
-  const title = current.title(data.officialTotalAtCapture);
-  const description = current.description(data.officialTotalAtCapture);
+  const title = current.title;
+  const description = current.description;
   const url = canonical(language);
   return {
     title,
@@ -95,7 +94,7 @@ export default async function ZamonApartmentsPage({ searchParams }: PageProps) {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
     name: current.listName,
-    description: current.description(data.officialTotalAtCapture),
+    description: current.description,
     inLanguage: languageTag(language),
     url: `${publicOrigin}${canonical(language)}`,
     numberOfItems: data.units.length,

@@ -9,9 +9,9 @@ const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
 type Language = 'ru' | 'uz' | 'en';
 type PageProps = { searchParams?: Promise<{ lang?: string }> };
 const localized = {
-  ru: { title: 'Квартиры Flagman Tashkent — официальный snapshot', description: 'Актуальные предложения Flagman Tashkent: реальные планировки, площади, этажи и цены из официального каталога.', ogTitle: 'Квартиры Flagman Tashkent' },
-  uz: { title: 'Flagman Tashkent xonadonlari — rasmiy snapshot', description: 'Flagman Tashkent bo‘yicha rasmiy katalogdan dolzarb takliflar, rejalar, maydonlar, qavatlar va narxlar.', ogTitle: 'Flagman Tashkent xonadonlari' },
-  en: { title: 'Flagman Tashkent apartments — official snapshot', description: 'Current Flagman Tashkent listings with official plans, areas, floors and prices.', ogTitle: 'Flagman Tashkent apartments' },
+  ru: { title: 'Квартиры Flagman Tashkent — актуальный каталог', description: 'Актуальные предложения Flagman Tashkent: реальные планировки, площади, этажи и цены из официального каталога.', ogTitle: 'Квартиры Flagman Tashkent' },
+  uz: { title: 'Flagman Tashkent xonadonlari — yangilanadigan katalog', description: 'Flagman Tashkent bo‘yicha rasmiy katalogdan dolzarb takliflar, rejalar, maydonlar, qavatlar va narxlar.', ogTitle: 'Flagman Tashkent xonadonlari' },
+  en: { title: 'Flagman Tashkent apartments — live catalogue', description: 'Current Flagman Tashkent listings with official plans, areas, floors and prices.', ogTitle: 'Flagman Tashkent apartments' },
 } as const;
 
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {

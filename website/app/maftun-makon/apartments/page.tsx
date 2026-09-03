@@ -11,16 +11,16 @@ type PageProps = { searchParams?: Promise<{ lang?: string }> };
 const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
 const meta = {
   ru: {
-    title: 'Квартиры в Maftun Makon — 204 предложения',
-    description: 'Полный датированный snapshot официального каталога Maftun Makon: 204 квартиры с площадями, этажами, ценами и 201 доступной планировкой.',
+    title: 'Квартиры в Maftun Makon — актуальный каталог',
+    description: 'Квартиры Maftun Makon: площади, этажи, цены, планировки и статусы обновляются автоматически.',
   },
   uz: {
-    title: 'Maftun Makon xonadonlari — 204 ta taklif',
-    description: 'Maftun Makon rasmiy katalogining to‘liq snapshoti: maydon, qavat, narx va 201 ta mavjud reja bilan 204 ta xonadon.',
+    title: 'Maftun Makon xonadonlari — yangilanadigan katalog',
+    description: 'Maftun Makon xonadonlarining maydoni, qavati, narxi, rejasi va holati avtomatik yangilanadi.',
   },
   en: {
-    title: 'Maftun Makon apartments — 204 listings',
-    description: 'A complete dated snapshot of the official Maftun Makon catalogue: 204 apartments with areas, floors, prices and 201 available plans.',
+    title: 'Maftun Makon apartments — live catalogue',
+    description: 'Maftun Makon apartment areas, floors, prices, plans and statuses update automatically.',
   },
 } as const;
 

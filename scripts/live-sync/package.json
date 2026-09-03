@@ -1,0 +1,13 @@
+{
+  "name": "@tencorp/residence-live-sync",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0 <23"
+  },
+  "scripts": {
+    "check": "node --check src/allowlist.mjs && node --check src/atomic.mjs && node --check src/capture.mjs && node --check src/cdp.mjs && node --check src/cli.mjs && node --check src/direct.mjs && node --check src/normalize.mjs && node --check src/providers.mjs && node --check src/redact.mjs",
+    "test": "node --test"
+  }
+}

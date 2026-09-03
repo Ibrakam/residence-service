@@ -1,0 +1,19 @@
+[Unit]
+Description=Residence live catalogue loopback noVNC gateway
+Requires=residence-live-vnc.service
+After=residence-live-vnc.service
+
+[Service]
+Type=simple
+User=residence-crm-browser
+Group=residence-crm-browser
+ExecStart=/usr/bin/websockify --web=/usr/share/novnc 127.0.0.1:6080 127.0.0.1:5900
+Restart=always
+RestartSec=5s
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=false
+
+[Install]
+WantedBy=multi-user.target

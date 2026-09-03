@@ -201,34 +201,27 @@ function getCookie(name: string) {
 
 export function getLastViewedApartment(projectSlug?: string): LastViewedApartment | null {
   try {
-    const raw = localStorage.getItem(lastViewedApartmentKey(projectSlug));
+    const key = lastViewedApartmentKey(projectSlug);
+    const raw = localStorage.getItem(key);
     if (!raw) return null;
     const value = JSON.parse(raw) as Partial<LastViewedApartment>;
     if (typeof value.viewedAt !== 'string') return null;
-    if (projectSlug === 'mirador' || projectSlug === 'ofiyat' || projectSlug === 'meros') {
+    if (projectSlug) {
       if (
         typeof value.unitKey !== 'string'
         || value.unitKey.length === 0
         || value.unitKey.length > 200
         || value.unitKey !== value.unitKey.trim()
         || /[\u0000-\u001f\u007f]/.test(value.unitKey)
-      ) return null;
+      ) {
+        localStorage.removeItem(key);
+        return null;
+      }
       const minimal = { unitKey: value.unitKey, viewedAt: value.viewedAt, url: typeof value.url === 'string' ? value.url : window.location.href } satisfies LastViewedApartment;
-      localStorage.setItem(lastViewedApartmentKey(projectSlug), JSON.stringify(minimal));
-      return minimal;
-    }
-    if (projectSlug === 'sun') {
-      if (typeof value.unitKey !== 'string' || !/^sun-[a-z0-9-]+$/.test(value.unitKey)) return null;
-      const minimal = { unitKey: value.unitKey, viewedAt: value.viewedAt, url: typeof value.url === 'string' ? value.url : window.location.href } satisfies LastViewedApartment;
-      localStorage.setItem(lastViewedApartmentKey(projectSlug), JSON.stringify(minimal));
+      localStorage.setItem(key, JSON.stringify(minimal));
       return minimal;
     }
     if (typeof value.uuid !== 'string') return null;
-    if (projectSlug === 'regnum-plaza') {
-      const minimal = { uuid: value.uuid, viewedAt: value.viewedAt, url: typeof value.url === 'string' ? value.url : window.location.href } satisfies LastViewedApartment;
-      localStorage.setItem(lastViewedApartmentKey(projectSlug), JSON.stringify(minimal));
-      return minimal;
-    }
     return value as LastViewedApartment;
   } catch {
     return null;
@@ -237,14 +230,31 @@ export function getLastViewedApartment(projectSlug?: string): LastViewedApartmen
 
 export function rememberLastViewedApartment(apartment: Omit<LastViewedApartment, 'viewedAt' | 'url'>, projectSlug?: string) {
   try {
-    localStorage.setItem(lastViewedApartmentKey(projectSlug), JSON.stringify({
-      ...apartment,
+    const key = lastViewedApartmentKey(projectSlug);
+    const unitKey = typeof apartment.unitKey === 'string' ? apartment.unitKey.trim() : '';
+    if (projectSlug && (!unitKey || unitKey.length > 200 || /[\u0000-\u001f\u007f]/.test(unitKey))) {
+      localStorage.removeItem(key);
+      return;
+    }
+    localStorage.setItem(key, JSON.stringify({
+      ...(projectSlug ? { unitKey } : apartment),
       viewedAt: new Date().toISOString(),
       url: window.location.href,
     } satisfies LastViewedApartment));
   } catch {
     // Storage can be unavailable in private browsing; the form still works.
   }
+}
+
+export function rememberLiveCatalogUnit(unit: unknown, projectSlug: string) {
+  if (!unit || typeof unit !== 'object') return;
+  const candidate = unit as { sourceKey?: unknown; unitKey?: unknown };
+  const unitKey = typeof candidate.sourceKey === 'string'
+    ? candidate.sourceKey
+    : typeof candidate.unitKey === 'string'
+      ? candidate.unitKey
+      : '';
+  rememberLastViewedApartment({ unitKey }, projectSlug);
 }
 
 class LeadSubmissionError extends Error {
@@ -320,6 +330,10 @@ export function LeadModal({ open, language, context, autoPrompt = false, brandNa
   const successLead = hideBrand
     ? language === 'ru' ? 'Менеджер проекта свяжется с вами в ближайшее время.' : language === 'uz' ? 'Loyiha menejeri tez orada siz bilan bog‘lanadi.' : 'The project manager will contact you shortly.'
     : t.successLead.replace('TENCORP', brandName);
+
+  useEffect(() => {
+    if (open && projectSlug && unitKey) rememberLastViewedApartment({ unitKey }, projectSlug);
+  }, [open, projectSlug, unitKey]);
 
   useEffect(() => {
     if (!open) return;

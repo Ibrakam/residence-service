@@ -15,19 +15,19 @@ const absoluteUrl = (path: string) => `${publicOrigin}${sitePath(path)}`;
 const meta = {
   ru: {
     title: 'SUN by Human2Human — клубный жилой проект в Мирабадском районе',
-    description: 'SUN: 1 га, 5 корпусов, 361 квартира во всём проекте и честно размеченные CGI и фото стройки от 15.08.2026. Текущий каталог — 51 доступная квартира.',
+    description: 'SUN: 1 га, 5 корпусов, 361 квартира во всём проекте, размеченные CGI и фотографии строительства. Каталог предложений обновляется автоматически.',
     imageAlt: 'Официальная архитектурная визуализация жилого проекта SUN', home: 'Главная',
     properties: [['Формат', 'Клубный жилой проект'], ['Территория', '1 га'], ['Корпуса проекта', '5'], ['Квартиры во всём проекте', '361'], ['Этажность', '11–14 этажей'], ['Состояние строительства', 'Последнее сообщение девелопера от 15.08.2026']] as const,
   },
   uz: {
     title: 'Human2Human SUN — Miroboddagi klub formatidagi turar joy loyihasi',
-    description: 'SUN: 1 ga, 5 bino, butun loyihada 361 xonadon hamda aniq belgilangan CGI va 15.08.2026 qurilish suratlari. Joriy katalogda 51 ta mavjud xonadon.',
+    description: 'SUN: 1 ga, 5 bino, butun loyihada 361 xonadon, aniq belgilangan CGI va qurilish suratlari. Takliflar katalogi avtomatik yangilanadi.',
     imageAlt: 'SUN turar joy loyihasining rasmiy arxitektura vizualizatsiyasi', home: 'Bosh sahifa',
     properties: [['Format', 'Klub formatidagi turar joy loyihasi'], ['Hudud', '1 ga'], ['Loyiha binolari', '5'], ['Butun loyihadagi xonadonlar', '361'], ['Qavatlar', '11–14 qavat'], ['Qurilish holati', 'Developerning 15.08.2026 sanasidagi so‘nggi xabari']] as const,
   },
   en: {
     title: 'SUN by Human2Human — a club-format residential project in Mirabad',
-    description: 'SUN: a 1-hectare, five-building, 361-apartment project with clearly labelled CGI and construction photography dated 15 August 2026. 51 apartments are currently listed.',
+    description: 'SUN is a one-hectare, five-building, 361-apartment project with clearly labelled CGI and construction photography. Its listings update automatically.',
     imageAlt: 'Official architectural visualisation of the SUN residential project', home: 'Home',
     properties: [['Format', 'Club-format residential project'], ['Site', '1 hectare'], ['Project buildings', '5'], ['Apartments in the full project', '361'], ['Height', '11–14 floors'], ['Construction state', 'Latest developer report dated 15 August 2026']] as const,
   },

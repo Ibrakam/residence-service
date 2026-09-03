@@ -6,9 +6,9 @@ import './sado-catalog.css';
 
 const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
 const localized = {
-  ru: { title: "Квартиры в Sad'O", description: `${catalog.units.length} актуальных предложений Sad'O из официального каталога: реальные планировки, площади, этажи и цены.` },
-  uz: { title: "Sad'O majmuasida xonadon tanlash", description: `Sad'O rasmiy katalogidan ${catalog.units.length} ta taklif: haqiqiy rejalar, maydonlar, qavatlar va narxlar.` },
-  en: { title: "Choose an apartment at Sad'O", description: `${catalog.units.length} current official Sad'O listings with real plans, areas, floors and prices.` },
+  ru: { title: "Квартиры в Sad'O", description: "Актуальные предложения Sad'O из официального каталога: планировки, площади, этажи, цены и статусы обновляются автоматически." },
+  uz: { title: "Sad'O majmuasida xonadon tanlash", description: "Sad'O rasmiy katalogidagi rejalar, maydonlar, qavatlar, narxlar va holatlar avtomatik yangilanadi." },
+  en: { title: "Choose an apartment at Sad'O", description: "Current Sad'O listings, plans, areas, floors, prices and statuses update automatically." },
 } as const;
 
 type PageProps = { searchParams?: Promise<{ lang?: string }> };

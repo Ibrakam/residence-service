@@ -11,6 +11,7 @@ import {
   useState,
 } from 'react';
 import { LeadModal } from '@/app/lead-modal';
+import { catalogLeadIdentity, useLiveCatalogUnits } from '@/app/live-catalog';
 import { regnumLeadContext, regnumLeadSubmitUrl, rememberRegnumUnit, type RegnumUnit } from './regnum-lead';
 import { lockRegnumBody, type RegnumLanguage as Language } from './regnum-ui';
 
@@ -89,7 +90,7 @@ const copy = {
     amenitiesEyebrow: '04 · СРЕДА ПЕРВОЙ ОЧЕРЕДИ', amenitiesTitle: 'День не заканчивается у двери квартиры.', amenitiesText: 'Реальные фотографии показывают пространства открытой первой очереди. Нажмите на кадр для полноэкранного просмотра.', amenitiesLead: 'Уточнить среду и доступность',
     lobbyEyebrow: '05 · ЛОББИ БЕЗ ПОРОГОВ', lobbyTitle: 'От витража — прямо во двор.', lobbyText: 'Большие витражные окна, мягкий свет и лифт прямо в приватный двор без ступеней. Официальное описание также заявляет постаматы, скоростные лифты и металлические двери.', barrier: ['лифт во двор', 'без ступеней', 'постаматы', 'мягкий свет'] as const,
     locationEyebrow: '06 · САЙРАМ', locationTitle: 'Два проверенных адреса.', locationText: 'Проект и офис продаж отмечены официальными координатами. Время до объектов рядом воспроизводит подписи официальной карты и не является нашим расчётом.', projectAddress: 'Проект · ул. Сайрам', salesAddress: 'Офис продаж · ул. Ойбека, 38A', maps: 'Открыть карту', nearby: 'Рядом по официальной карте', nearbyFacts: [['3 мин', 'Yaponamama'], ['4 мин', 'Семейная поликлиника № 4'], ['5 мин', 'Школа № 225'], ['5 мин', 'Детский сад № 332'], ['6 мин', 'Korzinka']] as const,
-    catalogEyebrow: '07 · КВАРТИРНЫЙ СРЕЗ · 31.08.2026', catalogTitle: '12 предложений. Цена — по запросу.', catalogText: 'Все 12 записей имеют официальный статус AVAILABLE. Числовые цены не публикуются; каталог использует внутренние значения среза только для сортировки и точного контекста заявки.', catalogStats: [['12', 'предложений'], ['38,48–249,27 м²', 'площадь'], ['1–4', 'комнаты'], ['6', 'официальных планировок']] as const, number: 'Квартира №', rooms: 'комн.', floor: 'этаж', queue: 'очередь', section: 'секция', price: 'По запросу', missingPlan: 'Официальная планировка не опубликована', allApartments: 'Открыть полный каталог', askUnit: 'Уточнить квартиру',
+    catalogEyebrow: '07 · АКТУАЛЬНЫЙ КАТАЛОГ КВАРТИР', catalogTitle: 'Предложения обновляются. Цена — по запросу.', catalogText: 'Состав предложений и статусы обновляются автоматически. Числовые цены предоставляются по запросу.', catalogStats: [['Актуально', 'предложения'], ['Онлайн', 'статусы'], ['1–4', 'комнаты'], ['По запросу', 'цены']] as const, number: 'Квартира №', rooms: 'комн.', floor: 'этаж', queue: 'очередь', section: 'секция', price: 'По запросу', missingPlan: 'Официальная планировка не опубликована', allApartments: 'Открыть полный каталог', askUnit: 'Уточнить квартиру',
     contactEyebrow: '08 · КОНСУЛЬТАЦИЯ', contactTitle: 'Выберите свой проём в город.', contactText: 'Менеджер перепроверит текущую доступность и подготовит подборку. Заявка не является бронированием.', office: 'Офис продаж', project: 'Проект', privacy: 'Обработка персональных данных', top: 'Наверх',
     lightbox: 'Просмотр изображения', previous: 'Предыдущее', next: 'Следующее', closeImage: 'Закрыть изображение', imageOf: 'из',
     formTagline: 'Свет входит через медь.', formFacts: ['Бизнес-класс', 'Сайрам', 'IV квартал 2026'] as const,
@@ -108,7 +109,7 @@ const copy = {
     amenitiesEyebrow: '04 · BIRINCHI BOSQICH MUHITI', amenitiesTitle: 'Kun xonadon eshigida tugamaydi.', amenitiesText: 'Haqiqiy fotosuratlar ochilgan birinchi bosqich makonlarini ko‘rsatadi. To‘liq ekran uchun kadrni bosing.', amenitiesLead: 'Muhit va mavjudlikni aniqlash',
     lobbyEyebrow: '05 · TO‘SIQSIZ LOBBI', lobbyTitle: 'Vitrajdan — to‘g‘ri hovliga.', lobbyText: 'Katta vitraj oynalar, yumshoq yorug‘lik va zinapoyasiz xususiy hovliga to‘g‘ri lift. Rasmiy tavsif postamatlar, tezkor liftlar va metall eshiklarni ham bayon qiladi.', barrier: ['hovliga lift', 'zinapoyasiz', 'postamatlar', 'yumshoq yorug‘lik'] as const,
     locationEyebrow: '06 · SAYRAM', locationTitle: 'Ikki tasdiqlangan manzil.', locationText: 'Loyiha va savdo ofisi rasmiy koordinatalar bilan belgilangan. Yaqin joylargacha vaqt rasmiy xarita yorliqlaridan olinadi va bizning hisobimiz emas.', projectAddress: 'Loyiha · Sayram ko‘chasi', salesAddress: 'Savdo ofisi · Oybek ko‘chasi, 38A', maps: 'Xaritani ochish', nearby: 'Rasmiy xarita bo‘yicha yaqin', nearbyFacts: [['3 daq', 'Yaponamama'], ['4 daq', '4-son oilaviy poliklinika'], ['5 daq', '225-son maktab'], ['5 daq', '332-son bolalar bog‘chasi'], ['6 daq', 'Korzinka']] as const,
-    catalogEyebrow: '07 · XONADON KESIMI · 31.08.2026', catalogTitle: '12 taklif. Narx — so‘rov bo‘yicha.', catalogText: 'Barcha 12 yozuv rasmiy AVAILABLE holatida. Raqamli narxlar e’lon qilinmaydi; katalog ichki kesim qiymatlaridan faqat saralash va aniq ariza konteksti uchun foydalanadi.', catalogStats: [['12', 'taklif'], ['38,48–249,27 m²', 'maydon'], ['1–4', 'xona'], ['6', 'rasmiy reja']] as const, number: 'Xonadon №', rooms: 'xona', floor: 'qavat', queue: 'bosqich', section: 'seksiya', price: 'So‘rov bo‘yicha', missingPlan: 'Rasmiy reja e’lon qilinmagan', allApartments: 'To‘liq katalogni ochish', askUnit: 'Xonadonni aniqlash',
+    catalogEyebrow: '07 · XONADON KATALOGI YANGILANADI', catalogTitle: 'Takliflar yangilanadi. Narx — so‘rov bo‘yicha.', catalogText: 'Takliflar tarkibi va holatlar avtomatik yangilanadi. Raqamli narxlar so‘rov bo‘yicha taqdim etiladi.', catalogStats: [['Dolzarb', 'takliflar'], ['Onlayn', 'holatlar'], ['1–4', 'xona'], ['So‘rov bo‘yicha', 'narxlar']] as const, number: 'Xonadon №', rooms: 'xona', floor: 'qavat', queue: 'bosqich', section: 'seksiya', price: 'So‘rov bo‘yicha', missingPlan: 'Rasmiy reja e’lon qilinmagan', allApartments: 'To‘liq katalogni ochish', askUnit: 'Xonadonni aniqlash',
     contactEyebrow: '08 · MASLAHAT', contactTitle: 'Shaharga o‘z oynangizni tanlang.', contactText: 'Menejer joriy mavjudlikni qayta tekshiradi va tanlov tayyorlaydi. Ariza bron hisoblanmaydi.', office: 'Savdo ofisi', project: 'Loyiha', privacy: 'Shaxsiy ma’lumotlarni qayta ishlash', top: 'Yuqoriga',
     lightbox: 'Tasvirni ko‘rish', previous: 'Oldingi', next: 'Keyingi', closeImage: 'Tasvirni yopish', imageOf: 'dan', formTagline: 'Yorug‘lik mis orqali kiradi.', formFacts: ['Biznes-klass', 'Sayram', '2026-yil IV chorak'] as const,
     disclaimer: 'Birinchi bosqichning haqiqiy foto va videosi, ochilish hujjatlari, butun loyiha CGI va arxiv konseptlari ajratilgan. CGI o‘zgarishi mumkin. Ma’lumot ommaviy oferta emas.',
@@ -126,7 +127,7 @@ const copy = {
     amenitiesEyebrow: '04 · FIRST-PHASE AMENITIES', amenitiesTitle: 'The day does not end at your apartment door.', amenitiesText: 'Actual photographs show spaces in the opened first phase. Select a frame for full-screen viewing.', amenitiesLead: 'Ask about amenities and availability',
     lobbyEyebrow: '05 · STEP-FREE LOBBY', lobbyTitle: 'From stained glass — straight to the courtyard.', lobbyText: 'Large stained-glass windows, soft light and a lift directly to the private courtyard without steps. The official description also states parcel lockers, high-speed lifts and metal doors.', barrier: ['lift to courtyard', 'step-free', 'parcel lockers', 'soft light'] as const,
     locationEyebrow: '06 · SAYRAM', locationTitle: 'Two verified addresses.', locationText: 'The project and sales office are pinned by official coordinates. Nearby travel times reproduce labels from the official map and are not our calculation.', projectAddress: 'Project · Sayram Street', salesAddress: 'Sales office · 38A Oybek Street', maps: 'Open map', nearby: 'Nearby on the official map', nearbyFacts: [['3 min', 'Yaponamama'], ['4 min', 'Family clinic no. 4'], ['5 min', 'School no. 225'], ['5 min', 'Kindergarten no. 332'], ['6 min', 'Korzinka']] as const,
-    catalogEyebrow: '07 · APARTMENT SNAPSHOT · 31 AUG 2026', catalogTitle: '12 listings. Price on request.', catalogText: 'All 12 records carry the official AVAILABLE status. Numeric prices are not published; the catalogue uses internal snapshot values only for sorting and exact lead context.', catalogStats: [['12', 'listings'], ['38.48–249.27 m²', 'area'], ['1–4', 'rooms'], ['6', 'official plans']] as const, number: 'Apartment no.', rooms: 'rooms', floor: 'floor', queue: 'phase', section: 'section', price: 'Price on request', missingPlan: 'Official plan has not been published', allApartments: 'Open full catalogue', askUnit: 'Ask about this apartment',
+    catalogEyebrow: '07 · APARTMENT CATALOGUE · LIVE DATA', catalogTitle: 'Listings update. Price on request.', catalogText: 'Listings and statuses update automatically. Numeric prices are provided on request.', catalogStats: [['Current', 'listings'], ['Online', 'statuses'], ['1–4', 'rooms'], ['On request', 'prices']] as const, number: 'Apartment no.', rooms: 'rooms', floor: 'floor', queue: 'phase', section: 'section', price: 'Price on request', missingPlan: 'Official plan has not been published', allApartments: 'Open full catalogue', askUnit: 'Ask about this apartment',
     contactEyebrow: '08 · CONSULTATION', contactTitle: 'Choose your aperture onto the city.', contactText: 'A manager will re-check current availability and prepare a selection. A request is not a reservation.', office: 'Sales office', project: 'Project', privacy: 'Personal data processing', top: 'Back to top',
     lightbox: 'Image viewer', previous: 'Previous', next: 'Next', closeImage: 'Close image', imageOf: 'of', formTagline: 'Light enters through copper.', formFacts: ['Business class', 'Sayram', 'Q4 2026'] as const,
     disclaimer: 'Actual first-phase photos/video, documentary opening photography, full-project CGI and archival concepts are separated. CGI may change. Information is not a public offer.',
@@ -219,6 +220,7 @@ function Lightbox({ state, language, onClose, onChange }: { state: LightboxState
 }
 
 export function RegnumPlazaPage({ initialLanguage, previewUnits }: { initialLanguage: Language; previewUnits: RegnumUnit[] }) {
+  const { data: liveUnits } = useLiveCatalogUnits('regnum-plaza', previewUnits);
   const [language, setLanguage] = useLanguage(initialLanguage);
   const [menuOpen, setMenuOpen] = useState(false);
   const [lightbox, setLightbox] = useState<LightboxState | null>(null);
@@ -226,6 +228,7 @@ export function RegnumPlazaPage({ initialLanguage, previewUnits }: { initialLang
   const menuRef = useRef<HTMLElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const t = copy[language];
+  const livePreviewUnits = [liveUnits[0], liveUnits[Math.floor(liveUnits.length / 3)], liveUnits[Math.floor(liveUnits.length * 2 / 3)], liveUnits.at(-1)].filter((unit): unit is RegnumUnit => Boolean(unit));
   const closeLead = useCallback(() => setLead(null), []);
   const closeLightbox = useCallback(() => setLightbox(null), []);
   const changeLightbox = useCallback((index: number) => setLightbox((current) => current ? { ...current, index } : current), []);
@@ -356,7 +359,7 @@ export function RegnumPlazaPage({ initialLanguage, previewUnits }: { initialLang
       <section id="apartments" className="rp-section rp-apartments-preview">
         <header className="rp-section__header rp-section__header--dark" data-reveal><span>{t.catalogEyebrow}</span><h2>{t.catalogTitle}</h2><p>{t.catalogText}</p></header>
         <dl className="rp-apartments-preview__stats">{t.catalogStats.map(([value, label]) => <div key={value}><dt>{value}</dt><dd>{label}</dd></div>)}</dl>
-        <div className="rp-apartments-preview__grid">{previewUnits.map((unit) => <article key={unit.id} data-reveal>
+        <div className="rp-apartments-preview__grid">{livePreviewUnits.map((unit) => <article key={unit.id} data-reveal>
           <div className="rp-preview-plan">{unit.planPublicPath ? <img src={asset(unit.planPublicPath)} width={unit.planWidth!} height={unit.planHeight!} loading="lazy" alt={`${mediaLabels['official-plan'][language]} · ${t.number}${unit.number}`} /> : <div><i /><span>{t.missingPlan}</span></div>}</div>
           <header><span>{t.number}{unit.number}</span><strong>{unit.rooms} {t.rooms}</strong></header>
           <dl><div><dt>{unit.area.toLocaleString(language === 'ru' ? 'ru-RU' : language === 'uz' ? 'uz-UZ' : 'en-US')} м²</dt><dd>{unit.floor} {t.floor}</dd></div><div><dt>{unit.completion}</dt><dd>{unit.queue} {t.queue} · {unit.section} {t.section}</dd></div></dl>
@@ -377,7 +380,7 @@ export function RegnumPlazaPage({ initialLanguage, previewUnits }: { initialLang
     {lead ? <LeadModal
       open={Boolean(lead)} language={language} context={regnumLeadContext(lead?.surface ?? 'landing:unknown', language, lead?.unit)}
       brandName="MURAD BUILDINGS" projectName="REGNUM PLAZA" tagline={t.formTagline} facts={t.formFacts}
-      submitUrl={regnumLeadSubmitUrl()} projectSlug="regnum-plaza" unitId={lead?.unit?.id}
+      submitUrl={regnumLeadSubmitUrl()} projectSlug="regnum-plaza" {...catalogLeadIdentity(lead?.unit)}
       privacyUrl={`${appBasePath}/privacy?project=regnum-plaza&lang=${language}&from=landing`} requireConsent returnFocusTo={lead.opener} onClose={closeLead}
     /> : null}
   </div>;

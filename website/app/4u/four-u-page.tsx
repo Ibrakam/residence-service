@@ -5,6 +5,7 @@
 import type { CSSProperties } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { LeadModal } from '@/app/lead-modal';
+import { useLiveCatalogProject } from '@/app/live-catalog';
 
 type Language = 'ru' | 'uz' | 'en';
 type Slide = { src: string; label: string; type: 'render' | 'photo' };
@@ -34,7 +35,7 @@ const copy = {
     communityKicker: '05 · NEIGHBOURHOOD', communityTitle: 'Работа и кино — рядом с домом.', coworking: 'Коворкинг', cinema: 'Кинорум', coworkingText: 'Рабочие места, зоны для индивидуальной и командной работы, переговорные — для встреч, учёбы и сфокусированного дня без поездки в центр.', cinemaText: 'Кинорум соседского центра — пространство для совместных просмотров и отдыха жителей. Изображение отражает проектное видение.',
     locationKicker: '06 · SAYRAM STREET', locationTitle: 'Территория большой жизни.', locationText: 'Мирзо-Улугбекский район, вдоль улицы Сайрам. Рядом — Университет мировой экономики и дипломатии, супермаркет Korzinka, станции метро «Буюк Ипак Йули» и «Пушкинская»; неподалёку строится The British School of Tashkent.', map: 'Открыть карту', panorama: 'Панорама 360',
     buildKicker: '07 · CONSTRUCTION', buildTitle: 'Строительство — без подмены рендерами.', buildText: 'Официальный отчёт за июль 2026: монолитные работы ведутся в трёх блоках; в блоках 2 и 3 выполнялось бетонирование перекрытия второго этажа.', camera: 'Онлайн-камера', cameraStatus: 'Временно недоступна: проводятся технические работы.',
-    catalogKicker: '08 · LIVE SELECTION', catalogTitle: '33 реальных предложения в локальном snapshot.', catalogText: 'Snapshot от 30 августа 2026 года собран из 183 предложений официального каталога. Площади, этажи, цены и планировки сохранены локально; перед покупкой статус нужно подтвердить.', catalogOpen: 'Открыть каталог', booklet: 'Скачать буклет · PDF',
+    catalogKicker: '08 · LIVE SELECTION', catalogTitle: 'Предложения с актуальными ценами и статусами.', catalogText: 'Каталог получает актуальные площади, этажи, цены и статусы автоматически. Перед покупкой условия подтверждает отдел продаж.', catalogOpen: 'Открыть каталог', booklet: 'Скачать буклет · PDF',
     contactKicker: '09 · PERSONAL SELECTION', contactTitle: 'Выберите пространство для своей большой жизни.', contactText: 'Оставьте контакты — менеджер проекта подтвердит актуальность предложения и подберёт подходящий сценарий.', phone: 'Позвонить · +998 78 113 77 12', legal: 'Визуализации и проектные решения могут изменяться в ходе проектирования, строительства и эксплуатации. Информация не является публичной офертой.', partner: 'Партнёрский проект NRG-BI и Al-Bina',
   },
   uz: {
@@ -51,7 +52,7 @@ const copy = {
     communityKicker: '05 · NEIGHBOURHOOD', communityTitle: 'Ish va kino — uy yonida.', coworking: 'Kovorking', cinema: 'Kinoxona', coworkingText: 'Individual va jamoaviy ish joylari, uchrashuv xonalari — markazga bormasdan ishlash va o‘qish uchun.', cinemaText: 'Qo‘shnilar markazidagi kinoxona — aholi uchun birgalikda tomosha qilish va dam olish makoni.',
     locationKicker: '06 · SAYRAM STREET', locationTitle: 'Katta hayot hududi.', locationText: 'Mirzo Ulug‘bek tumani, Sayram ko‘chasi bo‘ylab. Yaqinda JIDU, Korzinka, Buyuk Ipak Yo‘li va Pushkin metro bekatlari bor; The British School of Tashkent qurilmoqda.', map: 'Xaritani ochish', panorama: '360 panorama',
     buildKicker: '07 · CONSTRUCTION', buildTitle: 'Qurilish — renderlar bilan almashtirilmagan.', buildText: '2026-yil iyul rasmiy hisoboti: uch blokda monolit ishlari davom etgan, 2- va 3-bloklarda ikkinchi qavat yopmasi betonlangan.', camera: 'Onlayn kamera', cameraStatus: 'Vaqtincha ishlamaydi: texnik ishlar olib borilmoqda.',
-    catalogKicker: '08 · LIVE SELECTION', catalogTitle: 'Mahalliy snapshotda 33 haqiqiy taklif.', catalogText: '2026-yil 30-avgust snapshoti rasmiy katalogdagi 183 taklifdan tuzilgan. Xariddan oldin holatni tasdiqlash kerak.', catalogOpen: 'Katalogni ochish', booklet: 'Bukletni yuklash · PDF',
+    catalogKicker: '08 · LIVE SELECTION', catalogTitle: 'Dolzarb narx va holatdagi takliflar.', catalogText: 'Takliflar, narxlar va holatlar avtomatik yangilanadi. Xariddan oldin shartlarni tasdiqlash kerak.', catalogOpen: 'Katalogni ochish', booklet: 'Bukletni yuklash · PDF',
     contactKicker: '09 · PERSONAL SELECTION', contactTitle: 'Katta hayotingiz uchun makonni tanlang.', contactText: 'Kontakt qoldiring — loyiha menejeri taklifning dolzarbligini tasdiqlaydi.', phone: 'Qo‘ng‘iroq · +998 78 113 77 12', legal: 'Vizualizatsiya va loyiha yechimlari o‘zgarishi mumkin. Ma’lumot ommaviy oferta emas.', partner: 'NRG-BI va Al-Bina hamkorlik loyihasi',
   },
   en: {
@@ -68,7 +69,7 @@ const copy = {
     communityKicker: '05 · NEIGHBOURHOOD', communityTitle: 'Work and cinema — close to home.', coworking: 'Coworking', cinema: 'Cinema room', coworkingText: 'Individual and team workspaces plus meeting rooms — for a focused day without travelling downtown.', cinemaText: 'The community cinema room is designed for shared screenings and resident downtime.',
     locationKicker: '06 · SAYRAM STREET', locationTitle: 'A territory for a bigger life.', locationText: 'Mirzo Ulugbek district, along Sayram Street. UWED, Korzinka, Buyuk Ipak Yuli and Pushkinskaya metro stations are nearby; The British School of Tashkent is under construction.', map: 'Open map', panorama: '360 panorama',
     buildKicker: '07 · CONSTRUCTION', buildTitle: 'Construction, clearly separated from renders.', buildText: 'Official July 2026 report: monolithic works were underway in three blocks, with second-floor slab concreting in blocks 2 and 3.', camera: 'Live camera', cameraStatus: 'Temporarily unavailable due to maintenance.',
-    catalogKicker: '08 · LIVE SELECTION', catalogTitle: '33 verified listings in the local snapshot.', catalogText: 'The 30 August 2026 snapshot is sampled from 183 official catalogue listings. Confirm availability before purchase.', catalogOpen: 'Open catalogue', booklet: 'Download brochure · PDF',
+    catalogKicker: '08 · LIVE SELECTION', catalogTitle: 'Listings with current prices and statuses.', catalogText: 'Listings, prices and statuses update automatically. Confirm the terms before purchase.', catalogOpen: 'Open catalogue', booklet: 'Download brochure · PDF',
     contactKicker: '09 · PERSONAL SELECTION', contactTitle: 'Choose the space for your bigger life.', contactText: 'Leave your details and the project manager will confirm current availability.', phone: 'Call · +998 78 113 77 12', legal: 'Visualisations and project decisions may change. Information is not a public offer.', partner: 'A partnership project by NRG-BI and Al-Bina',
   },
 } as const;
@@ -98,6 +99,11 @@ function Lightbox({ state, onClose, labels }: { state: NonNullable<LightboxState
 
 export function FourUPage({ initialLanguage = 'ru' }: { initialLanguage?: Language }) {
   const [language, setLanguage] = useLanguage(initialLanguage); const t = copy[language];
+  const { data: catalogProject, dataSource } = useLiveCatalogProject('4u', { slug: '4u', name: '4U Tashkent', totalUnits: 0, availableUnits: 0 });
+  const locale = language === 'ru' ? 'ru-RU' : language === 'uz' ? 'uz-UZ' : 'en-US';
+  const availableCount = dataSource === 'embedded' ? '—' : new Intl.NumberFormat(locale).format(catalogProject.availableUnits);
+  const totalCount = dataSource === 'embedded' ? '—' : new Intl.NumberFormat(locale).format(catalogProject.totalUnits);
+  const countLabels = language === 'ru' ? ['СВОБОДНО', 'ВСЕГО'] : language === 'uz' ? ['MAVJUD', 'JAMI'] : ['AVAILABLE', 'TOTAL'];
   const [loading, setLoading] = useState(true); const [menu, setMenu] = useState(false); const [lead, setLead] = useState(false); const [lightbox, setLightbox] = useState<LightboxState>(null); const [court, setCourt] = useState(0); const [community, setCommunity] = useState<'coworking' | 'cinema'>('coworking');
   useEffect(() => { const seen = sessionStorage.getItem('fouru-loader-seen') === '1'; const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches; if (seen || reduced) { const frame = requestAnimationFrame(() => setLoading(false)); return () => cancelAnimationFrame(frame); } const timer = setTimeout(() => { setLoading(false); sessionStorage.setItem('fouru-loader-seen', '1'); }, 1550); return () => clearTimeout(timer); }, []);
   useEffect(() => { document.body.classList.toggle('is-fouru-menu', menu); const key = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenu(false); }; addEventListener('keydown', key); return () => { document.body.classList.remove('is-fouru-menu'); removeEventListener('keydown', key); }; }, [menu]);
@@ -134,7 +140,7 @@ export function FourUPage({ initialLanguage = 'ru' }: { initialLanguage?: Langua
 
     <section className="fouru-build"><div className="fouru-copy"><span className="fouru-kicker is-blue">{t.buildKicker}</span><h2>{t.buildTitle}</h2><p>{t.buildText}</p><div className="fouru-camera"><span>{t.camera}</span><i />{t.cameraStatus}</div></div><div className="fouru-build__grid">{construction.map((slide, i) => <button key={slide.src} type="button" onClick={() => setLightbox({ slides: construction, index: i })}><img src={slide.src} alt={slide.label} loading="lazy" /><span>{t.photo} · 0{i + 1}</span></button>)}</div></section>
 
-    <section className="fouru-catalog"><div><span className="fouru-kicker">{t.catalogKicker}</span><h2>{t.catalogTitle}</h2><p>{t.catalogText}</p><div><a className="fouru-button is-coral" href={withLanguage('/4u/apartments', language)}>{t.catalogOpen}<span>↗</span></a></div></div><aside><span>183</span><small>OFFICIAL<br />LISTINGS</small><i /><span>33</span><small>LOCAL<br />SNAPSHOT</small></aside></section>
+    <section className="fouru-catalog"><div><span className="fouru-kicker">{t.catalogKicker}</span><h2>{t.catalogTitle}</h2><p>{t.catalogText}</p><div><a className="fouru-button is-coral" href={withLanguage('/4u/apartments', language)}>{t.catalogOpen}<span>↗</span></a></div></div><aside><span>{availableCount}</span><small>{countLabels[0]}</small><i /><span>{totalCount}</span><small>{countLabels[1]}</small></aside></section>
 
     <section className="fouru-contact"><div><span className="fouru-kicker is-coral">{t.contactKicker}</span><h2>{t.contactTitle}</h2><p>{t.contactText}</p></div><div className="fouru-contact__actions"><button className="fouru-button is-coral" type="button" onClick={() => setLead(true)}>{t.consult}<span>↗</span></button><a className="fouru-button is-outline" href="tel:+998781137712">{t.phone}<span>↗</span></a></div></section>
     <footer className="fouru-footer"><a className="fouru-logo" href="#top"><b>4U</b><span>TASHKENT</span></a><p>{t.partner}</p><div><a href={`${appBasePath}/privacy?project=4u&lang=${language}`}>Privacy</a></div><small>{t.legal}</small></footer>

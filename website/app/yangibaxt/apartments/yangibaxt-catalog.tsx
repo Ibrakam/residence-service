@@ -12,7 +12,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { LeadModal, rememberLastViewedApartment } from "@/app/lead-modal";
+import { LeadModal, rememberLiveCatalogUnit } from "@/app/lead-modal";
+import { catalogLeadIdentity, useLiveCatalogSnapshot } from "@/app/live-catalog";
 import { yangiBaxtLeadSubmitUrl } from "../yangibaxt-lead";
 import {
   lockYangiBaxtBody,
@@ -178,19 +179,19 @@ const copy = {
     language: "Язык",
     consult: "Оставить заявку",
     call: "+998 78 113 77 12",
-    eyebrow: "PARK LOOP · КАТАЛОГ 30.08.2026",
+    eyebrow: "PARK LOOP · КАТАЛОГ ОБНОВЛЯЕТСЯ",
     title: "Квартиры",
     accent: "в контуре Baxt.",
     leadBefore: "В актуальном разделе официального каталога",
     leadAfter:
-      "квартир. Статус «Свободно» имеют 63; остальные этапы оформления показаны честно и отдельно.",
-    snapshot: "Дата каталога",
-    captured: "Зафиксировано",
+      "квартир. Свободные и другие этапы оформления показаны отдельно по актуальному статусу.",
+    snapshot: "Актуальные данные",
+    captured: "Обновлено",
     records: "записей",
-    offers: "Свободно + isSale",
+    offers: "Свободно",
     groups: "групп",
     plans: "индивидуальных планов",
-    allApartments: "265 квартир · без паркингов, офисов и цоколей",
+    allApartments: "Квартиры · без паркингов, офисов и цоколей",
     modes: { cards: "Карточки", chess: "Шахматка" },
     modeLabel: "Режим каталога",
     filters: "Фильтры",
@@ -228,10 +229,10 @@ const copy = {
     apartment: "Квартира",
     roomsShort: "комн.",
     area: "Площадь",
-    snapshotPrice: "Цена на дату каталога",
+    snapshotPrice: "Актуальная цена",
     rawPrice: "Исходная цена",
     pricePerM2: "за м²",
-    campaignPrice: "Цена кампании на дату каталога",
+    campaignPrice: "Актуальная цена по акции",
     rawFallback: "Базовая цена · кампания не указана",
     campaignUntil: "В каталоге до",
     currentTerms: "Актуальные условия подтверждает отдел продаж.",
@@ -270,7 +271,7 @@ const copy = {
     unitUuid: "UUID",
     detailHash: "Detail response SHA-256",
     normalizedDeadline: "Согласованный срок filter/realEstateList",
-    placementDeadline: "Raw placementList срок",
+    placementDeadline: "Last update срок",
     matrix: "Шахматка по реальным группам",
     matrixHint:
       "Каждая группа и подъезд показаны отдельно. Прокручивайте пальцем, трекпадом, кнопками или клавишами ← → Home End.",
@@ -290,14 +291,14 @@ const copy = {
     planViews: "Виды официального листа",
     sourceTitle: "О каталоге и статусах",
     sourceText:
-      "Все 265 квартир получены одной согласованной выгрузкой официальных API 30.08.2026 в 21:57 UZT. Общий placementCount 320 включает также паркинги, офисы и цоколи; они исключены. Этап оформления не гарантирует юридическую доступность.",
+      "Состав каталога и статусы квартир обновляются автоматически. Паркинги, офисы и цокольные объекты не включены в квартирный каталог. Этап оформления не гарантирует юридическую доступность.",
     disclaimer:
-      "Каталог и цены зафиксированы на 30.08.2026, не являются публичной офертой. Наличие, стоимость и условия подтверждает отдел продаж.",
+      "Каталог и цены обновляются автоматически и не являются публичной офертой. Наличие, стоимость и условия подтверждает отдел продаж.",
     privacy: "Обработка персональных данных",
     top: "Наверх",
     home: "Yangi Baxt",
     formTagline: "Вместе с природой.",
-    formFacts: ["265 квартир", "5 групп", "63 свободно"] as const,
+    formFacts: ["Актуальные квартиры", "Официальные группы", "Статусы онлайн"] as const,
   },
   uz: {
     skip: "Katalog natijalariga o‘tish",
@@ -306,19 +307,19 @@ const copy = {
     language: "Til",
     consult: "Ariza qoldirish",
     call: "+998 78 113 77 12",
-    eyebrow: "PARK LOOP · 30.08.2026 KATALOGI",
+    eyebrow: "PARK LOOP · KATALOG YANGILANADI",
     title: "Baxt konturidagi",
     accent: "xonadonlar.",
     leadBefore: "Rasmiy katalogning joriy bo‘limida",
     leadAfter:
-      "ta xonadon bor. Faqat 63 tasi “Bo‘sh”; rasmiylashtirishning boshqa bosqichlari alohida va ochiq ko‘rsatilgan.",
-    snapshot: "Katalog sanasi",
-    captured: "Qayd etilgan vaqt",
+      "ta xonadon bor. Bo‘sh va boshqa rasmiylashtirish bosqichlari dolzarb holati bo‘yicha alohida ko‘rsatiladi.",
+    snapshot: "Dolzarb ma’lumotlar",
+    captured: "So‘nggi yangilanish",
     records: "yozuv",
-    offers: "Bo‘sh + isSale",
+    offers: "Bo‘sh",
     groups: "guruh",
     plans: "individual reja",
-    allApartments: "265 xonadon · parking, ofis va sokolsiz",
+    allApartments: "Xonadonlar · parking, ofis va sokolsiz",
     modes: {
       cards: "Kartalar",
       chess: "Shaxmatka",
@@ -359,10 +360,10 @@ const copy = {
     apartment: "Xonadon",
     roomsShort: "xonali",
     area: "Maydon",
-    snapshotPrice: "Katalog sanasidagi narx",
+    snapshotPrice: "Dolzarb ma’lumotlardagi narx",
     rawPrice: "Asl narx",
     pricePerM2: "m² uchun",
-    campaignPrice: "Katalog sanasidagi kampaniya narxi",
+    campaignPrice: "Dolzarb ma’lumotlardagi kampaniya narxi",
     rawFallback: "Asosiy narx · kampaniya ko‘rsatilmagan",
     campaignUntil: "Katalogda shu sanagacha",
     currentTerms: "Amaldagi shartlarni savdo bo‘limi tasdiqlaydi.",
@@ -401,7 +402,7 @@ const copy = {
     unitUuid: "UUID",
     detailHash: "Detail javobi SHA-256",
     normalizedDeadline: "filter/realEstateList kelishilgan muddati",
-    placementDeadline: "Raw placementList muddati",
+    placementDeadline: "Last update muddati",
     matrix: "Haqiqiy guruhlar bo‘yicha Shaxmatka",
     matrixHint:
       "Har bir guruh va kirish alohida. Barmoq, trekpad, tugmalar yoki ← → Home End klavishlari bilan suring.",
@@ -421,14 +422,14 @@ const copy = {
     planViews: "Rasmiy varaq ko‘rinishlari",
     sourceTitle: "Katalog va holatlar haqida",
     sourceText:
-      "Barcha 265 xonadon rasmiy APIlarning 30.08.2026 soat 21:57 UZT dagi yagona kelishilgan nusxasidan olingan. Umumiy placementCount 320 tarkibiga parking, ofis va sokol obyektlari ham kiradi; ular chiqarib tashlangan. Rasmiylashtirish bosqichi huquqiy mavjudlikni kafolatlamaydi.",
+      "Katalog tarkibi va xonadon holatlari avtomatik yangilanadi. Parking, ofis va sokol obyektlari xonadon katalogiga kiritilmaydi. Rasmiylashtirish bosqichi huquqiy mavjudlikni kafolatlamaydi.",
     disclaimer:
-      "Katalog va narxlar 30.08.2026 holatiga qayd etilgan va ommaviy oferta emas. Mavjudlik, narx va shartlarni savdo bo‘limi tasdiqlaydi.",
+      "Katalog va narxlar avtomatik yangilanadi va ommaviy oferta emas. Mavjudlik, narx va shartlarni savdo bo‘limi tasdiqlaydi.",
     privacy: "Shaxsiy ma’lumotlarni qayta ishlash",
     top: "Yuqoriga",
     home: "Yangi Baxt",
     formTagline: "Tabiat bilan birga.",
-    formFacts: ["265 xonadon", "5 guruh", "63 bo‘sh"] as const,
+    formFacts: ["Dolzarb xonadonlar", "Rasmiy guruhlar", "Onlayn holatlar"] as const,
   },
   en: {
     skip: "Skip to catalogue results",
@@ -437,19 +438,19 @@ const copy = {
     language: "Language",
     consult: "Send an enquiry",
     call: "+998 78 113 77 12",
-    eyebrow: "PARK LOOP · CATALOGUE 30 AUG 2026",
+    eyebrow: "PARK LOOP · CATALOGUE UPDATES AUTOMATICALLY",
     title: "Apartments",
     accent: "inside the Baxt loop.",
     leadBefore: "The current official catalogue contains",
     leadAfter:
-      "apartments. Only 63 are marked “Available”; all other purchase stages are shown separately and accurately.",
-    snapshot: "Catalogue date",
-    captured: "Captured",
+      "apartments. Available homes and other purchase stages are shown separately using their current status.",
+    snapshot: "Current data",
+    captured: "Updated",
     records: "records",
-    offers: "Available + isSale",
+    offers: "Available",
     groups: "groups",
     plans: "individual plans",
-    allApartments: "265 apartments · parking, offices and basements excluded",
+    allApartments: "Apartments · parking, offices and basements excluded",
     modes: { cards: "Cards", chess: "Matrix" },
     modeLabel: "Catalogue view",
     filters: "Filters",
@@ -487,10 +488,10 @@ const copy = {
     apartment: "Apartment",
     roomsShort: "room",
     area: "Area",
-    snapshotPrice: "Price on catalogue date",
+    snapshotPrice: "Current price",
     rawPrice: "Original price",
     pricePerM2: "per m²",
-    campaignPrice: "Campaign price on catalogue date",
+    campaignPrice: "Current campaign price",
     rawFallback: "Base price · no campaign listed",
     campaignUntil: "Listed until",
     currentTerms: "The sales team confirms current terms.",
@@ -529,7 +530,7 @@ const copy = {
     unitUuid: "UUID",
     detailHash: "Detail response SHA-256",
     normalizedDeadline: "Agreed filter/realEstateList completion",
-    placementDeadline: "Raw placementList completion",
+    placementDeadline: "Last update completion",
     matrix: "Matrix by real catalogue group",
     matrixHint:
       "Every group and entrance is separate. Swipe, use a trackpad, the buttons, or ← → Home End keys.",
@@ -549,14 +550,14 @@ const copy = {
     planViews: "Official sheet views",
     sourceTitle: "About the catalogue and statuses",
     sourceText:
-      "All 265 apartments came from one aligned export of the official APIs on 30 Aug 2026 at 21:57 UZT. The total placementCount of 320 also contains parking, offices and basement units; these are excluded. A purchase stage does not guarantee legal availability.",
+      "The catalogue and apartment statuses update automatically. Parking, offices and basement units are excluded. A purchase stage does not guarantee legal availability.",
     disclaimer:
-      "The catalogue and prices were captured on 30 Aug 2026 and are not a public offer. The sales team confirms availability, pricing and terms.",
+      "The catalogue and prices were updated automatically and are not a public offer. The sales team confirms availability, pricing and terms.",
     privacy: "Personal data processing",
     top: "Back to top",
     home: "Yangi Baxt",
     formTagline: "Together with nature.",
-    formFacts: ["265 apartments", "5 groups", "63 available"] as const,
+    formFacts: ["Current apartments", "Official groups", "Live statuses"] as const,
   },
 } as const;
 
@@ -663,25 +664,7 @@ function compare(a: Unit, b: Unit, sort: Sort) {
 }
 
 function remember(unit: Unit) {
-  rememberLastViewedApartment(
-    {
-      uuid: unit.id,
-      number: unit.number,
-      rooms: unit.rooms,
-      area: unit.area,
-      floor: unit.floor,
-      maxFloor: unit.totalFloors,
-      entrance: unit.entrance,
-      block: unit.building,
-      blockName: unit.building,
-      blockId: unit.buildingId,
-      price: unit.price,
-      normalizedDeadline: unit.completionDate,
-      sourceStatus: unit.statusOriginal,
-      studio: unit.studio,
-    },
-    "yangibaxt",
-  );
+  rememberLiveCatalogUnit(unit, "yangibaxt");
 }
 
 function useLanguage(initialLanguage: Language) {
@@ -1658,12 +1641,13 @@ function FiltersPanel({
 }
 
 export function YangiBaxtCatalog({
-  snapshot,
+  snapshot: embeddedSnapshot,
   initialLanguage,
 }: {
   snapshot: Snapshot;
   initialLanguage: Language;
 }) {
+  const { data: snapshot } = useLiveCatalogSnapshot("yangibaxt", embeddedSnapshot);
   const [language, setLanguage] = useLanguage(initialLanguage);
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [sort, setSort] = useState<Sort>("source");
@@ -1851,7 +1835,7 @@ export function YangiBaxtCatalog({
           </figure>
           <dl>
             <div>
-              <dt>30.08.2026</dt>
+              <dt>LIVE</dt>
               <dd>{t.snapshot}</dd>
             </div>
             <div>
@@ -2047,7 +2031,7 @@ export function YangiBaxtCatalog({
         facts={t.formFacts}
         submitUrl={yangiBaxtLeadSubmitUrl()}
         projectSlug="yangibaxt"
-        unitId={leadRequest?.unit?.id}
+        {...catalogLeadIdentity(leadRequest?.unit)}
         privacyUrl={privacyUrl(language)}
         requireConsent
         onClose={closeLead}

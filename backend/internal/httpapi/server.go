@@ -76,6 +76,7 @@ func NewWithOptions(store *database.Store, logger *slog.Logger, options Options)
 	mux.HandleFunc("GET /v1/projects/{slug}/floor-schemes", server.getFloorSchemes)
 	mux.HandleFunc("GET /v1/units/{id}", server.getUnit)
 	mux.HandleFunc("GET /v1/sync/status", server.syncStatus)
+	mux.HandleFunc("GET /v1/sync/catalog-status", server.catalogSyncStatus)
 	mux.HandleFunc("POST /v1/leads", server.createLead)
 	mux.HandleFunc("OPTIONS /", server.options)
 	return server.withMiddleware(mux)
@@ -239,6 +240,16 @@ func (s *Server) syncStatus(w http.ResponseWriter, r *http.Request) {
 	for index := range items {
 		items[index].Error = ""
 	}
+	writeJSON(w, http.StatusOK, map[string]any{"items": items})
+}
+
+func (s *Server) catalogSyncStatus(w http.ResponseWriter, r *http.Request) {
+	items, err := s.store.CatalogProviderSyncStatus(r.Context())
+	if err != nil {
+		s.internalError(w, "get catalog provider sync status", err)
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store, max-age=0")
 	writeJSON(w, http.StatusOK, map[string]any{"items": items})
 }
 

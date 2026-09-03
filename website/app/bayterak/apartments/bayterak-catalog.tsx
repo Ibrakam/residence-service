@@ -12,7 +12,8 @@ import {
   useSyncExternalStore,
 } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { LeadModal, rememberLastViewedApartment } from '@/app/lead-modal';
+import { LeadModal, rememberLiveCatalogUnit } from '@/app/lead-modal';
+import { catalogLeadIdentity, useLiveCatalogSnapshot } from '@/app/live-catalog';
 
 type Language = 'ru' | 'uz' | 'en';
 type Mode = 'cards' | 'chess';
@@ -128,50 +129,50 @@ const emptyFilters: Filters = {
 const copy = {
   ru: {
     skip: 'К результатам каталога', back: 'О проекте', home: 'Главная Bayterak', language: 'Язык', sales: 'Отдел продаж', nav: 'Навигация каталога',
-    eyebrow: 'Архитектурный реестр · официальный snapshot', title: 'Архитектурный', accent: 'реестр.',
-    leadBefore: 'В датированной официальной подборке —', leadAfter: 'предложений. Исходные workflow-статусы сохранены и не подменены словом «свободно».',
-    snapshot: 'Snapshot', captured: 'Срез зафиксирован', proposals: 'предложений', saleRows: 'isSale=true', localPlans: 'локальных планировок', classesSummary: 'Comfort+ / Business',
+    eyebrow: 'Архитектурный реестр · актуальный каталог', title: 'Архитектурный', accent: 'реестр.',
+    leadBefore: 'В актуальном каталоге —', leadAfter: 'предложений с сохранением официальных статусов — без подмены словом «свободно».',
+    snapshot: 'Актуальные данные', captured: 'Последнее обновление', proposals: 'предложений', saleRows: 'В продаже', localPlans: 'планировок', classesSummary: 'Comfort+ / Business',
     consult: 'Получить консультацию', sourceTitle: 'Происхождение данных',
-    sourceNoteBefore: 'Все', sourceNoteAfter: 'строк квартир сохранены одной операцией из официальной подборки. Цены, акция и workflow-статусы относятся только к моменту snapshot.',
+    sourceNoteBefore: 'Все', sourceNoteAfter: 'квартир обновляются автоматически из официального каталога. Наличие и условия подтверждает отдел продаж.',
     modes: { cards: 'Карточки', chess: 'Шахматка' }, modeLabel: 'Режим каталога',
     filters: 'Фильтры', propertyClass: 'Класс', allClasses: 'Все классы', rooms: 'Комнаты', allRooms: 'Все', areaFrom: 'Площадь от, м²', areaTo: 'Площадь до, м²', priceFrom: 'Цена от, млн UZS', priceTo: 'Цена до, млн UZS', floor: 'Этаж', allFloors: 'Все этажи', building: 'Блок', allBuildings: 'Все блоки', entrance: 'Подъезд', allEntrances: 'Все подъезды', completion: 'Нормализованный срок', allCompletions: 'Все сроки', repair: 'Ремонт включён', studio: 'Studio flag', any: 'Любой', yes: 'Да', no: 'Нет', reset: 'Сбросить',
     sort: 'Сортировка', sorts: { priceAsc: 'Цена ↑', priceDesc: 'Цена ↓', areaAsc: 'Площадь ↑', areaDesc: 'Площадь ↓', floorAsc: 'Этаж ↑', floorDesc: 'Этаж ↓', numberAsc: 'Номер ↑', numberDesc: 'Номер ↓' }, results: 'найдено',
-    apartment: 'Квартира', roomsShort: 'комн.', area: 'Площадь', areaUnit: 'м²', currentPrice: 'Текущая цена кампании', originalPrice: 'Исходная цена', perM2: 'Цена за м² в источнике', campaign: 'Акция', campaignUntil: 'до', status: 'Исходный статус', statusNote: 'Workflow-статус официального snapshot', class: 'Класс', floorOf: 'Этаж', entranceShort: 'Подъезд', block: 'Блок', completionShort: 'Срок', normalized: 'Нормализован по официальному filter/realEstateList', rawPlacement: 'Дата в raw placementList', finishing: 'Ремонт', studioFlag: 'Studio flag',
+    apartment: 'Квартира', roomsShort: 'комн.', area: 'Площадь', areaUnit: 'м²', currentPrice: 'Текущая цена кампании', originalPrice: 'Исходная цена', perM2: 'Цена за м² в источнике', campaign: 'Акция', campaignUntil: 'до', status: 'Исходный статус', statusNote: 'Статус в актуальном каталоге', class: 'Класс', floorOf: 'Этаж', entranceShort: 'Подъезд', block: 'Блок', completionShort: 'Срок', normalized: 'Нормализован по официальному filter/realEstateList', rawPlacement: 'Дата обновления', finishing: 'Ремонт', studioFlag: 'Studio flag',
     plan: 'Открыть планировку', planAlt: 'Официальная планировка квартиры', choose: 'Уточнить условия', showMore: 'Показать ещё', shown: 'Показано', of: 'из',
     noResults: 'По этим параметрам предложений нет.', resetFilters: 'Сбросить фильтры', matrix: 'Блок × подъезд × этаж × квартира', matrixHint: 'Прокручивайте пальцем или трекпадом, заметными кнопками либо клавишами ← → Home End. Полоса прокрутки остаётся видимой.', scrollLeft: 'Прокрутить матрицу влево', scrollRight: 'Прокрутить матрицу вправо', floorColumn: 'Этаж', unitsColumn: 'Квартиры', emptyFloor: 'Нет предложений по фильтру', height: 'этажей', selected: 'Выбранная квартира', close: 'Закрыть детали', closePlan: 'Закрыть планировку', selectHint: 'Выберите квартиру в матрице, чтобы открыть её паспорт.',
-    disclaimer: 'Snapshot не является публичной офертой. Наличие и актуальные условия подтверждает отдел продаж.', privacy: 'Политика конфиденциальности', up: 'Наверх',
+    disclaimer: 'Информация не является публичной офертой. Наличие и актуальные условия подтверждает отдел продаж.', privacy: 'Политика конфиденциальности', up: 'Наверх',
     statuses: { 'Снятие резерва': 'Снятие резерва', 'Свободно': 'Свободно', 'Расторжение': 'Расторжение', 'Снятие брони': 'Снятие брони', 'Бронирование': 'Бронирование' },
   },
   uz: {
     skip: 'Katalog natijalariga o‘tish', back: 'Loyiha haqida', home: 'Bayterak bosh sahifasi', language: 'Til', sales: 'Savdo bo‘limi', nav: 'Katalog navigatsiyasi',
-    eyebrow: 'Arxitektura reyestri · rasmiy snapshot', title: 'Arxitektura', accent: 'reyestri.',
-    leadBefore: 'Sanasi ko‘rsatilgan rasmiy tanlovda', leadAfter: 'ta taklif bor. Asl workflow holatlari saqlangan va ularning barchasi «bo‘sh» deb belgilanmagan.',
-    snapshot: 'Snapshot', captured: 'Snapshot vaqti', proposals: 'taklif', saleRows: 'isSale=true', localPlans: 'mahalliy reja', classesSummary: 'Comfort+ / Business',
+    eyebrow: 'Arxitektura reyestri · yangilanadigan katalog', title: 'Arxitektura', accent: 'reyestri.',
+    leadBefore: 'Sanasi ko‘rsatilgan rasmiy tanlovda', leadAfter: 'ta taklif bor. Rasmiy holatlar saqlanadi va ularning barchasi «bo‘sh» deb belgilanmaydi.',
+    snapshot: 'Ma’lumotlar yangilanadi', captured: 'So‘nggi yangilanish', proposals: 'taklif', saleRows: 'sotuvda', localPlans: 'rejalar', classesSummary: 'Comfort+ / Business',
     consult: 'Maslahat olish', sourceTitle: 'Ma’lumotlar kelib chiqishi',
-    sourceNoteBefore: 'Barcha', sourceNoteAfter: 'ta xonadon qatori rasmiy tanlovdan bitta operatsiyada saqlandi. Narx, aksiya va workflow holatlari faqat snapshot vaqtiga tegishli.',
+    sourceNoteBefore: 'Barcha', sourceNoteAfter: 'ta xonadon rasmiy katalogdan avtomatik yangilanadi. Mavjudlik va shartlarni savdo bo‘limi tasdiqlaydi.',
     modes: { cards: 'Kartalar', chess: 'Shaxmatka' }, modeLabel: 'Katalog ko‘rinishi',
     filters: 'Filtrlar', propertyClass: 'Toifa', allClasses: 'Barcha toifalar', rooms: 'Xonalar', allRooms: 'Barchasi', areaFrom: 'Maydon, m² dan', areaTo: 'Maydon, m² gacha', priceFrom: 'Narx, mln UZS dan', priceTo: 'Narx, mln UZS gacha', floor: 'Qavat', allFloors: 'Barcha qavatlar', building: 'Blok', allBuildings: 'Barcha bloklar', entrance: 'Kirish', allEntrances: 'Barcha kirishlar', completion: 'Me’yorlashtirilgan muddat', allCompletions: 'Barcha muddatlar', repair: 'Pardoz kiritilgan', studio: 'Studio flag', any: 'Istalgan', yes: 'Ha', no: 'Yo‘q', reset: 'Tozalash',
     sort: 'Saralash', sorts: { priceAsc: 'Narx ↑', priceDesc: 'Narx ↓', areaAsc: 'Maydon ↑', areaDesc: 'Maydon ↓', floorAsc: 'Qavat ↑', floorDesc: 'Qavat ↓', numberAsc: 'Raqam ↑', numberDesc: 'Raqam ↓' }, results: 'topildi',
-    apartment: 'Xonadon', roomsShort: 'xonali', area: 'Maydon', areaUnit: 'm²', currentPrice: 'Kampaniyadagi joriy narx', originalPrice: 'Boshlang‘ich narx', perM2: 'Manbadagi m² narxi', campaign: 'Aksiya', campaignUntil: 'gacha', status: 'Asl holat', statusNote: 'Rasmiy snapshotdagi workflow holati', class: 'Toifa', floorOf: 'Qavat', entranceShort: 'Kirish', block: 'Blok', completionShort: 'Muddat', normalized: 'Rasmiy filter/realEstateList bo‘yicha me’yorlashtirilgan', rawPlacement: 'Raw placementList sanasi', finishing: 'Pardoz', studioFlag: 'Studio flag',
+    apartment: 'Xonadon', roomsShort: 'xonali', area: 'Maydon', areaUnit: 'm²', currentPrice: 'Kampaniyadagi joriy narx', originalPrice: 'Boshlang‘ich narx', perM2: 'Manbadagi m² narxi', campaign: 'Aksiya', campaignUntil: 'gacha', status: 'Asl holat', statusNote: 'Yangilanadigan katalogdagi holat', class: 'Toifa', floorOf: 'Qavat', entranceShort: 'Kirish', block: 'Blok', completionShort: 'Muddat', normalized: 'Rasmiy filter/realEstateList bo‘yicha me’yorlashtirilgan', rawPlacement: 'Yangilanish sanasi', finishing: 'Pardoz', studioFlag: 'Studio flag',
     plan: 'Rejani ochish', planAlt: 'Xonadonning rasmiy rejasi', choose: 'Shartlarni aniqlash', showMore: 'Yana ko‘rsatish', shown: 'Ko‘rsatildi', of: 'dan',
     noResults: 'Bu parametrlar bo‘yicha taklif yo‘q.', resetFilters: 'Filtrlarni tozalash', matrix: 'Blok × kirish × qavat × xonadon', matrixHint: 'Barmoq yoki trekpad, ko‘rinadigan tugmalar yoxud ← → Home End klavishlari bilan suring. Surish chizig‘i ko‘rinib turadi.', scrollLeft: 'Matritsani chapga surish', scrollRight: 'Matritsani o‘ngga surish', floorColumn: 'Qavat', unitsColumn: 'Xonadonlar', emptyFloor: 'Filtr bo‘yicha taklif yo‘q', height: 'qavat', selected: 'Tanlangan xonadon', close: 'Tafsilotlarni yopish', closePlan: 'Rejani yopish', selectHint: 'Pasportini ochish uchun matritsadan xonadon tanlang.',
-    disclaimer: 'Snapshot ommaviy oferta emas. Mavjudlik va amaldagi shartlarni savdo bo‘limi tasdiqlaydi.', privacy: 'Maxfiylik siyosati', up: 'Yuqoriga',
+    disclaimer: 'Katalog ma’lumotlari ommaviy oferta emas. Mavjudlik va amaldagi shartlarni savdo bo‘limi tasdiqlaydi.', privacy: 'Maxfiylik siyosati', up: 'Yuqoriga',
     statuses: { 'Снятие резерва': 'Rezervni olib tashlash', 'Свободно': 'Bo‘sh', 'Расторжение': 'Shartnomani bekor qilish', 'Снятие брони': 'Bronni olib tashlash', 'Бронирование': 'Bron qilish' },
   },
   en: {
     skip: 'Skip to catalogue results', back: 'About the project', home: 'Bayterak home', language: 'Language', sales: 'Sales office', nav: 'Catalogue navigation',
-    eyebrow: 'Architectural register · official snapshot', title: 'Architectural', accent: 'register.',
-    leadBefore: 'The dated official selection contains', leadAfter: 'listings. Source workflow states are preserved instead of relabelling every listing as “available”.',
-    snapshot: 'Snapshot', captured: 'Captured', proposals: 'listings', saleRows: 'isSale=true', localPlans: 'local floor plans', classesSummary: 'Comfort+ / Business',
+    eyebrow: 'Architectural register · live catalogue', title: 'Architectural', accent: 'register.',
+    leadBefore: 'The current official selection contains', leadAfter: 'listings with official statuses preserved rather than relabelling every listing as “available”.',
+    snapshot: 'Automatically updated', captured: 'Last updated', proposals: 'listings', saleRows: 'for sale', localPlans: 'floor plans', classesSummary: 'Comfort+ / Business',
     consult: 'Request a consultation', sourceTitle: 'Data provenance',
-    sourceNoteBefore: 'All', sourceNoteAfter: 'apartment rows were saved from the official selection in one operation. Prices, the campaign and workflow states are fixed at snapshot time.',
+    sourceNoteBefore: 'All', sourceNoteAfter: 'apartments update automatically from the official catalogue. The sales team confirms availability and terms.',
     modes: { cards: 'Cards', chess: 'Matrix' }, modeLabel: 'Catalogue view',
     filters: 'Filters', propertyClass: 'Class', allClasses: 'All classes', rooms: 'Rooms', allRooms: 'Any', areaFrom: 'Area from, m²', areaTo: 'Area to, m²', priceFrom: 'Price from, million UZS', priceTo: 'Price to, million UZS', floor: 'Floor', allFloors: 'Any floor', building: 'Block', allBuildings: 'All blocks', entrance: 'Entrance', allEntrances: 'All entrances', completion: 'Normalized completion', allCompletions: 'All dates', repair: 'Finishing included', studio: 'Studio flag', any: 'Any', yes: 'Yes', no: 'No', reset: 'Reset',
     sort: 'Sort', sorts: { priceAsc: 'Price ↑', priceDesc: 'Price ↓', areaAsc: 'Area ↑', areaDesc: 'Area ↓', floorAsc: 'Floor ↑', floorDesc: 'Floor ↓', numberAsc: 'Number ↑', numberDesc: 'Number ↓' }, results: 'found',
-    apartment: 'Apartment', roomsShort: 'room', area: 'Area', areaUnit: 'm²', currentPrice: 'Current campaign price', originalPrice: 'Original price', perM2: 'Source price per m²', campaign: 'Campaign', campaignUntil: 'until', status: 'Source status', statusNote: 'Workflow state in the official snapshot', class: 'Class', floorOf: 'Floor', entranceShort: 'Entrance', block: 'Block', completionShort: 'Completion', normalized: 'Normalized from the official filter/realEstateList', rawPlacement: 'Raw placementList date', finishing: 'Finishing', studioFlag: 'Studio flag',
+    apartment: 'Apartment', roomsShort: 'room', area: 'Area', areaUnit: 'm²', currentPrice: 'Current campaign price', originalPrice: 'Original price', perM2: 'Source price per m²', campaign: 'Campaign', campaignUntil: 'until', status: 'Source status', statusNote: 'Status in the live catalogue', class: 'Class', floorOf: 'Floor', entranceShort: 'Entrance', block: 'Block', completionShort: 'Completion', normalized: 'Normalized from the official filter/realEstateList', rawPlacement: 'Last update', finishing: 'Finishing', studioFlag: 'Studio flag',
     plan: 'Open floor plan', planAlt: 'Official apartment floor plan', choose: 'Check terms', showMore: 'Show more', shown: 'Shown', of: 'of',
     noResults: 'No listings match these filters.', resetFilters: 'Reset filters', matrix: 'Block × entrance × floor × apartment', matrixHint: 'Swipe or use a trackpad, the visible controls, or the ← → Home End keys. The scrollbar remains visible.', scrollLeft: 'Scroll matrix left', scrollRight: 'Scroll matrix right', floorColumn: 'Floor', unitsColumn: 'Apartments', emptyFloor: 'No filtered listings', height: 'floors', selected: 'Selected apartment', close: 'Close details', closePlan: 'Close floor plan', selectHint: 'Select an apartment in the matrix to open its register entry.',
-    disclaimer: 'This snapshot is not a public offer. The sales team confirms availability and current terms.', privacy: 'Privacy policy', up: 'Back to top',
+    disclaimer: 'This live catalogue is not a public offer. The sales team confirms availability and current terms.', privacy: 'Privacy policy', up: 'Back to top',
     statuses: { 'Снятие резерва': 'Reservation release', 'Свободно': 'Available', 'Расторжение': 'Termination', 'Снятие брони': 'Booking release', 'Бронирование': 'Booking' },
   },
 } as const;
@@ -216,7 +217,7 @@ function buildingLabel(value: string) {
 }
 function statusLabel(unit: Unit, language: Language) {
   const statuses = copy[language].statuses as Record<string, string>;
-  return statuses[unit.statusOriginal] ?? (language === 'ru' ? unit.statusOriginal : language === 'uz' ? 'Boshqa workflow holati' : 'Other workflow state');
+  return statuses[unit.statusOriginal] ?? (language === 'ru' ? unit.statusOriginal : language === 'uz' ? 'Boshqa holat' : 'Other status');
 }
 function statusTone(value: string) {
   if (value === 'Свободно') return 'available';
@@ -312,18 +313,7 @@ function useLanguage(initialLanguage: Language) {
 }
 
 function rememberUnit(unit: Unit) {
-  rememberLastViewedApartment({
-    uuid: unit.id,
-    number: unit.number,
-    rooms: unit.rooms,
-    area: unit.area,
-    floor: unit.floor,
-    maxFloor: unit.totalFloors,
-    entrance: unit.entrance,
-    blockName: unit.building,
-    blockId: unit.buildingId,
-    price: unit.price,
-  }, 'bayterak');
+  rememberLiveCatalogUnit(unit, 'bayterak');
 }
 
 function unitContext(unit: Unit, surface: string, language: Language) {
@@ -563,7 +553,8 @@ function MatrixGroup({ units, language, sort, selectedId, floorMin, onSelect }: 
   );
 }
 
-export function BayterakCatalog({ snapshot, initialLanguage }: { snapshot: BayterakSnapshot; initialLanguage: Language }) {
+export function BayterakCatalog({ snapshot: embeddedSnapshot, initialLanguage }: { snapshot: BayterakSnapshot; initialLanguage: Language }) {
+  const { data: snapshot } = useLiveCatalogSnapshot('bayterak', embeddedSnapshot);
   const [language, setLanguage] = useLanguage(initialLanguage);
   const [mode, setMode] = useState<Mode>('cards');
   const [sort, setSort] = useState<Sort>('priceAsc');
@@ -682,7 +673,7 @@ export function BayterakCatalog({ snapshot, initialLanguage }: { snapshot: Bayte
           <button type="button" data-lead-trigger onClick={() => openLead(null, 'hero-consultation')}>{t.consult}<span aria-hidden="true">↗</span></button>
         </div>
         <aside aria-label={t.snapshot}>
-          <small>{t.snapshot} · 30.08.2026</small>
+          <small>{t.snapshot}</small>
           <strong>{snapshot.officialTotalAtCapture}</strong><span>{t.proposals}</span>
           <dl>
             <div><dt>{t.captured}</dt><dd>{capturedLabel(snapshot.capturedAt, language)} · UZT</dd></div>
@@ -744,7 +735,7 @@ export function BayterakCatalog({ snapshot, initialLanguage }: { snapshot: Bayte
       <footer className="bayterak-catalog-footer"><a className="bayterak-catalog-wordmark" href={withLanguage('/bayterak', language)}><strong>BAY</strong><span>TERAK</span></a><p>{t.disclaimer}</p><a href={privacyUrl(language)}>{t.privacy}</a><a href="#bayterak-catalog-title" aria-label={t.up}>↑</a></footer>
 
       {planUnit ? <PlanLightbox unit={planUnit} language={language} onClose={() => setPlanUnit(null)} /> : null}
-      {leadRequest ? <div className="bayterak-catalog-lead-host" data-project-slug="bayterak" data-context={leadRequest.context} data-unit-uuid={leadRequest.unit?.id}><LeadModal open language={language} context={leadRequest.context} brandName="NRG-BI" projectName="BAYTERAK" tagline={leadRequest.unit ? `${roomPhrase(leadRequest.unit.rooms, language)} · ${areaWithUnit(leadRequest.unit.area, language)} · № ${leadRequest.unit.number}` : `${snapshot.officialTotalAtCapture} · ${t.proposals}`} facts={leadRequest.unit ? [classLabel(leadRequest.unit.propertyClass, language), `${leadRequest.unit.floor}/${leadRequest.unit.totalFloors} · ${t.floorOf}`, money(leadRequest.unit.price, language)] : [t.classesSummary, `${areaWithUnit(snapshot.filterSummary.ranges.area.min, language)}—${areaWithUnit(snapshot.filterSummary.ranges.area.max, language)}`, capturedLabel(snapshot.capturedAt, language)]} submitUrl={leadSubmitUrl()} projectSlug="bayterak" unitId={leadRequest.unit?.id} privacyUrl={privacyUrl(language)} requireConsent onClose={() => setLeadRequest(null)} /></div> : null}
+      {leadRequest ? <div className="bayterak-catalog-lead-host" data-project-slug="bayterak" data-context={leadRequest.context} data-unit-uuid={leadRequest.unit?.id}><LeadModal open language={language} context={leadRequest.context} brandName="NRG-BI" projectName="BAYTERAK" tagline={leadRequest.unit ? `${roomPhrase(leadRequest.unit.rooms, language)} · ${areaWithUnit(leadRequest.unit.area, language)} · № ${leadRequest.unit.number}` : `${snapshot.officialTotalAtCapture} · ${t.proposals}`} facts={leadRequest.unit ? [classLabel(leadRequest.unit.propertyClass, language), `${leadRequest.unit.floor}/${leadRequest.unit.totalFloors} · ${t.floorOf}`, money(leadRequest.unit.price, language)] : [t.classesSummary, `${areaWithUnit(snapshot.filterSummary.ranges.area.min, language)}—${areaWithUnit(snapshot.filterSummary.ranges.area.max, language)}`, capturedLabel(snapshot.capturedAt, language)]} submitUrl={leadSubmitUrl()} projectSlug="bayterak" {...catalogLeadIdentity(leadRequest.unit)} privacyUrl={privacyUrl(language)} requireConsent onClose={() => setLeadRequest(null)} /></div> : null}
     </main>
   );
 }

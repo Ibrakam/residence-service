@@ -1,5 +1,5 @@
 import type catalog from '@/data/regnum-plaza-client.json';
-import { rememberLastViewedApartment } from '@/app/lead-modal';
+import { rememberLiveCatalogUnit } from '@/app/lead-modal';
 import { type RegnumLanguage } from './regnum-ui';
 
 export type RegnumUnit = (typeof catalog.units)[number];
@@ -21,5 +21,5 @@ export function regnumLeadContext(surface: string, language: RegnumLanguage, uni
 }
 
 export function rememberRegnumUnit(unit: RegnumUnit) {
-  rememberLastViewedApartment({ uuid: unit.id }, 'regnum-plaza');
+  rememberLiveCatalogUnit(unit, 'regnum-plaza');
 }

@@ -338,7 +338,7 @@ export const projectConfigs: Record<KayanProjectSlug, KayanProjectConfig> = {
         storyAccent: 'Жизнь в настоящем.',
         storyCopy: 'Сдержанная архитектура, закрытые дворы и выразительные общественные пространства создают дом, рассчитанный на долгую семейную историю.',
         facts: [
-          { value: '256', label: 'активных предложений в каталоге' },
+          { value: '—', label: 'активных предложений в каталоге' },
           { value: '11–16', label: 'этажей' },
           { value: '3', label: 'очереди в каталоге' },
           { value: '1–4', label: 'комнаты' },
@@ -370,7 +370,7 @@ export const projectConfigs: Record<KayanProjectSlug, KayanProjectConfig> = {
         storyAccent: 'Bugungi hayot uchun.',
         storyCopy: 'Sokin arxitektura, yopiq hovlilar va ifodali jamoat makonlari uzoq oilaviy tarix uchun yaratilgan uy muhitini shakllantiradi.',
         facts: [
-          { value: '256', label: 'katalogdagi faol takliflar' },
+          { value: '—', label: 'katalogdagi faol takliflar' },
           { value: '11–16', label: 'qavat' },
           { value: '3', label: 'katalog bosqichi' },
           { value: '1–4', label: 'xona' },
@@ -402,7 +402,7 @@ export const projectConfigs: Record<KayanProjectSlug, KayanProjectConfig> = {
         storyAccent: 'A home for today.',
         storyCopy: 'Restrained architecture, private courtyards and considered shared spaces create a home designed for a long family story.',
         facts: [
-          { value: '256', label: 'active catalogue listings' },
+          { value: '—', label: 'active catalogue listings' },
           { value: '11–16', label: 'storeys' },
           { value: '3', label: 'catalogue phases' },
           { value: '1–4', label: 'bedrooms' },

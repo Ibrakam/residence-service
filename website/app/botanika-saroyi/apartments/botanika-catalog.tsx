@@ -12,7 +12,8 @@ import {
   useSyncExternalStore,
 } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { LeadModal, rememberLastViewedApartment } from '@/app/lead-modal';
+import { LeadModal, rememberLiveCatalogUnit } from '@/app/lead-modal';
+import { catalogLeadIdentity, useLiveCatalogSnapshot } from '@/app/live-catalog';
 import { botanikaLeadSubmitUrl } from '../botanika-lead';
 
 type Language = 'ru' | 'uz' | 'en';
@@ -128,44 +129,44 @@ const emptyFilters: Filters = {
 const copy = {
   ru: {
     skip: 'К результатам каталога', back: 'О проекте', wordmark: 'BOTANIKA SAROYI', index: 'Индекс резиденций', language: 'Язык', phone: 'Отдел продаж',
-    eyebrow: 'Каталог · официальный snapshot 30.08.2026', title: 'Индекс', accent: 'резиденций.', lead: '224 планировки и официальных предложения в датированном snapshot — без подмены внутренних статусов словом «свободно».',
-    snapshot: 'Snapshot', proposals: 'предложения', saleRows: 'строки isSale=true', plans: 'локальные планировки', range: 'Диапазон квартир', rangeValue: '36,95–82,25 м² · 1–3 комнаты', plate: 'ЛИСТ', specimen: 'ЭКЗЕМПЛЯР', specimenIndex: 'ИНДЕКС ЭКЗЕМПЛЯРОВ',
+    eyebrow: 'Каталог · данные обновляются автоматически', title: 'Индекс', accent: 'резиденций.', lead: 'Актуальные планировки и официальные предложения — без подмены внутренних статусов словом «свободно».',
+    snapshot: 'Данные обновляются', proposals: 'предложения', saleRows: 'в продаже', plans: 'планировки', range: 'Диапазон квартир', rangeValue: 'Актуальный диапазон', plate: 'ЛИСТ', specimen: 'ЭКЗЕМПЛЯР', specimenIndex: 'ИНДЕКС ЭКЗЕМПЛЯРОВ',
     modes: { cards: 'Карточки', chess: 'Шахматка' }, modeLabel: 'Режим каталога',
     filters: 'Фильтры', rooms: 'Комнаты', allRooms: 'Все', areaFrom: 'Площадь от, м²', areaTo: 'Площадь до, м²', priceFrom: 'Цена от, млн UZS', priceTo: 'Цена до, млн UZS', floor: 'Этаж', allFloors: 'Все этажи', building: 'Блок / корпус', allBuildings: 'Все блоки', entrance: 'Подъезд', allEntrances: 'Все подъезды', completion: 'Срок', allCompletions: 'Все сроки', reset: 'Сбросить',
     sort: 'Сортировка', sorts: { priceAsc: 'Цена ↑', priceDesc: 'Цена ↓', areaAsc: 'Площадь ↑', areaDesc: 'Площадь ↓', floorAsc: 'Этаж ↑', floorDesc: 'Этаж ↓' }, results: 'найдено',
-    sourceTitle: 'Происхождение snapshot', sourceNote: 'Все 224 строки квартир сохранены из официального live-каталога 30 августа 2026 года. 223 имеют isSale=true; одна строка бронирования включена официальным интерфейсом в итог 224. Цены, акции и статусы относятся к моменту snapshot.',
-    apartment: 'Квартира', roomsShort: 'комн.', area: 'Площадь', areaUnit: 'м²', currentPrice: 'Текущая цена по акции', originalPrice: 'Исходная цена', sourcePerM2: 'Цена за м² в источнике', discount: 'Сумма акции', promotion: 'Акция', status: 'Исходный статус', statusNote: 'Workflow-статус в официальном snapshot', floorOf: 'Этаж', entranceShort: 'Подъезд', block: 'Блок', completionShort: 'Сдача', completionSource: 'Срок нормализован по realEstateList', placementDate: 'Исходный placementList', class: 'Класс', business: 'Бизнес', balcony: 'Балкон', ceiling: 'Потолки', studio: 'Студия', finishing: 'Отделка включена', yes: 'Да', no: 'Нет',
+    sourceTitle: 'Об источнике данных', sourceNote: 'Цены, акции и статусы квартир обновляются автоматически. Наличие и условия подтверждает отдел продаж.',
+    apartment: 'Квартира', roomsShort: 'комн.', area: 'Площадь', areaUnit: 'м²', currentPrice: 'Текущая цена по акции', originalPrice: 'Исходная цена', sourcePerM2: 'Цена за м² в источнике', discount: 'Сумма акции', promotion: 'Акция', status: 'Исходный статус', statusNote: 'Статус в актуальном каталоге', floorOf: 'Этаж', entranceShort: 'Подъезд', block: 'Блок', completionShort: 'Сдача', completionSource: 'Срок нормализован по realEstateList', placementDate: 'Дата обновления', class: 'Класс', business: 'Бизнес', balcony: 'Балкон', ceiling: 'Потолки', studio: 'Студия', finishing: 'Отделка включена', yes: 'Да', no: 'Нет',
     plan: 'Открыть официальную планировку', planAlt: 'Официальная планировка квартиры', choose: 'Уточнить условия', details: 'Открыть детали', showMore: 'Показать ещё', shown: 'Показано', of: 'из',
     noResults: 'По этим параметрам предложений нет.', resetFilters: 'Сбросить фильтры', matrix: 'Блок × подъезд × этаж × квартира', matrixHint: 'Прокручивайте матрицу пальцем или трекпадом, кнопками 44 px либо клавишами ← → Home End.', scrollLeft: 'Прокрутить матрицу влево', scrollRight: 'Прокрутить матрицу вправо', floorColumn: 'Этаж', unitsColumn: 'Квартиры', emptyFloor: 'Нет предложений по фильтру', selected: 'Выбранная квартира', close: 'Закрыть детали', closePlan: 'Закрыть планировку', selectHint: 'Выберите квартиру в матрице, чтобы открыть её паспорт.',
-    generalConsult: 'Получить консультацию', disclaimer: 'Snapshot не является публичной офертой. Наличие и актуальные условия подтверждает отдел продаж.', privacy: 'Политика конфиденциальности', home: 'Главная Botanika', up: 'Наверх',
+    generalConsult: 'Получить консультацию', disclaimer: 'Информация не является публичной офертой. Наличие и актуальные условия подтверждает отдел продаж.', privacy: 'Политика конфиденциальности', home: 'Главная Botanika', up: 'Наверх',
     statuses: { 'Свободно': 'Свободно', 'Бронирование': 'Бронирование', 'Расторжение': 'Расторжение', 'Снятие брони': 'Снятие брони', 'Снятие резерва': 'Снятие резерва' },
   },
   uz: {
     skip: 'Katalog natijalariga o‘tish', back: 'Loyiha haqida', wordmark: 'BOTANIKA SAROYI', index: 'Rezidensiyalar indeksi', language: 'Til', phone: 'Savdo bo‘limi',
-    eyebrow: 'Katalog · 30.08.2026 rasmiy snapshot', title: 'Rezidensiyalar', accent: 'indeksi.', lead: 'Sanasi ko‘rsatilgan snapshotdagi 224 ta reja va rasmiy taklif — ichki holatlarni «bo‘sh» deb almashtirmasdan.',
-    snapshot: 'Snapshot', proposals: 'taklif', saleRows: 'isSale=true qatorlari', plans: 'mahalliy rejalar', range: 'Xonadonlar oralig‘i', rangeValue: '36,95–82,25 m² · 1–3 xona', plate: 'VARAQ', specimen: 'NAMUNA', specimenIndex: 'NAMUNALAR INDEKSI',
+    eyebrow: 'Katalog · ma’lumotlar avtomatik yangilanadi', title: 'Rezidensiyalar', accent: 'indeksi.', lead: 'Dolzarb rejalar va rasmiy takliflar — ichki holatlarni «bo‘sh» deb almashtirmasdan.',
+    snapshot: 'Ma’lumotlar yangilanadi', proposals: 'taklif', saleRows: 'sotuvdagi qatorlar', plans: 'rejalar', range: 'Xonadonlar oralig‘i', rangeValue: 'Dolzarb oraliq', plate: 'VARAQ', specimen: 'NAMUNA', specimenIndex: 'NAMUNALAR INDEKSI',
     modes: { cards: 'Kartalar', chess: 'Shaxmatka' }, modeLabel: 'Katalog ko‘rinishi',
     filters: 'Filtrlar', rooms: 'Xonalar', allRooms: 'Barchasi', areaFrom: 'Maydon, m² dan', areaTo: 'Maydon, m² gacha', priceFrom: 'Narx, mln UZS dan', priceTo: 'Narx, mln UZS gacha', floor: 'Qavat', allFloors: 'Barcha qavatlar', building: 'Blok / korpus', allBuildings: 'Barcha bloklar', entrance: 'Kirish', allEntrances: 'Barcha kirishlar', completion: 'Topshirish muddati', allCompletions: 'Barcha muddatlar', reset: 'Tozalash',
     sort: 'Saralash', sorts: { priceAsc: 'Narx ↑', priceDesc: 'Narx ↓', areaAsc: 'Maydon ↑', areaDesc: 'Maydon ↓', floorAsc: 'Qavat ↑', floorDesc: 'Qavat ↓' }, results: 'topildi',
-    sourceTitle: 'Snapshot kelib chiqishi', sourceNote: '224 ta xonadon qatorining barchasi 2026-yil 30-avgustdagi rasmiy live katalogdan saqlangan. 223 tasida isSale=true; bron qilingan bitta qator rasmiy interfeysdagi 224 ta yakuniy natijaga kiritilgan. Narx, aksiya va holatlar snapshot vaqtiga tegishli.',
-    apartment: 'Xonadon', roomsShort: 'xonali', area: 'Maydon', areaUnit: 'm²', currentPrice: 'Aksiya bo‘yicha joriy narx', originalPrice: 'Boshlang‘ich narx', sourcePerM2: 'Manbadagi m² narxi', discount: 'Aksiya summasi', promotion: 'Aksiya', status: 'Asl holat', statusNote: 'Rasmiy snapshotdagi workflow holati', floorOf: 'Qavat', entranceShort: 'Kirish', block: 'Blok', completionShort: 'Topshirish', completionSource: 'Muddat realEstateList bo‘yicha normallashtirilgan', placementDate: 'Asl placementList', class: 'Toifa', business: 'Biznes', balcony: 'Balkon', ceiling: 'Shift', studio: 'Studiya', finishing: 'Pardoz kiritilgan', yes: 'Ha', no: 'Yo‘q',
+    sourceTitle: 'Ma’lumotlar manbasi haqida', sourceNote: 'Xonadonlarning narxlari, aksiyalari va holatlari avtomatik yangilanadi. Mavjudlik va shartlarni savdo bo‘limi tasdiqlaydi.',
+    apartment: 'Xonadon', roomsShort: 'xonali', area: 'Maydon', areaUnit: 'm²', currentPrice: 'Aksiya bo‘yicha joriy narx', originalPrice: 'Boshlang‘ich narx', sourcePerM2: 'Manbadagi m² narxi', discount: 'Aksiya summasi', promotion: 'Aksiya', status: 'Asl holat', statusNote: 'Yangilanadigan katalogdagi holat', floorOf: 'Qavat', entranceShort: 'Kirish', block: 'Blok', completionShort: 'Topshirish', completionSource: 'Muddat realEstateList bo‘yicha normallashtirilgan', placementDate: 'Yangilanish sanasi', class: 'Toifa', business: 'Biznes', balcony: 'Balkon', ceiling: 'Shift', studio: 'Studiya', finishing: 'Pardoz kiritilgan', yes: 'Ha', no: 'Yo‘q',
     plan: 'Rasmiy rejani ochish', planAlt: 'Xonadonning rasmiy rejasi', choose: 'Shartlarni aniqlash', details: 'Tafsilotlarni ochish', showMore: 'Yana ko‘rsatish', shown: 'Ko‘rsatildi', of: 'dan',
     noResults: 'Bu parametrlar bo‘yicha taklif yo‘q.', resetFilters: 'Filtrlarni tozalash', matrix: 'Blok × kirish × qavat × xonadon', matrixHint: 'Matritsani barmoq yoki trekpad, 44 px tugmalar yoxud ← → Home End klavishlari bilan suring.', scrollLeft: 'Matritsani chapga surish', scrollRight: 'Matritsani o‘ngga surish', floorColumn: 'Qavat', unitsColumn: 'Xonadonlar', emptyFloor: 'Filtr bo‘yicha taklif yo‘q', selected: 'Tanlangan xonadon', close: 'Tafsilotlarni yopish', closePlan: 'Rejani yopish', selectHint: 'Pasportini ochish uchun matritsadan xonadon tanlang.',
-    generalConsult: 'Maslahat olish', disclaimer: 'Snapshot ommaviy oferta emas. Mavjudlik va amaldagi shartlarni savdo bo‘limi tasdiqlaydi.', privacy: 'Maxfiylik siyosati', home: 'Botanika bosh sahifasi', up: 'Yuqoriga',
+    generalConsult: 'Maslahat olish', disclaimer: 'Katalog ma’lumotlari ommaviy oferta emas. Mavjudlik va amaldagi shartlarni savdo bo‘limi tasdiqlaydi.', privacy: 'Maxfiylik siyosati', home: 'Botanika bosh sahifasi', up: 'Yuqoriga',
     statuses: { 'Свободно': 'Bo‘sh', 'Бронирование': 'Bron qilish', 'Расторжение': 'Shartnomani bekor qilish', 'Снятие брони': 'Bronni olib tashlash', 'Снятие резерва': 'Rezervni olib tashlash' },
   },
   en: {
     skip: 'Skip to catalogue results', back: 'About the project', wordmark: 'BOTANIKA SAROYI', index: 'Residence index', language: 'Language', phone: 'Sales office',
-    eyebrow: 'Catalogue · official snapshot 30 Aug 2026', title: 'Residence', accent: 'index.', lead: '224 floor plans and official listings in a dated snapshot, without relabelling every internal workflow state as “available”.',
-    snapshot: 'Snapshot', proposals: 'listings', saleRows: 'rows with isSale=true', plans: 'local floor plans', range: 'Apartment range', rangeValue: '36.95–82.25 m² · 1–3 rooms', plate: 'PLATE', specimen: 'SPECIMEN', specimenIndex: 'SPECIMEN INDEX',
+    eyebrow: 'Catalogue · automatically updated', title: 'Residence', accent: 'index.', lead: 'Current floor plans and official listings, with source statuses preserved.',
+    snapshot: 'Automatically updated', proposals: 'listings', saleRows: 'listings for sale', plans: 'floor plans', range: 'Apartment range', rangeValue: 'Current range', plate: 'PLATE', specimen: 'SPECIMEN', specimenIndex: 'SPECIMEN INDEX',
     modes: { cards: 'Cards', chess: 'Matrix' }, modeLabel: 'Catalogue view',
     filters: 'Filters', rooms: 'Rooms', allRooms: 'Any', areaFrom: 'Area from, m²', areaTo: 'Area to, m²', priceFrom: 'Price from, million UZS', priceTo: 'Price to, million UZS', floor: 'Floor', allFloors: 'Any floor', building: 'Block / building', allBuildings: 'All blocks', entrance: 'Entrance', allEntrances: 'All entrances', completion: 'Completion', allCompletions: 'All dates', reset: 'Reset',
     sort: 'Sort', sorts: { priceAsc: 'Price ↑', priceDesc: 'Price ↓', areaAsc: 'Area ↑', areaDesc: 'Area ↓', floorAsc: 'Floor ↑', floorDesc: 'Floor ↓' }, results: 'found',
-    sourceTitle: 'Snapshot provenance', sourceNote: 'All 224 apartment rows were saved from the official live catalogue on 30 August 2026. 223 have isSale=true; one booking row is included in the official interface total of 224. Prices, promotions and statuses are fixed at snapshot time.',
-    apartment: 'Apartment', roomsShort: 'room', area: 'Area', areaUnit: 'm²', currentPrice: 'Current campaign price', originalPrice: 'Original price', sourcePerM2: 'Source price per m²', discount: 'Campaign reduction', promotion: 'Campaign', status: 'Source status', statusNote: 'Workflow status in the official snapshot', floorOf: 'Floor', entranceShort: 'Entrance', block: 'Block', completionShort: 'Completion', completionSource: 'Date normalized from realEstateList', placementDate: 'Raw placementList', class: 'Class', business: 'Business', balcony: 'Balcony', ceiling: 'Ceiling', studio: 'Studio', finishing: 'Finishing included', yes: 'Yes', no: 'No',
+    sourceTitle: 'About the catalogue data', sourceNote: 'Apartment prices, promotions and statuses update automatically. The sales team confirms availability and terms.',
+    apartment: 'Apartment', roomsShort: 'room', area: 'Area', areaUnit: 'm²', currentPrice: 'Current campaign price', originalPrice: 'Original price', sourcePerM2: 'Source price per m²', discount: 'Campaign reduction', promotion: 'Campaign', status: 'Source status', statusNote: 'Status in the live catalogue', floorOf: 'Floor', entranceShort: 'Entrance', block: 'Block', completionShort: 'Completion', completionSource: 'Date normalized from realEstateList', placementDate: 'Last update', class: 'Class', business: 'Business', balcony: 'Balcony', ceiling: 'Ceiling', studio: 'Studio', finishing: 'Finishing included', yes: 'Yes', no: 'No',
     plan: 'Open official floor plan', planAlt: 'Official apartment floor plan', choose: 'Check terms', details: 'Open details', showMore: 'Show more', shown: 'Shown', of: 'of',
     noResults: 'No listings match these filters.', resetFilters: 'Reset filters', matrix: 'Block × entrance × floor × apartment', matrixHint: 'Swipe or use a trackpad, the 44 px controls, or the ← → Home End keys to move through the matrix.', scrollLeft: 'Scroll matrix left', scrollRight: 'Scroll matrix right', floorColumn: 'Floor', unitsColumn: 'Apartments', emptyFloor: 'No filtered listings', selected: 'Selected apartment', close: 'Close details', closePlan: 'Close floor plan', selectHint: 'Select an apartment in the matrix to open its specimen passport.',
-    generalConsult: 'Request a consultation', disclaimer: 'This snapshot is not a public offer. The sales team confirms availability and current terms.', privacy: 'Privacy policy', home: 'Botanika home', up: 'Back to top',
+    generalConsult: 'Request a consultation', disclaimer: 'This live catalogue is not a public offer. The sales team confirms availability and current terms.', privacy: 'Privacy policy', home: 'Botanika home', up: 'Back to top',
     statuses: { 'Свободно': 'Available', 'Бронирование': 'Booking', 'Расторжение': 'Termination', 'Снятие брони': 'Booking release', 'Снятие резерва': 'Reservation release' },
   },
 } as const;
@@ -230,18 +231,7 @@ function getMobileDrawerSnapshot() {
 function getMobileDrawerServerSnapshot() { return false; }
 
 function rememberUnit(unit: Unit) {
-  rememberLastViewedApartment({
-    uuid: unit.id,
-    number: unit.number,
-    rooms: unit.rooms,
-    area: unit.area,
-    floor: unit.floor,
-    maxFloor: unit.totalFloors,
-    entrance: unit.entrance,
-    blockName: unit.building,
-    blockId: unit.buildingId,
-    price: unit.price,
-  }, 'botanika-saroyi');
+  rememberLiveCatalogUnit(unit, 'botanika-saroyi');
 }
 
 function unitContext(unit: Unit, surface: string, language: Language) {
@@ -351,7 +341,7 @@ function UnitCard({ unit, language, onPlan, onLead }: { unit: Unit; language: La
         <div className="botanika-unit-card__price">
           <small>{t.currentPrice}</small><strong>{money(unit.price, language)}</strong>
           <span>{money(unit.sourcePricePerM2, language)} · {t.sourcePerM2.toLowerCase()}</span>
-          <del>{t.originalPrice}: {money(unit.oldPrice, language)}</del>
+          {unit.oldPrice > unit.price ? <del>{t.originalPrice}: {money(unit.oldPrice, language)}</del> : null}
           {unit.promotion ? <b>{t.promotion} −{unit.promotion.percent}% · {money(unit.promotion.discountSum, language)}</b> : null}
         </div>
         <button type="button" data-lead-trigger onClick={onLead}>{t.choose}<span aria-hidden="true">↗</span></button>
@@ -415,7 +405,7 @@ function UnitDetail({ unit, language, onClose, onPlan, onLead }: { unit: Unit; l
         <div className="botanika-unit-detail__price">
           <small>{t.currentPrice}</small><strong>{money(unit.price, language)}</strong>
           <span>{t.sourcePerM2}: {money(unit.sourcePricePerM2, language)}</span>
-          <del>{t.originalPrice}: {money(unit.oldPrice, language)}</del>
+          {unit.oldPrice > unit.price ? <del>{t.originalPrice}: {money(unit.oldPrice, language)}</del> : null}
           {unit.promotion ? <b>{t.promotion} −{unit.promotion.percent}%<span>{t.discount}: {money(unit.promotion.discountSum, language)}</span></b> : null}
         </div>
         <button className="botanika-unit-detail__cta" type="button" data-lead-trigger onClick={onLead}>{t.choose}<span aria-hidden="true">↗</span></button>
@@ -487,7 +477,8 @@ function MatrixGroup({ units, language, sort, selectedId, onSelect }: { units: U
   );
 }
 
-export function BotanikaCatalog({ snapshot, initialLanguage }: { snapshot: BotanikaSnapshot; initialLanguage: Language }) {
+export function BotanikaCatalog({ snapshot: embeddedSnapshot, initialLanguage }: { snapshot: BotanikaSnapshot; initialLanguage: Language }) {
+  const { data: snapshot } = useLiveCatalogSnapshot('botanika-saroyi', embeddedSnapshot);
   const [language, setLanguage] = useLanguage(initialLanguage);
   const [mode, setMode] = useState<Mode>('cards');
   const [sort, setSort] = useState<Sort>('priceAsc');
@@ -499,6 +490,13 @@ export function BotanikaCatalog({ snapshot, initialLanguage }: { snapshot: Botan
   const modeRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const selectionOpener = useRef<HTMLButtonElement | null>(null);
   const t = copy[language];
+  const areas = snapshot.units.map((unit) => unit.area);
+  const rooms = snapshot.units.map((unit) => unit.rooms);
+  const rangeValue = snapshot.units.length
+    ? `${area(Math.min(...areas), language)}–${area(Math.max(...areas), language)} m² · ${Math.min(...rooms)}–${Math.max(...rooms)} ${language === 'ru' ? 'комнаты' : language === 'uz' ? 'xona' : 'rooms'}`
+    : '—';
+  const saleRows = snapshot.units.filter((unit) => unit.isSale).length;
+  const planRows = snapshot.units.filter((unit) => Boolean(unit.plan)).length;
 
   const blocks = snapshot.filterSummary.blocks;
   const completions = useMemo(() => Array.from(new Set(snapshot.units.map((unit) => unit.completionDate))).sort(), [snapshot.units]);
@@ -592,12 +590,12 @@ export function BotanikaCatalog({ snapshot, initialLanguage }: { snapshot: Botan
         </div>
         <aside aria-label={t.snapshot}>
           <small>{t.plate} · 00</small>
-          <strong>{snapshot.officialTotalAtCapture}</strong><span>{t.proposals}</span>
+          <strong>{snapshot.units.length}</strong><span>{t.proposals}</span>
           <dl>
             <div><dt>{t.snapshot}</dt><dd>{capturedLabel(snapshot.capturedAt, language)}</dd></div>
-            <div><dt>{t.saleRows}</dt><dd>{snapshot.integrity.isSaleTrue}/{snapshot.officialTotalAtCapture}</dd></div>
-            <div><dt>{t.plans}</dt><dd>{snapshot.integrity.reachableFloorplans}/{snapshot.integrity.uniqueFloorplanUrls}</dd></div>
-            <div><dt>{t.range}</dt><dd>{t.rangeValue}</dd></div>
+            <div><dt>{t.saleRows}</dt><dd>{saleRows}/{snapshot.units.length}</dd></div>
+            <div><dt>{t.plans}</dt><dd>{planRows}/{snapshot.units.length}</dd></div>
+            <div><dt>{t.range}</dt><dd>{rangeValue}</dd></div>
           </dl>
         </aside>
       </section>
@@ -648,7 +646,7 @@ export function BotanikaCatalog({ snapshot, initialLanguage }: { snapshot: Botan
       <footer className="botanika-catalog-footer"><a href={withLanguage('/botanika-saroyi', language)}>{t.wordmark}<small>{t.home}</small></a><p>{t.disclaimer}</p><a href={privacyUrl(language)}>{t.privacy}</a><a href="#botanika-catalog-title" aria-label={t.up}>↑</a></footer>
 
       {planUnit ? <PlanLightbox unit={planUnit} language={language} onClose={() => setPlanUnit(null)} /> : null}
-      {leadRequest ? <div className="botanika-catalog-lead-host" data-project-slug="botanika-saroyi" data-context={leadRequest.context}><LeadModal open language={language} context={leadRequest.context} brandName="NRG-BI" projectName="BOTANIKA SAROYI" tagline={leadRequest.unit ? `${roomPhrase(leadRequest.unit.rooms, language)} · ${areaWithUnit(leadRequest.unit.area, language)} · № ${leadRequest.unit.number}` : t.lead} facts={leadRequest.unit ? [blockLabel(leadRequest.unit.building, language), `${leadRequest.unit.floor}/${leadRequest.unit.totalFloors} · ${t.floorOf}`, money(leadRequest.unit.price, language)] : [`${snapshot.officialTotalAtCapture} · ${t.proposals}`, t.rangeValue, t.business]} submitUrl={botanikaLeadSubmitUrl()} projectSlug="botanika-saroyi" unitId={leadRequest.unit?.id} privacyUrl={privacyUrl(language)} requireConsent onClose={() => setLeadRequest(null)} /></div> : null}
+      {leadRequest ? <div className="botanika-catalog-lead-host" data-project-slug="botanika-saroyi" data-context={leadRequest.context}><LeadModal open language={language} context={leadRequest.context} brandName="NRG-BI" projectName="BOTANIKA SAROYI" tagline={leadRequest.unit ? `${roomPhrase(leadRequest.unit.rooms, language)} · ${areaWithUnit(leadRequest.unit.area, language)} · № ${leadRequest.unit.number}` : t.lead} facts={leadRequest.unit ? [blockLabel(leadRequest.unit.building, language), `${leadRequest.unit.floor}/${leadRequest.unit.totalFloors} · ${t.floorOf}`, money(leadRequest.unit.price, language)] : [`${snapshot.units.length} · ${t.proposals}`, rangeValue, t.business]} submitUrl={botanikaLeadSubmitUrl()} projectSlug="botanika-saroyi" {...catalogLeadIdentity(leadRequest.unit)} privacyUrl={privacyUrl(language)} requireConsent onClose={() => setLeadRequest(null)} /></div> : null}
     </main>
   );
 }

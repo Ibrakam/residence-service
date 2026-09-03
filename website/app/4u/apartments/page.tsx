@@ -9,9 +9,9 @@ const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
 type Language = 'ru' | 'uz' | 'en';
 type PageProps = { searchParams?: Promise<{ lang?: string }> };
 const localized = {
-  ru: { title: 'Квартиры в 4U Tashkent — официальный snapshot', description: '33 актуальных предложения из официального каталога 4U Tashkent, snapshot от 30 августа 2026 года.', ogTitle: 'Выбор квартир — 4U Tashkent' },
-  uz: { title: '4U Tashkent xonadonlari — rasmiy snapshot', description: '4U Tashkent rasmiy katalogidan 2026-yil 30-avgust holatidagi 33 ta dolzarb taklif.', ogTitle: 'Xonadon tanlash — 4U Tashkent' },
-  en: { title: '4U Tashkent apartments — official snapshot', description: '33 current listings from the official 4U Tashkent catalogue, captured on 30 August 2026.', ogTitle: 'Choose an apartment — 4U Tashkent' },
+  ru: { title: 'Квартиры в 4U Tashkent — актуальный каталог', description: 'Актуальные квартиры 4U Tashkent: цены, площади и статусы обновляются автоматически.', ogTitle: 'Выбор квартир — 4U Tashkent' },
+  uz: { title: '4U Tashkent xonadonlari — yangilanadigan katalog', description: '4U Tashkent xonadonlari, narxlari va holatlari avtomatik yangilanadi.', ogTitle: 'Xonadon tanlash — 4U Tashkent' },
+  en: { title: '4U Tashkent apartments — live catalogue', description: '4U Tashkent listings, prices and statuses update automatically.', ogTitle: 'Choose an apartment — 4U Tashkent' },
 } as const;
 
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {

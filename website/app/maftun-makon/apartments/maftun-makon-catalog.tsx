@@ -10,7 +10,8 @@ import {
   useRef,
   useState,
 } from 'react';
-import { LeadModal, rememberLastViewedApartment } from '@/app/lead-modal';
+import { LeadModal, rememberLiveCatalogUnit } from '@/app/lead-modal';
+import { catalogLeadIdentity, useLiveCatalogSnapshot } from '@/app/live-catalog';
 import { maftunScrollBehavior, useMaftunSmoothScroll } from '../maftun-interactions';
 import { maftunLeadSubmitUrl } from '../maftun-lead';
 
@@ -78,39 +79,39 @@ const storageKey = 'maftun-makon-language-v1';
 const copy = {
   ru: {
     skip: 'К каталогу', back: 'О проекте', project: 'MAFTUN MAKON · NRG-BI × AL-BINA', language: 'Язык',
-    title: 'Найдите свой', accent: 'сад за порталом.', lead: 'Полный локальный срез актуального официального каталога — без реконструкции скрытых или проданных квартир.',
-    snapshot: 'Официальный snapshot', captured: 'Проверено', offers: 'предложений', firstRender: 'На первом рендере источника', plans: 'локальных планировок',
+    title: 'Найдите свой', accent: 'сад за порталом.', lead: 'Актуальный официальный каталог — без переименования скрытых или проданных квартир в свободные.',
+    snapshot: 'Актуальные данные', captured: 'Обновлено', offers: 'свободных предложений', firstRender: 'Доступно сейчас', plans: 'планировок',
     modes: { cards: 'Карточки', chess: 'Шахматка' },
     filters: 'Фильтры', rooms: 'Комнаты', allRooms: 'Все', areaFrom: 'Площадь от, м²', areaTo: 'Площадь до, м²', priceFrom: 'Цена от, млрд', priceTo: 'Цена до, млрд', floor: 'Этаж', allFloors: 'Все этажи', building: 'Очередь / дом', allBuildings: 'Все дома', propertyClass: 'Класс', allClasses: 'Все классы', reset: 'Сбросить',
     sort: 'Сортировка', sorts: { priceAsc: 'Цена ↑', priceDesc: 'Цена ↓', areaAsc: 'Площадь ↑', areaDesc: 'Площадь ↓', floorAsc: 'Этаж ↑', floorDesc: 'Этаж ↓' }, results: 'найдено',
-    sourceNote: 'Все 204 позиции сохранены из live-каталога 30 августа 2026 года. Цены и акции относятся к моменту snapshot и могут измениться.',
-    active: 'В продаже', apartment: 'комн.', entrance: 'Подъезд', completion: 'Срок в каталоге', class: 'Класс', house: 'Дом', plan: 'Открыть планировку', unavailablePlan: 'Планировка временно недоступна в официальном источнике', choose: 'Выбрать квартиру', showMore: 'Показать ещё', price: 'Цена snapshot', oldPrice: 'Цена до акции', perM2: 'за м²', promotion: 'Акция',
+    sourceNote: 'Состав предложений, цены, акции и статусы обновляются автоматически и могут измениться.',
+    active: 'В продаже', apartment: 'комн.', entrance: 'Подъезд', completion: 'Срок в каталоге', class: 'Класс', house: 'Дом', plan: 'Открыть планировку', unavailablePlan: 'Планировка временно недоступна', choose: 'Выбрать квартиру', showMore: 'Показать ещё', price: 'Актуальная цена', oldPrice: 'Цена до акции', perM2: 'за м²', promotion: 'Акция',
     noResults: 'По этим параметрам предложений нет.', resetFilters: 'Сбросить фильтры', matrix: 'Этаж × квартиры', matrixHint: 'Прокручивайте пальцем или трекпадом, кнопками 44 px либо клавишами ← → Home End.', scrollLeft: 'Прокрутить влево', scrollRight: 'Прокрутить вправо', selected: 'Выбранная квартира', close: 'Закрыть', details: 'Подробности', balcony: 'Балкон', ceiling: 'Высота потолка', studio: 'Студия', yes: 'Да', no: 'Нет', finishing: 'Отделка включена', consult: 'Получить консультацию',
-    disclaimer: 'Snapshot не является публичной офертой. Актуальные условия подтверждает отдел продаж.',
+    disclaimer: 'Информация не является публичной офертой. Актуальные условия подтверждает отдел продаж.',
   },
   uz: {
     skip: 'Katalogga o‘tish', back: 'Loyiha haqida', project: 'MAFTUN MAKON · NRG-BI × AL-BINA', language: 'Til',
-    title: 'Portal ortidagi', accent: 'bog‘ingizni toping.', lead: 'Yashirilgan yoki sotilgan xonadonlarni qayta yaratmasdan, joriy rasmiy katalogning to‘liq mahalliy snapshoti.',
-    snapshot: 'Rasmiy snapshot', captured: 'Tekshirilgan vaqt', offers: 'taklif', firstRender: 'Manbaning birinchi renderida', plans: 'mahalliy reja',
+    title: 'Portal ortidagi', accent: 'bog‘ingizni toping.', lead: 'Rasmiy katalog avtomatik yangilanadi; yashirilgan yoki sotilgan xonadonlar qayta yaratilmaydi.',
+    snapshot: 'Ma’lumotlar yangilanadi', captured: 'So‘nggi yangilanish', offers: 'mavjud taklif', firstRender: 'Hozir mavjud', plans: 'reja',
     modes: { cards: 'Kartalar', chess: 'Shaxmatka' },
     filters: 'Filtrlar', rooms: 'Xonalar', allRooms: 'Barchasi', areaFrom: 'Maydon, m² dan', areaTo: 'Maydon, m² gacha', priceFrom: 'Narx, mlrd dan', priceTo: 'Narx, mlrd gacha', floor: 'Qavat', allFloors: 'Barcha qavatlar', building: 'Navbat / uy', allBuildings: 'Barcha uylar', propertyClass: 'Toifa', allClasses: 'Barcha toifalar', reset: 'Tozalash',
     sort: 'Saralash', sorts: { priceAsc: 'Narx ↑', priceDesc: 'Narx ↓', areaAsc: 'Maydon ↑', areaDesc: 'Maydon ↓', floorAsc: 'Qavat ↑', floorDesc: 'Qavat ↓' }, results: 'topildi',
-    sourceNote: '204 pozitsiyaning barchasi 2026-yil 30-avgustdagi live katalogdan saqlangan. Narx va aksiyalar snapshot vaqtiga tegishli.',
-    active: 'Sotuvda', apartment: 'xonali', entrance: 'Kirish', completion: 'Katalogdagi muddat', class: 'Toifa', house: 'Uy', plan: 'Rejani ochish', unavailablePlan: 'Rasmiy manbada reja vaqtincha mavjud emas', choose: 'Xonadon tanlash', showMore: 'Yana ko‘rsatish', price: 'Snapshot narxi', oldPrice: 'Aksiyagacha narx', perM2: 'm² uchun', promotion: 'Aksiya',
+    sourceNote: 'Takliflar, narxlar, aksiyalar va holatlar avtomatik yangilanadi va o‘zgarishi mumkin.',
+    active: 'Sotuvda', apartment: 'xonali', entrance: 'Kirish', completion: 'Katalogdagi muddat', class: 'Toifa', house: 'Uy', plan: 'Rejani ochish', unavailablePlan: 'Rasmiy manbada reja vaqtincha mavjud emas', choose: 'Xonadon tanlash', showMore: 'Yana ko‘rsatish', price: 'Katalog ma’lumotlari narxi', oldPrice: 'Aksiyagacha narx', perM2: 'm² uchun', promotion: 'Aksiya',
     noResults: 'Bu parametrlar bo‘yicha taklif yo‘q.', resetFilters: 'Filtrlarni tozalash', matrix: 'Qavat × xonadonlar', matrixHint: 'Barmoq yoki trekpad, 44 px tugmalar yoxud ← → Home End klavishlaridan foydalaning.', scrollLeft: 'Chapga surish', scrollRight: 'O‘ngga surish', selected: 'Tanlangan xonadon', close: 'Yopish', details: 'Tafsilotlar', balcony: 'Balkon', ceiling: 'Shift balandligi', studio: 'Studiya', yes: 'Ha', no: 'Yo‘q', finishing: 'Pardoz kiritilgan', consult: 'Maslahat olish',
-    disclaimer: 'Snapshot ommaviy oferta emas. Amaldagi shartlarni savdo bo‘limi tasdiqlaydi.',
+    disclaimer: 'Live catalogue ommaviy oferta emas. Amaldagi shartlarni savdo bo‘limi tasdiqlaydi.',
   },
   en: {
     skip: 'Skip to catalogue', back: 'About the project', project: 'MAFTUN MAKON · NRG-BI × AL-BINA', language: 'Language',
-    title: 'Find your', accent: 'garden beyond the portal.', lead: 'A complete local snapshot of the current official catalogue, without reconstructing hidden or sold apartments.',
-    snapshot: 'Official snapshot', captured: 'Verified', offers: 'listings', firstRender: 'On the source’s first render', plans: 'local floor plans',
+    title: 'Find your', accent: 'garden beyond the portal.', lead: 'The official catalogue updates automatically, without presenting hidden or sold apartments as available.',
+    snapshot: 'Automatically updated', captured: 'Last updated', offers: 'available listings', firstRender: 'Available now', plans: 'floor plans',
     modes: { cards: 'Cards', chess: 'Matrix' },
     filters: 'Filters', rooms: 'Rooms', allRooms: 'All', areaFrom: 'Area from, m²', areaTo: 'Area to, m²', priceFrom: 'Price from, bn', priceTo: 'Price to, bn', floor: 'Floor', allFloors: 'All floors', building: 'Phase / building', allBuildings: 'All buildings', propertyClass: 'Class', allClasses: 'All classes', reset: 'Reset',
     sort: 'Sort', sorts: { priceAsc: 'Price ↑', priceDesc: 'Price ↓', areaAsc: 'Area ↑', areaDesc: 'Area ↓', floorAsc: 'Floor ↑', floorDesc: 'Floor ↓' }, results: 'found',
-    sourceNote: 'All 204 listings were saved from the live catalogue on 30 August 2026. Prices and promotions are fixed at snapshot time and may change.',
-    active: 'For sale', apartment: 'room', entrance: 'Entrance', completion: 'Catalogue completion', class: 'Class', house: 'Building', plan: 'Open floor plan', unavailablePlan: 'The official floor plan is temporarily unavailable', choose: 'Choose apartment', showMore: 'Show more', price: 'Snapshot price', oldPrice: 'Pre-offer price', perM2: 'per m²', promotion: 'Offer',
+    sourceNote: 'Listings, prices, promotions and statuses update automatically and may change.',
+    active: 'For sale', apartment: 'room', entrance: 'Entrance', completion: 'Catalogue completion', class: 'Class', house: 'Building', plan: 'Open floor plan', unavailablePlan: 'The official floor plan is temporarily unavailable', choose: 'Choose apartment', showMore: 'Show more', price: 'Current price', oldPrice: 'Pre-offer price', perM2: 'per m²', promotion: 'Offer',
     noResults: 'No listings match these filters.', resetFilters: 'Reset filters', matrix: 'Floor × apartments', matrixHint: 'Use touch or trackpad, the 44 px controls, or ← → Home End keys.', scrollLeft: 'Scroll left', scrollRight: 'Scroll right', selected: 'Selected apartment', close: 'Close', details: 'Details', balcony: 'Balcony', ceiling: 'Ceiling height', studio: 'Studio', yes: 'Yes', no: 'No', finishing: 'Finishing included', consult: 'Request a consultation',
-    disclaimer: 'The snapshot is not a public offer. Current terms are confirmed by the sales team.',
+    disclaimer: 'The live catalogue is not a public offer. Current terms are confirmed by the sales team.',
   },
 } as const;
 
@@ -145,18 +146,7 @@ function completionLabel(unit: Unit, language: Language) {
 }
 
 function rememberUnit(unit: Unit) {
-  rememberLastViewedApartment({
-    uuid: unit.id,
-    number: unit.number,
-    rooms: unit.rooms,
-    area: unit.area,
-    floor: unit.floor,
-    maxFloor: unit.totalFloors,
-    entrance: unit.entrance,
-    blockName: unit.building,
-    blockId: unit.buildingId,
-    price: unit.price,
-  }, 'maftun-makon');
+  rememberLiveCatalogUnit(unit, 'maftun-makon');
 }
 
 function unitLeadContext(unit: Unit, surface: string) {
@@ -404,7 +394,8 @@ function MatrixBuilding({ units, language, selectedId, onSelect }: { units: Unit
   );
 }
 
-export function MaftunMakonCatalog({ snapshot, initialLanguage }: { snapshot: MaftunMakonSnapshot; initialLanguage: Language }) {
+export function MaftunMakonCatalog({ snapshot: embeddedSnapshot, initialLanguage }: { snapshot: MaftunMakonSnapshot; initialLanguage: Language }) {
+  const { data: snapshot } = useLiveCatalogSnapshot('maftun-makon', embeddedSnapshot);
   const [language, setLanguage] = useLanguage(initialLanguage);
   const [mode, setMode] = useState<Mode>('cards');
   const [rooms, setRooms] = useState('all');
@@ -480,6 +471,7 @@ export function MaftunMakonCatalog({ snapshot, initialLanguage }: { snapshot: Ma
     window.requestAnimationFrame(() => document.getElementById(`maftun-tab-${next}`)?.focus());
   };
   const captured = new Intl.DateTimeFormat(locale(language), { dateStyle: 'long', timeStyle: 'short', timeZone: 'Asia/Tashkent' }).format(new Date(snapshot.capturedAt));
+  const plansAvailable = snapshot.units.filter((unit) => unit.planAvailable && unit.plan).length;
 
   return (
     <main className="maftun-catalog-site" id="maftun-catalog-top" lang={language}>
@@ -493,7 +485,7 @@ export function MaftunMakonCatalog({ snapshot, initialLanguage }: { snapshot: Ma
 
       <section className="maftun-catalog-hero">
         <div><p>{t.project}</p><h1>{t.title}<em>{t.accent}</em></h1><span>{t.lead}</span></div>
-        <aside><small>{t.snapshot}</small><strong>{snapshot.officialTotalAtCapture}</strong><span>{t.offers}</span><dl><div><dt>{t.captured}</dt><dd>{captured} · UZT</dd></div><div><dt>{t.firstRender}</dt><dd>{snapshot.visibleFirstRender} / {snapshot.officialTotalAtCapture}</dd></div><div><dt>{t.plans}</dt><dd>{snapshot.integrity.reachableFloorplans} / {snapshot.integrity.advertisedFloorplanUrls}</dd></div></dl></aside>
+        <aside><small>{t.snapshot}</small><strong>{snapshot.units.length}</strong><span>{t.offers}</span><dl><div><dt>{t.captured}</dt><dd>{captured} · UZT</dd></div><div><dt>{t.firstRender}</dt><dd>{snapshot.units.length}</dd></div><div><dt>{t.plans}</dt><dd>{plansAvailable} / {snapshot.units.length}</dd></div></dl></aside>
       </section>
 
       <section className="maftun-catalog-controls" aria-label={t.filters}>
@@ -558,7 +550,7 @@ export function MaftunMakonCatalog({ snapshot, initialLanguage }: { snapshot: Ma
             facts={[classLabel(lead.unit.propertyClass, language), `${lead.unit.floor}/${lead.unit.totalFloors} ${t.floor}`, money(lead.unit.price, language)]}
             submitUrl={maftunLeadSubmitUrl()}
             projectSlug="maftun-makon"
-            unitId={lead.unit.id}
+            {...catalogLeadIdentity(lead.unit)}
             privacyUrl={privacyUrl(language)}
             requireConsent
             onClose={closeLead}

@@ -9,9 +9,9 @@ const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
 type Language = 'ru' | 'uz' | 'en';
 type PageProps = { searchParams?: Promise<{ lang?: string }> };
 const localized = {
-  ru: { title: 'Квартиры в Voha — 104 предложения в официальном snapshot', description: 'Полный датированный snapshot официального каталога Voha: 104 предложения с реальными планировками, площадями, этажами и ценами на 30 августа 2026 года.', ogTitle: 'Выбор квартир — Voha' },
-  uz: { title: 'Voha xonadonlari — rasmiy snapshotdagi 104 taklif', description: 'Voha rasmiy katalogining to‘liq saqlangan kesimi: 2026-yil 30-avgustdagi 104 taklif, rejalar, maydonlar, qavatlar va narxlar.', ogTitle: 'Xonadon tanlash — Voha' },
-  en: { title: 'Voha apartments — 104 listings in the official snapshot', description: 'A complete dated snapshot of the official Voha catalogue with 104 listings, plans, areas, floors and prices captured on 30 August 2026.', ogTitle: 'Choose an apartment — Voha' },
+  ru: { title: 'Квартиры в Voha — актуальный каталог', description: 'Актуальный каталог Voha: планировки, площади, этажи, цены и статусы обновляются автоматически.', ogTitle: 'Выбор квартир — Voha' },
+  uz: { title: 'Voha xonadonlari — yangilanadigan katalog', description: 'Voha xonadonlarining rejasi, maydoni, qavati, narxi va holati avtomatik yangilanadi.', ogTitle: 'Xonadon tanlash — Voha' },
+  en: { title: 'Voha apartments — live catalogue', description: 'Voha apartment plans, areas, floors, prices and statuses update automatically.', ogTitle: 'Choose an apartment — Voha' },
 } as const;
 
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {

@@ -225,6 +225,22 @@ paths:
                   items:
                     type: array
                     items: { $ref: '#/components/schemas/SyncStatus' }
+  /v1/sync/catalog-status:
+    get:
+      tags: [Sync]
+      operationId: getCatalogProviderSyncStatus
+      responses:
+        '200':
+          description: Machine-readable freshness and last-attempt state for every configured provider and project.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/CatalogProviderSyncStatus' }
   /v1/leads:
     post:
       tags: [Leads]
@@ -606,6 +622,35 @@ components:
         finishedAt: { type: string, format: date-time }
         recordsRead: { type: integer }
         recordsSaved: { type: integer }
+    CatalogProviderSyncStatus:
+      type: object
+      required: [provider, status, freshness, lastAttemptAt, projects]
+      properties:
+        provider: { type: string }
+        status: { type: string, enum: [running, succeeded, failed] }
+        freshness: { type: string, enum: [fresh, stale] }
+        lastAttemptAt: { type: string, format: date-time }
+        lastSuccessAt: { type: string, format: date-time }
+        freshUntil: { type: string, format: date-time }
+        errorCode:
+          type: string
+          description: Stable non-secret machine code; command output and credentials are never exposed.
+        projects:
+          type: array
+          items: { $ref: '#/components/schemas/CatalogProjectSyncStatus' }
+    CatalogProjectSyncStatus:
+      type: object
+      required: [projectSlug, status, freshness, lastAttemptAt]
+      properties:
+        projectSlug: { type: string }
+        status: { type: string, enum: [running, succeeded, failed] }
+        freshness: { type: string, enum: [fresh, stale] }
+        lastAttemptAt: { type: string, format: date-time }
+        lastSuccessAt: { type: string, format: date-time }
+        lastCapturedAt: { type: string, format: date-time }
+        freshUntil: { type: string, format: date-time }
+        recordCount: { type: integer, minimum: 0 }
+        errorCode: { type: string }
     CreateLeadRequest:
       type: object
       required: [projectSlug, name, phone, goal, language, consent]

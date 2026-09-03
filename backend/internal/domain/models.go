@@ -112,6 +112,29 @@ type SyncStatus struct {
 	Error        string     `json:"error,omitempty"`
 }
 
+type CatalogProviderSyncStatus struct {
+	Provider      string                     `json:"provider"`
+	Status        string                     `json:"status"`
+	Freshness     string                     `json:"freshness"`
+	LastAttemptAt time.Time                  `json:"lastAttemptAt"`
+	LastSuccessAt *time.Time                 `json:"lastSuccessAt,omitempty"`
+	FreshUntil    *time.Time                 `json:"freshUntil,omitempty"`
+	ErrorCode     string                     `json:"errorCode,omitempty"`
+	Projects      []CatalogProjectSyncStatus `json:"projects"`
+}
+
+type CatalogProjectSyncStatus struct {
+	ProjectSlug    string     `json:"projectSlug"`
+	Status         string     `json:"status"`
+	Freshness      string     `json:"freshness"`
+	LastAttemptAt  time.Time  `json:"lastAttemptAt"`
+	LastSuccessAt  *time.Time `json:"lastSuccessAt,omitempty"`
+	LastCapturedAt *time.Time `json:"lastCapturedAt,omitempty"`
+	FreshUntil     *time.Time `json:"freshUntil,omitempty"`
+	RecordCount    *int       `json:"recordCount,omitempty"`
+	ErrorCode      string     `json:"errorCode,omitempty"`
+}
+
 type CatalogReadiness struct {
 	Projects       int64      `json:"projects"`
 	ActiveUnits    int64      `json:"activeUnits"`

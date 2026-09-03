@@ -14,6 +14,7 @@ import {
   useState,
 } from 'react';
 import { LeadModal } from '@/app/lead-modal';
+import { useLiveCatalogProject } from '@/app/live-catalog';
 import { bayterakLeadSubmitUrl } from './bayterak-lead';
 
 type Language = 'ru' | 'uz' | 'en';
@@ -96,10 +97,10 @@ const copy = {
     galleryTitles: ['Comfort+ · фасад', 'Business · входная группа', 'Business · альтернативный ракурс', 'Генплан комплекса', 'Будущий контекст Нового Ташкента', 'Двор · сценарий 01', 'Двор · сценарий 02', 'Двор · сценарий 03', 'Business · концепция холла', 'Business · концепция fitness room', 'Business · концепция guest room'],
     galleryLabel: 'Галерея официальных визуализаций', openImage: 'Открыть изображение', closeImage: 'Закрыть изображение', previous: 'Предыдущее изображение', next: 'Следующее изображение',
     optionsNote: 'Электронные замки, IP-видеодомофоны, места крытого паркинга и велопарковки, кладовые и EV charging — опциональные решения и места, приобретаемые отдельно; они не входят автоматически в каждую квартиру. Наличие и условия уточняет отдел продаж. EV charging предусмотрен только для 5% парковочных мест.',
-    catalogIndex: '07 · АРХИТЕКТУРНЫЙ РЕЕСТР', catalogTitle: '140 предложений в официальной подборке.',
-    catalogText: 'Срез placementList от 30 августа 2026, 14:18 UZT. Это предложения с исходными CRM-статусами, а не заявление, что все квартиры свободны.',
-    catalogStats: [['140', 'предложений'], ['1–4', 'комнаты'], ['26,51–129,02 м²', 'площадь'], ['2–16', 'этажи']] as const,
-    catalogPrice: 'Текущая цена кампании: 467 567 900–2 055 877 755 UZS. Условия и статус подтверждает отдел продаж.', openCatalog: 'Открыть полный каталог',
+    catalogIndex: '07 · АРХИТЕКТУРНЫЙ РЕЕСТР', catalogTitle: 'Актуальные предложения в официальной подборке.',
+    catalogText: 'Цены и статусы предложений обновляются автоматически. Наличие и условия подтверждает отдел продаж.',
+    catalogStats: [['—', 'предложений'], ['1–4', 'комнаты'], ['26,51–129,02 м²', 'площадь'], ['2–16', 'этажи']] as const,
+    catalogPrice: 'Актуальные цены, условия и статусы доступны в каталоге и подтверждаются отделом продаж.', openCatalog: 'Открыть полный каталог',
     contactIndex: '08 · КОНСУЛЬТАЦИЯ', contactTitle: 'Найдём квартиру на вашей оси координат.', contactText: 'Оставьте контакты — менеджер NRG-BI уточнит актуальный статус, цену и срок выбранного предложения.',
     formTagline: 'Золотая ось Нового Ташкента.', formFacts: ['Comfort+ / Business', '9–16 этажей', 'потолки 3 м'],
     privacy: 'Обработка персональных данных', booklet: 'Буклет · август 2026', panorama: 'Панорама 360', top: 'Наверх',
@@ -158,10 +159,10 @@ const copy = {
     galleryTitles: ['Comfort+ · fasad', 'Business · kirish guruhi', 'Business · muqobil rakurs', 'Majmua bosh rejasi', 'Yangi Toshkentning kelajak konteksti', 'Hovli · 01-ssenariy', 'Hovli · 02-ssenariy', 'Hovli · 03-ssenariy', 'Business · xoll konsepsiyasi', 'Business · fitness room konsepsiyasi', 'Business · guest room konsepsiyasi'],
     galleryLabel: 'Rasmiy vizualizatsiyalar galereyasi', openImage: 'Tasvirni ochish', closeImage: 'Tasvirni yopish', previous: 'Oldingi tasvir', next: 'Keyingi tasvir',
     optionsNote: 'Elektron qulflar, IP videodomofonlar, yopiq parking va veloparking joylari, omborlar hamda EV charging — alohida xarid qilinadigan ixtiyoriy yechimlar va joylar; ular har bir xonadonga avtomatik ravishda kiritilmaydi. Mavjudlik va shartlarni sotuv bo‘limidan aniqlashtiring. EV charging parking joylarining faqat 5% ida ko‘zda tutilgan.',
-    catalogIndex: '07 · ARXITEKTURA REYESTRI', catalogTitle: 'Rasmiy tanlovdagi 140 ta taklif.',
-    catalogText: '2026-yil 30-avgust, 14:18 UZT dagi placementList kesimi. Bu boshlang‘ich CRM statuslari bilan takliflar; barcha xonadonlar bo‘sh degan da’vo emas.',
-    catalogStats: [['140', 'taklif'], ['1–4', 'xonalar'], ['26.51–129.02 m²', 'maydon'], ['2–16', 'qavatlar']] as const,
-    catalogPrice: 'Kampaniya bo‘yicha joriy narx: 467 567 900–2 055 877 755 UZS. Shart va statusni sotuv bo‘limi tasdiqlaydi.', openCatalog: 'To‘liq katalogni ochish',
+    catalogIndex: '07 · ARXITEKTURA REYESTRI', catalogTitle: 'Avtomatik yangilanadigan rasmiy takliflar.',
+    catalogText: 'Takliflar, narxlar va holatlar avtomatik yangilanadi. Amaldagi shartlarni savdo bo‘limi tasdiqlaydi.',
+    catalogStats: [['—', 'taklif'], ['1–4', 'xonalar'], ['26.51–129.02 m²', 'maydon'], ['2–16', 'qavatlar']] as const,
+    catalogPrice: 'Amaldagi narxlar, shartlar va holatlar katalogda yangilanadi va savdo bo‘limi tomonidan tasdiqlanadi.', openCatalog: 'To‘liq katalogni ochish',
     contactIndex: '08 · MASLAHAT', contactTitle: 'Koordinatalaringizga mos xonadonni topamiz.', contactText: 'Kontaktlaringizni qoldiring — NRG-BI menejeri tanlangan taklifning joriy statusi, narxi va muddatini aniqlashtiradi.',
     formTagline: 'Yangi Toshkentning oltin o‘qi.', formFacts: ['Comfort+ / Business', '9–16 qavat', '3 m shiftlar'],
     privacy: 'Shaxsiy ma’lumotlarni qayta ishlash', booklet: 'Buklet · 2026-yil avgust', panorama: '360 panorama', top: 'Yuqoriga',
@@ -220,10 +221,10 @@ const copy = {
     galleryTitles: ['Comfort+ · facade', 'Business · entrance', 'Business · alternate view', 'Complex masterplan', 'Future New Tashkent context', 'Courtyard · setting 01', 'Courtyard · setting 02', 'Courtyard · setting 03', 'Business · lobby concept', 'Business · fitness room concept', 'Business · guest room concept'],
     galleryLabel: 'Gallery of official visualisations', openImage: 'Open image', closeImage: 'Close image', previous: 'Previous image', next: 'Next image',
     optionsNote: 'Electronic locks, IP video intercoms, covered parking and cycle-parking spaces, storage rooms and EV charging are optional solutions and spaces purchased separately; they are not automatically included with every apartment. Confirm availability and terms with the sales team. EV charging is provided for only 5% of parking spaces.',
-    catalogIndex: '07 · ARCHITECTURAL REGISTER', catalogTitle: '140 listings in the official selection.',
-    catalogText: 'A placementList snapshot captured on 30 August 2026, 14:18 UZT. These listings retain their source CRM statuses; this is not a claim that every apartment is available.',
-    catalogStats: [['140', 'listings'], ['1–4', 'rooms'], ['26.51–129.02 m²', 'area'], ['2–16', 'floors']] as const,
-    catalogPrice: 'Current campaign price: UZS 467,567,900–2,055,877,755. The sales team confirms terms and status.', openCatalog: 'Open the full catalogue',
+    catalogIndex: '07 · ARCHITECTURAL REGISTER', catalogTitle: 'Official listings with automatic updates.',
+    catalogText: 'Listings, prices and statuses update automatically. The sales team confirms current terms.',
+    catalogStats: [['—', 'listings'], ['1–4', 'rooms'], ['26.51–129.02 m²', 'area'], ['2–16', 'floors']] as const,
+    catalogPrice: 'Current prices, terms and statuses update in the catalogue and are confirmed by the sales team.', openCatalog: 'Open the full catalogue',
     contactIndex: '08 · CONSULTATION', contactTitle: 'Find an apartment on your own axis.', contactText: 'Leave your details and an NRG-BI manager will confirm the current status, price and completion date for your chosen listing.',
     formTagline: 'The golden axis of New Tashkent.', formFacts: ['Comfort+ / Business', '9–16 storeys', '3 m ceilings'],
     privacy: 'Personal data processing', booklet: 'Booklet · August 2026', panorama: '360 panorama', top: 'Back to top',
@@ -409,6 +410,8 @@ function InsideTabs({ language }: { language: Language }) {
 export function BayterakPage({ initialLanguage }: { initialLanguage: Language }) {
   const router = useRouter();
   const language = initialLanguage;
+  const { data: catalogProject, dataSource } = useLiveCatalogProject('bayterak', { slug: 'bayterak', name: 'Bayterak', totalUnits: 0, availableUnits: 0 });
+  const catalogCount = dataSource === 'embedded' ? '—' : new Intl.NumberFormat(language === 'ru' ? 'ru-RU' : language === 'uz' ? 'uz-UZ' : 'en-US').format(catalogProject.availableUnits);
   const [menuOpen, setMenuOpen] = useState(false);
   const [leadContext, setLeadContext] = useState<string>();
   const introPhase = useIntro();
@@ -417,6 +420,7 @@ export function BayterakPage({ initialLanguage }: { initialLanguage: Language })
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
   const restoreMenuFocus = useRef(true);
   const t = copy[language];
+  const catalogStats = t.catalogStats.map(([value, label], index) => [index === 0 ? catalogCount : value, label] as const);
   useReveals(language);
 
   useEffect(() => {
@@ -524,7 +528,7 @@ export function BayterakPage({ initialLanguage }: { initialLanguage: Language })
 
       <section className="bayterak-gallery-section" id="gallery" tabIndex={-1}><header data-bayterak-reveal><p className="bayterak-overline">{t.galleryIndex}</p><h2>{t.galleryTitle}</h2><p>{t.galleryText}</p></header><Gallery language={language} /></section>
 
-      <section className="bayterak-catalog" data-bayterak-reveal><header><p className="bayterak-overline">{t.catalogIndex}</p><h2>{t.catalogTitle}</h2><p>{t.catalogText}</p></header><div className="bayterak-catalog__stats">{t.catalogStats.map(([value, label]) => <article key={label}><strong>{value}</strong><span>{label}</span></article>)}</div><footer><p>{t.catalogPrice}</p><a className="bayterak-button is-solid" href={withLanguage('/bayterak/apartments', language)}>{t.openCatalog}<span>↗</span></a></footer></section>
+      <section className="bayterak-catalog" data-bayterak-reveal><header><p className="bayterak-overline">{t.catalogIndex}</p><h2>{t.catalogTitle}</h2><p>{t.catalogText}</p></header><div className="bayterak-catalog__stats">{catalogStats.map(([value, label]) => <article key={label}><strong>{value}</strong><span>{label}</span></article>)}</div><footer><p>{t.catalogPrice}</p><a className="bayterak-button is-solid" href={withLanguage('/bayterak/apartments', language)}>{t.openCatalog}<span>↗</span></a></footer></section>
 
       <section className="bayterak-contact" data-bayterak-reveal><div><p className="bayterak-overline">{t.contactIndex}</p><h2>{t.contactTitle}</h2><p>{t.contactText}</p></div><div className="bayterak-contact__actions"><button className="bayterak-button is-solid" type="button" data-lead-trigger onClick={() => openLead('contact-consultation')}>{t.consult}<span>↗</span></button><a className="bayterak-button" href="tel:+998781137712">{t.phone}<span>↗</span></a></div></section>
     </main>

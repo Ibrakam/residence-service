@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "workDirectory": "/var/lib/residence-catalog-sync",
+  "providers": [
+    {
+      "name": "kayan",
+      "command": ["/opt/residence-live-sync/bin/capture-kayan"],
+      "workingDirectory": "/opt/residence-live-sync",
+      "timeout": "15m",
+      "freshnessWindow": "30m",
+      "maximumRecordDropPercent": 25,
+      "projects": {
+        "mirador": {"minimumRecords": 199},
+        "ofiyat": {"minimumRecords": 550}
+      }
+    },
+    {
+      "name": "mbc",
+      "command": ["/opt/residence-live-sync/bin/capture-mbc"],
+      "workingDirectory": "/opt/residence-live-sync",
+      "timeout": "15m",
+      "freshnessWindow": "30m",
+      "maximumRecordDropPercent": 25,
+      "projects": {
+        "regnum-plaza": {"minimumRecords": 8}
+      }
+    },
+    {
+      "name": "uysot",
+      "command": ["/opt/residence-live-sync/bin/capture-uysot"],
+      "workingDirectory": "/opt/residence-live-sync",
+      "timeout": "15m",
+      "freshnessWindow": "30m",
+      "maximumRecordDropPercent": 25,
+      "projects": {
+        "avalon-residence": {"minimumRecords": 250}
+      }
+    },
+    {
+      "name": "human2human",
+      "command": ["/opt/residence-live-sync/bin/capture-human2human"],
+      "workingDirectory": "/opt/residence-live-sync",
+      "timeout": "15m",
+      "freshnessWindow": "30m",
+      "maximumRecordDropPercent": 25,
+      "projects": {
+        "sun": {"minimumRecords": 250}
+      }
+    },
+    {
+      "name": "nrg-bi",
+      "command": ["/opt/residence-live-sync/bin/capture-nrg-bi"],
+      "workingDirectory": "/opt/residence-live-sync",
+      "timeout": "20m",
+      "freshnessWindow": "45m",
+      "maximumRecordDropPercent": 25,
+      "projects": {
+        "4u": {"minimumRecords": 150},
+        "bayterak": {"minimumRecords": 100},
+        "botanika-saroyi": {"minimumRecords": 150},
+        "flagman": {"minimumRecords": 5},
+        "jomiy": {"minimumRecords": 80},
+        "maftun-makon": {"minimumRecords": 150},
+        "meros": {"minimumRecords": 180},
+        "sado": {"minimumRecords": 250},
+        "voha": {"minimumRecords": 70},
+        "yangibaxt": {"minimumRecords": 180},
+        "zamon": {"minimumRecords": 70}
+      }
+    }
+  ]
+}

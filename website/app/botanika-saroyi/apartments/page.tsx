@@ -10,19 +10,19 @@ type PageProps = { searchParams?: Promise<{ lang?: string }> };
 const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
 const meta = {
   ru: {
-    title: 'Квартиры Botanika Saroyi — 224 официальных предложения',
-    description: 'Официальный snapshot Botanika Saroyi от 30.08.2026: 224 планировки и предложения квартир с площадями, этажами, сроками и ценами.',
-    listName: 'Квартиры Botanika Saroyi — официальный snapshot',
+    title: 'Квартиры Botanika Saroyi — актуальный каталог',
+    description: 'Актуальные квартиры Botanika Saroyi: площади, этажи, сроки, цены и статусы обновляются автоматически.',
+    listName: 'Квартиры Botanika Saroyi — актуальный каталог',
   },
   uz: {
-    title: 'Botanika Saroyi xonadonlari — 224 ta rasmiy taklif',
-    description: 'Botanika Saroyi rasmiy katalogining 2026-yil 30-avgustdagi snapshoti: maydonlari, qavatlari, topshirish muddatlari va narxlari ko‘rsatilgan 224 ta xonadon rejasi va taklifi.',
-    listName: 'Botanika Saroyi xonadonlari — rasmiy snapshot',
+    title: 'Botanika Saroyi xonadonlari — yangilanadigan katalog',
+    description: 'Botanika Saroyi xonadonlarining maydoni, qavati, topshirish muddati, narxi va holati avtomatik yangilanadi.',
+    listName: 'Botanika Saroyi xonadonlari — yangilanadigan katalog',
   },
   en: {
-    title: 'Botanika Saroyi apartments — 224 official listings',
-    description: 'The official Botanika Saroyi snapshot captured on 30 August 2026: 224 apartment plans and listings with areas, floors, completion dates and prices.',
-    listName: 'Botanika Saroyi apartments — official snapshot',
+    title: 'Botanika Saroyi apartments — live catalogue',
+    description: 'Botanika Saroyi apartment areas, floors, completion dates, prices and statuses update automatically.',
+    listName: 'Botanika Saroyi apartments — live catalogue',
   },
 } as const;
 

@@ -17,22 +17,22 @@ const absoluteUrl = (path: string) => `${publicOrigin}${sitePath(path)}`;
 
 const copy = {
   ru: {
-    title: 'Квартиры Jomiy — 121 позиция в официальном каталоге',
-    description: 'Каталог Jomiy на 30 августа 2026: 121 позиция, точные raw-статусы, цены среза, 242 официальных листа планировок и честная проверка доступности.',
-    listName: 'Jomiy — квартирный каталог на 30 августа 2026', imageAlt: 'Реальная фотография готовой части Jomiy', home: 'Главная', apartments: 'Квартиры',
-    apartment: (rooms: number, number: string) => `${rooms}-комнатная позиция №${number}`, group: 'Группа / очередь', entrance: 'Подъезд', completion: 'Нормализованный срок', status: 'Raw-статус официального каталога', sale: 'isSale', canBuy: 'canBuy из detail', campaignDeadline: 'Срок кампании', finishing: 'Отделка', withoutFinishing: 'Без отделки',
+    title: 'Квартиры Jomiy — актуальный каталог',
+    description: 'Актуальный каталог Jomiy: цены, статусы и состав предложений обновляются автоматически.',
+    listName: 'Jomiy — актуальный квартирный каталог', imageAlt: 'Реальная фотография готовой части Jomiy', home: 'Главная', apartments: 'Квартиры',
+    apartment: (rooms: number, number: string) => `${rooms}-комнатная позиция №${number}`, group: 'Группа / очередь', entrance: 'Подъезд', completion: 'Срок', status: 'Статус', sale: 'В продаже', canBuy: 'Доступно для заявки', campaignDeadline: 'Срок кампании', finishing: 'Отделка', withoutFinishing: 'Без отделки',
   },
   uz: {
-    title: 'Jomiy xonadonlari — rasmiy katalogdagi 121 pozitsiya',
-    description: 'Jomiyning 2026-yil 30-avgust katalogi: 121 pozitsiya, aniq raw-holatlar, qayd etilgan narxlar, 242 rasmiy reja varag‘i va mavjudlikni halol tekshirish.',
-    listName: 'Jomiy — 2026-yil 30-avgustdagi xonadon katalogi', imageAlt: 'Jomiyning tayyor qismi haqiqiy fotosurati', home: 'Bosh sahifa', apartments: 'Xonadonlar',
-    apartment: (rooms: number, number: string) => `№${number}, ${rooms} xonali pozitsiya`, group: 'Guruh / bosqich', entrance: 'Kirish', completion: 'Me’yorlashtirilgan muddat', status: 'Rasmiy katalog raw-holati', sale: 'isSale', canBuy: 'detail canBuy', campaignDeadline: 'Kampaniya muddati', finishing: 'Pardoz', withoutFinishing: 'Pardozsiz',
+    title: 'Jomiy xonadonlari — yangilanadigan katalog',
+    description: 'Jomiy xonadonlarining narxlari, holatlari va takliflari avtomatik yangilanadi.',
+    listName: 'Jomiy — yangilanadigan xonadon katalogi', imageAlt: 'Jomiyning tayyor qismi haqiqiy fotosurati', home: 'Bosh sahifa', apartments: 'Xonadonlar',
+    apartment: (rooms: number, number: string) => `№${number}, ${rooms} xonali pozitsiya`, group: 'Guruh / bosqich', entrance: 'Kirish', completion: 'Muddat', status: 'Holat', sale: 'Sotuvda', canBuy: 'Ariza uchun mavjud', campaignDeadline: 'Kampaniya muddati', finishing: 'Pardoz', withoutFinishing: 'Pardozsiz',
   },
   en: {
-    title: 'Jomiy apartments — 121 entries in the official catalogue',
-    description: 'Jomiy catalogue captured on 30 August 2026: 121 entries, exact raw statuses, snapshot prices, 242 official plan sheets and an honest availability check.',
-    listName: 'Jomiy — apartment catalogue captured 30 August 2026', imageAlt: 'Actual photograph of the completed part of Jomiy', home: 'Home', apartments: 'Apartments',
-    apartment: (rooms: number, number: string) => `${rooms}-room entry no. ${number}`, group: 'Group / phase', entrance: 'Entrance', completion: 'Normalised completion', status: 'Official catalogue raw status', sale: 'isSale', canBuy: 'detail canBuy', campaignDeadline: 'Campaign deadline', finishing: 'Finishing', withoutFinishing: 'No finishing',
+    title: 'Jomiy apartments — live catalogue',
+    description: 'Jomiy listings, prices and statuses update automatically.',
+    listName: 'Jomiy — live apartment catalogue', imageAlt: 'Actual photograph of the completed part of Jomiy', home: 'Home', apartments: 'Apartments',
+    apartment: (rooms: number, number: string) => `${rooms}-room entry no. ${number}`, group: 'Group / phase', entrance: 'Entrance', completion: 'Completion', status: 'Status', sale: 'For sale', canBuy: 'Available to enquire', campaignDeadline: 'Campaign deadline', finishing: 'Finishing', withoutFinishing: 'No finishing',
   },
 } as const;
 

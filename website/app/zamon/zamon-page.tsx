@@ -14,6 +14,7 @@ import {
   useState,
 } from 'react';
 import { LeadModal } from '@/app/lead-modal';
+import { useLiveCatalogProject } from '@/app/live-catalog';
 import { zamonLeadSubmitUrl } from './zamon-lead';
 
 type Language = 'ru' | 'uz' | 'en';
@@ -64,17 +65,17 @@ const copy = {
     heroOverline: 'ТАШКЕНТ · COMFORT CLASS · 4 ОЧЕРЕДИ', heroTitle: 'Zamon', heroText: 'Дом в нескольких временных слоях: сданная I очередь, актуальная подборка квартир и будущая архитектурная концепция.',
     heroAlt: 'Реальная фотография сданной I очереди Zamon', actualPhoto: 'Реальная фотография сданной I очереди',
     phaseCards: [
-      { index: '02', title: 'NRG Zamon 2-2', rows: '42 позиции в каталоге', deadline: 'Срок · 14 ноября 2026' },
-      { index: '03', title: 'NRG Zamon 3-1', rows: '62 позиции в каталоге', deadline: 'Срок · 25 декабря 2027' },
+      { index: '02', title: 'NRG Zamon 2-2', rows: 'Предложения обновляются', deadline: 'Срок · 14 ноября 2026' },
+      { index: '03', title: 'NRG Zamon 3-1', rows: 'Предложения обновляются', deadline: 'Срок · 25 декабря 2027' },
     ],
-    phaseCardNote: 'Каталог зафиксирован 30 августа 2026; актуальность каждой квартиры подтверждает отдел продаж.',
+    phaseCardNote: 'Каталог обновляется автоматически; актуальность каждой квартиры подтверждает отдел продаж.',
     facts: [['Comfort', 'класс'], ['4', 'очереди'], ['8 / 9 / 12', 'этажей'], ['≥ 30%', 'озеленения'], ['1', 'собственный пруд']] as const,
     timeIndex: '01 · ХРОНОЛОГИЯ', timeTitle: 'Четыре очереди. Только подтверждённые временные отметки.',
-    timeLead: 'Официальная страница заявляет четыре очереди. В каталоге на 30 августа 2026 представлены только блоки 2-2 и 3-1; квартир I и IV очередей в подборке нет.',
+    timeLead: 'Состав очередей и блоков в каталоге обновляется автоматически. Если нужной квартиры нет, её статус уточнит отдел продаж.',
     phases: [
       ['I очередь', 'Сдана', 'Статус подтверждён официальным буклетом.'],
-      ['II очередь · блок 2-2', '14.11.2026', '42 позиции в официальном каталоге на дату среза.'],
-      ['III очередь · блок 3-1', '25.12.2027', '62 позиции в официальном каталоге на дату среза.'],
+      ['II очередь · блок 2-2', '14.11.2026', 'Предложения и статусы обновляются автоматически.'],
+      ['III очередь · блок 3-1', '25.12.2027', 'Предложения и статусы обновляются автоматически.'],
       ['IV очередь', 'Без статуса в каталоге', 'Очередь заявлена в структуре проекта; квартир этой очереди в текущей подборке нет.'],
     ] as const,
     storyIndex: '02 · УЖЕ РЕАЛИЗОВАНО', storyTitle: 'I очередь — не обещание, а существующая архитектура.',
@@ -101,16 +102,16 @@ const copy = {
     environmentIndex: '07 · ОКРУЖЕНИЕ', environmentTitle: 'Названия без придуманных минут.',
     environmentText: 'Буклет называет следующие объекты окружения, но не даёт точного времени в пути.',
     environment: ['метро «Янгиабад»', 'школы №212, №206 и №198', 'детский сад №425', 'IT school', 'Intellect baby', 'Joy KIDS preschool', 'мечети «Алибек» и «Чилонота»'] as const,
-    catalogIndex: '08 · КАТАЛОГ · 30.08.2026', catalogTitle: '104 позиции. Четыре статуса источника.',
-    catalogText: 'На дату каталога: 93 «Свободно», 1 «Бронирование», 7 «Расторжение» и 3 «Снятие резерва». Статус и юридическую доступность каждой квартиры подтверждает отдел продаж.',
-    catalogStats: [['104', 'позиции каталога'], ['1–5', 'комнаты'], ['31,14–134,42 м²', 'площадь'], ['392 276 808–1 488 956 497 UZS', 'цена по акции на дату каталога']] as const,
-    catalogNote: 'Скидка 12% была указана до 31.12.2026 17:59:59Z. Это датированный факт; текущие условия подтверждает отдел продаж.', openCatalog: 'Открыть полный каталог',
-    dataNoteTitle: 'О данных и источниках', dataNoteText: '104 записи сохранены из официального каталога NRG-BI 30.08.2026 в 20:15 UZT. В техническом источнике isSale=true у 103 из 104 записей; сроки на странице приведены по единому значению официальных filter/realEstateList, а исходная дата placementList сохранена внутри карточки в разделе происхождения данных.',
+    catalogIndex: '08 · КАТАЛОГ ОБНОВЛЯЕТСЯ', catalogTitle: 'Актуальные предложения и официальные статусы.',
+    catalogText: 'Состав предложений, цены и статусы обновляются автоматически. Юридическую доступность каждой квартиры подтверждает отдел продаж.',
+    catalogStats: [['Актуально', 'позиции каталога'], ['Онлайн', 'статусы'], ['Официально', 'планировки'], ['Подтверждаются', 'текущие условия']] as const,
+    catalogNote: 'Действующие скидки и условия подтверждает отдел продаж.', openCatalog: 'Открыть полный каталог',
+    dataNoteTitle: 'О данных и источниках', dataNoteText: 'Состав предложений, цены и статусы обновляются автоматически из официального каталога. Технический статус не гарантирует юридическую доступность.',
     contactsIndex: '09 · КОНТАКТЫ', contactsTitle: 'Поговорить о конкретной квартире.', contactsText: 'Менеджер NRG-BI подтверждает актуальный статус, цену, срок и условия.', offices: 'Отделы продаж', officeOne: 'ул. Нукус, 91/1', officeTwo: 'ул. Айбека, 38А',
     formTagline: 'Хронология света.', formFacts: ['Comfort class', '4 очереди', 'собственный пруд'],
     privacy: 'Обработка персональных данных', booklet: 'Официальный буклет · 36 страниц', panorama: 'Панорама 360', top: 'Наверх',
     bookletContext: 'PDF откроется отдельно; текущая страница сохранит выбранный язык.',
-    disclaimer: 'Реальные фото, CGI и стройархив подписаны отдельно. Каталог датирован 30.08.2026, не является публичной офертой и не гарантирует юридическую доступность.',
+    disclaimer: 'Реальные фото, CGI и стройархив подписаны отдельно. Каталог обновляется автоматически, не является публичной офертой и не гарантирует юридическую доступность.',
     introLabel: 'ХРОНОЛОГИЯ СВЕТА · ZAMON',
   },
   uz: {
@@ -119,11 +120,11 @@ const copy = {
     choose: 'Xonadon tanlash', consult: 'Ariza qoldirish', phone: 'Qo‘ng‘iroq · +998 78 113 77 12',
     heroOverline: 'TOSHKENT · COMFORT CLASS · 4 BOSQICH', heroTitle: 'Zamon', heroText: 'Bir necha vaqt qatlamidagi uy: topshirilgan I bosqich, dolzarb xonadonlar tanlovi va kelajak me’moriy konsepsiyasi.',
     heroAlt: 'Zamon topshirilgan I bosqichining haqiqiy fotosurati', actualPhoto: 'Topshirilgan I bosqichning haqiqiy fotosurati',
-    phaseCards: [{ index: '02', title: 'NRG Zamon 2-2', rows: 'Katalogda 42 ta pozitsiya', deadline: 'Muddat · 2026-yil 14-noyabr' }, { index: '03', title: 'NRG Zamon 3-1', rows: 'Katalogda 62 ta pozitsiya', deadline: 'Muddat · 2027-yil 25-dekabr' }],
-    phaseCardNote: 'Katalog 2026-yil 30-avgustda qayd etilgan; har bir xonadonning dolzarbligini savdo bo‘limi tasdiqlaydi.',
+    phaseCards: [{ index: '02', title: 'NRG Zamon 2-2', rows: 'Takliflar yangilanadi', deadline: 'Muddat · 2026-yil 14-noyabr' }, { index: '03', title: 'NRG Zamon 3-1', rows: 'Takliflar yangilanadi', deadline: 'Muddat · 2027-yil 25-dekabr' }],
+    phaseCardNote: 'Katalog avtomatik yangilanadi; har bir xonadonning dolzarbligini savdo bo‘limi tasdiqlaydi.',
     facts: [['Comfort', 'klass'], ['4', 'bosqich'], ['8 / 9 / 12', 'qavat'], ['≥ 30%', 'ko‘kalamzor'], ['1', 'shaxsiy hovuz']] as const,
-    timeIndex: '01 · XRONOLOGIYA', timeTitle: 'To‘rt bosqich. Faqat tasdiqlangan vaqt belgilari.', timeLead: 'Rasmiy sahifa to‘rt bosqichni ko‘rsatadi. 2026-yil 30-avgustdagi katalogda faqat 2-2 va 3-1 bloklari bor; I va IV bosqichlar uchun xonadonlar ko‘rsatilmagan.',
-    phases: [['I bosqich', 'Topshirilgan', 'Holat rasmiy buklet bilan tasdiqlangan.'], ['II bosqich · 2-2 blok', '14.11.2026', 'Rasmiy katalogda 42 ta pozitsiya.'], ['III bosqich · 3-1 blok', '25.12.2027', 'Rasmiy katalogda 62 ta pozitsiya.'], ['IV bosqich', 'Katalogda holat yo‘q', 'Bosqich loyiha tuzilmasida bor; joriy tanlovda xonadonlar yo‘q.']] as const,
+    timeIndex: '01 · XRONOLOGIYA', timeTitle: 'To‘rt bosqich. Faqat tasdiqlangan vaqt belgilari.', timeLead: 'Katalogdagi bosqichlar, bloklar va xonadonlar avtomatik yangilanadi. Kerakli xonadon topilmasa, uning holatini savdo bo‘limi aniqlaydi.',
+    phases: [['I bosqich', 'Topshirilgan', 'Holat rasmiy buklet bilan tasdiqlangan.'], ['II bosqich · 2-2 blok', '14.11.2026', 'Takliflar va holatlar avtomatik yangilanadi.'], ['III bosqich · 3-1 blok', '25.12.2027', 'Takliflar va holatlar avtomatik yangilanadi.'], ['IV bosqich', 'Katalogda holat yo‘q', 'Bosqich loyiha tuzilmasida bor; joriy tanlovda xonadonlar yo‘q.']] as const,
     storyIndex: '02 · AMALGA OSHGAN', storyTitle: 'I bosqich — va’da emas, mavjud me’morchilik.', storyText: 'Faqat topshirilgan I bosqichning haqiqiy rasmiy fotosuratlari ko‘rsatiladi: fasadlar, hovli, umumiy zonalar va ko‘kalamzor.', storyAlt: 'Zamon topshirilgan I bosqichining haqiqiy me’morchiligi',
     mediaIndex: '03 · MEDIATEKA', mediaTitle: 'Aralashmaydigan uch qatlam.', mediaText: 'Haqiqiy fotosuratlar, kelajak hovlilarining rasmiy konsepsiyasi va 2026-yil iyul qurilish arxivi kelib chiqishi bo‘yicha ajratilgan.',
     layers: { realized: { title: 'Amalga oshgan', note: 'Topshirilgan I bosqichning haqiqiy rasmiy fotosuratlari', disclosure: 'Haqiqiy fotosurat · topshirilgan I bosqich', titles: ['Fasad · 01', 'Fasad · 02', 'Me’morchilik · 03', 'Hovli · 04', 'Fasad detali · 05', 'Me’moriy detal · 06'] }, concept: { title: 'Rasmiy konsepsiya', note: 'Kelajak bosqichlari CGI; yakuniy ko‘rinish o‘zgarishi mumkin', disclosure: 'Rasmiy vizualizatsiya / konsepsiya · yakuniy ko‘rinish o‘zgarishi mumkin', titles: ['Hovli · konsepsiya 01', 'Hovli · konsepsiya 02', 'Hovli · konsepsiya 03', 'Hovli · konsepsiya 04', 'Hovli · konsepsiya 05'] }, construction: { title: 'Qurilish arxivi · 2026-yil iyul', note: 'Landingdagi so‘nggi rasmiy qurilish hisoboti', disclosure: 'Rasmiy qurilish arxivi · 2026-yil iyul', titles: ['Qurilish · 01', 'Qurilish · 02', 'Qurilish · 03', 'Qurilish · 04', 'Qurilish · 05'] } },
@@ -132,19 +133,19 @@ const copy = {
     landscapeIndex: '05 · HOVLI VA LANDSHAFT', landscapeTitle: 'Hovuz va kamida 30% ko‘kalamzor.', landscapeText: 'Rasmiy materiallar shaxsiy hovuz, yopiq hovli, 24/7 qo‘riqlash va videokuzatuv, playground, workout va barbecue ssenariylarini tasdiqlaydi.', landscapeAlt: 'Zamon topshirilgan I bosqichining haqiqiy ko‘kalamzori', landscapeFeatures: ['shaxsiy hovuz', 'kamida 30% ko‘kalamzor', 'yopiq hovli', '24/7 qo‘riqlash va videokuzatuv', 'playground / workout / barbecue'] as const,
     archiveIndex: '06 · SO‘NGGI QURILISH HISOBOTI', archiveTitle: '2026-yil iyul — fon emas, sana.', archiveText: 'Har bir kadr 2026-yil iyuldagi rasmiy qurilish arxiviga tegishli. Fotosuratlardan alohida xonadon holati aniqlanmaydi.',
     environmentIndex: '07 · ATROF', environmentTitle: 'O‘ylab topilgan daqiqalarsiz nomlar.', environmentText: 'Buklet quyidagi obyektlarni tilga oladi, ammo aniq yo‘l vaqtini bermaydi.', environment: ['«Yangiabad» metrosi', '212-, 206- va 198-maktablar', '425-bolalar bog‘chasi', 'IT school', 'Intellect baby', 'Joy KIDS preschool', '«Alibek» va «Chilonota» masjidlari'] as const,
-    catalogIndex: '08 · KATALOG · 30.08.2026', catalogTitle: '104 pozitsiya. Manbadagi to‘rtta holat.', catalogText: 'Katalog sanasida: 93 «Bo‘sh», 1 «Bron», 7 «Bekor qilish» va 3 «Rezervni yechish». Har bir xonadonning holati va huquqiy mavjudligini savdo bo‘limi tasdiqlaydi.', catalogStats: [['104', 'katalog pozitsiyasi'], ['1–5', 'xonalar'], ['31.14–134.42 m²', 'maydon'], ['392 276 808–1 488 956 497 UZS', 'katalog sanasidagi aksiya narxi']] as const, catalogNote: '12% chegirma 2026-12-31 17:59:59Z gacha ko‘rsatilgan. Bu sanali fakt; joriy shartlarni savdo bo‘limi tasdiqlaydi.', openCatalog: 'To‘liq katalogni ochish',
-    dataNoteTitle: 'Ma’lumotlar va manbalar haqida', dataNoteText: '104 ta yozuv NRG-BI rasmiy katalogidan 30.08.2026 soat 20:15 UZT da saqlangan. Texnik manbada 104 yozuvdan 103 tasida isSale=true; sahifadagi muddatlar rasmiy filter/realEstateList yagona qiymati bo‘yicha berilgan, placementList dagi asl sana esa xonadon kartasining ma’lumotlar bo‘limida saqlangan.',
+    catalogIndex: '08 · KATALOG YANGILANADI', catalogTitle: 'Dolzarb takliflar va rasmiy holatlar.', catalogText: 'Takliflar, narxlar va holatlar avtomatik yangilanadi. Har bir xonadonning huquqiy mavjudligini savdo bo‘limi tasdiqlaydi.', catalogStats: [['Dolzarb', 'katalog pozitsiyalari'], ['Onlayn', 'holatlar'], ['Rasmiy', 'rejalar'], ['Tasdiqlanadi', 'joriy shartlar']] as const, catalogNote: 'Amaldagi chegirma va shartlarni savdo bo‘limi tasdiqlaydi.', openCatalog: 'To‘liq katalogni ochish',
+    dataNoteTitle: 'Ma’lumotlar va manbalar haqida', dataNoteText: 'Takliflar, narxlar va holatlar rasmiy katalogdan avtomatik yangilanadi. Texnik holat huquqiy mavjudlikni kafolatlamaydi.',
     contactsIndex: '09 · ALOQA', contactsTitle: 'Aniq xonadon haqida gaplashish.', contactsText: 'NRG-BI menejeri joriy holat, narx, muddat va shartlarni tasdiqlaydi.', offices: 'Savdo bo‘limlari', officeOne: 'Nukus ko‘chasi, 91/1', officeTwo: 'Oybek ko‘chasi, 38A',
-    formTagline: 'Yorug‘lik xronologiyasi.', formFacts: ['Comfort class', '4 bosqich', 'shaxsiy hovuz'], privacy: 'Shaxsiy ma’lumotlarni qayta ishlash', booklet: 'Rasmiy buklet · 36 sahifa', panorama: '360 panorama', top: 'Yuqoriga', bookletContext: 'PDF alohida ochiladi; joriy sahifada tanlangan til saqlanadi.', disclaimer: 'Haqiqiy foto, CGI va qurilish arxivi alohida belgilangan. Katalog 30.08.2026 sanasiga tegishli, ommaviy oferta yoki huquqiy mavjudlik kafolati emas.', introLabel: 'YORUG‘LIK XRONOLOGIYASI · ZAMON',
+    formTagline: 'Yorug‘lik xronologiyasi.', formFacts: ['Comfort class', '4 bosqich', 'shaxsiy hovuz'], privacy: 'Shaxsiy ma’lumotlarni qayta ishlash', booklet: 'Rasmiy buklet · 36 sahifa', panorama: '360 panorama', top: 'Yuqoriga', bookletContext: 'PDF alohida ochiladi; joriy sahifada tanlangan til saqlanadi.', disclaimer: 'Haqiqiy foto, CGI va qurilish arxivi alohida belgilangan. Katalog avtomatik yangilanadi, ommaviy oferta yoki huquqiy mavjudlik kafolati emas.', introLabel: 'YORUG‘LIK XRONOLOGIYASI · ZAMON',
   },
   en: {
     skip: 'Skip to content', navigation: 'Zamon navigation', footerNavigation: 'Sources and legal information', menu: 'Menu', closeMenu: 'Close menu', language: 'Language',
     nav: [['time', 'Time'], ['realized', 'Built'], ['media', 'Media'], ['landscape', 'Courtyard'], ['catalog', 'Apartments'], ['contacts', 'Contacts']] as const,
     choose: 'Choose an apartment', consult: 'Send a request', phone: 'Call · +998 78 113 77 12',
     heroOverline: 'TASHKENT · COMFORT CLASS · 4 PHASES', heroTitle: 'Zamon', heroText: 'A home across several layers of time: completed phase I, a current apartment selection and future architectural concepts.', heroAlt: 'Actual photograph of Zamon completed phase I', actualPhoto: 'Actual photograph of the completed first phase',
-    phaseCards: [{ index: '02', title: 'NRG Zamon 2-2', rows: '42 catalogue entries', deadline: 'Completion · 14 November 2026' }, { index: '03', title: 'NRG Zamon 3-1', rows: '62 catalogue entries', deadline: 'Completion · 25 December 2027' }], phaseCardNote: 'The catalogue was captured on 30 August 2026; the sales team confirms each apartment’s current status.',
+    phaseCards: [{ index: '02', title: 'NRG Zamon 2-2', rows: 'Listings update automatically', deadline: 'Completion · 14 November 2026' }, { index: '03', title: 'NRG Zamon 3-1', rows: 'Listings update automatically', deadline: 'Completion · 25 December 2027' }], phaseCardNote: 'The catalogue updates automatically; the sales team confirms each apartment’s current status.',
     facts: [['Comfort', 'class'], ['4', 'phases'], ['8 / 9 / 12', 'storeys'], ['≥ 30%', 'landscaping'], ['1', 'own pond']] as const,
-    timeIndex: '01 · CHRONOLOGY', timeTitle: 'Four phases. Only confirmed time markers.', timeLead: 'The official page states four phases. The catalogue dated 30 August 2026 contains only blocks 2-2 and 3-1; no apartments are shown for phases I or IV.', phases: [['Phase I', 'Completed', 'Confirmed by the official booklet.'], ['Phase II · block 2-2', '14 Nov 2026', '42 entries in the official catalogue.'], ['Phase III · block 3-1', '25 Dec 2027', '62 entries in the official catalogue.'], ['Phase IV', 'No catalogue status', 'The project states a fourth phase; the current selection has no phase IV apartments.']] as const,
+    timeIndex: '01 · CHRONOLOGY', timeTitle: 'Four phases. Only confirmed time markers.', timeLead: 'The catalogue updates currently published blocks and apartments automatically.', phases: [['Phase I', 'Completed', 'Confirmed by the official booklet.'], ['Phase II · block 2-2', '14 Nov 2026', 'Listings and statuses update automatically.'], ['Phase III · block 3-1', '25 Dec 2027', 'Listings and statuses update automatically.'], ['Phase IV', 'No catalogue status', 'The project states a fourth phase; the current selection has no phase IV apartments.']] as const,
     storyIndex: '02 · ALREADY BUILT', storyTitle: 'Phase I is existing architecture, not a promise.', storyText: 'Only actual official photographs of completed phase I are shown here: facades, courtyard, common areas and landscaping.', storyAlt: 'Actual architecture of Zamon completed phase I',
     mediaIndex: '03 · MEDIA LIBRARY', mediaTitle: 'Three layers that never blur together.', mediaText: 'Actual photography, official future-courtyard concepts and the July 2026 construction archive are separated by origin and disclosure.',
     layers: { realized: { title: 'Built', note: 'Actual official photographs of completed phase I', disclosure: 'Actual photograph · completed phase I', titles: ['Facade · 01', 'Facade · 02', 'Architecture · 03', 'Courtyard · 04', 'Facade detail · 05', 'Architecture detail · 06'] }, concept: { title: 'Official concept', note: 'Future-phase CGI; final appearance may change', disclosure: 'Official visualization / concept · final appearance may change', titles: ['Courtyard · concept 01', 'Courtyard · concept 02', 'Courtyard · concept 03', 'Courtyard · concept 04', 'Courtyard · concept 05'] }, construction: { title: 'Construction archive · July 2026', note: 'Latest official construction report on the landing', disclosure: 'Official construction archive · July 2026', titles: ['Construction · 01', 'Construction · 02', 'Construction · 03', 'Construction · 04', 'Construction · 05'] } },
@@ -153,10 +154,10 @@ const copy = {
     landscapeIndex: '05 · COURTYARD AND LANDSCAPE', landscapeTitle: 'A pond and at least 30% landscaping.', landscapeText: 'Official materials confirm an own pond, private courtyard, 24/7 security and video surveillance, playground, workout and barbecue settings.', landscapeAlt: 'Actual landscaping at Zamon completed phase I', landscapeFeatures: ['own pond', 'at least 30% landscaping', 'private courtyard', '24/7 security and video surveillance', 'playground / workout / barbecue'] as const,
     archiveIndex: '06 · LATEST CONSTRUCTION REPORT', archiveTitle: 'July 2026 is a date, not scenery.', archiveText: 'Every frame below belongs to the official July 2026 construction archive. A unit’s status cannot be inferred from a photograph.',
     environmentIndex: '07 · SURROUNDINGS', environmentTitle: 'Names without invented minutes.', environmentText: 'The booklet names the following places but gives no exact travel times.', environment: ['Yangiabad metro', 'schools no. 212, 206 and 198', 'kindergarten no. 425', 'IT school', 'Intellect baby', 'Joy KIDS preschool', 'Alibek and Chilonota mosques'] as const,
-    catalogIndex: '08 · CATALOGUE · 30 AUG 2026', catalogTitle: '104 entries. Four source statuses.', catalogText: 'On the catalogue date: 93 “Available”, 1 “Booking”, 7 “Termination” and 3 “Reservation release”. The sales team confirms each apartment’s status and legal availability.', catalogStats: [['104', 'catalogue entries'], ['1–5', 'rooms'], ['31.14–134.42 m²', 'area'], ['392,276,808–1,488,956,497 UZS', 'promotional price on catalogue date']] as const, catalogNote: 'The 12% discount was shown through 31 Dec 2026 17:59:59Z. This is a dated fact; the sales team confirms current terms.', openCatalog: 'Open the full catalogue',
-    dataNoteTitle: 'About the data and sources', dataNoteText: '104 records were saved from the official NRG-BI catalogue on 30 Aug 2026 at 20:15 UZT. The technical source has isSale=true for 103 of 104 records; displayed completion dates use the consistent official filter/realEstateList value, while the original placementList date is retained in each apartment’s data note.',
+    catalogIndex: '08 · CATALOGUE UPDATES AUTOMATICALLY', catalogTitle: 'Current listings and official statuses.', catalogText: 'Listings, prices and statuses update automatically. The sales team confirms each apartment’s legal availability.', catalogStats: [['Current', 'catalogue entries'], ['Automatic', 'status updates'], ['Official', 'floor plans'], ['Confirmed', 'current terms']] as const, catalogNote: 'The sales team confirms current discounts and terms.', openCatalog: 'Open the full catalogue',
+    dataNoteTitle: 'About the data', dataNoteText: 'Listings, prices and statuses update automatically from the official catalogue. A catalogue status does not guarantee legal availability.',
     contactsIndex: '09 · CONTACTS', contactsTitle: 'Discuss one specific apartment.', contactsText: 'An NRG-BI manager confirms current status, price, completion and terms.', offices: 'Sales offices', officeOne: '91/1 Nukus Street', officeTwo: '38A Oybek Street',
-    formTagline: 'A chronology of light.', formFacts: ['Comfort class', '4 phases', 'own pond'], privacy: 'Personal data processing', booklet: 'Official booklet · 36 pages', panorama: '360 panorama', top: 'Back to top', bookletContext: 'The PDF opens separately; this page keeps the selected language.', disclaimer: 'Actual photos, CGI and construction records are labelled separately. The catalogue is dated 30 Aug 2026, is not a public offer and does not guarantee legal availability.', introLabel: 'CHRONOLOGY OF LIGHT · ZAMON',
+    formTagline: 'A chronology of light.', formFacts: ['Comfort class', '4 phases', 'own pond'], privacy: 'Personal data processing', booklet: 'Official booklet · 36 pages', panorama: '360 panorama', top: 'Back to top', bookletContext: 'The PDF opens separately; this page keeps the selected language.', disclaimer: 'Actual photos, CGI and construction records are labelled separately. The catalogue updates automatically, is not a public offer and does not guarantee legal availability.', introLabel: 'CHRONOLOGY OF LIGHT · ZAMON',
   },
 } as const;
 
@@ -292,6 +293,7 @@ function MediaLayer({ layer, language }: { layer: Layer; language: Language }) {
 export function ZamonPage({ initialLanguage }: { initialLanguage: Language }) {
   const router = useRouter();
   const language = initialLanguage;
+  const { data: catalogProject, dataSource } = useLiveCatalogProject('zamon', { slug: 'zamon', name: 'Zamon', totalUnits: 0, availableUnits: 0 });
   const [menuOpen, setMenuOpen] = useState(false);
   const [leadContext, setLeadContext] = useState<string>();
   const introPhase = useIntro();
@@ -300,6 +302,12 @@ export function ZamonPage({ initialLanguage }: { initialLanguage: Language }) {
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
   const restoreMenuFocus = useRef(true);
   const t = copy[language];
+  const countFormat = new Intl.NumberFormat(language === 'ru' ? 'ru-RU' : language === 'uz' ? 'uz-UZ' : 'en-US');
+  const catalogStats = dataSource === 'embedded' ? t.catalogStats : [
+    [countFormat.format(catalogProject.totalUnits), language === 'ru' ? 'позиций каталога' : language === 'uz' ? 'katalog pozitsiyalari' : 'catalogue entries'],
+    [countFormat.format(catalogProject.availableUnits), language === 'ru' ? 'свободно' : language === 'uz' ? 'mavjud' : 'available'],
+    ...t.catalogStats.slice(2),
+  ] as const;
   useReveals(language);
 
   useEffect(() => {
@@ -392,7 +400,7 @@ export function ZamonPage({ initialLanguage }: { initialLanguage: Language }) {
 
       <section className="zamon-environment" tabIndex={-1}><div data-zamon-reveal><p className="zamon-overline">{t.environmentIndex}</p><h2>{t.environmentTitle}</h2><p>{t.environmentText}</p></div><ol>{t.environment.map((place, index) => <li key={place}><span>{String(index + 1).padStart(2, '0')}</span>{place}</li>)}</ol></section>
 
-      <section id="catalog" className="zamon-catalog-teaser" tabIndex={-1} data-zamon-reveal><header><p className="zamon-overline">{t.catalogIndex}</p><h2>{t.catalogTitle}</h2><p>{t.catalogText}</p></header><div>{t.catalogStats.map(([value, label]) => <article key={label}><strong>{value}</strong><span>{label}</span></article>)}</div><details className="zamon-data-note"><summary>{t.dataNoteTitle}<span aria-hidden="true">＋</span></summary><p>{t.dataNoteText}</p></details><footer><p>{t.catalogNote}</p><a className="zamon-button is-solid" href={withLanguage('/zamon/apartments', language)}>{t.openCatalog}<span>↗</span></a></footer></section>
+      <section id="catalog" className="zamon-catalog-teaser" tabIndex={-1} data-zamon-reveal><header><p className="zamon-overline">{t.catalogIndex}</p><h2>{t.catalogTitle}</h2><p>{t.catalogText}</p></header><div>{catalogStats.map(([value, label]) => <article key={label}><strong>{value}</strong><span>{label}</span></article>)}</div><details className="zamon-data-note"><summary>{t.dataNoteTitle}<span aria-hidden="true">＋</span></summary><p>{t.dataNoteText}</p></details><footer><p>{t.catalogNote}</p><a className="zamon-button is-solid" href={withLanguage('/zamon/apartments', language)}>{t.openCatalog}<span>↗</span></a></footer></section>
 
       <section id="contacts" className="zamon-contacts" tabIndex={-1}><div data-zamon-reveal><p className="zamon-overline">{t.contactsIndex}</p><h2>{t.contactsTitle}</h2><p>{t.contactsText}</p></div><address><small>{t.offices}</small><span>{t.officeOne}</span><span>{t.officeTwo}</span><a href="tel:+998781137712">+998 78 113 77 12</a></address><div className="zamon-contacts__actions"><button className="zamon-button is-solid" type="button" data-lead-trigger onClick={() => openLead('contacts-consultation')}>{t.consult}<span>↗</span></button><a className="zamon-button" href="tel:+998781137712">{t.phone}<span>↗</span></a></div></section>
     </main>

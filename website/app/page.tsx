@@ -5,7 +5,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import crmSnapshot from '@/data/avalon-units.json';
 import { floorLayouts } from '@/data/floor-layouts';
-import { LeadModal, rememberLastViewedApartment } from '@/app/lead-modal';
+import { LeadModal, rememberLiveCatalogUnit } from '@/app/lead-modal';
+import { catalogLeadIdentity, useLiveCatalogUnits } from '@/app/live-catalog';
 
 type View = 'city' | 'complex' | 'facade' | 'showroom';
 type HotspotId = 'metro' | 'mall' | 'avalon';
@@ -33,7 +34,7 @@ type Apartment = {
   rawStatus: string;
 };
 
-const units = crmSnapshot.units as Apartment[];
+const embeddedUnits = crmSnapshot.units as Apartment[];
 
 const hotspots = {
   metro: { ru: { eyebrow: 'Метро', title: 'Станция Тузель', description: 'Городской ритм — в нескольких шагах от дома.' }, uz: { eyebrow: 'Metro', title: 'Tuzel bekati', description: 'Shahar ritmi — uydan bir necha qadam narida.' } },
@@ -75,7 +76,7 @@ function repairLabel(value: string, language: Language) {
   return value.toLowerCase().includes('без') ? 'Ta’mirsiz' : value;
 }
 
-function floorList(building: BuildingId) {
+function floorList(units: Apartment[], building: BuildingId) {
   return [...new Set(units.filter((unit) => unit.building === building).map((unit) => unit.floor))].sort((a, b) => b - a);
 }
 
@@ -88,6 +89,7 @@ function facadeFloorZone(building: BuildingId, floor: number) {
 }
 
 export default function Home() {
+  const { data: units } = useLiveCatalogUnits('avalon-residence', embeddedUnits);
   const [view, setView] = useState<View>('city');
   const [language, setLanguage] = useState<Language>('ru');
   const [activeHotspot, setActiveHotspot] = useState<HotspotId>('avalon');
@@ -108,8 +110,8 @@ export default function Home() {
   const t = ui[language];
   const active = hotspots[activeHotspot][language];
 
-  const buildingUnits = useMemo(() => units.filter((unit) => unit.building === selectedBuilding), [selectedBuilding]);
-  const floors = useMemo(() => floorList(selectedBuilding), [selectedBuilding]);
+  const buildingUnits = useMemo(() => units.filter((unit) => unit.building === selectedBuilding), [selectedBuilding, units]);
+  const floors = useMemo(() => floorList(units, selectedBuilding), [selectedBuilding, units]);
   const floorUnits = useMemo(() => buildingUnits.filter((unit) => unit.floor === selectedFloor).sort((a, b) => a.number - b.number), [buildingUnits, selectedFloor]);
   const selectedUnit = selectedUnitId ? units.find((unit) => unit.id === selectedUnitId) ?? null : null;
   const floorLayout = floorLayouts[selectedBuilding];
@@ -196,7 +198,7 @@ export default function Home() {
   };
 
   const chooseBuilding = (building: BuildingId, openFacade = false) => {
-    const availableFloors = floorList(building);
+    const availableFloors = floorList(units, building);
     const nextFloor = availableFloors.includes(9) ? 9 : availableFloors[0];
     setSelectedBuilding(building);
     setSelectedFloor(nextFloor);
@@ -224,18 +226,7 @@ export default function Home() {
 
   const openApartmentDetails = () => {
     if (!selectedUnit) return;
-    rememberLastViewedApartment({
-      uuid: selectedUnit.id,
-      number: String(selectedUnit.number),
-      rooms: selectedUnit.rooms,
-      area: selectedUnit.area,
-      floor: selectedUnit.floor,
-      maxFloor: Math.max(...floorList(selectedUnit.building)),
-      entrance: 1,
-      blockName: `Корпус ${selectedUnit.building}`,
-      blockId: selectedUnit.building,
-      price: selectedUnit.price ?? 0,
-    }, 'avalon-residence');
+    rememberLiveCatalogUnit(selectedUnit, 'avalon-residence');
     setDetailsOpen(true);
   };
 
@@ -350,7 +341,7 @@ export default function Home() {
       {projectInfoOpen ? <ProjectModal language={language} onClose={() => setProjectInfoOpen(false)} /> : null}
       {detailsOpen && selectedUnit ? <ApartmentModal unit={selectedUnit} language={language} onClose={() => setDetailsOpen(false)} onPrint={() => setPrintOpen(true)} onLead={() => openLeadForm(`Заявка из карточки квартиры №${selectedUnit.number} · корпус ${selectedUnit.building}`)} /> : null}
       {printOpen && selectedUnit ? <PrintProposal unit={selectedUnit} language={language} onClose={() => setPrintOpen(false)} /> : null}
-      {leadOpen ? <LeadModal open language={language} context={leadContext} autoPrompt={leadAutoPrompt} submitUrl={`${appBasePath}/v1/leads`} projectSlug="avalon-residence" unitId={selectedUnit?.id} privacyUrl={`${appBasePath}/privacy?project=avalon-residence&lang=${language}`} requireConsent onClose={() => setLeadOpen(false)} /> : null}
+      {leadOpen ? <LeadModal open language={language} context={leadContext} autoPrompt={leadAutoPrompt} submitUrl={`${appBasePath}/v1/leads`} projectSlug="avalon-residence" {...catalogLeadIdentity(selectedUnit)} privacyUrl={`${appBasePath}/privacy?project=avalon-residence&lang=${language}`} requireConsent onClose={() => setLeadOpen(false)} /> : null}
     </main>
   );
 }

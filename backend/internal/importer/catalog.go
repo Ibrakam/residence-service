@@ -83,6 +83,48 @@ type CatalogAuditProject struct {
 	Layouts       int    `json:"layouts"`
 }
 
+// CatalogProjectContentChecksum fingerprints one normalized project without
+// its observation timestamp. Multi-project provider files therefore do not
+// make an unchanged sibling look modified merely because another project in
+// the same response changed.
+func CatalogProjectContentChecksum(project CatalogProject) (string, error) {
+	projection := struct {
+		DeveloperSlug  string
+		DeveloperName  string
+		Slug           string
+		Name           string
+		SourceID       string
+		SourceURL      string
+		SourcePayload  json.RawMessage
+		Complete       bool
+		OfficialCount  *int
+		Phases         []CatalogPhase
+		Units          []NormalizedUnit
+		Layouts        []NormalizedLayout
+		DuplicateUnits int
+	}{
+		DeveloperSlug:  project.DeveloperSlug,
+		DeveloperName:  project.DeveloperName,
+		Slug:           project.Slug,
+		Name:           project.Name,
+		SourceID:       project.SourceID,
+		SourceURL:      project.SourceURL,
+		SourcePayload:  project.SourcePayload,
+		Complete:       project.Complete,
+		OfficialCount:  project.OfficialCount,
+		Phases:         project.Phases,
+		Units:          project.Units,
+		Layouts:        project.Layouts,
+		DuplicateUnits: project.DuplicateUnits,
+	}
+	body, err := json.Marshal(projection)
+	if err != nil {
+		return "", fmt.Errorf("encode normalized project checksum: %w", err)
+	}
+	digest := sha256.Sum256(body)
+	return hex.EncodeToString(digest[:]), nil
+}
+
 func DiscoverCatalogFiles(dir string) ([]string, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {

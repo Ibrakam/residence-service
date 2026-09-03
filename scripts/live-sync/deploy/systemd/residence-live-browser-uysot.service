@@ -1,0 +1,28 @@
+[Unit]
+Description=Residence live catalogue browser for Uysot
+Requires=residence-live-display.service
+Wants=residence-live-openbox.service network-online.target
+After=residence-live-display.service residence-live-openbox.service network-online.target
+
+[Service]
+Type=simple
+User=residence-crm-browser
+Group=residence-crm-browser
+Environment=DISPLAY=:99
+Environment=HOME=/home/residence-crm-browser
+Environment=LANG=C.UTF-8
+ExecStart=/usr/bin/dbus-run-session -- /usr/bin/google-chrome-stable --user-data-dir=/home/residence-crm-browser/uysot-profile --remote-debugging-address=127.0.0.1 --remote-debugging-port=9223 --remote-allow-origins=http://127.0.0.1:9223,http://localhost:9223 --no-first-run --disable-search-engine-choice-screen --disable-save-password-bubble --disable-session-crashed-bubble --disable-features=PasswordManagerOnboarding,PasswordLeakDetection --password-store=basic --lang=ru-RU --window-size=1440,900 --enable-unsafe-swiftshader https://app.uysot.uz/showroom/
+Restart=always
+RestartSec=10s
+TimeoutStopSec=30s
+KillMode=mixed
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=false
+LimitNOFILE=65535
+MemoryMax=2G
+TasksMax=768
+
+[Install]
+WantedBy=multi-user.target

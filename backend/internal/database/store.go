@@ -38,13 +38,14 @@ func (s *Store) CatalogReadiness(ctx context.Context) (domain.CatalogReadiness, 
 		SELECT
 			(SELECT count(*) FROM projects),
 			(SELECT count(*) FROM units WHERE is_active),
-			(SELECT count(*) FROM sync_runs WHERE source=$1 AND status='succeeded'),
-			(SELECT max(finished_at) FROM sync_runs WHERE source=$1 AND status='succeeded')`,
-		importerCatalogSource).Scan(&item.Projects, &item.ActiveUnits, &item.SuccessfulRuns, &item.LastImportedAt)
+			(SELECT count(*) FROM sync_runs WHERE (source=$1 OR source LIKE $2) AND status='succeeded'),
+			(SELECT max(finished_at) FROM sync_runs WHERE (source=$1 OR source LIKE $2) AND status='succeeded')`,
+		importerCatalogSource, liveCatalogSourcePattern).Scan(&item.Projects, &item.ActiveUnits, &item.SuccessfulRuns, &item.LastImportedAt)
 	return item, err
 }
 
 const importerCatalogSource = "versioned-website-catalog"
+const liveCatalogSourcePattern = "live-catalog/%"
 
 func (s *Store) ListDevelopers(ctx context.Context) ([]domain.Developer, error) {
 	rows, err := s.pool.Query(ctx, `SELECT id, slug, name FROM developers ORDER BY name`)
@@ -114,17 +115,18 @@ func (s *Store) GetProject(ctx context.Context, slug string) (domain.Project, er
 	}
 
 	rows, err := s.pool.Query(ctx, `
-        SELECT ph.id, ph.slug, ph.name, ph.slug, ph.property_type, ph.sort_order,
-               ph.address, ph.image_url, ph.floors_total,
-               count(u.id) FILTER (WHERE u.is_active),
-               count(u.id) FILTER (WHERE u.is_active AND u.status='available'),
+		SELECT ph.id, ph.slug, ph.name, ph.source_id, ph.property_type, ph.sort_order,
+		       ph.address, ph.image_url, ph.floors_total,
+		       count(u.id) FILTER (WHERE u.is_active),
+		       count(u.id) FILTER (WHERE u.is_active AND u.status='available'),
                max(u.source_updated_at)
         FROM phases ph
         JOIN projects p ON p.id=ph.project_id
-        LEFT JOIN units u ON u.phase_id=ph.id
-        WHERE p.slug=$1
-        GROUP BY ph.id
-        ORDER BY ph.sort_order, ph.id`, slug)
+		LEFT JOIN units u ON u.phase_id=ph.id
+		WHERE p.slug=$1
+		GROUP BY ph.id
+		HAVING count(u.id) FILTER (WHERE u.is_active) > 0
+		ORDER BY ph.sort_order, ph.id`, slug)
 	if err != nil {
 		return domain.Project{}, err
 	}
@@ -261,10 +263,11 @@ func (s *Store) ListLayouts(ctx context.Context, projectSlug, phaseSlug string) 
         SELECT l.id, concat('layout-',l.id), p.slug, ph.slug, l.rooms, l.available_count,
                l.title, l.address, l.price_text, l.image_url, l.thumbnail_url
         FROM layouts l
-        JOIN phases ph ON ph.id=l.phase_id
-        JOIN projects p ON p.id=ph.project_id
-        WHERE p.slug=$1 AND ($2='' OR ph.slug=$2)
-        ORDER BY ph.id, l.rooms NULLS LAST, l.id`, projectSlug, phaseSlug)
+		JOIN phases ph ON ph.id=l.phase_id
+		JOIN projects p ON p.id=ph.project_id
+		WHERE p.slug=$1 AND ($2='' OR ph.slug=$2)
+		  AND EXISTS(SELECT 1 FROM units u WHERE u.phase_id=ph.id AND u.is_active)
+		ORDER BY ph.id, l.rooms NULLS LAST, l.id`, projectSlug, phaseSlug)
 	if err != nil {
 		return nil, err
 	}
@@ -329,6 +332,78 @@ func (s *Store) LatestSync(ctx context.Context) ([]domain.SyncStatus, error) {
 	return items, rows.Err()
 }
 
+func (s *Store) CatalogProviderSyncStatus(ctx context.Context) ([]domain.CatalogProviderSyncStatus, error) {
+	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{AccessMode: pgx.ReadOnly})
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback(context.Background()) }()
+	rows, err := tx.Query(ctx, `
+		SELECT provider,last_attempt_status,last_attempt_at,last_success_at,fresh_until,error_code,
+		       CASE WHEN fresh_until IS NOT NULL AND fresh_until > CURRENT_TIMESTAMP
+		            THEN 'fresh' ELSE 'stale' END
+		FROM catalog_sync_providers
+		ORDER BY provider`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]domain.CatalogProviderSyncStatus, 0)
+	for rows.Next() {
+		var item domain.CatalogProviderSyncStatus
+		if err := rows.Scan(
+			&item.Provider, &item.Status, &item.LastAttemptAt, &item.LastSuccessAt,
+			&item.FreshUntil, &item.ErrorCode, &item.Freshness,
+		); err != nil {
+			return nil, err
+		}
+		item.Projects = make([]domain.CatalogProjectSyncStatus, 0)
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	byProvider := make(map[string]int, len(items))
+	for index := range items {
+		byProvider[items[index].Provider] = index
+	}
+	projectRows, err := tx.Query(ctx, `
+		SELECT provider,project_slug,last_attempt_status,last_attempt_at,last_success_at,
+		       last_captured_at,fresh_until,last_record_count,error_code,
+		       CASE WHEN fresh_until IS NOT NULL AND fresh_until > CURRENT_TIMESTAMP
+		            THEN 'fresh' ELSE 'stale' END
+		FROM catalog_sync_projects
+		ORDER BY provider,project_slug`)
+	if err != nil {
+		return nil, err
+	}
+	defer projectRows.Close()
+	for projectRows.Next() {
+		var provider string
+		var item domain.CatalogProjectSyncStatus
+		if err := projectRows.Scan(
+			&provider, &item.ProjectSlug, &item.Status, &item.LastAttemptAt,
+			&item.LastSuccessAt, &item.LastCapturedAt, &item.FreshUntil,
+			&item.RecordCount, &item.ErrorCode, &item.Freshness,
+		); err != nil {
+			return nil, err
+		}
+		index, ok := byProvider[provider]
+		if !ok {
+			continue
+		}
+		items[index].Projects = append(items[index].Projects, item)
+	}
+	if err := projectRows.Err(); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 func (s *Store) CreateLead(ctx context.Context, input domain.CreateLeadInput) (domain.Lead, error) {
 	if !input.ConsentGiven {
 		return domain.Lead{}, ErrConsentRequired
@@ -358,12 +433,15 @@ func (s *Store) CreateLead(ctx context.Context, input domain.CreateLeadInput) (d
 		unitID = &resolved
 	}
 	var lastViewedUnitID *int64
+	lastViewedReference := ""
 	if len(input.LastViewedReferences) > 0 {
 		resolved, err := resolveLeadUnit(ctx, tx, projectID, input.LastViewedReferences)
-		if err != nil {
+		if err == nil {
+			lastViewedUnitID = &resolved
+			lastViewedReference = storedLeadUnitReference(input.LastViewedReferences)
+		} else if !isOptionalLastViewedReferenceError(err) {
 			return domain.Lead{}, err
 		}
-		lastViewedUnitID = &resolved
 	}
 	consentAt := input.ConsentAt
 	if consentAt.IsZero() {
@@ -381,7 +459,7 @@ func (s *Store) CreateLead(ctx context.Context, input domain.CreateLeadInput) (d
 			consent_given, consent_at, created_at`,
 		projectID, unitID, lastViewedUnitID, input.Name, input.Phone, input.Goal,
 		input.Language, input.FormContext, input.LandingURL, input.ReferrerURL, input.Metadata,
-		storedLeadUnitReference(input.UnitReferences), storedLeadUnitReference(input.LastViewedReferences),
+		storedLeadUnitReference(input.UnitReferences), lastViewedReference,
 		input.ConsentGiven, consentAt, input.ProjectSlug,
 	).Scan(
 		&item.ID, &item.ProjectSlug, &item.UnitID, &item.LastViewedUnitID, &item.Name, &item.Phone,
@@ -396,6 +474,13 @@ func (s *Store) CreateLead(ctx context.Context, input domain.CreateLeadInput) (d
 		return domain.Lead{}, err
 	}
 	return item, nil
+}
+
+func isOptionalLastViewedReferenceError(err error) bool {
+	return errors.Is(err, ErrUnitNotFound) ||
+		errors.Is(err, ErrUnitProjectMismatch) ||
+		errors.Is(err, ErrAmbiguousUnitReference) ||
+		errors.Is(err, ErrUnitReferenceMismatch)
 }
 
 func enforceLeadCooldown(ctx context.Context, tx pgx.Tx, projectID int64, phone string, minimumInterval time.Duration) error {

@@ -49,6 +49,7 @@
     "verify:base-path": "node scripts/test-base-path-deployment.mjs",
     "verify:tencorp-contact": "node scripts/verify-tencorp-contact.mjs",
     "test:lead-client": "node scripts/test-lead-client-contract.mjs",
+    "test:live-catalog": "node --no-warnings --experimental-strip-types scripts/test-live-catalog-client.mjs",
     "test:lead-proxy": "node --no-warnings --experimental-strip-types scripts/test-residence-lead-proxy.mjs",
     "build:sado-assets": "node scripts/build-sado-assets.mjs"
   },

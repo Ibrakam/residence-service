@@ -12,6 +12,7 @@ import {
 } from 'react';
 import snapshotJson from '@/data/sun-client.json';
 import { LeadModal } from '@/app/lead-modal';
+import { useLiveCatalogSnapshot } from '@/app/live-catalog';
 import { rememberSunUnit, sunLeadContext, sunLeadSubmitUrl, type SunUnit } from './sun-lead';
 import {
   formatSunNumber,
@@ -38,7 +39,7 @@ type MediaSlide = {
 type LightboxState = { slides: MediaSlide[]; index: number; opener: HTMLButtonElement };
 type Snapshot = { capturedAt: string; units: SunUnit[] };
 
-const snapshot = snapshotJson as Snapshot;
+const embeddedSnapshot = snapshotJson as Snapshot;
 
 const mediaLabels: Record<MediaKind, Record<Language, string>> = {
   cgi: { ru: 'Архитектурная визуализация · концепция', uz: 'Arxitektura vizualizatsiyasi · konsepsiya', en: 'Architectural visualisation · concept' },
@@ -120,16 +121,16 @@ const copy = {
     dayLead: 'Уточнить текущий статус',
     amenityEyebrow: 'ПРЕДУСМОТРЕНО / ВИЗУАЛИЗИРОВАНО', amenityTitle: 'Пространства для длинного дня.', amenityText: 'Двор и детские площадки, фонтан, подземный паркинг, эксплуатируемые кровли, lounge, арт-студия, event/cinema, спортивная площадка и детские пространства показаны как проектная концепция, а не готовые объекты.',
     gallery: 'Галерея концепции', amenityLead: 'Обсудить проект',
-    catalogEyebrow: 'СНИМОК ПУБЛИЧНОГО КАТАЛОГА', catalogTitle: 'Солнечный инструмент выбора.', catalogText: '51 доступная позиция в четырёх корпусах публичного каталога. Это отдельный срез 306 записей и не то же самое, что 361 квартира во всём проекте.',
-    free: 'доступна', rooms: 'комн.', area: 'площадь', floor: 'этаж', block: 'корпус', price: 'Текущая цена', unit: 'Квартира №', askUnit: 'Оставить заявку', allApartments: 'Открыть все 51 квартиру',
-    catalogFacts: [['51', 'доступная'], ['18 / 31 / 2', '1 / 2 / 3 комнаты'], ['34,61–83,90 м²', 'диапазон площади'], ['4 из 5', 'корпусов в live-каталоге']] as const,
-    catalogNote: 'Корпус Б отсутствует в текущем публичном каталоге. Мы не создаём для него фиктивные позиции.',
+    catalogEyebrow: 'КАТАЛОГ ОБНОВЛЯЕТСЯ', catalogTitle: 'Солнечный инструмент выбора.', catalogText: 'Предложения, цены и статусы в публичном каталоге обновляются автоматически.',
+    free: 'доступна', rooms: 'комн.', area: 'площадь', floor: 'этаж', block: 'корпус', price: 'Текущая цена', unit: 'Квартира №', askUnit: 'Оставить заявку', allApartments: 'Открыть все квартиры',
+    catalogFacts: [['', 'доступно'], ['', 'комнаты'], ['', 'диапазон площади'], ['', 'корпусов в каталоге']] as const,
+    catalogNote: 'Показаны только опубликованные предложения; отсутствующие объекты не создаются искусственно.',
     locationEyebrow: 'МИРАБАД · ТАШКЕНТ', locationTitle: 'Официальный адрес без лишней точности.', addressLabel: 'Адрес проекта', address: 'Ташкент, Мирабадский район, ул. Сайхун 56/2', map: 'Точка по ссылке девелопера', mapNote: 'Текстовый адрес и объект в картографической ссылке могут отображаться по-разному; используйте ссылку как опубликованный девелопером ориентир.',
     contacts: 'Контакты', hours: 'Ежедневно, 09:00–20:00', locationLead: 'Назначить встречу',
     contactEyebrow: 'ДАЛЬШЕ — РАЗГОВОР', contactTitle: 'Подберём квартиру под ваш ритм.', contactText: 'Менеджер уточнит текущую доступность и ответит на вопросы. Заявка не является бронированием.',
-    privacy: 'Обработка персональных данных', top: 'Наверх', disclaimer: 'Данные каталога — зафиксированный публичный срез. Проектные изображения — визуализации. Статусы строительства основаны на публикации девелопера от 15.08.2026.',
+    privacy: 'Обработка персональных данных', top: 'Наверх', disclaimer: 'Данные каталога обновляются автоматически. Проектные изображения — визуализации. Статусы строительства основаны на публикации девелопера от 15.08.2026.',
     lightbox: 'Просмотр официальных материалов', previous: 'Предыдущее изображение', next: 'Следующее изображение', imageOf: 'Изображение',
-    formTagline: 'День начинается дома.', formFacts: ['Клубный формат', '5 корпусов', '51 доступная квартира'] as const,
+    formTagline: 'День начинается дома.', formFacts: ['Клубный формат', '5 корпусов', 'Цены и статусы обновляются'] as const,
   },
   uz: {
     skip: 'Asosiy mazmunga o‘tish', menu: 'Menyu', close: 'Yopish', language: 'Til', navLabel: 'SUN navigatsiyasi',
@@ -147,16 +148,16 @@ const copy = {
     dayLead: 'Joriy holatni aniqlash',
     amenityEyebrow: 'KO‘ZDA TUTILGAN / VIZUALIZATSIYA', amenityTitle: 'Uzun kun uchun makonlar.', amenityText: 'Hovli, bolalar maydonchalari, favvora, yerosti parkingi, foydalaniladigan tomlar, lounge, art-studiya, event/cinema, sport va bolalar makonlari tayyor obyektlar emas, loyiha konsepsiyasi sifatida ko‘rsatilgan.',
     gallery: 'Konsepsiya galereyasi', amenityLead: 'Loyihani muhokama qilish',
-    catalogEyebrow: 'OMMAVIY KATALOG KESIMI', catalogTitle: 'Quyoshli tanlov vositasi.', catalogText: 'Ommaviy katalogning to‘rt binosida 51 ta mavjud pozitsiya. Bu 306 ta yozuvdan iborat alohida kesim bo‘lib, butun loyihadagi 361 xonadon bilan bir xil ko‘rsatkich emas.',
-    free: 'mavjud', rooms: 'xona', area: 'maydon', floor: 'qavat', block: 'bino', price: 'Joriy narx', unit: 'Xonadon №', askUnit: 'Ariza qoldirish', allApartments: 'Barcha 51 xonadonni ochish',
-    catalogFacts: [['51', 'mavjud'], ['18 / 31 / 2', '1 / 2 / 3 xona'], ['34,61–83,90 m²', 'maydon oralig‘i'], ['5 tadan 4', 'live-katalogdagi bino']] as const,
-    catalogNote: 'B binosi joriy ommaviy katalogda yo‘q. Biz unga sun’iy pozitsiyalar yaratmaymiz.',
+    catalogEyebrow: 'KATALOG AVTOMATIK YANGILANADI', catalogTitle: 'Quyoshli tanlov vositasi.', catalogText: 'Ommaviy katalogdagi takliflar, narxlar va holatlar avtomatik yangilanadi.',
+    free: 'mavjud', rooms: 'xona', area: 'maydon', floor: 'qavat', block: 'bino', price: 'Joriy narx', unit: 'Xonadon №', askUnit: 'Ariza qoldirish', allApartments: 'Barcha xonadonlarni ochish',
+    catalogFacts: [['', 'mavjud'], ['', 'xonalar'], ['', 'maydon oralig‘i'], ['', 'katalogdagi bino']] as const,
+    catalogNote: 'Faqat e’lon qilingan takliflar ko‘rsatiladi; mavjud bo‘lmagan obyektlar yaratilmaydi.',
     locationEyebrow: 'MIROBOD · TOSHKENT', locationTitle: 'Ortiqcha aniqliksiz rasmiy manzil.', addressLabel: 'Loyiha manzili', address: 'Toshkent, Mirobod tumani, Sayxun ko‘chasi 56/2', map: 'Developer havolasidagi nuqta', mapNote: 'Matnli manzil va xarita havolasidagi obyekt turlicha ko‘rinishi mumkin; havoladan developer e’lon qilgan mo‘ljal sifatida foydalaning.',
     contacts: 'Kontaktlar', hours: 'Har kuni, 09:00–20:00', locationLead: 'Uchrashuv belgilash',
     contactEyebrow: 'KEYINGI QADAM — SUHBAT', contactTitle: 'Ritmingizga mos xonadon tanlaymiz.', contactText: 'Menejer joriy mavjudlikni aniqlaydi va savollarga javob beradi. Ariza bron hisoblanmaydi.',
-    privacy: 'Shaxsiy ma’lumotlarni qayta ishlash', top: 'Yuqoriga', disclaimer: 'Katalog ma’lumotlari — qayd etilgan ommaviy kesim. Loyiha tasvirlari — vizualizatsiya. Qurilish holati developerning 15.08.2026 e’loniga asoslangan.',
+    privacy: 'Shaxsiy ma’lumotlarni qayta ishlash', top: 'Yuqoriga', disclaimer: 'Katalog ma’lumotlari avtomatik yangilanadi. Loyiha tasvirlari — vizualizatsiya. Qurilish holati developerning 15.08.2026 e’loniga asoslangan.',
     lightbox: 'Rasmiy materiallarni ko‘rish', previous: 'Oldingi tasvir', next: 'Keyingi tasvir', imageOf: 'Tasvir',
-    formTagline: 'Kun uydan boshlanadi.', formFacts: ['Klub formati', '5 bino', '51 ta mavjud xonadon'] as const,
+    formTagline: 'Kun uydan boshlanadi.', formFacts: ['Klub formati', '5 bino', 'Narx va holatlar yangilanadi'] as const,
   },
   en: {
     skip: 'Skip to content', menu: 'Menu', close: 'Close', language: 'Language', navLabel: 'SUN navigation',
@@ -174,16 +175,16 @@ const copy = {
     dayLead: 'Check the current status',
     amenityEyebrow: 'PLANNED / VISUALISED', amenityTitle: 'Spaces for a full day.', amenityText: 'The courtyard, children’s areas, fountain, underground parking, accessible rooftops, lounge, art studio, event/cinema, sports court and children’s spaces are shown as planned concepts, not completed facilities.',
     gallery: 'Concept gallery', amenityLead: 'Discuss the project',
-    catalogEyebrow: 'PUBLIC CATALOGUE SNAPSHOT', catalogTitle: 'A sunlit selection tool.', catalogText: '51 available listings across four buildings in the public catalogue. This is a separate 306-record snapshot and is not the same figure as the full project’s 361 apartments.',
-    free: 'available', rooms: 'rooms', area: 'area', floor: 'floor', block: 'building', price: 'Current price', unit: 'Apartment no. ', askUnit: 'Send a request', allApartments: 'Open all 51 apartments',
-    catalogFacts: [['51', 'available'], ['18 / 31 / 2', '1 / 2 / 3 rooms'], ['34.61–83.90 m²', 'area range'], ['4 of 5', 'buildings in live catalogue']] as const,
-    catalogNote: 'Building B is absent from the current public catalogue. We do not invent listings for it.',
+    catalogEyebrow: 'CATALOGUE UPDATES AUTOMATICALLY', catalogTitle: 'A sunlit selection tool.', catalogText: 'Listings, prices and statuses in the public catalogue update automatically.',
+    free: 'available', rooms: 'rooms', area: 'area', floor: 'floor', block: 'building', price: 'Current price', unit: 'Apartment no. ', askUnit: 'Send a request', allApartments: 'Open all apartments',
+    catalogFacts: [['', 'available'], ['', 'rooms'], ['', 'area range'], ['', 'catalogue buildings']] as const,
+    catalogNote: 'Only published listings are shown; missing properties are not invented.',
     locationEyebrow: 'MIRABAD · TASHKENT', locationTitle: 'The official address, without invented precision.', addressLabel: 'Project address', address: '56/2 Saykhun Street, Mirabad District, Tashkent', map: 'Point in the developer’s link', mapNote: 'The written address and the object shown by the mapping link may differ; use the link only as the reference published by the developer.',
     contacts: 'Contact', hours: 'Daily, 09:00–20:00', locationLead: 'Arrange a visit',
     contactEyebrow: 'NEXT — A CONVERSATION', contactTitle: 'We will find an apartment for your rhythm.', contactText: 'A manager will confirm current availability and answer your questions. A request is not a reservation.',
-    privacy: 'Personal data processing', top: 'Back to top', disclaimer: 'Catalogue data is a frozen public snapshot. Project imagery is visualisation. Construction status follows the developer’s publication dated 15 August 2026.',
+    privacy: 'Personal data processing', top: 'Back to top', disclaimer: 'Catalogue data is a live public catalogue. Project imagery is visualisation. Construction status follows the developer’s publication dated 15 August 2026.',
     lightbox: 'View official materials', previous: 'Previous image', next: 'Next image', imageOf: 'Image',
-    formTagline: 'The day begins at home.', formFacts: ['Club format', '5 buildings', '51 available apartments'] as const,
+    formTagline: 'The day begins at home.', formFacts: ['Club format', '5 buildings', 'Prices and statuses update'] as const,
   },
 } as const;
 
@@ -239,6 +240,7 @@ function MediaLightbox({ state, language, covered, onClose, onChange, onLead }: 
 }
 
 export function SunPage({ initialLanguage }: { initialLanguage: Language }) {
+  const { data: snapshot } = useLiveCatalogSnapshot('sun', embeddedSnapshot);
   const [language, setLanguage] = useSunLanguage(initialLanguage);
   const [menuOpen, setMenuOpen] = useState(false);
   const [lead, setLead] = useState<LeadRequest | null>(null);
@@ -250,9 +252,15 @@ export function SunPage({ initialLanguage }: { initialLanguage: Language }) {
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const t = copy[language];
   const units = snapshot.units;
-  const previewUnits = useMemo(() => [units[0], units[12], units[28], units[44]].filter(Boolean), [units]);
+  const previewUnits = useMemo(() => [units[0], units[Math.floor(units.length / 3)], units[Math.floor(units.length * 2 / 3)], units.at(-1)].filter((unit): unit is SunUnit => Boolean(unit)), [units]);
   const minPrice = Math.min(...units.map((unit) => Number(unit.effectivePrice ?? unit.price)));
   const maxPrice = Math.max(...units.map((unit) => Number(unit.effectivePrice ?? unit.price)));
+  const landingFacts = useMemo(() => [
+    String(units.filter((unit) => unit.status === 'available').length),
+    [...new Set(units.map((unit) => Number(unit.rooms)))].sort((a, b) => a - b).join(' / '),
+    `${formatSunNumber(Math.min(...units.map((unit) => Number(unit.area))), language)}–${formatSunNumber(Math.max(...units.map((unit) => Number(unit.area))), language)} m²`,
+    String(new Set(units.map((unit) => String(unit.block ?? unit.blockName))).size),
+  ], [language, units]);
   const closeLead = useCallback(() => setLead(null), []);
   const closeLightbox = useCallback(() => setLightbox(null), []);
   const changeLightbox = useCallback((index: number) => setLightbox((current) => current ? { ...current, index } : current), []);
@@ -367,7 +375,7 @@ export function SunPage({ initialLanguage }: { initialLanguage: Language }) {
 
       <section id="apartments" className="sun-section sun-inventory">
         <header className="sun-section__header sun-section__header--dark" data-reveal><span>{t.catalogEyebrow}</span><h2>{t.catalogTitle}</h2><p>{t.catalogText}</p></header>
-        <dl className="sun-inventory__facts">{t.catalogFacts.map(([value, label]) => <div key={label}><dt>{value}</dt><dd>{label}</dd></div>)}</dl>
+        <dl className="sun-inventory__facts">{t.catalogFacts.map(([, label], index) => <div key={label}><dt>{landingFacts[index]}</dt><dd>{label}</dd></div>)}</dl>
         <div className="sun-inventory__range"><span>MIN</span><strong>{formatSunPrice(minPrice, language)}</strong><i /><span>MAX</span><strong>{formatSunPrice(maxPrice, language)}</strong></div>
         <div className="sun-inventory__cards">{previewUnits.map((unit) => <article key={unit.id} data-reveal>
           <div className="sun-inventory__plan"><img src={sunAsset(unit.secondPlanPath || unit.primaryPlanPath)} width={unit.planWidth || 1772} height={unit.planHeight || 1772} loading="lazy" alt={`${t.unit}${unit.number}`} /></div>
@@ -393,6 +401,6 @@ export function SunPage({ initialLanguage }: { initialLanguage: Language }) {
     </main>
 
     {lightbox ? <MediaLightbox state={lightbox} language={language} covered={Boolean(lead)} onClose={closeLightbox} onChange={changeLightbox} onLead={(opener) => openLead(lightbox.slides[0].kind === 'construction' ? 'landing:evidence' : 'landing:amenities', null, opener)} /> : null}
-    {lead ? <LeadModal open language={language} context={sunLeadContext(lead.surface, language, lead.unit)} hideBrand projectName="SUN" tagline={t.formTagline} facts={t.formFacts} submitUrl={sunLeadSubmitUrl()} projectSlug="sun" unitKey={lead.unit?.unitKey} privacyUrl={`${sunAsset('/privacy')}?project=sun&lang=${language}&from=landing`} requireConsent returnFocusTo={lead.opener} onClose={closeLead} /> : null}
+    {lead ? <LeadModal open language={language} context={sunLeadContext(lead.surface, language, lead.unit)} hideBrand projectName="SUN" tagline={t.formTagline} facts={[`${landingFacts[0]} · ${t.catalogFacts[0][1]}`, `${landingFacts[3]} · ${t.catalogFacts[3][1]}`, t.formFacts[2]]} submitUrl={sunLeadSubmitUrl()} projectSlug="sun" unitKey={lead.unit?.unitKey} privacyUrl={`${sunAsset('/privacy')}?project=sun&lang=${language}&from=landing`} requireConsent returnFocusTo={lead.opener} onClose={closeLead} /> : null}
   </div>;
 }

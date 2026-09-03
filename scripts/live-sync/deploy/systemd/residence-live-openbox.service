@@ -1,0 +1,21 @@
+[Unit]
+Description=Residence live catalogue window manager
+Requires=residence-live-display.service
+After=residence-live-display.service
+
+[Service]
+Type=simple
+User=residence-crm-browser
+Group=residence-crm-browser
+Environment=DISPLAY=:99
+Environment=HOME=/home/residence-crm-browser
+ExecStart=/usr/bin/openbox --sm-disable
+Restart=on-failure
+RestartSec=3s
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=false
+
+[Install]
+WantedBy=multi-user.target

@@ -19,8 +19,16 @@ const [leadModal, sado, avalon, maftun, kayan] = await Promise.all([
 
 assertIncludes(leadModal, ["body?.success !== true"], 'shared lead response guard');
 assertIncludes(sado, ["body?.success !== true"], 'Sad\u2019O inline response guard');
-assertIncludes(avalon, ["}, 'avalon-residence');", 'unitId={selectedUnit?.id}'], 'Avalon unit identity');
-assertIncludes(maftun, ['unitId={lead.unit.id}'], 'Maftun Makon unit identity');
+assertIncludes(avalon, [
+  "rememberLiveCatalogUnit(selectedUnit, 'avalon-residence');",
+  '{...catalogLeadIdentity(selectedUnit)}',
+], 'Avalon unit identity');
+if (avalon.includes('unitId={selectedUnit?.id}')) throw new Error('Avalon still submits a presentation unitId');
+assertIncludes(maftun, [
+  "rememberLiveCatalogUnit(unit, 'maftun-makon');",
+  '{...catalogLeadIdentity(lead.unit)}',
+], 'Maftun Makon unit identity');
+if (maftun.includes('unitId={lead.unit.id}')) throw new Error('Maftun Makon still submits a presentation unitId');
 assertIncludes(kayan, [
   'if (selection?.unitKey) rememberLastViewedApartment({ unitKey: selection.unitKey }, slug);',
   'if (selection.unitKey) rememberLastViewedApartment({ unitKey: selection.unitKey }, slug);',

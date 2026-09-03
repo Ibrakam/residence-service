@@ -4,6 +4,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { LeadModal } from '@/app/lead-modal';
+import { useLiveCatalogProject } from '@/app/live-catalog';
 
 type Language = 'ru' | 'uz' | 'en';
 type Slide = { src: string; alt: string; label: string };
@@ -26,7 +27,7 @@ const copy = {
     landscapeOverline: '05 · Ландшафт', landscapeTitle: '45%', landscapeAccent: 'территории занимает озеленение.', landscapeText: 'Лиственные и хвойные деревья, декоративные кустарники, многолетние растения и газон создают зрелое, ухоженное окружение дома.',
     locationOverline: '06 · Ташкент', locationTitle: 'В центре Мирзо-Улугбекского района.', locationText: 'Улица Мухаммада Юсуфа, 54. Рядом — городская инфраструктура района, школы, магазины, кафе и общественный транспорт.', map: 'Открыть на карте',
     galleryOverline: '07 · Дом сдан', galleryTitle: 'Flagman сегодня.', galleryText: 'Фактическая фотогалерея готового дома, фасада, холлов и благоустроенной территории.',
-    catalogOverline: '08 · Официальный каталог', catalogTitle: '8 актуальных предложений в сохранённом срезе.', catalogText: 'Точные площади, этажи, цены и планировки из официального каталога на 30 августа 2026 года.', catalogNote: 'Цена и статус фиксируются на дату snapshot и могут измениться у официального продавца.',
+    catalogOverline: '08 · Официальный каталог', catalogTitle: 'Актуальные предложения в официальном каталоге.', catalogText: 'Актуальные площади, этажи, цены и статусы обновляются автоматически.', catalogNote: 'Цена и статус обновляются автоматически и могут измениться у официального продавца.',
     contactOverline: '09 · Персональная консультация', contactTitle: 'Выберите пространство, которое будет вашим.', contactText: 'Оставьте контакты — менеджер проекта подтвердит актуальный статус, гибкие условия оплаты и детали выбранной квартиры.', phone: 'Телефон', booklet: 'Официальный буклет', privacy: 'Конфиденциальность', partner: 'Партнёрский проект NRG-BI и AL-BINA',
   },
   uz: {
@@ -42,7 +43,7 @@ const copy = {
     landscapeOverline: '05 · Landshaft', landscapeTitle: '45%', landscapeAccent: 'hudud ko‘kalamzorlashtirilgan.', landscapeText: 'Bargli va ignabargli daraxtlar, dekorativ butalar, ko‘p yillik o‘simliklar va maysazor yetuk, parvarishlangan muhit yaratadi.',
     locationOverline: '06 · Toshkent', locationTitle: 'Mirzo Ulug‘bek tumani markazida.', locationText: 'Muhammad Yusuf ko‘chasi, 54. Yaqinda tuman infratuzilmasi, maktablar, do‘konlar, kafelar va jamoat transporti bor.', map: 'Xaritada ochish',
     galleryOverline: '07 · Uy topshirilgan', galleryTitle: 'Flagman bugun.', galleryText: 'Tayyor uy, fasad, xollar va obodonlashtirilgan hududning haqiqiy fotogalereyasi.',
-    catalogOverline: '08 · Rasmiy katalog', catalogTitle: 'Saqlangan snapshotda 8 ta dolzarb taklif.', catalogText: '2026-yil 30-avgustdagi rasmiy katalogdan aniq maydon, qavat, narx va rejalar.', catalogNote: 'Narx va holat snapshot sanasiga tegishli va rasmiy sotuvchida o‘zgarishi mumkin.',
+    catalogOverline: '08 · Rasmiy katalog', catalogTitle: 'Avtomatik yangilanadigan dolzarb takliflar.', catalogText: 'Maydon, qavat, narx va holatlar rasmiy katalogdan avtomatik yangilanadi.', catalogNote: 'Narx va holatlar avtomatik yangilanadi va rasmiy sotuvchida o‘zgarishi mumkin.',
     contactOverline: '09 · Shaxsiy maslahat', contactTitle: 'Sizniki bo‘ladigan makonni tanlang.', contactText: 'Kontaktlaringizni qoldiring — loyiha menejeri tanlangan xonadon holati, moslashuvchan to‘lov shartlari va tafsilotlarini tasdiqlaydi.', phone: 'Telefon', booklet: 'Rasmiy buklet', privacy: 'Maxfiylik', partner: 'NRG-BI va AL-BINA hamkorlik loyihasi',
   },
   en: {
@@ -58,7 +59,7 @@ const copy = {
     landscapeOverline: '05 · Landscape', landscapeTitle: '45%', landscapeAccent: 'of the territory is landscaped.', landscapeText: 'Deciduous and evergreen trees, ornamental shrubs, perennials and lawn create a mature, carefully maintained setting.',
     locationOverline: '06 · Tashkent', locationTitle: 'At the heart of Mirzo Ulugbek district.', locationText: '54 Muhammad Yusuf Street. District infrastructure, schools, shops, cafés and public transport are nearby.', map: 'Open map',
     galleryOverline: '07 · Completed', galleryTitle: 'Flagman today.', galleryText: 'Actual photography of the completed residence, façade, lobbies and landscaped grounds.',
-    catalogOverline: '08 · Official catalogue', catalogTitle: '8 current listings in the saved snapshot.', catalogText: 'Exact areas, floors, prices and plans from the official catalogue on 30 August 2026.', catalogNote: 'Prices and status are recorded at snapshot date and may change with the official seller.',
+    catalogOverline: '08 · Official catalogue', catalogTitle: 'Current listings with automatic updates.', catalogText: 'Areas, floors, prices and statuses update automatically from the official catalogue.', catalogNote: 'Prices and statuses update automatically and may change with the official seller.',
     contactOverline: '09 · Personal consultation', contactTitle: 'Choose a space to make your own.', contactText: 'Leave your details and the project manager will confirm current status, flexible payment terms and the selected apartment details.', phone: 'Phone', booklet: 'Official brochure', privacy: 'Privacy', partner: 'A partnership project by NRG-BI and AL-BINA',
   },
 } as const;
@@ -160,11 +161,17 @@ function Lightbox({ state, onClose, previous, next, closeLabel }: { state: NonNu
 
 export function FlagmanPage({ initialLanguage = 'ru' }: { initialLanguage?: Language }) {
   const [language, setLanguage] = useLanguage(initialLanguage);
+  const { data: catalogProject, dataSource } = useLiveCatalogProject('flagman', { slug: 'flagman', name: 'Flagman', totalUnits: 0, availableUnits: 0 });
   const loading = useLoader();
   const [menuOpen, setMenuOpen] = useState(false);
   const [leadOpen, setLeadOpen] = useState(false);
   const [lightbox, setLightbox] = useState<LightboxState>(null);
   const t = copy[language];
+  const liveCatalogTitle = dataSource === 'embedded' ? t.catalogTitle : language === 'ru'
+    ? `${catalogProject.availableUnits} актуальных предложений в официальном каталоге.`
+    : language === 'uz'
+      ? `Rasmiy katalogda ${catalogProject.availableUnits} ta dolzarb taklif.`
+      : `${catalogProject.availableUnits} current listings in the official catalogue.`;
   useReveal(language);
 
   useEffect(() => {
@@ -289,7 +296,7 @@ export function FlagmanPage({ initialLanguage = 'ru' }: { initialLanguage?: Lang
 
       <section className="flagman-catalog-callout">
         <div className="flagman-section-label"><span>08</span><p>{t.catalogOverline}</p></div>
-        <div data-flagman-reveal><h2>{t.catalogTitle}</h2><p>{t.catalogText}</p><a href={withLanguage('/flagman/apartments', language)}>{t.choose}<span>↗</span></a><small>{t.catalogNote}</small></div>
+        <div data-flagman-reveal><h2>{liveCatalogTitle}</h2><p>{t.catalogText}</p><a href={withLanguage('/flagman/apartments', language)}>{t.choose}<span>↗</span></a><small>{t.catalogNote}</small></div>
         <strong aria-hidden="true">08</strong>
       </section>
 

@@ -110,6 +110,37 @@ func TestCatalogProjectUpdatedAtIsStrictAndFallsBackOnlyWhenAbsent(t *testing.T)
 	}
 }
 
+func TestCatalogProjectContentChecksumIgnoresObservationTimeOnly(t *testing.T) {
+	project := CatalogProject{
+		DeveloperSlug: "kayan", Slug: "mirador", Name: "Mirador", Complete: true,
+		CapturedAt: time.Date(2026, time.September, 3, 10, 0, 0, 0, time.UTC),
+		Units: []NormalizedUnit{{
+			SourceKey: "unit-1", PhaseSlug: "phase-1", Status: "available",
+			Number: "1", Area: 40, Currency: "UZS", SourcePayload: []byte(`{}`),
+		}},
+	}
+	first, err := CatalogProjectContentChecksum(project)
+	if err != nil {
+		t.Fatal(err)
+	}
+	project.CapturedAt = project.CapturedAt.Add(time.Hour)
+	second, err := CatalogProjectContentChecksum(project)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first != second {
+		t.Fatal("observation time changed the normalized project content checksum")
+	}
+	project.Units[0].Status = "sold"
+	third, err := CatalogProjectContentChecksum(project)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if third == second {
+		t.Fatal("catalog content change did not change the normalized project checksum")
+	}
+}
+
 func TestReadyWorkspaceCatalogCounts(t *testing.T) {
 	dataDir := filepath.Clean(filepath.Join("..", "..", "..", "website", "data"))
 	audit, err := AuditCatalogDirectory(dataDir)

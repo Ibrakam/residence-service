@@ -4,6 +4,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { LeadModal } from '@/app/lead-modal';
+import { useLiveCatalogProject } from '@/app/live-catalog';
 import type { KayanLanguage } from '@/app/kayan/project-data';
 
 const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
@@ -48,7 +49,7 @@ const content = {
     constructionCopy: 'Актуальный отчёт по Business-очереди: в блоке 1 завершён монолит, на 9-м этаже идёт кладка, на 6-м — сантехнические работы, на 8-м — электромонтаж. Начаты кровельные работы.',
     constructionStatus: ['Блок 1', 'монолит завершён'], panorama: 'Панорама 360°',
     selectionKicker: '08 · ВЫБОР КВАРТИРЫ', selectionTitle: 'Найдите пространство,', selectionAccent: 'которое станет вашим.',
-    selectionCopy: '256 активных предложений из официального каталога: точные площади, цены, этажи и планировки.', selectionButton: 'Открыть каталог',
+    selectionCopy: 'Актуальные предложения из официального каталога: площади, цены, этажи и планировки.', selectionButton: 'Открыть каталог',
     footerNote: 'Информация на сайте не является публичной офертой. Наличие, стоимость и условия покупки уточняйте у менеджера.',
   },
   uz: {
@@ -89,7 +90,7 @@ const content = {
     constructionCopy: 'Business bosqichining dolzarb hisoboti: 1-blokda monolit yakunlangan, 9-qavatda g‘isht terish, 6-qavatda santexnika, 8-qavatda elektr montaj ishlari olib borilmoqda. Tom yopish ishlari boshlangan.',
     constructionStatus: ['1-blok', 'monolit yakunlangan'], panorama: '360° panorama',
     selectionKicker: '08 · XONADON TANLASH', selectionTitle: 'O‘zingizniki bo‘ladigan', selectionAccent: 'makonni toping.',
-    selectionCopy: 'Rasmiy katalogdan 256 ta faol taklif: aniq maydon, narx, qavat va rejalar.', selectionButton: 'Katalogni ochish',
+    selectionCopy: 'Rasmiy katalogdagi dolzarb takliflar: maydon, narx, qavat va rejalar.', selectionButton: 'Katalogni ochish',
     footerNote: 'Saytdagi ma’lumot ommaviy oferta emas. Mavjudlik, narx va xarid shartlarini menejerdan aniqlang.',
   },
   en: {
@@ -130,7 +131,7 @@ const content = {
     constructionCopy: 'Latest Business-phase report: the structural frame of block 1 is complete; masonry is under way on level 9, plumbing on level 6 and electrical installation on level 8. Roofing work has started.',
     constructionStatus: ['Block 1', 'structural frame complete'], panorama: '360° panorama',
     selectionKicker: '08 · APARTMENT SELECTION', selectionTitle: 'Find a space', selectionAccent: 'to make your own.',
-    selectionCopy: '256 active official listings with exact areas, prices, floors and plans.', selectionButton: 'Open catalogue',
+    selectionCopy: 'Current official listings with areas, prices, floors and plans.', selectionButton: 'Open catalogue',
     footerNote: 'Information on this site is not a public offer. Please confirm availability, price and purchase terms with a project manager.',
   },
 } as const;
@@ -240,7 +241,8 @@ function useReveals(language: KayanLanguage) {
   }, [language]);
 }
 
-export function MerosPage({ initialAvailable = 256, initialLanguage = 'ru' }: { initialAvailable?: number; initialLanguage?: KayanLanguage }) {
+export function MerosPage({ initialAvailable = 0, initialLanguage = 'ru' }: { initialAvailable?: number; initialLanguage?: KayanLanguage }) {
+  const { data: catalogProject, dataSource } = useLiveCatalogProject('meros', { slug: 'meros', name: 'Meros', totalUnits: initialAvailable, availableUnits: initialAvailable });
   const [language, setLanguage] = useLanguage(initialLanguage);
   const [menuOpen, setMenuOpen] = useState(false);
   const [leadOpen, setLeadOpen] = useState(false);
@@ -253,6 +255,12 @@ export function MerosPage({ initialAvailable = 256, initialLanguage = 'ru' }: { 
   const closeRef = useRef<HTMLButtonElement>(null);
   const c = content[language];
   const i = interfaceCopy[language];
+  const availableCount = dataSource === 'embedded' ? null : new Intl.NumberFormat(language === 'ru' ? 'ru-RU' : language === 'uz' ? 'uz-UZ' : 'en-US').format(catalogProject.availableUnits);
+  const selectionCopy = availableCount === null ? c.selectionCopy : language === 'ru'
+    ? `${availableCount} актуальных предложений из официального каталога: площади, цены, этажи и планировки.`
+    : language === 'uz'
+      ? `Rasmiy katalogda ${availableCount} ta dolzarb taklif: maydon, narx, qavat va rejalar.`
+      : `${availableCount} current official listings with areas, prices, floors and plans.`;
   useReveals(language);
 
   useEffect(() => {
@@ -358,7 +366,7 @@ export function MerosPage({ initialAvailable = 256, initialLanguage = 'ru' }: { 
     </section>
 
     <section className="meros-selection">
-      <img src={asset('/meros/selection.webp')} alt="Meros" loading="lazy" /><div className="meros-selection__shade" /><div data-reveal><p>{c.selectionKicker}</p><h2>{c.selectionTitle}<em>{c.selectionAccent}</em></h2><span>{c.selectionCopy.replace('256', String(initialAvailable))}</span><a href={withLanguage('/meros/apartments', language)}>{c.selectionButton}<b>{initialAvailable}</b><i>↗</i></a></div>
+      <img src={asset('/meros/selection.webp')} alt="Meros" loading="lazy" /><div className="meros-selection__shade" /><div data-reveal><p>{c.selectionKicker}</p><h2>{c.selectionTitle}<em>{c.selectionAccent}</em></h2><span>{selectionCopy}</span><a href={withLanguage('/meros/apartments', language)}>{c.selectionButton}<b>{availableCount ?? '—'}</b><i>↗</i></a></div>
     </section>
 
     <section className="meros-contact">

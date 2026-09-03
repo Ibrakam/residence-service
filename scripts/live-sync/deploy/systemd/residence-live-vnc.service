@@ -1,0 +1,20 @@
+[Unit]
+Description=Residence live catalogue loopback VNC
+Requires=residence-live-display.service
+After=residence-live-display.service
+
+[Service]
+Type=simple
+User=residence-crm-browser
+Group=residence-crm-browser
+Environment=DISPLAY=:99
+ExecStart=/usr/bin/x11vnc -display :99 -localhost -rfbport 5900 -forever -shared -nopw -noxdamage -repeat
+Restart=always
+RestartSec=5s
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=false
+
+[Install]
+WantedBy=multi-user.target

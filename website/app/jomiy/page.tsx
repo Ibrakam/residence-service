@@ -15,7 +15,7 @@ const absoluteUrl = (path: string) => `${publicOrigin}${sitePath(path)}`;
 const copy = {
   ru: {
     title: 'Jomiy — жилой комплекс бизнес-класса в Ташкенте',
-    description: 'Jomiy от NRG-BI: сданная очередь 2.1, строящаяся финальная очередь 2.2, двор без машин и официальный каталог из 121 позиции на 30 августа 2026 года.',
+    description: 'Jomiy от NRG-BI: сданная очередь 2.1, строящаяся финальная очередь 2.2, двор без машин и автоматически обновляемый каталог квартир.',
     imageAlt: 'Реальная официальная фотография готовой части Jomiy',
     home: 'Главная',
     properties: [['Класс', 'Бизнес'], ['Потолки', 'Не менее 3,0 м'], ['Очередь 2.1', 'Сдана 28 января 2026'], ['Очередь 2.2', 'Строится · финальная очередь'], ['Паркинг', 'Подземный'], ['Двор', 'Без машин']] as const,
@@ -23,7 +23,7 @@ const copy = {
   },
   uz: {
     title: 'Jomiy — Toshkentdagi biznes-klass turar joy majmuasi',
-    description: 'NRG-BI kompaniyasining Jomiy loyihasi: topshirilgan 2.1 bosqichi, qurilayotgan yakuniy 2.2 bosqichi, avtomobillarsiz hovli va 2026-yil 30-avgustdagi 121 pozitsiyali rasmiy katalog.',
+    description: 'NRG-BI kompaniyasining Jomiy loyihasi: topshirilgan 2.1 bosqichi, qurilayotgan yakuniy 2.2 bosqichi, avtomobillarsiz hovli va avtomatik yangilanadigan xonadonlar katalogi.',
     imageAlt: 'Jomiy tayyor qismining haqiqiy rasmiy fotosurati',
     home: 'Bosh sahifa',
     properties: [['Klass', 'Biznes'], ['Shift', 'Kamida 3,0 m'], ['2.1 bosqichi', '2026-yil 28-yanvarda topshirilgan'], ['2.2 bosqichi', 'Qurilmoqda · yakuniy bosqich'], ['Parking', 'Yerosti'], ['Hovli', 'Avtomobillarsiz']] as const,
@@ -31,7 +31,7 @@ const copy = {
   },
   en: {
     title: 'Jomiy — a business-class residential project in Tashkent',
-    description: 'Jomiy by NRG-BI: completed phase 2.1, the final phase 2.2 under construction, a car-free courtyard and an official catalogue of 121 entries as of 30 August 2026.',
+    description: 'Jomiy by NRG-BI: completed phase 2.1, final phase 2.2 under construction, a car-free courtyard and an automatically updated apartment catalogue.',
     imageAlt: 'Actual official photograph of a completed part of Jomiy',
     home: 'Home',
     properties: [['Class', 'Business'], ['Ceilings', 'At least 3.0 m'], ['Phase 2.1', 'Completed 28 January 2026'], ['Phase 2.2', 'Under construction · final phase'], ['Parking', 'Underground'], ['Courtyard', 'Car-free']] as const,

@@ -1,0 +1,18 @@
+[Unit]
+Description=Residence live catalogue virtual display
+After=network.target
+
+[Service]
+Type=simple
+User=residence-crm-browser
+Group=residence-crm-browser
+ExecStart=/usr/bin/Xvfb :99 -screen 0 1440x900x24 -nolisten tcp -noreset
+Restart=on-failure
+RestartSec=3s
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=false
+
+[Install]
+WantedBy=multi-user.target

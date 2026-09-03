@@ -477,29 +477,71 @@ const upsertUnitSQL = `
           updated_at=now()`
 
 func upsertUnit(ctx context.Context, tx pgx.Tx, phaseID int64, observedAt time.Time, unit NormalizedUnit) error {
-	var existingID int64
-	var oldStatus string
-	var oldPrice sql.NullInt64
-	err := tx.QueryRow(ctx, `SELECT id,status,price FROM units WHERE phase_id=$1 AND source_key=$2`, phaseID, unit.SourceKey).Scan(&existingID, &oldStatus, &oldPrice)
-	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+	rows, err := tx.Query(ctx, `
+		SELECT id,status,price
+		FROM units
+		WHERE phase_id=$1
+		  AND (source_key=$2 OR (NULLIF($3,'') IS NOT NULL AND source_id=$3))
+		ORDER BY id
+		FOR UPDATE`, phaseID, unit.SourceKey, unit.SourceID)
+	if err != nil {
 		return err
 	}
-	if err == nil {
-		if oldStatus != unit.Status {
-			if _, err := tx.Exec(ctx, `INSERT INTO unit_status_history(unit_id,old_status,new_status,observed_at) VALUES($1,$2,$3,$4)`, existingID, oldStatus, unit.Status, observedAt); err != nil {
+	type existingUnit struct {
+		id     int64
+		status string
+		price  sql.NullInt64
+	}
+	existing := make([]existingUnit, 0, 2)
+	for rows.Next() {
+		var item existingUnit
+		if err := rows.Scan(&item.id, &item.status, &item.price); err != nil {
+			rows.Close()
+			return err
+		}
+		existing = append(existing, item)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return err
+	}
+	rows.Close()
+	if len(existing) > 1 {
+		return fmt.Errorf("source key %q and source ID %q resolve to different unit rows", unit.SourceKey, unit.SourceID)
+	}
+
+	if len(existing) == 1 {
+		item := existing[0]
+		if item.status != unit.Status {
+			if _, err := tx.Exec(ctx, `INSERT INTO unit_status_history(unit_id,old_status,new_status,observed_at) VALUES($1,$2,$3,$4)`, item.id, item.status, unit.Status, observedAt); err != nil {
 				return err
 			}
 		}
-		priceChanged := oldPrice.Valid != (unit.Price != nil) || (oldPrice.Valid && unit.Price != nil && oldPrice.Int64 != *unit.Price)
+		priceChanged := item.price.Valid != (unit.Price != nil) || (item.price.Valid && unit.Price != nil && item.price.Int64 != *unit.Price)
 		if priceChanged {
 			var old any
-			if oldPrice.Valid {
-				old = oldPrice.Int64
+			if item.price.Valid {
+				old = item.price.Int64
 			}
-			if _, err := tx.Exec(ctx, `INSERT INTO unit_price_history(unit_id,old_price,new_price,currency,observed_at) VALUES($1,$2,$3,$4,$5)`, existingID, old, unit.Price, unit.Currency, observedAt); err != nil {
+			if _, err := tx.Exec(ctx, `INSERT INTO unit_price_history(unit_id,old_price,new_price,currency,observed_at) VALUES($1,$2,$3,$4,$5)`, item.id, old, unit.Price, unit.Currency, observedAt); err != nil {
 				return err
 			}
 		}
+
+		_, err = tx.Exec(ctx, `
+			UPDATE units SET
+				source_key=$2,source_id=COALESCE(NULLIF($3,''),source_id),
+				property_type=$4,raw_property_type=$5,status=$6,raw_status=$7,number=$8,entrance=$9,
+				floor=$10,house_name=$11,area=$12,rooms=$13,price=$14,price_per_m2=$15,currency=$16,
+				plan_image_url=COALESCE(NULLIF($17,''),plan_image_url),is_active=true,
+				source_payload=$18::jsonb,source_updated_at=$19,updated_at=now()
+			WHERE id=$1`,
+			item.id, unit.SourceKey, unit.SourceID, unit.PropertyType, unit.RawPropertyType, unit.Status,
+			unit.RawStatus, unit.Number, unit.Entrance, unit.Floor, unit.HouseName, unit.Area,
+			unit.Rooms, unit.Price, unit.PricePerM2, unit.Currency, unit.PlanImageURL,
+			string(unit.SourcePayload), observedAt,
+		)
+		return err
 	}
 
 	_, err = tx.Exec(ctx, upsertUnitSQL,

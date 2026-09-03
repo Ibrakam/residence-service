@@ -13,6 +13,7 @@ import {
 } from 'react';
 import snapshotJson from '@/data/sun-client.json';
 import { LeadModal } from '@/app/lead-modal';
+import { useLiveCatalogSnapshot } from '@/app/live-catalog';
 import { rememberSunUnit, sunLeadContext, sunLeadSubmitUrl, type SunUnit } from '../sun-lead';
 import {
   formatSunNumber,
@@ -37,7 +38,7 @@ type RawMatrixRow = { id?: string; groupId?: string | number; block?: string; bl
 type MatrixRow = { id: string; block: string; entrance: number; floor: number; unitIds: string[] };
 type Snapshot = { capturedAt: string; groups?: RawGroup[]; matrixRows?: RawMatrixRow[]; units: SunUnit[] };
 
-const snapshot = snapshotJson as Snapshot;
+const embeddedSnapshot = snapshotJson as Snapshot;
 const modes: readonly Mode[] = ['cards', 'chess'];
 const sorts: readonly Sort[] = ['recommended', 'priceAsc', 'priceDesc', 'areaAsc', 'areaDesc', 'roomsAsc', 'roomsDesc', 'floorAsc', 'floorDesc', 'ppmAsc', 'ppmDesc'];
 const defaultFilters: Filters = { rooms: [], blocks: [], floorFrom: '', floorTo: '', areaFrom: '', areaTo: '', priceFrom: '', priceTo: '' };
@@ -70,7 +71,11 @@ function normalizeRows(data: Snapshot): MatrixRow[] {
     const inferredUnit = ids.length ? data.units.find((unit) => unitKeyOf(unit) === ids[0]) : undefined;
     const rawBlock = row.block ?? row.blockName ?? groupById.get(String(row.groupId ?? '')) ?? (inferredUnit ? blockOf(inferredUnit) : '');
     const block = normalizedBlock(String(rawBlock));
-    return { id: row.id ?? `${block}-${row.entrance ?? 1}-${row.floor}`, block, entrance: Number(row.entrance ?? 1), floor: Number(row.floor), unitIds: ids };
+    const entrance = Number(row.entrance ?? 1);
+    const currentIds = data.units
+      .filter((unit) => normalizedBlock(blockOf(unit)) === block && Number(unit.floor) === Number(row.floor) && Number(unit.entrance ?? 1) === entrance)
+      .map(unitKeyOf);
+    return { id: row.id ?? `${block}-${entrance}-${row.floor}`, block, entrance, floor: Number(row.floor), unitIds: currentIds };
   });
   if (rows.length === 47) return rows;
   const topology = [['A', 11], ['Г', 13], ['Д', 14], ['В', 13]] as const;
@@ -86,51 +91,51 @@ function normalizeRows(data: Snapshot): MatrixRow[] {
 const copy = {
   ru: {
     skip: 'К результатам каталога', back: 'О проекте', nav: 'Навигация каталога SUN', language: 'Язык', menu: 'Меню', close: 'Закрыть', consult: 'Получить консультацию', call: 'Позвонить',
-    eyebrow: 'СОЛНЕЧНЫЙ ИНСТРУМЕНТ · ЗАФИКСИРОВАННЫЙ СРЕЗ', title: '51 квартира. Четыре корпуса.', lead: 'Актуальные цены в UZS и 51 доступная позиция из официального публичного среза. Корпус Б в текущем каталоге отсутствует.', heroLead: 'Помочь с выбором',
-    facts: [['51', 'доступная'], ['1–3', 'комнаты'], ['34,61–83,90 м²', 'площадь'], ['867,7 млн–1,966 млрд UZS', 'цена']] as const,
-    snapshot: 'Срез', liveWarning: 'Это snapshot, а не обещание наличия в момент обращения.',
+    eyebrow: 'СОЛНЕЧНЫЙ ИНСТРУМЕНТ · ДАННЫЕ ОБНОВЛЯЮТСЯ', title: 'Актуальные квартиры. Опубликованные корпуса.', lead: 'Цены, состав предложений и статусы обновляются автоматически. Если корпус отсутствует в каталоге, предложения для него не создаются.', heroLead: 'Помочь с выбором',
+    facts: [['—', 'доступные квартиры'], ['1–3', 'комнаты'], ['34,61–83,90 м²', 'площадь'], ['867,7 млн–1,966 млрд UZS', 'цена']] as const,
+    snapshot: 'Обновление', liveWarning: 'Это данные каталога, а не обещание наличия в момент обращения.',
     modes: { cards: 'Карточки', chess: 'Шахматка' }, modeLabel: 'Режим каталога', filters: 'Фильтры', reset: 'Сбросить', all: 'Все', selected: 'выбрано', rooms: 'Комнаты', blocks: 'Корпуса', floorRange: 'Этаж', areaRange: 'Площадь, м²', priceRange: 'Цена, UZS', from: 'от', to: 'до', results: 'найдено', filtersAnnouncement: 'Результатов после фильтрации',
     sort: 'Сортировка', sorts: { recommended: 'По умолчанию / рекомендуемые', priceAsc: 'Цена: сначала ниже', priceDesc: 'Цена: сначала выше', areaAsc: 'Площадь: сначала меньше', areaDesc: 'Площадь: сначала больше', roomsAsc: 'Комнаты: по возрастанию', roomsDesc: 'Комнаты: по убыванию', floorAsc: 'Этаж: сначала ниже', floorDesc: 'Этаж: сначала выше', ppmAsc: 'Цена за м²: сначала ниже', ppmDesc: 'Цена за м²: сначала выше' },
     unit: 'Квартира №', roomsShort: 'комн.', area: 'Площадь', floor: 'Этаж', entrance: 'Подъезд', block: 'Корпус', available: 'Доступна', price: 'Текущая цена', ppm: 'Цена за м²', openPlan: 'Открыть два официальных плана', ask: 'Оставить заявку', showMore: 'Показать ещё', showing: 'Показано', of: 'из',
     emptyTitle: 'По этим параметрам квартир нет.', emptyText: 'Сбросьте фильтры или оставьте заявку — менеджер сверит текущую доступность.', emptyLead: 'Запросить подборку',
-    matrixTitle: '47 реальных строк · один подъезд в каждом корпусе.', matrixText: 'Строки 2–11 / 2–13 / 2–14 / 2–13 сохранены даже без доступной квартиры. Фильтры приглушают позиции, не перестраивая физическую топологию.', matched: 'совпадений', row: 'Этаж', noUnits: 'Нет доступной позиции в срезе', scrollLeft: 'Сдвинуть шахматку влево', scrollRight: 'Сдвинуть шахматку вправо', matrixHelp: 'Свайп, трекпад, кнопки, стрелки, Home и End.', openUnit: 'Открыть квартиру',
+    matrixTitle: 'Шахматка опубликованных корпусов.', matrixText: 'Фильтры приглушают позиции, не перестраивая этажи и корпуса.', matched: 'совпадений', row: 'Этаж', noUnits: 'Нет доступной позиции', scrollLeft: 'Сдвинуть шахматку влево', scrollRight: 'Сдвинуть шахматку вправо', matrixHelp: 'Свайп, трекпад, кнопки, стрелки, Home и End.', openUnit: 'Открыть квартиру',
     detail: 'Детали квартиры', closeDetail: 'Закрыть детали', plans: 'Официальные планы', planOne: 'Официальный план · поверхность 1', planTwo: 'Официальный план · поверхность 2', planOneText: 'Первая опубликованная поверхность плана.', planTwoText: 'Вторая опубликованная поверхность плана.', characteristics: 'Характеристики', matrixLead: 'Уточнить эту квартиру',
     planDialog: 'Два официальных плана квартиры', closePlan: 'Закрыть планы', previousPlan: 'Предыдущий план', nextPlan: 'Следующий план', swipeHint: 'Переключайте стрелками или свайпом.', planLead: 'Уточнить квартиру по плану',
-    noCampaign: 'Активной snapshot-акции нет', priceContract: 'regularPrice совпадает с effectivePrice; скидка и таймер не применяются.',
-    footerTitle: 'Нужен точный ответ по конкретной квартире?', footerText: 'Менеджер сверит выбранную позицию с зафиксированным источником и текущей доступностью. Заявка не является бронированием.', privacy: 'Обработка персональных данных', top: 'Наверх',
-    formTagline: 'День начинается дома.', formFacts: ['51 доступная квартира', '4 корпуса в каталоге', 'Текущие цены UZS'] as const,
+    noCampaign: 'Активной акции нет', priceContract: 'regularPrice совпадает с effectivePrice; скидка и таймер не применяются.',
+    footerTitle: 'Нужен точный ответ по конкретной квартире?', footerText: 'Менеджер сверит выбранную позицию с актуальными данными и текущей доступностью. Заявка не является бронированием.', privacy: 'Обработка персональных данных', top: 'Наверх',
+    formTagline: 'День начинается дома.', formFacts: ['Актуальные квартиры', 'Корпуса в каталоге', 'Текущие цены UZS'] as const,
   },
   uz: {
     skip: 'Katalog natijalariga o‘tish', back: 'Loyiha haqida', nav: 'SUN katalogi navigatsiyasi', language: 'Til', menu: 'Menyu', close: 'Yopish', consult: 'Maslahat olish', call: 'Qo‘ng‘iroq qilish',
-    eyebrow: 'QUYOSHLI VOSITA · QAYD ETILGAN KESIM', title: '51 xonadon. To‘rt bino.', lead: 'Rasmiy ommaviy kesimdagi dolzarb UZS narxlari va 51 ta mavjud pozitsiya. B binosi joriy katalogda yo‘q.', heroLead: 'Tanlashda yordam olish',
-    facts: [['51', 'mavjud'], ['1–3', 'xona'], ['34,61–83,90 m²', 'maydon'], ['867,7 mln–1,966 mlrd UZS', 'narx']] as const,
-    snapshot: 'Kesim', liveWarning: 'Bu snapshot, murojaat vaqtida mavjudlik va’dasi emas.',
+    eyebrow: 'QUYOSHLI VOSITA · MA’LUMOTLAR YANGILANADI', title: 'Dolzarb xonadonlar. E’lon qilingan binolar.', lead: 'Narxlar, takliflar va holatlar avtomatik yangilanadi. Agar binoda taklif bo‘lmasa, u katalogda ko‘rsatilmaydi.', heroLead: 'Tanlashda yordam olish',
+    facts: [['—', 'mavjud'], ['1–3', 'xona'], ['34,61–83,90 m²', 'maydon'], ['867,7 mln–1,966 mlrd UZS', 'narx']] as const,
+    snapshot: 'Yangilanish', liveWarning: 'Bu katalog ma’lumotlari, murojaat vaqtida mavjudlik va’dasi emas.',
     modes: { cards: 'Kartochkalar', chess: 'Shaxmatka' }, modeLabel: 'Katalog rejimi', filters: 'Filtrlar', reset: 'Tozalash', all: 'Barchasi', selected: 'tanlandi', rooms: 'Xonalar', blocks: 'Binolar', floorRange: 'Qavat', areaRange: 'Maydon, m²', priceRange: 'Narx, UZS', from: 'dan', to: 'gacha', results: 'topildi', filtersAnnouncement: 'Filtrlashdan keyingi natijalar',
     sort: 'Saralash', sorts: { recommended: 'Standart / tavsiya etilgan', priceAsc: 'Narx: arzonidan', priceDesc: 'Narx: qimmatidan', areaAsc: 'Maydon: kichigidan', areaDesc: 'Maydon: kattasidan', roomsAsc: 'Xonalar: o‘sish tartibida', roomsDesc: 'Xonalar: kamayish tartibida', floorAsc: 'Qavat: pastidan', floorDesc: 'Qavat: yuqorisidan', ppmAsc: 'm² narxi: arzonidan', ppmDesc: 'm² narxi: qimmatidan' },
     unit: 'Xonadon №', roomsShort: 'xona', area: 'Maydon', floor: 'Qavat', entrance: 'Kirish', block: 'Bino', available: 'Mavjud', price: 'Joriy narx', ppm: 'm² narxi', openPlan: 'Ikki rasmiy planni ochish', ask: 'Ariza qoldirish', showMore: 'Yana ko‘rsatish', showing: 'Ko‘rsatildi', of: '/',
     emptyTitle: 'Bu parametrlar bo‘yicha xonadon yo‘q.', emptyText: 'Filtrlarni tozalang yoki ariza qoldiring — menejer joriy mavjudlikni tekshiradi.', emptyLead: 'Variantlarni so‘rash',
-    matrixTitle: '47 haqiqiy qator · har binoda bitta kirish.', matrixText: '2–11 / 2–13 / 2–14 / 2–13 qatorlari mavjud xonadon bo‘lmasa ham saqlanadi. Filtrlar fizik tuzilmani o‘zgartirmasdan pozitsiyalarni xiralashtiradi.', matched: 'mos', row: 'Qavat', noUnits: 'Kesimda mavjud pozitsiya yo‘q', scrollLeft: 'Shaxmatkani chapga siljitish', scrollRight: 'Shaxmatkani o‘ngga siljitish', matrixHelp: 'Svip, trekpad, tugmalar, strelkalar, Home va End.', openUnit: 'Xonadonni ochish',
+    matrixTitle: 'E’lon qilingan binolar shaxmatkasi.', matrixText: 'Filtrlar qavat va binolar tuzilishini o‘zgartirmasdan pozitsiyalarni xiralashtiradi.', matched: 'mos', row: 'Qavat', noUnits: 'Katalogda mavjud pozitsiya yo‘q', scrollLeft: 'Shaxmatkani chapga siljitish', scrollRight: 'Shaxmatkani o‘ngga siljitish', matrixHelp: 'Svip, trekpad, tugmalar, strelkalar, Home va End.', openUnit: 'Xonadonni ochish',
     detail: 'Xonadon tafsilotlari', closeDetail: 'Tafsilotlarni yopish', plans: 'Rasmiy planlar', planOne: 'Rasmiy plan · 1-yuza', planTwo: 'Rasmiy plan · 2-yuza', planOneText: 'E’lon qilingan planning birinchi yuzasi.', planTwoText: 'E’lon qilingan planning ikkinchi yuzasi.', characteristics: 'Xususiyatlar', matrixLead: 'Bu xonadonni aniqlashtirish',
     planDialog: 'Xonadonning ikki rasmiy plani', closePlan: 'Planlarni yopish', previousPlan: 'Oldingi plan', nextPlan: 'Keyingi plan', swipeHint: 'Strelka yoki svip bilan almashtiring.', planLead: 'Plan bo‘yicha aniqlashtirish',
-    noCampaign: 'Snapshotda faol aksiya yo‘q', priceContract: 'regularPrice effectivePrice bilan teng; chegirma va taymer qo‘llanmaydi.',
-    footerTitle: 'Muayyan xonadon bo‘yicha aniq javob kerakmi?', footerText: 'Menejer tanlangan pozitsiyani qayd etilgan manba va joriy mavjudlik bilan solishtiradi. Ariza bron hisoblanmaydi.', privacy: 'Shaxsiy ma’lumotlarni qayta ishlash', top: 'Yuqoriga',
-    formTagline: 'Kun uydan boshlanadi.', formFacts: ['51 ta mavjud xonadon', 'Katalogda 4 bino', 'Joriy UZS narxlari'] as const,
+    noCampaign: 'Live catalogueda faol aksiya yo‘q', priceContract: 'regularPrice effectivePrice bilan teng; chegirma va taymer qo‘llanmaydi.',
+    footerTitle: 'Muayyan xonadon bo‘yicha aniq javob kerakmi?', footerText: 'Menejer tanlangan pozitsiyani dolzarb ma’lumotlar va joriy mavjudlik bilan solishtiradi. Ariza bron hisoblanmaydi.', privacy: 'Shaxsiy ma’lumotlarni qayta ishlash', top: 'Yuqoriga',
+    formTagline: 'Kun uydan boshlanadi.', formFacts: ['Dolzarb xonadonlar', 'Katalogdagi binolar', 'Joriy UZS narxlari'] as const,
   },
   en: {
     skip: 'Skip to catalogue results', back: 'About the project', nav: 'SUN catalogue navigation', language: 'Language', menu: 'Menu', close: 'Close', consult: 'Request a consultation', call: 'Call',
-    eyebrow: 'SUNLIT TOOL · FROZEN SNAPSHOT', title: '51 apartments. Four buildings.', lead: 'Current UZS prices and 51 available listings from the official public snapshot. Building B is absent from the current catalogue.', heroLead: 'Help me choose',
-    facts: [['51', 'available'], ['1–3', 'rooms'], ['34.61–83.90 m²', 'area'], ['UZS 867.7m–1.966bn', 'price']] as const,
-    snapshot: 'Snapshot', liveWarning: 'This is a snapshot, not a promise of availability when you enquire.',
+    eyebrow: 'SUNLIT TOOL · AUTOMATIC UPDATES', title: 'Current apartments. Published buildings.', lead: 'Prices, listings and statuses update automatically. Buildings without current listings are not shown.', heroLead: 'Help me choose',
+    facts: [['—', 'available'], ['1–3', 'rooms'], ['34.61–83.90 m²', 'area'], ['UZS 867.7m–1.966bn', 'price']] as const,
+    snapshot: 'Live catalogue', liveWarning: 'This is a live catalogue, not a promise of availability when you enquire.',
     modes: { cards: 'Cards', chess: 'Matrix' }, modeLabel: 'Catalogue mode', filters: 'Filters', reset: 'Reset', all: 'All', selected: 'selected', rooms: 'Rooms', blocks: 'Buildings', floorRange: 'Floor', areaRange: 'Area, m²', priceRange: 'Price, UZS', from: 'from', to: 'to', results: 'found', filtersAnnouncement: 'Results after filtering',
     sort: 'Sort', sorts: { recommended: 'Default / recommended', priceAsc: 'Price: low to high', priceDesc: 'Price: high to low', areaAsc: 'Area: small to large', areaDesc: 'Area: large to small', roomsAsc: 'Rooms: low to high', roomsDesc: 'Rooms: high to low', floorAsc: 'Floor: low to high', floorDesc: 'Floor: high to low', ppmAsc: 'Price/m²: low to high', ppmDesc: 'Price/m²: high to low' },
     unit: 'Apartment no. ', roomsShort: 'rooms', area: 'Area', floor: 'Floor', entrance: 'Entrance', block: 'Building', available: 'Available', price: 'Current price', ppm: 'Price per m²', openPlan: 'Open both official plans', ask: 'Send a request', showMore: 'Show more', showing: 'Showing', of: 'of',
     emptyTitle: 'No apartments match these parameters.', emptyText: 'Reset the filters or send a request and a manager will check current availability.', emptyLead: 'Request a selection',
-    matrixTitle: '47 real rows · one entrance in each building.', matrixText: 'Rows 2–11 / 2–13 / 2–14 / 2–13 remain stable even where no available apartment exists. Filters dim listings without rebuilding the physical topology.', matched: 'matches', row: 'Floor', noUnits: 'No available listing in the snapshot', scrollLeft: 'Move matrix left', scrollRight: 'Move matrix right', matrixHelp: 'Swipe, trackpad, buttons, arrows, Home and End.', openUnit: 'Open apartment',
+    matrixTitle: 'Availability grid for published buildings.', matrixText: 'Filters dim listings without rebuilding the floors and buildings.', matched: 'matches', row: 'Floor', noUnits: 'No available listing', scrollLeft: 'Move matrix left', scrollRight: 'Move matrix right', matrixHelp: 'Swipe, trackpad, buttons, arrows, Home and End.', openUnit: 'Open apartment',
     detail: 'Apartment details', closeDetail: 'Close details', plans: 'Official plans', planOne: 'Official plan · surface 1', planTwo: 'Official plan · surface 2', planOneText: 'The first published plan surface.', planTwoText: 'The second published plan surface.', characteristics: 'Characteristics', matrixLead: 'Ask about this apartment',
     planDialog: 'Two official apartment plans', closePlan: 'Close plans', previousPlan: 'Previous plan', nextPlan: 'Next plan', swipeHint: 'Use the arrows or swipe to switch.', planLead: 'Ask about this plan',
-    noCampaign: 'No active campaign in the snapshot', priceContract: 'regularPrice equals effectivePrice; no discount or countdown applies.',
-    footerTitle: 'Need a precise answer about one apartment?', footerText: 'A manager will check the selected listing against the frozen source and current availability. A request is not a reservation.', privacy: 'Personal data processing', top: 'Back to top',
-    formTagline: 'The day begins at home.', formFacts: ['51 available apartments', '4 catalogue buildings', 'Current UZS prices'] as const,
+    noCampaign: 'No active campaign in the live catalogue', priceContract: 'regularPrice equals effectivePrice; no discount or countdown applies.',
+    footerTitle: 'Need a precise answer about one apartment?', footerText: 'A manager will check the selected listing against the live source and current availability. A request is not a reservation.', privacy: 'Personal data processing', top: 'Back to top',
+    formTagline: 'The day begins at home.', formFacts: ['Current apartments', 'Catalogue buildings', 'Current UZS prices'] as const,
   },
 } as const;
 
@@ -269,15 +274,23 @@ function Matrix({ rows, units, sorted, matchedIds, language, selection, onSelect
 }
 
 export function SunCatalog({ initialLanguage }: { initialLanguage: Language }) {
+  const { data: snapshot, dataSource } = useLiveCatalogSnapshot('sun', embeddedSnapshot);
   const [language, setLanguage] = useSunLanguage(initialLanguage); const mobile = useSunMobile(); const t = copy[language];
   const [mode, setMode] = useState<Mode>('cards'); const [sort, setSort] = useState<Sort>('recommended'); const [filters, setFilters] = useState<Filters>(defaultFilters); const [visible, setVisible] = useState(9);
   const [selection, setSelection] = useState<Selection | null>(null); const [plan, setPlan] = useState<PlanSelection | null>(null); const [lead, setLead] = useState<LeadRequest | null>(null); const [menuOpen, setMenuOpen] = useState(false);
   const modeRefs = useRef<Array<HTMLButtonElement | null>>([]); const menuRef = useRef<HTMLElement>(null); const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const units = snapshot.units; const rows = useMemo(() => normalizeRows(snapshot), []);
+  const units = snapshot.units; const rows = useMemo(() => normalizeRows(snapshot), [snapshot]);
   const sourceRank = useMemo(() => new Map(units.map((unit, index) => [unitKeyOf(unit), index])), [units]);
   const rooms = useMemo(() => [...new Set(units.map((unit) => String(unit.rooms)))].sort((a, b) => Number(a) - Number(b)), [units]);
   const blocks = useMemo(() => ['A', 'Г', 'Д', 'В'].filter((block) => units.some((unit) => normalizedBlock(blockOf(unit)) === block)), [units]);
   const limits = useMemo(() => ({ floorMin: Math.min(...units.map((unit) => Number(unit.floor))), floorMax: Math.max(...units.map((unit) => Number(unit.floor))), areaMin: Math.min(...units.map((unit) => Number(unit.area))), areaMax: Math.max(...units.map((unit) => Number(unit.area))), priceMin: Math.min(...units.map(priceOf)), priceMax: Math.max(...units.map(priceOf)) }), [units]);
+  const liveFacts = useMemo(() => [
+    String(units.filter((unit) => unit.status === 'available').length),
+    [...new Set(units.map((unit) => Number(unit.rooms)))].sort((a, b) => a - b).join(' / '),
+    `${formatSunNumber(limits.areaMin, language)}–${formatSunNumber(limits.areaMax, language)} м²`,
+    `${formatSunPrice(limits.priceMin, language)}–${formatSunPrice(limits.priceMax, language)}`,
+  ], [language, limits, units]);
+  const freshnessLabel = dataSource === 'live' ? t.snapshot : language === 'ru' ? 'Последние доступные данные' : language === 'uz' ? 'So‘nggi mavjud ma’lumotlar' : 'Latest available data';
   const closeLead = useCallback(() => setLead(null), []); const closePlan = useCallback(() => setPlan(null), []); const closeSelection = useCallback(() => setSelection(null), []);
 
   useEffect(() => {
@@ -332,7 +345,7 @@ export function SunCatalog({ initialLanguage }: { initialLanguage: Language }) {
     <div className={`sunc-menu ${menuOpen ? 'is-open' : ''}`} role="dialog" aria-modal={menuOpen && !lead ? true : undefined} aria-label={t.nav} aria-hidden={!menuOpen || Boolean(lead)} inert={!menuOpen || Boolean(lead) ? true : undefined}><button className="sunc-menu__backdrop" type="button" tabIndex={-1} onClick={() => setMenuOpen(false)} aria-label={t.close} /><nav ref={menuRef} id="sunc-menu"><header><img src={sunAsset('/sun/logo.svg')} width="380" height="64" alt="SUN" /><button type="button" onClick={() => setMenuOpen(false)} aria-label={t.close}>×</button></header><a href={sunPath('/sun', language)} onClick={() => setMenuOpen(false)}>← {t.back}</a><a href="#sunc-results" onClick={() => setMenuOpen(false)}>{t.modes.cards}</a><a href="tel:+998781137712">+998 78 113 77 12</a><div aria-label={t.language}>{sunLanguages.map((item) => <button type="button" key={item} className={language === item ? 'is-active' : ''} aria-pressed={language === item} onClick={() => setLanguage(item)}>{item.toUpperCase()}</button>)}</div><button type="button" data-lead-trigger onClick={(event) => openLead('catalog:header', null, event.currentTarget)}>{t.consult}<span>↗</span></button></nav></div>
 
     <main aria-hidden={rootCovered || undefined} inert={rootCovered ? true : undefined}>
-      <section className="sunc-hero"><div className="sunc-hero__sun" aria-hidden="true" /><div className="sunc-hero__line" aria-hidden="true"><span>06:00</span><i /><span>12:00</span><i /><span>18:00</span></div><div className="sunc-hero__copy"><span>{t.eyebrow}</span><h1>{t.title}</h1><p>{t.lead}</p><button type="button" data-lead-trigger onClick={(event) => openLead('catalog:hero', null, event.currentTarget)}>{t.heroLead}<b>↗</b></button></div><dl>{t.facts.map(([value, label]) => <div key={label}><dt>{value}</dt><dd>{label}</dd></div>)}</dl><p className="sunc-hero__snapshot"><span>{t.snapshot}</span>{snapshot.capturedAt}<b>{t.liveWarning}</b></p></section>
+      <section className="sunc-hero"><div className="sunc-hero__sun" aria-hidden="true" /><div className="sunc-hero__line" aria-hidden="true"><span>06:00</span><i /><span>12:00</span><i /><span>18:00</span></div><div className="sunc-hero__copy"><span>{t.eyebrow}</span><h1>{t.title}</h1><p>{t.lead}</p><button type="button" data-lead-trigger onClick={(event) => openLead('catalog:hero', null, event.currentTarget)}>{t.heroLead}<b>↗</b></button></div><dl>{t.facts.map(([, label], index) => <div key={label}><dt>{liveFacts[index]}</dt><dd>{label}</dd></div>)}</dl><p className="sunc-hero__snapshot"><span>{freshnessLabel}</span>{snapshot.capturedAt}<b>{t.liveWarning}</b></p></section>
 
       <section className="sunc-catalog" aria-labelledby="sunc-catalog-title">
         <div className="sunc-toolbar"><div className="sunc-modes" role="tablist" aria-label={t.modeLabel}>{modes.map((item, index) => <button key={item} ref={(node) => { modeRefs.current[index] = node; }} id={`sunc-tab-${item}`} type="button" role="tab" aria-selected={mode === item} aria-controls="sunc-results" tabIndex={mode === item ? 0 : -1} className={mode === item ? 'is-active' : ''} onClick={() => selectMode(item)} onKeyDown={(event) => modeKey(event, index)}>{t.modes[item]}</button>)}</div><div className="sunc-result-count" aria-live="polite"><strong>{stableSorted.length}</strong> {t.results}</div></div>
@@ -357,6 +370,6 @@ export function SunCatalog({ initialLanguage }: { initialLanguage: Language }) {
 
     {mode === 'chess' && selection && mobile ? <UnitDetail selection={selection} language={language} mobile covered={Boolean(plan || lead)} onClose={closeSelection} onPlan={openPlan} onLead={(unit, opener) => openLead('catalog:matrix', unit, opener)} /> : null}
     {plan ? <PlanDialog selection={plan} language={language} covered={Boolean(lead)} onClose={closePlan} onChange={changePlan} onLead={(unit, opener) => openLead('catalog:plan', unit, opener)} /> : null}
-    {lead ? <LeadModal open language={language} context={sunLeadContext(lead.surface, language, lead.unit)} hideBrand projectName="SUN" tagline={t.formTagline} facts={t.formFacts} submitUrl={sunLeadSubmitUrl()} projectSlug="sun" unitKey={lead.unit?.unitKey} privacyUrl={`${sunAsset('/privacy')}?project=sun&lang=${language}&from=catalog`} requireConsent returnFocusTo={lead.opener} onClose={closeLead} /> : null}
+    {lead ? <LeadModal open language={language} context={sunLeadContext(lead.surface, language, lead.unit)} hideBrand projectName="SUN" tagline={t.formTagline} facts={[`${liveFacts[0]} · ${t.facts[0][1]}`, `${blocks.length} · ${t.facts[1][1]}`, t.formFacts[2]]} submitUrl={sunLeadSubmitUrl()} projectSlug="sun" unitKey={lead.unit?.unitKey} privacyUrl={`${sunAsset('/privacy')}?project=sun&lang=${language}&from=catalog`} requireConsent returnFocusTo={lead.opener} onClose={closeLead} /> : null}
   </div>;
 }

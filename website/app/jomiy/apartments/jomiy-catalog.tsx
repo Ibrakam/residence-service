@@ -12,7 +12,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { LeadModal, rememberLastViewedApartment } from "@/app/lead-modal";
+import { LeadModal, rememberLiveCatalogUnit } from "@/app/lead-modal";
+import { catalogLeadIdentity, useLiveCatalogSnapshot } from "@/app/live-catalog";
 import { jomiyLeadSubmitUrl } from "../jomiy-lead";
 import {
   lockJomiyBody,
@@ -181,19 +182,19 @@ const copy = {
     language: "Язык",
     consult: "Уточнить доступность",
     call: "+998 78 113 77 12",
-    eyebrow: "POETIC LATTICE · СРЕЗ 30.08.2026",
+    eyebrow: "POETIC LATTICE · ДАННЫЕ ОБНОВЛЯЮТСЯ",
     title: "Каталог",
     accent: "без домыслов.",
     leadBefore: "В официальном квартирном каталоге",
     leadAfter:
       "предложение / позиция. Явного статуса «Свободно» нет: показываем точный этап каждой записи.",
-    snapshot: "Дата среза",
-    captured: "Зафиксировано",
+    snapshot: "Актуальные данные",
+    captured: "Обновлено",
     records: "позиций",
     offers: "Offers · строгая политика",
     groups: "группы",
     plans: "официальных листов",
-    allApartments: "121 позиция · только квартиры · без смешанного инвентаря",
+    allApartments: "Только квартиры · без смешанного инвентаря",
     heroPhoto: "Реальная фотография готовой части Jomiy",
     modes: { cards: "Карточки", chess: "Шахматка" },
     modeLabel: "Режим каталога",
@@ -208,7 +209,7 @@ const copy = {
     floor: "Этаж",
     group: "Очередь / группа",
     entrance: "Подъезд",
-    status: "Raw-статус",
+    status: "Статус",
     completion: "Нормализованный срок",
     repair: "Отделка",
     studio: "Studio · отметка API",
@@ -232,11 +233,11 @@ const copy = {
     apartment: "Позиция",
     roomsShort: "комн.",
     area: "Площадь",
-    snapshotPrice: "Цена среза",
+    snapshotPrice: "Актуальная цена",
     rawPrice: "Обычная цена",
     pricePerM2: "за м²",
-    campaignPrice: "Цена кампании в срезе",
-    expiredSnapshot: "Завершённая цена кампании в срезе",
+    campaignPrice: "Актуальная цена кампании",
+    expiredSnapshot: "Завершённая цена кампании",
     rawFallback: "Обычная цена · кампания не указана",
     campaignUntil: "Срок кампании",
     campaignActive: "Срок кампании ещё не истёк",
@@ -282,10 +283,10 @@ const copy = {
     unitUuid: "UUID",
     detailHash: "Detail response SHA-256",
     normalizedDeadline: "Срок filter/realEstateList",
-    placementDeadline: "Raw placementList срок",
-    matrix: "84 стабильные строки шахматки",
+    placementDeadline: "Last update срок",
+    matrix: "Шахматка по этажам",
     matrixHint:
-      "Две группы образуют семь реальных комбинаций «группа × подъезд»; в каждой — 12 этажей, итого 84 стабильные строки. Пустые этажи остаются на месте после фильтрации. Прокрутка: палец, трекпад, кнопки, ← → Home End.",
+      "Группы, подъезды и этажи строятся по актуальным предложениям. Пустые этажи остаются на месте после фильтрации. Прокрутка: палец, трекпад, кнопки, ← → Home End.",
     entranceTitle: "Подъезд",
     floorTitle: "Этаж",
     maxFloorLabel: "макс. этаж",
@@ -302,14 +303,14 @@ const copy = {
     planViews: "Две официальные страницы планировки",
     sourceTitle: "Что означает этот каталог",
     sourceText:
-      "Все 121 позиции получены одной согласованной выгрузкой API 30.08.2026 в 23:47 UZT. Повтор page 1 побайтно совпал, page 2 пуста, захвачены все 121 detail. placementCount 251 — смешанный инвентарь и не используется как счётчик квартир. Статус процесса не гарантирует доступность.",
+      "Состав каталога и статусы квартир обновляются автоматически. Технический статус не гарантирует юридическую доступность.",
     disclaimer:
-      "Срез, цены и статусы зафиксированы 30.08.2026 и не являются публичной офертой. Кампании после дедлайна помечаются завершёнными. Наличие, стоимость и условия подтверждает отдел продаж.",
+      "Цены и статусы обновляются автоматически и не являются публичной офертой. Наличие, стоимость и условия подтверждает отдел продаж.",
     privacy: "Обработка персональных данных",
     top: "Наверх",
     home: "Jomiy",
     formTagline: "Вдохновлённый поэзией.",
-    formFacts: ["121 позиция", "2 группы", "0 статусов «Свободно»"] as const,
+    formFacts: ["Актуальные позиции", "Опубликованные группы", "Официальные статусы"] as const,
   },
   uz: {
     skip: "Katalog natijalariga o‘tish",
@@ -318,19 +319,19 @@ const copy = {
     language: "Til",
     consult: "Mavjudligini aniqlash",
     call: "+998 78 113 77 12",
-    eyebrow: "POETIC LATTICE · 30.08.2026 NUSXASI",
+    eyebrow: "POETIC LATTICE · MA’LUMOTLAR YANGILANADI",
     title: "Taxminsiz",
     accent: "katalog.",
     leadBefore: "Rasmiy xonadon katalogida",
     leadAfter:
       "ta taklif / pozitsiya bor. “Bo‘sh” holati yo‘q: har bir yozuvning aniq bosqichi ko‘rsatiladi.",
-    snapshot: "Nusxa sanasi",
-    captured: "Qayd etilgan vaqt",
+    snapshot: "Dolzarb ma’lumotlar",
+    captured: "So‘nggi yangilanish",
     records: "pozitsiya",
     offers: "Offers · qat’iy siyosat",
     groups: "guruh",
     plans: "rasmiy varaq",
-    allApartments: "121 pozitsiya · faqat xonadonlar · aralash inventarsiz",
+    allApartments: "Faqat xonadonlar · aralash inventarsiz",
     heroPhoto: "Jomiy tayyor qismining haqiqiy fotosurati",
     modes: {
       cards: "Kartalar",
@@ -348,7 +349,7 @@ const copy = {
     floor: "Qavat",
     group: "Bosqich / guruh",
     entrance: "Kirish",
-    status: "Raw-holat",
+    status: "Holat",
     completion: "Me’yorlashtirilgan muddat",
     repair: "Pardoz",
     studio: "Studio · API belgisi",
@@ -372,11 +373,11 @@ const copy = {
     apartment: "Pozitsiya",
     roomsShort: "xonali",
     area: "Maydon",
-    snapshotPrice: "Nusxadagi narx",
+    snapshotPrice: "Amaldagi narx",
     rawPrice: "Oddiy narx",
     pricePerM2: "m² uchun",
-    campaignPrice: "Nusxadagi kampaniya narxi",
-    expiredSnapshot: "Nusxadagi tugagan kampaniya narxi",
+    campaignPrice: "Amaldagi kampaniya narxi",
+    expiredSnapshot: "Tugagan kampaniya narxi",
     rawFallback: "Oddiy narx · kampaniya ko‘rsatilmagan",
     campaignUntil: "Kampaniya muddati",
     campaignActive: "Kampaniya muddati hali tugamagan",
@@ -421,10 +422,10 @@ const copy = {
     unitUuid: "UUID",
     detailHash: "Detail javobi SHA-256",
     normalizedDeadline: "filter/realEstateList muddati",
-    placementDeadline: "Raw placementList muddati",
-    matrix: "Shaxmatkaning 84 barqaror qatori",
+    placementDeadline: "Last update muddati",
+    matrix: "Qavatlar bo‘yicha shaxmatka",
     matrixHint:
-      "Ikki guruh “guruh × kirish”ning yettita haqiqiy kombinatsiyasini hosil qiladi; har birida 12 qavat, jami 84 ta barqaror qator. Filtrdan keyin bo‘sh qavatlar o‘z joyida qoladi. Barmoq, trekpad, tugmalar yoki ← → Home End bilan suring.",
+      "Guruhlar, kirishlar va qavatlar joriy takliflar asosida tuziladi. Filtrdan keyin bo‘sh qavatlar o‘z joyida qoladi. Barmoq, trekpad, tugmalar yoki ← → Home End bilan suring.",
     entranceTitle: "Kirish",
     floorTitle: "Qavat",
     maxFloorLabel: "eng yuqori qavat",
@@ -441,14 +442,14 @@ const copy = {
     planViews: "Rejaning ikki rasmiy sahifasi",
     sourceTitle: "Bu katalog nimani anglatadi",
     sourceText:
-      "121 pozitsiyaning barchasi 30.08.2026 soat 23:47 UZT dagi yagona kelishilgan API nusxasidan olingan. Takroriy page 1 baytma-bayt mos, page 2 bo‘sh va barcha 121 detail saqlangan. placementCount 251 — aralash inventar, xonadonlar soni emas. Jarayon holati mavjudlikni kafolatlamaydi.",
+      "Katalog tarkibi va xonadon holatlari avtomatik yangilanadi. Texnik holat huquqiy mavjudlikni kafolatlamaydi.",
     disclaimer:
-      "Nusxa, narxlar va holatlar 30.08.2026 da qayd etilgan va ommaviy oferta emas. Muddatidan keyin kampaniya tugagan deb belgilanadi. Mavjudlik, narx va shartlarni savdo bo‘limi tasdiqlaydi.",
+      "Narx va holatlar avtomatik yangilanadi va ommaviy oferta emas. Mavjudlik, narx va shartlarni savdo bo‘limi tasdiqlaydi.",
     privacy: "Shaxsiy ma’lumotlarni qayta ishlash",
     top: "Yuqoriga",
     home: "Jomiy",
     formTagline: "She’riyatdan ilhomlangan.",
-    formFacts: ["121 pozitsiya", "2 guruh", "0 ta “Bo‘sh” holati"] as const,
+    formFacts: ["Dolzarb pozitsiyalar", "E’lon qilingan guruhlar", "Rasmiy holatlar"] as const,
   },
   en: {
     skip: "Skip to catalogue results",
@@ -457,19 +458,19 @@ const copy = {
     language: "Language",
     consult: "Check availability",
     call: "+998 78 113 77 12",
-    eyebrow: "POETIC LATTICE · SNAPSHOT 30 AUG 2026",
+    eyebrow: "POETIC LATTICE · AUTOMATICALLY UPDATED",
     title: "A catalogue",
     accent: "without assumptions.",
     leadBefore: "The official apartment catalogue contains",
     leadAfter:
-      "listings / entries. None has an explicit “Available” status; every workflow stage is shown exactly.",
-    snapshot: "Snapshot date",
-    captured: "Captured",
+      "listings / entries. Official statuses are shown without relabelling them as “Available”.",
+    snapshot: "Latest update",
+    captured: "Updated",
     records: "entries",
     offers: "Offers · strict policy",
     groups: "groups",
     plans: "official sheets",
-    allApartments: "121 entries · apartments only · mixed inventory excluded",
+    allApartments: "Apartments only · mixed inventory excluded",
     heroPhoto: "Real photograph of the completed part of Jomiy",
     modes: { cards: "Cards", chess: "Matrix" },
     modeLabel: "Catalogue view",
@@ -508,11 +509,11 @@ const copy = {
     apartment: "Entry",
     roomsShort: "room",
     area: "Area",
-    snapshotPrice: "Snapshot price",
+    snapshotPrice: "Current price",
     rawPrice: "Regular price",
     pricePerM2: "per m²",
-    campaignPrice: "Campaign price in snapshot",
-    expiredSnapshot: "Ended campaign price in the snapshot",
+    campaignPrice: "Campaign price in live catalogue",
+    expiredSnapshot: "Ended campaign price in the live catalogue",
     rawFallback: "Regular price · no campaign listed",
     campaignUntil: "Campaign deadline",
     campaignActive: "The campaign deadline has not yet passed",
@@ -557,10 +558,10 @@ const copy = {
     unitUuid: "UUID",
     detailHash: "Detail response SHA-256",
     normalizedDeadline: "filter/realEstateList completion",
-    placementDeadline: "Raw placementList completion",
-    matrix: "84 stable matrix rows",
+    placementDeadline: "Last update completion",
+    matrix: "Floor-by-floor matrix",
     matrixHint:
-      "Two groups form seven real “group × entrance” combinations; each has 12 floors, for 84 stable rows in total. Empty floors remain in place after filtering. Scroll by touch, trackpad, buttons, or ← → Home End.",
+      "Groups, entrances and floors are built from the current listings. Empty floors remain in place after filtering. Scroll by touch, trackpad, buttons, or ← → Home End.",
     entranceTitle: "Entrance",
     floorTitle: "Floor",
     maxFloorLabel: "max floor",
@@ -577,14 +578,14 @@ const copy = {
     planViews: "Two official plan pages",
     sourceTitle: "What this catalogue means",
     sourceText:
-      "All 121 entries came from one aligned API capture on 30 Aug 2026 at 23:47 UZT. The repeated page 1 was byte-identical, page 2 was empty and all 121 details were captured. placementCount 251 is mixed inventory, not an apartment count. A workflow status does not guarantee availability.",
+      "The catalogue and apartment statuses update automatically. A catalogue status does not guarantee legal availability.",
     disclaimer:
-      "The snapshot, prices and statuses were captured on 30 Aug 2026 and are not a public offer. Campaigns are marked ended after their deadline. The sales team confirms availability, price and terms.",
+      "The live catalogue, prices and statuses were updated automatically and are not a public offer. Campaigns are marked ended after their deadline. The sales team confirms availability, price and terms.",
     privacy: "Personal data processing",
     top: "Back to top",
     home: "Jomiy",
     formTagline: "Inspired by poetry.",
-    formFacts: ["121 entries", "2 groups", "0 “Available” statuses"] as const,
+    formFacts: ["Current entries", "Published groups", "Official statuses"] as const,
   },
 } as const;
 
@@ -836,26 +837,8 @@ function leadPriceSnapshotAt(unit: Unit, evaluationTime: number) {
 }
 
 function remember(unit: Unit, evaluationTime: number) {
-  const pricing = leadPriceSnapshotAt(unit, evaluationTime);
-  rememberLastViewedApartment(
-    {
-      uuid: unit.id,
-      number: unit.number,
-      rooms: unit.rooms,
-      area: unit.area,
-      floor: unit.floor,
-      maxFloor: unit.totalFloors,
-      entrance: unit.entrance,
-      block: unit.building,
-      blockName: unit.building,
-      blockId: unit.buildingId,
-      ...pricing,
-      normalizedDeadline: unit.completionDate,
-      sourceStatus: unit.statusOriginal,
-      studio: unit.studio,
-    },
-    "jomiy",
-  );
+  void evaluationTime;
+  rememberLiveCatalogUnit(unit, "jomiy");
 }
 
 function useLanguage(initialLanguage: Language) {
@@ -1906,7 +1889,7 @@ function FiltersPanel({
 }
 
 export function JomiyCatalog({
-  snapshot,
+  snapshot: embeddedSnapshot,
   initialLanguage,
   initialEvaluationTime,
 }: {
@@ -1914,6 +1897,7 @@ export function JomiyCatalog({
   initialLanguage: Language;
   initialEvaluationTime: number;
 }) {
+  const { data: snapshot } = useLiveCatalogSnapshot("jomiy", embeddedSnapshot);
   const [language, setLanguage] = useLanguage(initialLanguage);
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [sort, setSort] = useState<Sort>("source");
@@ -1924,6 +1908,12 @@ export function JomiyCatalog({
   const [leadRequest, setLeadRequest] = useState<LeadRequest | null>(null);
   const mobile = useMobileDrawer();
   const t = copy[language];
+  const allApartments = `${snapshot.units.length} · ${t.allApartments}`;
+  const liveFormFacts = [
+    `${snapshot.units.length} · ${t.records}`,
+    `${snapshot.filterSummary.groups.length} · ${t.groups}`,
+    `${snapshot.offerCount} · ${t.offers}`,
+  ];
   const promotionDeadlines = useMemo(() => [
     ...new Set(
       snapshot.units
@@ -2136,7 +2126,7 @@ export function JomiyCatalog({
             />
             <figcaption>
               <span>{t.heroPhoto}</span>
-              <strong>{t.allApartments}</strong>
+              <strong>{allApartments}</strong>
             </figcaption>
           </figure>
           <dl>
@@ -2373,10 +2363,10 @@ export function JomiyCatalog({
         brandName="NRG-BI"
         projectName="JOMIY"
         tagline={t.formTagline}
-        facts={t.formFacts}
+        facts={liveFormFacts}
         submitUrl={jomiyLeadSubmitUrl()}
         projectSlug="jomiy"
-        unitId={leadRequest?.unit?.id}
+        {...catalogLeadIdentity(leadRequest?.unit)}
         privacyUrl={privacyUrl(language)}
         requireConsent
         onClose={closeLead}

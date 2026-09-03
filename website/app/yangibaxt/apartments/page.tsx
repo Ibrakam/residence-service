@@ -16,9 +16,9 @@ const absoluteUrl = (path: string) => `${publicOrigin}${sitePath(path)}`;
 
 const copy = {
   ru: {
-    title: (count: number) => `Квартиры Yangi Baxt — каталог на 30 августа 2026 · ${count} записей`,
-    description: (count: number, offers: number) => `Каталог квартир Yangi Baxt на 30 августа 2026: ${count} записей с официальными планами, зафиксированными ценами, этажами и сроками; ${offers} отмечены свободными и выставленными на продажу.`,
-    listName: 'Квартиры Yangi Baxt — каталог на 30 августа 2026',
+    title: 'Квартиры Yangi Baxt — актуальный каталог',
+    description: 'Актуальный каталог Yangi Baxt: состав квартир, цены и статусы обновляются автоматически.',
+    listName: 'Квартиры Yangi Baxt — актуальный каталог',
     imageAlt: 'Реальная официальная фотография благоустройства Yangi Baxt',
     home: 'Главная',
     apartments: 'Квартиры',
@@ -29,13 +29,13 @@ const copy = {
     finishing: 'Отделка',
     withFinishing: 'С ремонтом',
     withoutFinishing: 'Без ремонта',
-    offerNote: 'Цена и доступность зафиксированы в API 30 августа 2026 года; актуальные условия подтверждает отдел продаж.',
+    offerNote: 'Цены и статусы обновляются автоматически; актуальные условия подтверждает отдел продаж.',
     address: { streetAddress: 'Ахангаранский проспект', addressLocality: 'Ташкент' },
   },
   uz: {
-    title: (count: number) => `Yangi Baxt xonadonlari — 2026-yil 30-avgust katalogi · ${count} ta yozuv`,
-    description: (count: number, offers: number) => `Yangi Baxtning 2026-yil 30-avgustdagi xonadonlar katalogi: rasmiy rejalar, qayd etilgan narxlar, qavatlar va muddatlar bilan ${count} ta yozuv; ${offers} tasi bo‘sh va sotuvda deb belgilangan.`,
-    listName: 'Yangi Baxt xonadonlari — 2026-yil 30-avgust katalogi',
+    title: 'Yangi Baxt xonadonlari — yangilanadigan katalog',
+    description: 'Yangi Baxt katalogidagi xonadonlar, narxlar va holatlar avtomatik yangilanadi.',
+    listName: 'Yangi Baxt xonadonlari — yangilanadigan katalog',
     imageAlt: 'Yangi Baxt obodonlashtirilishining haqiqiy rasmiy fotosurati',
     home: 'Bosh sahifa',
     apartments: 'Xonadonlar',
@@ -46,13 +46,13 @@ const copy = {
     finishing: 'Pardoz',
     withFinishing: 'Pardoz bilan',
     withoutFinishing: 'Pardozsiz',
-    offerNote: 'Narx va mavjudlik 2026-yil 30-avgustdagi API snapshotida qayd etilgan; amaldagi shartlarni savdo bo‘limi tasdiqlaydi.',
+    offerNote: 'Narx va holatlar avtomatik yangilanadi; amaldagi shartlarni savdo bo‘limi tasdiqlaydi.',
     address: { streetAddress: 'Ohangaron prospekti', addressLocality: 'Toshkent' },
   },
   en: {
-    title: (count: number) => `Yangi Baxt apartments — catalogue as of 30 August 2026 · ${count} entries`,
-    description: (count: number, offers: number) => `The Yangi Baxt apartment catalogue as of 30 August 2026: ${count} entries with official plans, recorded prices, floors and completion dates; ${offers} are marked available and for sale.`,
-    listName: 'Yangi Baxt apartments — catalogue as of 30 August 2026',
+    title: 'Yangi Baxt apartments — live catalogue',
+    description: 'Yangi Baxt apartment listings, plans, prices, floors, completion dates and statuses update automatically.',
+    listName: 'Yangi Baxt apartments — live catalogue',
     imageAlt: 'Actual official photograph of landscaping at Yangi Baxt',
     home: 'Home',
     apartments: 'Apartments',
@@ -63,7 +63,7 @@ const copy = {
     finishing: 'Finishing',
     withFinishing: 'With finishing',
     withoutFinishing: 'Without finishing',
-    offerNote: 'Price and availability are an API snapshot dated 30 August 2026; the sales team confirms current terms.',
+    offerNote: 'Prices and statuses update automatically; the sales team confirms current terms.',
     address: { streetAddress: 'Akhangaran Avenue', addressLocality: 'Tashkent' },
   },
 } as const;
@@ -88,14 +88,11 @@ function projectPath(language: Language) {
   return sitePath(`/yangibaxt?lang=${language}`);
 }
 
-const offerCount = snapshot.units.filter((unit) => unit.statusOriginal === 'Свободно' && unit.isSale).length;
-
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
   const language = languageOf((await searchParams)?.lang);
   const current = copy[language];
-  const count = snapshot.units.length;
-  const title = current.title(count);
-  const description = current.description(count, offerCount);
+  const title = current.title;
+  const description = current.description;
   const canonical = canonicalPath(language);
   const image = sitePath('/yangibaxt/images/hero-real.webp');
 
@@ -140,7 +137,7 @@ export default async function Page({ searchParams }: PageProps) {
     '@type': 'ItemList',
     '@id': `${catalogUrl}#catalogue`,
     name: current.listName,
-    description: current.description(snapshot.units.length, offerCount),
+    description: current.description,
     inLanguage,
     url: catalogUrl,
     numberOfItems: snapshot.units.length,

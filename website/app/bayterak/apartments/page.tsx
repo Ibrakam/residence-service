@@ -13,19 +13,19 @@ const ogImage = `${appBasePath}/bayterak/images/hero-comfort.webp`;
 
 const meta = {
   ru: {
-    title: (count: number) => `Квартиры Bayterak — ${count} предложений в официальной подборке`,
-    description: (count: number) => `Датированный snapshot Bayterak: ${count} квартир Comfort+ и Business с официальными планировками, ценами, этажами, сроками и исходными workflow-статусами.`,
-    listName: 'Квартиры Bayterak — официальный snapshot',
+    title: 'Квартиры Bayterak — актуальный каталог',
+    description: 'Актуальный каталог квартир Bayterak классов Comfort+ и Business: цены и статусы обновляются автоматически.',
+    listName: 'Квартиры Bayterak — актуальный каталог',
   },
   uz: {
-    title: (count: number) => `Bayterak xonadonlari — rasmiy tanlovdagi ${count} ta taklif`,
-    description: (count: number) => `Bayterak katalogining sanasi ko‘rsatilgan snapshoti: Comfort+ va Business toifalaridagi ${count} ta xonadon, rasmiy rejalar, narxlar, qavatlar, muddatlar va asl workflow holatlari bilan.`,
-    listName: 'Bayterak xonadonlari — rasmiy snapshot',
+    title: 'Bayterak xonadonlari — yangilanadigan katalog',
+    description: 'Bayterak katalogidagi Comfort+ va Business xonadonlarining narx va holatlari avtomatik yangilanadi.',
+    listName: 'Bayterak xonadonlari — yangilanadigan katalog',
   },
   en: {
-    title: (count: number) => `Bayterak apartments — ${count} listings in the official selection`,
-    description: (count: number) => `A dated Bayterak snapshot with ${count} Comfort+ and Business apartments, official floor plans, prices, floors, completion dates and source workflow states.`,
-    listName: 'Bayterak apartments — official snapshot',
+    title: 'Bayterak apartments — live catalogue',
+    description: 'The Bayterak catalogue contains Comfort+ and Business apartments with automatically updated prices and statuses.',
+    listName: 'Bayterak apartments — live catalogue',
   },
 } as const;
 
@@ -43,12 +43,10 @@ function canonicalPath(language: Language) {
 
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
   const language = getLanguage((await searchParams)?.lang);
-  const data = publicClientPayload(snapshot) as Parameters<typeof BayterakCatalog>[0]['snapshot'];
-  const count = data.officialTotalAtCapture || data.units.length;
   const current = meta[language];
   const canonical = canonicalPath(language);
-  const title = current.title(count);
-  const description = current.description(count);
+  const title = current.title;
+  const description = current.description;
 
   return {
     title,
@@ -83,7 +81,6 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 export default async function Page({ searchParams }: PageProps) {
   const language = getLanguage((await searchParams)?.lang);
   const data = publicClientPayload(snapshot) as Parameters<typeof BayterakCatalog>[0]['snapshot'];
-  const count = data.officialTotalAtCapture || data.units.length;
   const current = meta[language];
   const canonical = canonicalPath(language);
   const roomName = (rooms: number) => language === 'ru'
@@ -96,7 +93,7 @@ export default async function Page({ searchParams }: PageProps) {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
     name: current.listName,
-    description: current.description(count),
+    description: current.description,
     inLanguage: languageTag(language),
     url: `${publicOrigin}${canonical}`,
     numberOfItems: data.units.length,

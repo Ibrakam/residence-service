@@ -10,6 +10,7 @@ import {
   useState,
 } from 'react';
 import { LeadModal } from '@/app/lead-modal';
+import { useLiveCatalogProject } from '@/app/live-catalog';
 import { maftunScrollBehavior, useMaftunSmoothScroll } from './maftun-interactions';
 import { maftunLeadSubmitUrl } from './maftun-lead';
 
@@ -39,7 +40,7 @@ const copy = {
     heroFact: 'Город в городе · дома 4–7 этажей · ближайшая сдача — IV квартал 2026',
     choose: 'Выбрать квартиру', discover: 'Открыть историю', consultation: 'Получить консультацию',
     render: 'Рендер', photo: 'Фотография', concept: 'Концепт-рендер', construction: 'Ход строительства',
-    facts: ['204 предложения в live-каталоге', 'Не менее 44% территории — озеленение', 'Comfort · Comfort+ · Business', 'Закрытые дворы без машин'],
+    facts: ['Актуальные предложения в каталоге', 'Не менее 44% территории — озеленение', 'Comfort · Comfort+ · Business', 'Закрытые дворы без машин'],
     storyTop: '01 · Большой маршрут', storyTitle: 'Город раскрывается как сад.',
     storyText: 'Maftun Makon — жилой квартал от NRG-BI и AL-BINA в новой развивающейся части Ташкента, вдоль проспекта Янги Узбекистон. Его принцип — «город в городе»: повседневные сценарии собраны внутри большого квартала.',
     masterplanCaption: 'Концептуальный мастерплан · официальный материал',
@@ -72,10 +73,10 @@ const copy = {
     previous: 'Предыдущий кадр', next: 'Следующий кадр', openImage: 'Открыть на весь экран', slide: 'Кадр',
     constructionNote: 'Последний опубликованный официальный отчёт — июль 2026. Исходный архив включает 17 месячных групп и 78 строительных фотографий.',
     contactTop: '08 · Следующий шаг', contactTitle: 'Выберите квартиру за порталом.',
-    contactText: 'В локальном snapshot — все 204 предложения, опубликованные официальным каталогом на 30 августа 2026 года.',
+    contactText: 'В каталоге автоматически обновляются состав предложений, цены и статусы квартир.',
     catalog: 'Открыть каталог', phone: 'Позвонить · +998 78 113 77 12', booklet: 'Официальный буклет', privacy: 'Конфиденциальность',
     formTitle: 'Запросить консультацию', formText: 'Менеджер проекта уточнит ваш сценарий покупки и подготовит актуальную подборку Maftun Makon.',
-    footerNote: 'Информация и цены snapshot не являются публичной офертой. Актуальные условия подтверждает отдел продаж.',
+    footerNote: 'Информация и цены данные каталога не являются публичной офертой. Актуальные условия подтверждает отдел продаж.',
   },
   uz: {
     skip: 'Mazmunga o‘tish', menu: 'Menyu', close: 'Yopish', language: 'Til',
@@ -84,7 +85,7 @@ const copy = {
     heroFact: 'Shahar ichida shahar · 4–7 qavatli uylar · eng yaqin topshirish — 2026-yil IV choragi',
     choose: 'Xonadon tanlash', discover: 'Hikoyani ochish', consultation: 'Maslahat olish',
     render: 'Render', photo: 'Fotosurat', concept: 'Konsept-render', construction: 'Qurilish jarayoni',
-    facts: ['Live katalogda 204 ta taklif', 'Hududning kamida 44 foizi ko‘kalamzor', 'Comfort · Comfort+ · Business', 'Avtomobilsiz yopiq hovlilar'],
+    facts: ['Katalogdagi dolzarb takliflar', 'Hududning kamida 44 foizi ko‘kalamzor', 'Comfort · Comfort+ · Business', 'Avtomobilsiz yopiq hovlilar'],
     storyTop: '01 · Katta yo‘nalish', storyTitle: 'Shahar bog‘ kabi ochiladi.',
     storyText: 'Maftun Makon — NRG-BI va AL-BINA kompaniyalarining Toshkentning yangi rivojlanayotgan qismida, Yangi O‘zbekiston shoh ko‘chasi bo‘ylab joylashgan turar joy mavzesi. Uning tamoyili — «shahar ichida shahar».',
     masterplanCaption: 'Konseptual bosh reja · rasmiy material', chaptersTitle: 'Sakkiz qism — uch hayot darajasi',
@@ -107,10 +108,10 @@ const copy = {
     previous: 'Oldingi kadr', next: 'Keyingi kadr', openImage: 'To‘liq ekranda ochish', slide: 'Kadr',
     constructionNote: 'So‘nggi e’lon qilingan rasmiy hisobot — 2026-yil iyul. Asl arxivda 17 oylik guruh va 78 ta qurilish fotosurati bor.',
     contactTop: '08 · Keyingi qadam', contactTitle: 'Portal ortidagi xonadonni tanlang.',
-    contactText: 'Mahalliy snapshotda 2026-yil 30-avgustdagi rasmiy katalogning barcha 204 ta taklifi bor.',
+    contactText: 'Takliflar, narxlar va xonadon holatlari rasmiy katalogdan avtomatik yangilanadi.',
     catalog: 'Katalogni ochish', phone: 'Qo‘ng‘iroq · +998 78 113 77 12', booklet: 'Rasmiy buklet', privacy: 'Maxfiylik',
     formTitle: 'Maslahat so‘rash', formText: 'Loyiha menejeri xarid maqsadingizni aniqlab, Maftun Makon bo‘yicha dolzarb variantlarni tayyorlaydi.',
-    footerNote: 'Snapshot ma’lumotlari va narxlari ommaviy oferta emas. Amaldagi shartlarni savdo bo‘limi tasdiqlaydi.',
+    footerNote: 'Katalog ma’lumotlari ma’lumotlari va narxlari ommaviy oferta emas. Amaldagi shartlarni savdo bo‘limi tasdiqlaydi.',
   },
   en: {
     skip: 'Skip to content', menu: 'Menu', close: 'Close', language: 'Language',
@@ -119,7 +120,7 @@ const copy = {
     heroFact: 'A city within a city · 4–7-storey homes · nearest handover — Q4 2026',
     choose: 'Choose an apartment', discover: 'Discover the story', consultation: 'Request a consultation',
     render: 'Render', photo: 'Photograph', concept: 'Concept render', construction: 'Construction progress',
-    facts: ['204 live-catalogue listings', 'At least 44% of the site is landscaped', 'Comfort · Comfort+ · Business', 'Enclosed car-free courtyards'],
+    facts: ['Current catalogue listings', 'At least 44% of the site is landscaped', 'Comfort · Comfort+ · Business', 'Enclosed car-free courtyards'],
     storyTop: '01 · The long route', storyTitle: 'The city unfolds like a garden.',
     storyText: 'Maftun Makon is a residential quarter by NRG-BI and AL-BINA, located along Yangi O‘zbekiston Avenue in a newly developing part of Tashkent. Its principle is “a city within a city”, bringing everyday settings into one large quarter.',
     masterplanCaption: 'Conceptual masterplan · official material', chaptersTitle: 'Eight parts — three levels of living',
@@ -142,10 +143,10 @@ const copy = {
     previous: 'Previous frame', next: 'Next frame', openImage: 'Open fullscreen', slide: 'Frame',
     constructionNote: 'The latest published official report is July 2026. The source archive contains 17 monthly groups and 78 construction photographs.',
     contactTop: '08 · Next step', contactTitle: 'Choose an apartment beyond the portal.',
-    contactText: 'The local snapshot contains all 204 listings published by the official catalogue on 30 August 2026.',
+    contactText: 'Listings, prices and statuses update automatically from the official catalogue.',
     catalog: 'Open catalogue', phone: 'Call · +998 78 113 77 12', booklet: 'Official booklet', privacy: 'Privacy',
     formTitle: 'Request a consultation', formText: 'The project manager will clarify your purchase plans and prepare current Maftun Makon options.',
-    footerNote: 'Snapshot information and prices are not a public offer. Current terms are confirmed by the sales team.',
+    footerNote: 'Live catalogue information and prices are not a public offer. Current terms are confirmed by the sales team.',
   },
 } as const;
 
@@ -355,6 +356,7 @@ function GalleryRail({ slides, language, label, onOpen }: { slides: Slide[]; lan
 
 export function MaftunMakonPage({ initialLanguage }: { initialLanguage: Language }) {
   const [language, setLanguage] = useLanguage(initialLanguage);
+  const { data: catalogProject, dataSource } = useLiveCatalogProject('maftun-makon', { slug: 'maftun-makon', name: 'Maftun Makon', totalUnits: 0, availableUnits: 0 });
   const [menuOpen, setMenuOpen] = useState(false);
   const [lightbox, setLightbox] = useState<LightboxState>(null);
   const [leadContext, setLeadContext] = useState<string>();
@@ -362,6 +364,11 @@ export function MaftunMakonPage({ initialLanguage }: { initialLanguage: Language
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const menuNavigationTargetRef = useRef<string | undefined>(undefined);
   const t = copy[language];
+  const catalogCount = new Intl.NumberFormat(language === 'ru' ? 'ru-RU' : language === 'uz' ? 'uz-UZ' : 'en-US').format(catalogProject.availableUnits);
+  const projectFacts = dataSource === 'embedded' ? t.facts : [
+    language === 'ru' ? `${catalogCount} актуальных предложений` : language === 'uz' ? `${catalogCount} ta dolzarb taklif` : `${catalogCount} current listings`,
+    ...t.facts.slice(1),
+  ];
   useReveal();
   useMaftunSmoothScroll();
 
@@ -435,7 +442,7 @@ export function MaftunMakonPage({ initialLanguage }: { initialLanguage: Language
       </section>
 
       <div id="maftun-content" tabIndex={-1} aria-hidden={menuOpen || undefined} inert={menuOpen ? true : undefined}>
-        <section className="maftun-facts" aria-label="Project facts">{t.facts.map((fact, index) => <div key={fact}><span>0{index + 1}</span><strong>{fact}</strong></div>)}</section>
+        <section className="maftun-facts" aria-label="Project facts">{projectFacts.map((fact, index) => <div key={fact}><span>0{index + 1}</span><strong>{fact}</strong></div>)}</section>
 
         <section className="maftun-story" id="story" tabIndex={-1}>
           <header data-maftun-reveal data-maftun-stagger><p className="maftun-overline">{t.storyTop}</p><h2>{t.storyTitle}</h2><p>{t.storyText}</p></header>
@@ -491,7 +498,7 @@ export function MaftunMakonPage({ initialLanguage }: { initialLanguage: Language
         <p>{t.footerNote}</p><a href="#top" aria-label="Back to top">↑</a>
       </footer>
 
-      {leadContext ? <div className="maftun-lead-host" data-project-slug="maftun-makon" data-context={leadContext}><LeadModal open language={language} context={leadContext} hideBrand projectName="MAFTUN MAKON" tagline={`${t.heroTitle} ${t.heroAccent}`} facts={t.facts.slice(0, 3)} submitUrl={maftunLeadSubmitUrl()} projectSlug="maftun-makon" privacyUrl={privacyUrl(language)} requireConsent onClose={closeLead} /></div> : null}
+      {leadContext ? <div className="maftun-lead-host" data-project-slug="maftun-makon" data-context={leadContext}><LeadModal open language={language} context={leadContext} hideBrand projectName="MAFTUN MAKON" tagline={`${t.heroTitle} ${t.heroAccent}`} facts={projectFacts.slice(0, 3)} submitUrl={maftunLeadSubmitUrl()} projectSlug="maftun-makon" privacyUrl={privacyUrl(language)} requireConsent onClose={closeLead} /></div> : null}
       {lightbox ? <Lightbox state={lightbox} language={language} onClose={closeLightbox} /> : null}
     </main>
   );

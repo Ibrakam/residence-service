@@ -3,7 +3,8 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { useEffect, useMemo, useState } from 'react';
-import { LeadModal } from '@/app/lead-modal';
+import { LeadModal, rememberLiveCatalogUnit } from '@/app/lead-modal';
+import { catalogLeadIdentity, useLiveCatalogUnits } from '@/app/live-catalog';
 
 type Language = 'ru' | 'uz' | 'en';
 type Mode = 'cards' | 'chess';
@@ -18,22 +19,22 @@ const languages: Language[] = ['ru', 'uz', 'en'];
 
 const copy = {
   ru: {
-    back: 'О проекте', title: 'Выберите пространство,', accent: 'которое услышит вас.', lead: 'Реальные предложения из официального каталога Sad’O — с точными планировками, этажами, площадями и ценами на дату snapshot.',
+    back: 'О проекте', title: 'Выберите пространство,', accent: 'которое услышит вас.', lead: 'Реальные предложения из официального каталога Sad’O — с точными планировками, этажами, площадями и ценами по актуальным данным.',
     modes: { cards: 'Карточки', chess: 'Шахматка' }, modeLabel: 'Режим каталога', filters: 'Фильтры', queue: 'Очередь', allQueues: 'Все очереди', class: 'Класс', allClasses: 'Business и Comfort', business: 'Business', comfort: 'Comfort', rooms: 'Комнаты', area: 'Площадь, м²', areaFrom: 'От', areaTo: 'До', status: 'Статус', allActive: 'В продаже', priceRequestOnly: 'Цена по запросу', reset: 'Сбросить', result: 'предложений',
-    sort: 'Сортировка', sorts: { priceAsc: 'Сначала дешевле', priceDesc: 'Сначала дороже', areaAsc: 'Площадь по возрастанию', areaDesc: 'Площадь по убыванию', floorAsc: 'Сначала нижние этажи' }, snapshot: 'Официальный snapshot', sourceNote: 'Официальный каталог показывает выставленные предложения. Проданные и снятые с публикации объекты в snapshot не входят.',
-    active: 'В продаже', requestPrice: 'Цена по запросу', apartment: 'квартира', floor: 'этаж', entrance: 'подъезд', due: 'Срок', pricePer: 'за м²', openPlan: 'Увеличить планировку', choose: 'Выбрать', detail: 'Детали квартиры', consult: 'Получить консультацию', close: 'Закрыть', showMore: 'Показать ещё', noResults: 'По этим параметрам предложений нет.', tryReset: 'Сбросить фильтры', previous: 'Прокрутить влево', next: 'Прокрутить вправо', level: 'Этаж', units: 'Квартиры', selected: 'Выбранная квартира', promoSnapshot: 'Стоимость на дату snapshot', project: "Sad'O · Яшнабад", language: 'Язык',
+    sort: 'Сортировка', sorts: { priceAsc: 'Сначала дешевле', priceDesc: 'Сначала дороже', areaAsc: 'Площадь по возрастанию', areaDesc: 'Площадь по убыванию', floorAsc: 'Сначала нижние этажи' }, snapshot: 'Актуальные данные', sourceNote: 'Официальный каталог показывает выставленные предложения. Проданные и снятые с публикации объекты в каталоге не входят.',
+    active: 'В продаже', requestPrice: 'Цена по запросу', apartment: 'квартира', floor: 'этаж', entrance: 'подъезд', due: 'Срок', pricePer: 'за м²', openPlan: 'Увеличить планировку', choose: 'Выбрать', detail: 'Детали квартиры', consult: 'Получить консультацию', close: 'Закрыть', showMore: 'Показать ещё', noResults: 'По этим параметрам предложений нет.', tryReset: 'Сбросить фильтры', previous: 'Прокрутить влево', next: 'Прокрутить вправо', level: 'Этаж', units: 'Квартиры', selected: 'Выбранная квартира', promoSnapshot: 'Стоимость по актуальным данным', project: "Sad'O · Яшнабад", language: 'Язык',
   },
   uz: {
-    back: 'Loyiha haqida', title: 'Sizni tinglaydigan', accent: 'makonni tanlang.', lead: 'Sad’O rasmiy katalogidagi haqiqiy takliflar — aniq rejalar, qavatlar, maydonlar va snapshot sanasidagi narxlar bilan.',
+    back: 'Loyiha haqida', title: 'Sizni tinglaydigan', accent: 'makonni tanlang.', lead: 'Sad’O rasmiy katalogidagi haqiqiy takliflar — aniq rejalar, qavatlar, maydonlar va joriy narxlar bilan.',
     modes: { cards: 'Kartalar', chess: 'Shaxmatka' }, modeLabel: 'Katalog ko‘rinishi', filters: 'Filtrlar', queue: 'Navbat', allQueues: 'Barcha navbatlar', class: 'Klass', allClasses: 'Business va Comfort', business: 'Business', comfort: 'Comfort', rooms: 'Xonalar', area: 'Maydon, m²', areaFrom: 'Dan', areaTo: 'Gacha', status: 'Holat', allActive: 'Sotuvda', priceRequestOnly: 'Narx so‘rov bo‘yicha', reset: 'Tozalash', result: 'ta taklif',
-    sort: 'Saralash', sorts: { priceAsc: 'Arzonidan boshlab', priceDesc: 'Qimmatidan boshlab', areaAsc: 'Maydon o‘sishi bo‘yicha', areaDesc: 'Maydon kamayishi bo‘yicha', floorAsc: 'Quyi qavatlar avval' }, snapshot: 'Rasmiy snapshot', sourceNote: 'Rasmiy katalog faqat e’lon qilingan takliflarni ko‘rsatadi. Sotilgan va e’londan olingan obyektlar snapshotga kirmaydi.',
-    active: 'Sotuvda', requestPrice: 'Narx so‘rov bo‘yicha', apartment: 'xonadon', floor: 'qavat', entrance: 'kirish', due: 'Muddat', pricePer: 'm² uchun', openPlan: 'Rejani kattalashtirish', choose: 'Tanlash', detail: 'Xonadon tafsilotlari', consult: 'Maslahat olish', close: 'Yopish', showMore: 'Yana ko‘rsatish', noResults: 'Bu parametrlar bo‘yicha taklif yo‘q.', tryReset: 'Filtrlarni tozalash', previous: 'Chapga surish', next: 'O‘ngga surish', level: 'Qavat', units: 'Xonadonlar', selected: 'Tanlangan xonadon', promoSnapshot: 'Snapshot sanasidagi narx', project: "Sad'O · Yashnobod", language: 'Til',
+    sort: 'Saralash', sorts: { priceAsc: 'Arzonidan boshlab', priceDesc: 'Qimmatidan boshlab', areaAsc: 'Maydon o‘sishi bo‘yicha', areaDesc: 'Maydon kamayishi bo‘yicha', floorAsc: 'Quyi qavatlar avval' }, snapshot: 'Yangilanadigan katalog', sourceNote: 'Rasmiy katalog faqat e’lon qilingan takliflarni ko‘rsatadi. Sotilgan va e’londan olingan obyektlar katalog ma’lumotlariga kirmaydi.',
+    active: 'Sotuvda', requestPrice: 'Narx so‘rov bo‘yicha', apartment: 'xonadon', floor: 'qavat', entrance: 'kirish', due: 'Muddat', pricePer: 'm² uchun', openPlan: 'Rejani kattalashtirish', choose: 'Tanlash', detail: 'Xonadon tafsilotlari', consult: 'Maslahat olish', close: 'Yopish', showMore: 'Yana ko‘rsatish', noResults: 'Bu parametrlar bo‘yicha taklif yo‘q.', tryReset: 'Filtrlarni tozalash', previous: 'Chapga surish', next: 'O‘ngga surish', level: 'Qavat', units: 'Xonadonlar', selected: 'Tanlangan xonadon', promoSnapshot: 'Joriy narx', project: "Sad'O · Yashnobod", language: 'Til',
   },
   en: {
-    back: 'About the project', title: 'Choose a space', accent: 'that listens to you.', lead: 'Real Sad’O listings from the official catalogue, with exact plans, floors, areas and prices at the snapshot date.',
+    back: 'About the project', title: 'Choose a space', accent: 'that listens to you.', lead: 'Real Sad’O listings from the official catalogue, with exact plans, floors, areas and prices at the latest update.',
     modes: { cards: 'Cards', chess: 'Chess' }, modeLabel: 'Catalogue view', filters: 'Filters', queue: 'Phase', allQueues: 'All phases', class: 'Class', allClasses: 'Business and Comfort', business: 'Business', comfort: 'Comfort', rooms: 'Rooms', area: 'Area, m²', areaFrom: 'From', areaTo: 'To', status: 'Status', allActive: 'For sale', priceRequestOnly: 'Price on request', reset: 'Reset', result: 'listings',
-    sort: 'Sort', sorts: { priceAsc: 'Lowest price first', priceDesc: 'Highest price first', areaAsc: 'Area ascending', areaDesc: 'Area descending', floorAsc: 'Lower floors first' }, snapshot: 'Official snapshot', sourceNote: 'The official catalogue shows published listings. Sold and withdrawn properties are not included in the snapshot.',
-    active: 'For sale', requestPrice: 'Price on request', apartment: 'apartment', floor: 'floor', entrance: 'entrance', due: 'Due', pricePer: 'per m²', openPlan: 'Enlarge plan', choose: 'Select', detail: 'Apartment details', consult: 'Request a consultation', close: 'Close', showMore: 'Show more', noResults: 'No listings match these parameters.', tryReset: 'Reset filters', previous: 'Scroll left', next: 'Scroll right', level: 'Floor', units: 'Apartments', selected: 'Selected apartment', promoSnapshot: 'Price at snapshot date', project: "Sad'O · Yashnabad", language: 'Language',
+    sort: 'Sort', sorts: { priceAsc: 'Lowest price first', priceDesc: 'Highest price first', areaAsc: 'Area ascending', areaDesc: 'Area descending', floorAsc: 'Lower floors first' }, snapshot: 'Live catalogue', sourceNote: 'The official catalogue shows published listings. Sold and withdrawn properties are not included in the live catalogue.',
+    active: 'For sale', requestPrice: 'Price on request', apartment: 'apartment', floor: 'floor', entrance: 'entrance', due: 'Due', pricePer: 'per m²', openPlan: 'Enlarge plan', choose: 'Select', detail: 'Apartment details', consult: 'Request a consultation', close: 'Close', showMore: 'Show more', noResults: 'No listings match these parameters.', tryReset: 'Reset filters', previous: 'Scroll left', next: 'Scroll right', level: 'Floor', units: 'Apartments', selected: 'Selected apartment', promoSnapshot: 'Price at latest update', project: "Sad'O · Yashnabad", language: 'Language',
   },
 } as const;
 
@@ -42,9 +43,10 @@ function withLanguage(path: string, language: Language) { return `${appBasePath}
 function formatMoney(value: number, language: Language) { return `${new Intl.NumberFormat(language === 'ru' ? 'ru-RU' : language === 'uz' ? 'uz-UZ' : 'en-US', { maximumFractionDigits: 0 }).format(value)} UZS`; }
 function leadSubmitUrl() { return `${appBasePath}/v1/leads`; }
 function classLabel(unit: Unit) { return unit.class === 'business' ? 'Business' : 'Comfort'; }
+function unitPlan(unit: Unit) { return unit.planUrl || `/sado/plans/${unit.id}.webp`; }
 
 function UnitPlan({ unit, label, onOpen }: { unit: Unit; label: string; onOpen: () => void }) {
-  return <button className="sado-unit-plan" type="button" onClick={onOpen} aria-label={`${label} № ${unit.number}`}><img src={asset(`/sado/plans/${unit.id}.webp`)} alt={`Sad'O · № ${unit.number}`} loading="lazy" /><span>⌕</span></button>;
+  return <button className="sado-unit-plan" type="button" onClick={onOpen} aria-label={`${label} № ${unit.number}`}><img src={asset(unitPlan(unit))} alt={`Sad'O · № ${unit.number}`} loading="lazy" /><span>⌕</span></button>;
 }
 
 function UnitDetail({ unit, language, onPlan, onLead }: { unit: Unit; language: Language; onPlan: () => void; onLead: () => void }) {
@@ -80,6 +82,7 @@ function MatrixGroup({ units, language, selectedId, onSelect, onPlan, onLead, in
 }
 
 export function SadoCatalogPage({ initialUnits, snapshotGeneratedAt, sourceCount }: { initialUnits: Unit[]; snapshotGeneratedAt: string; sourceCount: number }) {
+  const { data: units, refreshedAt, project } = useLiveCatalogUnits('sado', initialUnits);
   const [language, setLanguageState] = useState<Language>('ru');
   const [mode, setMode] = useState<Mode>('cards');
   const [queue, setQueue] = useState('all');
@@ -94,15 +97,16 @@ export function SadoCatalogPage({ initialUnits, snapshotGeneratedAt, sourceCount
   const [planUnit, setPlanUnit] = useState<Unit>();
   const [leadUnit, setLeadUnit] = useState<Unit>();
   const t = copy[language];
-  const blocks = useMemo(() => [...new Set(initialUnits.map((unit) => unit.block))], [initialUnits]);
+  const blocks = useMemo(() => [...new Set(units.map((unit) => unit.block))], [units]);
 
   useEffect(() => { const query = new URLSearchParams(window.location.search).get('lang'); const stored = window.localStorage.getItem('sado-language'); const next = languages.includes(query as Language) ? query : stored; const frame = window.requestAnimationFrame(() => { if (languages.includes(next as Language)) setLanguageState(next as Language); }); return () => window.cancelAnimationFrame(frame); }, []);
   useEffect(() => { document.documentElement.lang = language; }, [language]);
   useEffect(() => { const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setPlanUnit(undefined); }; window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey); }, []);
+  useEffect(() => { if (leadUnit) rememberLiveCatalogUnit(leadUnit, 'sado'); }, [leadUnit]);
 
   const filtered = useMemo(() => {
     const min = Number(areaMin) || 0; const max = Number(areaMax) || Infinity;
-    const result = initialUnits.filter((unit) => (queue === 'all' || unit.block === queue) && (propertyClass === 'all' || unit.class === propertyClass) && (!rooms.length || rooms.includes(unit.rooms)) && unit.area >= min && unit.area <= max && (status === 'available' || unit.price == null));
+    const result = units.filter((unit) => (queue === 'all' || unit.block === queue) && (propertyClass === 'all' || unit.class === propertyClass) && (!rooms.length || rooms.includes(unit.rooms)) && unit.area >= min && unit.area <= max && (status === 'available' || unit.price == null));
     return [...result].sort((a, b) => {
       if (sort === 'priceAsc') return (a.price ?? Infinity) - (b.price ?? Infinity);
       if (sort === 'priceDesc') return (b.price ?? -1) - (a.price ?? -1);
@@ -110,15 +114,15 @@ export function SadoCatalogPage({ initialUnits, snapshotGeneratedAt, sourceCount
       if (sort === 'areaDesc') return b.area - a.area;
       return a.floor - b.floor;
     });
-  }, [initialUnits, queue, propertyClass, rooms, areaMin, areaMax, status, sort]);
+  }, [units, queue, propertyClass, rooms, areaMin, areaMax, status, sort]);
   const groups = useMemo(() => blocks.map((block) => filtered.filter((unit) => unit.block === block)).filter((units) => units.length), [blocks, filtered]);
   const reset = () => { setQueue('all'); setPropertyClass('all'); setRooms([]); setAreaMin(''); setAreaMax(''); setStatus('available'); setVisibleCount(24); };
   const setLanguage = (next: Language) => { setLanguageState(next); window.localStorage.setItem('sado-language', next); const url = new URL(window.location.href); url.searchParams.set('lang', next); window.history.replaceState({}, '', url); };
-  const snapshot = new Intl.DateTimeFormat(language === 'ru' ? 'ru-RU' : language === 'uz' ? 'uz-UZ' : 'en-GB', { dateStyle: 'long', timeZone: 'Asia/Tashkent' }).format(new Date(snapshotGeneratedAt));
+  const updatedLabel = new Intl.DateTimeFormat(language === 'ru' ? 'ru-RU' : language === 'uz' ? 'uz-UZ' : 'en-GB', { dateStyle: 'long', timeZone: 'Asia/Tashkent' }).format(new Date(refreshedAt ?? snapshotGeneratedAt));
 
   return <main className="sado-catalog">
     <header className="sado-catalog-header"><a className="sado-logo" href={withLanguage('/sado', language)}><span>SAD</span><i>’</i><span>O</span></a><a href={withLanguage('/sado', language)}>← {t.back}</a><div className="sado-catalog-language" aria-label={t.language}>{languages.map((item) => <button key={item} type="button" className={item === language ? 'is-active' : ''} onClick={() => setLanguage(item)}>{item.toUpperCase()}</button>)}</div></header>
-    <section className="sado-catalog-hero"><div><p>{t.project}</p><h1>{t.title}<em>{t.accent}</em></h1><span>{t.lead}</span></div><div className="sado-catalog-snapshot"><small>{t.snapshot}</small><strong>{snapshot}</strong><span>{sourceCount} / {sourceCount}</span></div></section>
+    <section className="sado-catalog-hero"><div><p>{t.project}</p><h1>{t.title}<em>{t.accent}</em></h1><span>{t.lead}</span></div><div className="sado-catalog-snapshot"><small>{t.snapshot}</small><strong>{updatedLabel}</strong><span>{units.length} / {project?.totalUnits ?? sourceCount}</span></div></section>
 
     <section className="sado-catalog-toolbar" aria-label={t.filters}>
       <div className="sado-mode-switch" role="radiogroup" aria-label={t.modeLabel}>{(['cards', 'chess'] as Mode[]).map((item) => <button key={item} data-testid={`mode-${item}`} type="button" role="radio" aria-checked={mode === item} className={mode === item ? 'is-active' : ''} onClick={() => setMode(item)}>{t.modes[item]}</button>)}</div>
@@ -141,7 +145,7 @@ export function SadoCatalogPage({ initialUnits, snapshotGeneratedAt, sourceCount
     </section>
 
     <footer className="sado-catalog-footer"><a className="sado-logo is-footer" href={withLanguage('/sado', language)}><span>SAD</span><i>’</i><span>O</span></a><p>{t.sourceNote}</p><a href="tel:+998781137712">+998 78 113 77 12</a></footer>
-    {planUnit ? <div className="sado-plan-lightbox" role="dialog" aria-modal="true" aria-label={`${t.openPlan} № ${planUnit.number}`} onClick={() => setPlanUnit(undefined)}><button type="button" aria-label={t.close} onClick={() => setPlanUnit(undefined)} autoFocus>×</button><figure onClick={(event) => event.stopPropagation()}><img src={asset(`/sado/plans/${planUnit.id}.webp`)} alt={`Sad'O · № ${planUnit.number}`} /><figcaption><strong>№ {planUnit.number} · {planUnit.rooms} · {planUnit.area.toFixed(2)} м²</strong><span>{planUnit.block} · {planUnit.floor}/{planUnit.maxFloor} {t.floor}</span></figcaption></figure></div> : null}
-    <LeadModal open={Boolean(leadUnit)} language={language} context={leadUnit ? `sado:unit:${leadUnit.id}` : 'sado:catalog'} brandName="NRG-BI" projectName="Sad'O" tagline={leadUnit ? `№ ${leadUnit.number} · ${leadUnit.rooms} · ${leadUnit.area.toFixed(2)} м²` : t.accent} facts={leadUnit ? [classLabel(leadUnit), `${leadUnit.floor}/${leadUnit.maxFloor} ${t.floor}`, leadUnit.price ? formatMoney(leadUnit.price, language) : t.requestPrice] : undefined} submitUrl={leadSubmitUrl()} projectSlug="sado" unitId={leadUnit?.id} privacyUrl={`${appBasePath}/privacy?project=sado&lang=${language}&from=catalog`} requireConsent onClose={() => setLeadUnit(undefined)} />
+    {planUnit ? <div className="sado-plan-lightbox" role="dialog" aria-modal="true" aria-label={`${t.openPlan} № ${planUnit.number}`} onClick={() => setPlanUnit(undefined)}><button type="button" aria-label={t.close} onClick={() => setPlanUnit(undefined)} autoFocus>×</button><figure onClick={(event) => event.stopPropagation()}><img src={asset(unitPlan(planUnit))} alt={`Sad'O · № ${planUnit.number}`} /><figcaption><strong>№ {planUnit.number} · {planUnit.rooms} · {planUnit.area.toFixed(2)} м²</strong><span>{planUnit.block} · {planUnit.floor}/{planUnit.maxFloor} {t.floor}</span></figcaption></figure></div> : null}
+    <LeadModal open={Boolean(leadUnit)} language={language} context={leadUnit ? `sado:unit:${leadUnit.id}` : 'sado:catalog'} brandName="NRG-BI" projectName="Sad'O" tagline={leadUnit ? `№ ${leadUnit.number} · ${leadUnit.rooms} · ${leadUnit.area.toFixed(2)} м²` : t.accent} facts={leadUnit ? [classLabel(leadUnit), `${leadUnit.floor}/${leadUnit.maxFloor} ${t.floor}`, leadUnit.price ? formatMoney(leadUnit.price, language) : t.requestPrice] : undefined} submitUrl={leadSubmitUrl()} projectSlug="sado" {...catalogLeadIdentity(leadUnit)} privacyUrl={`${appBasePath}/privacy?project=sado&lang=${language}&from=catalog`} requireConsent onClose={() => setLeadUnit(undefined)} />
   </main>;
 }

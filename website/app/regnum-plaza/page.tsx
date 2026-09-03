@@ -17,21 +17,21 @@ const absoluteUrl = (path: string) => `${publicOrigin}${sitePath(path)}`;
 const copy = {
   ru: {
     title: 'Regnum Plaza — последние квартиры бизнес-класса в Ташкенте',
-    description: 'Regnum Plaza на улице Сайрам: открытая первая очередь, 11 блоков, 776 квартир, приватный двор, богатая внутренняя среда и 12 текущих предложений по официальному срезу.',
+    description: 'Regnum Plaza на улице Сайрам: открытая первая очередь, 11 блоков, 776 квартир, приватный двор и автоматически обновляемый каталог предложений.',
     imageAlt: 'Реальная фотография открытой первой очереди Regnum Plaza', home: 'Главная',
     status: 'Последние квартиры', class: 'Бизнес', completion: 'IV квартал 2026', address: 'Ташкент, Мирзо-Улугбекский район, ул. Сайрам', insurance: 'Страхование квартир на 10 лет',
     properties: [['Класс', 'Бизнес'], ['Статус', 'Последние квартиры'], ['Срок проекта', 'IV квартал 2026'], ['Блоки', '11 блоков'], ['Очереди', '3 очереди'], ['Площадь территории', '30 000 м²'], ['Страхование', 'Квартиры застрахованы на 10 лет']] as const,
   },
   uz: {
     title: 'Regnum Plaza — Toshkentdagi biznes-klassning eng so‘nggi xonadonlari',
-    description: 'Sayram ko‘chasidagi Regnum Plaza: ochilgan birinchi bosqich, 11 blok, 776 xonadon, yopiq hovli, boy ichki muhit va rasmiy kesimdagi 12 ta joriy taklif.',
+    description: 'Sayram ko‘chasidagi Regnum Plaza: ochilgan birinchi bosqich, 11 blok, 776 xonadon, yopiq hovli va avtomatik yangilanadigan takliflar katalogi.',
     imageAlt: 'Regnum Plaza ochilgan birinchi bosqichining haqiqiy fotosurati', home: 'Bosh sahifa',
     status: 'Eng so‘nggi kvartiralar', class: 'Biznes', completion: '2026-yil IV chorak', address: 'Toshkent, Mirzo Ulug‘bek tumani, Sayram ko‘chasi', insurance: 'Xonadonlar 10 yilga sug‘urtalangan',
     properties: [['Sinf', 'Biznes'], ['Holat', 'Eng so‘nggi kvartiralar'], ['Loyiha muddati', '2026-yil IV chorak'], ['Bloklar', '11 ta blok'], ['Bosqichlar', '3 ta bosqich'], ['Hudud maydoni', '30 000 m²'], ['Sug‘urta', 'Xonadonlar 10 yilga sug‘urtalangan']] as const,
   },
   en: {
     title: 'Regnum Plaza — last remaining business-class apartments in Tashkent',
-    description: 'Regnum Plaza on Sayram Street: an opened first phase, 11 blocks, 776 apartments, a private courtyard, extensive resident amenities and 12 current official listings.',
+    description: 'Regnum Plaza on Sayram Street: an opened first phase, 11 blocks, 776 apartments, a private courtyard and an automatically updated listings catalogue.',
     imageAlt: 'Actual photograph of the opened first phase at Regnum Plaza', home: 'Home',
     status: 'Last Remaining Apartments', class: 'Business', completion: 'Q4 2026', address: 'Sayram Street, Mirzo-Ulugbek District, Tashkent', insurance: 'Apartments insured for 10 years',
     properties: [['Class', 'Business'], ['Status', 'Last Remaining Apartments'], ['Completion', 'Q4 2026'], ['Blocks', '11 blocks'], ['Phases', '3 phases'], ['Site area', '30,000 m²'], ['Insurance', 'Apartments insured for 10 years']] as const,

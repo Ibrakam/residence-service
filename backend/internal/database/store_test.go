@@ -295,3 +295,14 @@ func TestCreateLeadRejectsMissingConsentBeforeDatabase(t *testing.T) {
 		t.Fatalf("missing consent error = %v", err)
 	}
 }
+
+func TestOnlyReferenceErrorsAreOptionalForLastViewedApartment(t *testing.T) {
+	for _, err := range []error{ErrUnitNotFound, ErrUnitProjectMismatch, ErrAmbiguousUnitReference, ErrUnitReferenceMismatch} {
+		if !isOptionalLastViewedReferenceError(err) {
+			t.Fatalf("last viewed reference error %v was not optional", err)
+		}
+	}
+	if isOptionalLastViewedReferenceError(errors.New("database unavailable")) {
+		t.Fatal("database failure was incorrectly treated as optional")
+	}
+}

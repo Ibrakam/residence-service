@@ -1181,7 +1181,7 @@
 
   .kayan-site--mirador .kayan-hero__copy h1 {
     margin:18px 0 18px;
-    font-size:clamp(48px,4.25vw,68px);
+    font-size:clamp(42px,min(4.25vw,7.2vh),68px);
     line-height:.82;
   }
 

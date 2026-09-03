@@ -4,6 +4,11 @@ These files define the production boundary for the direct-project Residence
 frontend and the Telegram ticket service. They contain no credentials and are
 not an instruction to grant the Telegram-facing process shell or root access.
 
+The separate shared Telegram login gateway, its credential boundaries,
+database role, Nginx route matrix, and rollout blockers are documented in
+[`AUTH_GATEWAY.md`](AUTH_GATEWAY.md). Do not enable that gate until its
+auth-aware deployment smoke contract is installed and verified.
+
 ## Layout and trust boundary
 
 The intended server layout is:

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 set -Eeuo pipefail
+set +x
 umask 0027
 
 readonly SERVICE_ROOT="/var/www/residence-service"
@@ -20,6 +21,9 @@ readonly PUBLIC_ORIGIN="https://form.tencorp.uz"
 readonly HOST_HEADER="form.tencorp.uz"
 readonly EXPECTED_ORIGIN="https://github.com/Ibrakam/residence-service.git"
 readonly MIN_FREE_KB=10485760
+readonly AUTH_GATE_MODE_FILE="/etc/tencorp-auth-gateway/public-gate-enabled"
+readonly AUTH_GATE_MODE_VALUE="tencorp-auth-gate-v1"
+readonly AUTH_SMOKE_SESSION_FILE="/etc/tencorp-auth-gateway/deploy-smoke-session"
 
 WORKTREE=""
 COMMIT=""
@@ -31,6 +35,10 @@ CANDIDATE_UNIT=""
 CANDIDATE_STARTED=0
 CURRENT_SWITCHED=0
 DEPLOYMENT_CONFIRMED=0
+PUBLIC_AUTH_GATE_ENABLED=0
+AUTH_SMOKE_CURL_CONFIG=""
+AUTH_SMOKE_IDENTITY_FILE=""
+FRAMEWORK_ASSET_PATH=""
 
 declare -a SMOKE_ROUTES=()
 readonly -a DIRECT_PROJECTS=(
@@ -88,6 +96,37 @@ safe_remove_staging() {
   esac
 }
 
+cleanup_auth_smoke_config() {
+  local path="${AUTH_SMOKE_CURL_CONFIG:-}"
+
+  if [[ -n "$path" && -f "$path" && ! -L "$path" ]]; then
+    case "$path" in
+      /run/tencorp-auth-smoke.*)
+        rm -f -- "$path"
+        AUTH_SMOKE_CURL_CONFIG=""
+        ;;
+      *)
+        log "Refusing to remove unexpected auth smoke config: $path"
+        return 1
+        ;;
+    esac
+  fi
+
+  path="${AUTH_SMOKE_IDENTITY_FILE:-}"
+  if [[ -n "$path" && -f "$path" && ! -L "$path" ]]; then
+    case "$path" in
+      /run/residence-auth-me.*|/run/residence-auth-account.*)
+        rm -f -- "$path"
+        AUTH_SMOKE_IDENTITY_FILE=""
+        ;;
+      *)
+        log "Refusing to remove unexpected auth identity smoke response: $path"
+        return 1
+        ;;
+    esac
+  fi
+}
+
 stop_candidate() {
   (( CANDIDATE_STARTED == 1 )) || return 0
   systemctl stop --quiet "$CANDIDATE_UNIT" >/dev/null 2>&1 || true
@@ -127,6 +166,45 @@ http_status() {
 
 status_is_healthy() {
   [[ "$1" =~ ^2[0-9][0-9]$ ]]
+}
+
+configure_public_auth_smoke_mode() {
+  local owner_uid mode marker_value session_token
+
+  if [[ ! -e "$AUTH_GATE_MODE_FILE" && ! -L "$AUTH_GATE_MODE_FILE" ]]; then
+    PUBLIC_AUTH_GATE_ENABLED=0
+    log "Public smoke mode: open-site-v1"
+    return 0
+  fi
+
+  [[ -f "$AUTH_GATE_MODE_FILE" && ! -L "$AUTH_GATE_MODE_FILE" ]] \
+    || die "auth gate mode marker must be a regular non-symlink file"
+  owner_uid="$(stat -c '%u' -- "$AUTH_GATE_MODE_FILE")"
+  mode="$(stat -c '%a' -- "$AUTH_GATE_MODE_FILE")"
+  [[ "$owner_uid" == 0 ]] || die "auth gate mode marker must be owned by root"
+  (( (8#$mode & 0022) == 0 )) || die "auth gate mode marker must not be writable by group or others"
+  marker_value="$(<"$AUTH_GATE_MODE_FILE")"
+  [[ "$marker_value" == "$AUTH_GATE_MODE_VALUE" ]] \
+    || die "auth gate mode marker has an unsupported value"
+
+  [[ -f "$AUTH_SMOKE_SESSION_FILE" && ! -L "$AUTH_SMOKE_SESSION_FILE" ]] \
+    || die "gated public smoke requires a regular non-symlink session fixture"
+  owner_uid="$(stat -c '%u' -- "$AUTH_SMOKE_SESSION_FILE")"
+  mode="$(stat -c '%a' -- "$AUTH_SMOKE_SESSION_FILE")"
+  [[ "$owner_uid" == 0 && "$mode" == 600 ]] \
+    || die "auth smoke session fixture must be root-owned mode 0600"
+  session_token="$(<"$AUTH_SMOKE_SESSION_FILE")"
+  [[ "$session_token" =~ ^[A-Za-z0-9_-]{43}$ ]] \
+    || die "auth smoke session fixture has an invalid opaque token"
+
+  AUTH_SMOKE_CURL_CONFIG="$(mktemp /run/tencorp-auth-smoke.XXXXXX)"
+  chmod 0600 -- "$AUTH_SMOKE_CURL_CONFIG"
+  # curl receives only this root-only filename in argv. The opaque session is
+  # never exported, logged, or placed on a command line.
+  printf 'noproxy = "*"\ncookie = "__Host-tencorp_session=%s"\n' "$session_token" > "$AUTH_SMOKE_CURL_CONFIG"
+  session_token=""
+  PUBLIC_AUTH_GATE_ENABLED=1
+  log "Public smoke mode: ${AUTH_GATE_MODE_VALUE}"
 }
 
 wait_for_http() {
@@ -413,6 +491,7 @@ smoke_asset_contract() {
     rm -f -- "$html_file" "$headers_file"
     die "rendered HTML has no production-prefixed framework asset: ${origin}${route}"
   fi
+  FRAMEWORK_ASSET_PATH="${asset_path%%\?*}"
 
   # The standalone Node candidate renders the final production-prefixed URLs,
   # but framework assets are intentionally served by Nginx from dist/client.
@@ -475,6 +554,391 @@ smoke_asset_contract() {
   log "Framework asset smoke passed: ${origin}${asset_path} (${status}, ${content_type})"
 }
 
+smoke_public_login_page() {
+  local route="$1"
+  local attempts="${2:-5}"
+  local attempt status cache_control
+  local body_file headers_file
+
+  body_file="$(mktemp /run/residence-auth-page.XXXXXX)"
+  headers_file="$(mktemp /run/residence-auth-headers.XXXXXX)"
+  for (( attempt = 1; attempt <= attempts; attempt += 1 )); do
+    : > "$body_file"
+    : > "$headers_file"
+    status="000"
+    if status="$(curl \
+      --disable \
+      --silent \
+      --show-error \
+      --output "$body_file" \
+      --dump-header "$headers_file" \
+      --write-out '%{http_code}' \
+      --connect-timeout 3 \
+      --max-time 15 \
+      --header "Host: ${HOST_HEADER}" \
+      --header 'Accept: text/html' \
+      "${PUBLIC_ORIGIN}${route}" 2>/dev/null)" \
+      && [[ "$status" == 200 ]] \
+      && grep -Fq 'method="post" action="/__auth/telegram/start"' "$body_file" \
+      && grep -Fq "name=\"return_to\" value=\"${route}\"" "$body_file"; then
+      cache_control="$(awk 'BEGIN { IGNORECASE=1 } /^Cache-Control:/ { value=$0 } END { sub(/^[^:]+:[[:space:]]*/, "", value); sub(/\r$/, "", value); print tolower(value) }' "$headers_file")"
+      if [[ "$cache_control" == *no-store* ]] \
+        && ! grep -Eiq '^Location:' "$headers_file" \
+        && ! grep -Eiq '^Set-Cookie:[[:space:]]*__Host-tencorp_session=' "$headers_file"; then
+        rm -f -- "$body_file" "$headers_file"
+        log "Public auth wall smoke passed: ${route} (${status})"
+        return 0
+      fi
+    fi
+    sleep 1
+  done
+
+  rm -f -- "$body_file" "$headers_file"
+  die "public auth wall smoke failed: ${PUBLIC_ORIGIN}${route} (last status ${status})"
+}
+
+smoke_public_unauthorized_resource() {
+  local path="$1"
+  local accept="$2"
+  local method="${3:-GET}"
+  local status cache_control
+  local body_file headers_file
+  local -a method_args=()
+
+  case "$method" in
+    GET) method_args=(--request GET) ;;
+    POST) method_args=(--request POST --data '') ;;
+    *) die "unsupported public unauthorized smoke method: ${method}" ;;
+  esac
+
+  body_file="$(mktemp /run/residence-auth-resource.XXXXXX)"
+  headers_file="$(mktemp /run/residence-auth-resource-headers.XXXXXX)"
+  status="$(curl \
+    --disable \
+    --silent \
+    --show-error \
+    --output "$body_file" \
+    --dump-header "$headers_file" \
+    --write-out '%{http_code}' \
+    --connect-timeout 3 \
+    --max-time 15 \
+    "${method_args[@]}" \
+    --header "Host: ${HOST_HEADER}" \
+    --header "Accept: ${accept}" \
+    "${PUBLIC_ORIGIN}${path}")" || {
+      rm -f -- "$body_file" "$headers_file"
+      die "could not query protected public resource: ${path}"
+    }
+  cache_control="$(awk 'BEGIN { IGNORECASE=1 } /^Cache-Control:/ { value=$0 } END { sub(/^[^:]+:[[:space:]]*/, "", value); sub(/\r$/, "", value); print tolower(value) }' "$headers_file")"
+  if [[ "$status" != 401 ]] \
+    || [[ "$cache_control" != *no-store* ]] \
+    || grep -Eiq '^Location:' "$headers_file" \
+    || ! grep -Fq '"error":"authentication_required"' "$body_file"; then
+    rm -f -- "$body_file" "$headers_file"
+    die "protected public resource did not return the non-cacheable 401 contract: ${path} (${status})"
+  fi
+  rm -f -- "$body_file" "$headers_file"
+  log "Public unauthorized resource smoke passed: ${method} ${path} (${status})"
+}
+
+smoke_public_exact_status() {
+  local path="$1"
+  local expected="$2"
+  local accept="${3:-*/*}"
+  local headers_file="${4:-}"
+  local status
+  local -a output_args=(--output /dev/null)
+
+  if [[ -n "$headers_file" ]]; then
+    output_args+=(--dump-header "$headers_file")
+  fi
+  status="$(curl \
+    --disable \
+    --silent \
+    --show-error \
+    "${output_args[@]}" \
+    --write-out '%{http_code}' \
+    --connect-timeout 3 \
+    --max-time 15 \
+    --header "Host: ${HOST_HEADER}" \
+    --header "Accept: ${accept}" \
+    "${PUBLIC_ORIGIN}${path}")" \
+    || die "could not query public contract path: ${path}"
+  [[ " ${expected} " == *" ${status} "* ]] \
+    || die "unexpected public status for ${path}: expected one of [${expected}], got ${status}"
+}
+
+smoke_public_immutable_auth_asset() {
+  local path="$1"
+  local expected_content_type="$2"
+  local headers_file status content_type cache_control hsts
+
+  headers_file="$(mktemp /run/residence-auth-asset-headers.XXXXXX)"
+  status="$(curl \
+    --disable \
+    --silent \
+    --show-error \
+    --output /dev/null \
+    --dump-header "$headers_file" \
+    --write-out '%{http_code}' \
+    --connect-timeout 3 \
+    --max-time 15 \
+    --header "Host: ${HOST_HEADER}" \
+    "${PUBLIC_ORIGIN}${path}")" || {
+      rm -f -- "$headers_file"
+      die "could not query public authorization asset: ${path}"
+    }
+  content_type="$(awk 'BEGIN { IGNORECASE=1 } /^Content-Type:/ { value=$0 } END { sub(/^[^:]+:[[:space:]]*/, "", value); sub(/\r$/, "", value); print tolower(value) }' "$headers_file")"
+  cache_control="$(awk 'BEGIN { IGNORECASE=1 } /^Cache-Control:/ { value=$0 } END { sub(/^[^:]+:[[:space:]]*/, "", value); sub(/\r$/, "", value); print tolower(value) }' "$headers_file")"
+  hsts="$(awk 'BEGIN { IGNORECASE=1 } /^Strict-Transport-Security:/ { value=$0 } END { sub(/^[^:]+:[[:space:]]*/, "", value); sub(/\r$/, "", value); print tolower(value) }' "$headers_file")"
+  rm -f -- "$headers_file"
+  if [[ "$status" != 200 ]] \
+    || [[ "$content_type" != "$expected_content_type"* ]] \
+    || [[ "$cache_control" != *public* || "$cache_control" != *max-age=31536000* || "$cache_control" != *immutable* ]] \
+    || [[ "$cache_control" == *no-store* || "$cache_control" == *private* ]] \
+    || [[ "$hsts" != *max-age=31536000* ]]; then
+    die "authorization asset contract failed: ${path} (${status}, ${content_type}, ${cache_control})"
+  fi
+}
+
+smoke_public_unauthenticated_contract() {
+  local route status body_file headers_file ticket_headers_file
+
+  [[ -n "$FRAMEWORK_ASSET_PATH" ]] \
+    || die "framework asset path was not captured before public auth smoke"
+  for route in "${SMOKE_ROUTES[@]}"; do
+    smoke_public_login_page "$route" 5
+  done
+  for route in /sanat/ /sanat/flats /avalon/ /tencorp/ /tencrop/; do
+    smoke_public_login_page "$route" 5
+  done
+
+  smoke_public_immutable_auth_asset '/__auth/assets/brand-city-v1.webp' 'image/webp'
+  smoke_public_immutable_auth_asset '/__auth/assets/manrope-cyrillic-v1.woff2' 'font/woff2'
+  smoke_public_immutable_auth_asset '/__auth/assets/cormorant-cyrillic-v1.woff2' 'font/woff2'
+  smoke_public_immutable_auth_asset '/__auth/assets/cormorant-italic-cyrillic-v1.woff2' 'font/woff2'
+
+  smoke_public_unauthorized_resource "$FRAMEWORK_ASSET_PATH" 'text/css,*/*;q=0.1'
+  # POSTing an empty body to a static framework asset cannot create a lead or
+  # invoke a business webhook, but proves non-GET failures stay a plain 401.
+  smoke_public_unauthorized_resource "$FRAMEWORK_ASSET_PATH" 'application/json' POST
+  smoke_public_unauthorized_resource '/residence-api/catalog/' 'application/json'
+  smoke_public_unauthorized_resource '/api/kayan/ofiyat-explorer' 'application/json'
+
+  smoke_public_exact_status '/__tencorp-auth/check' 404
+  smoke_public_exact_status '/privacy' 200 'text/html'
+  smoke_public_exact_status '/sitemap.xml' 404 'application/xml'
+  # These read-only probes distinguish the two external integration
+  # exemptions from the browser gate without sending a webhook secret,
+  # request body, or a real ACME challenge.
+  smoke_public_exact_status '/api/amo-webhook' 405 'application/json'
+  smoke_public_exact_status '/.well-known/acme-challenge/tencorp-auth-smoke-missing' 404 'text/plain'
+  ticket_headers_file="$(mktemp /run/residence-auth-ticket-headers.XXXXXX)"
+  : > "$ticket_headers_file"
+  smoke_public_exact_status \
+    '/__residence-ticket-worker/internal/ticket-runner/health' \
+    401 \
+    'application/json' \
+    "$ticket_headers_file"
+  if ! grep -Eiq '^WWW-Authenticate:[[:space:]]*Bearer[[:space:]]+realm="ticket-runner"([,[:space:]]|$)' "$ticket_headers_file"; then
+    rm -f -- "$ticket_headers_file"
+    die "ticket-worker Bearer authentication contract was weakened"
+  fi
+  rm -f -- "$ticket_headers_file"
+  # Disabled webhook: 404. Enabled POST-only webhook: GET receives 405. Both
+  # prove the auth prefix is public without sending an update or secret.
+  smoke_public_exact_status '/__auth/telegram/bot-webhook' '404 405' 'application/json'
+
+  body_file="$(mktemp /run/residence-auth-robots.XXXXXX)"
+  status="$(curl \
+    --disable \
+    --silent \
+    --show-error \
+    --output "$body_file" \
+    --write-out '%{http_code}' \
+    --connect-timeout 3 \
+    --max-time 15 \
+    --header "Host: ${HOST_HEADER}" \
+    "${PUBLIC_ORIGIN}/robots.txt")" || {
+      rm -f -- "$body_file"
+      die "could not query public robots policy"
+    }
+  if [[ "$status" != 200 ]] \
+    || ! grep -Fqx 'User-agent: *' "$body_file" \
+    || ! grep -Fqx 'Disallow: /' "$body_file"; then
+    rm -f -- "$body_file"
+    die "public robots policy does not close indexing"
+  fi
+  rm -f -- "$body_file"
+
+  headers_file="$(mktemp /run/residence-auth-operator-headers.XXXXXX)"
+  : > "$headers_file"
+  smoke_public_exact_status '/market-map/' 401 'text/html' "$headers_file"
+  if ! grep -Eiq '^WWW-Authenticate:[[:space:]]*Basic[[:space:]]+realm="TENCORP Market Map"' "$headers_file"; then
+    rm -f -- "$headers_file"
+    die "market-map Basic authentication contract was weakened"
+  fi
+  rm -f -- "$headers_file"
+
+  headers_file="$(mktemp /run/residence-auth-analytics-headers.XXXXXX)"
+  : > "$headers_file"
+  smoke_public_exact_status '/analytics' 401 'text/html' "$headers_file"
+  if ! grep -Eiq '^WWW-Authenticate:[[:space:]]*Basic[[:space:]]+realm="TenCorp Analytics"([,[:space:]]|$)' "$headers_file" \
+    || ! grep -Eiq '^Cache-Control:.*no-store' "$headers_file"; then
+    rm -f -- "$headers_file"
+    die "analytics Basic authentication contract was weakened"
+  fi
+  rm -f -- "$headers_file"
+  log "Public unauthenticated auth-gate contract passed"
+}
+
+smoke_public_authenticated_contract() {
+  local route status content_type
+  local body_file headers_file
+
+  [[ -n "$AUTH_SMOKE_CURL_CONFIG" && -f "$AUTH_SMOKE_CURL_CONFIG" ]] \
+    || die "authenticated public smoke has no protected curl config"
+  [[ -n "$FRAMEWORK_ASSET_PATH" ]] \
+    || die "framework asset path was not captured before authenticated public smoke"
+
+  for route in "${SMOKE_ROUTES[@]}"; do
+    status="$(curl \
+      --disable \
+      --config "$AUTH_SMOKE_CURL_CONFIG" \
+      --silent \
+      --show-error \
+      --output /dev/null \
+      --write-out '%{http_code}' \
+      --connect-timeout 3 \
+      --max-time 15 \
+      --header "Host: ${HOST_HEADER}" \
+      --header 'Accept: text/html' \
+      "${PUBLIC_ORIGIN}${route}")" \
+      || die "authenticated public page request failed: ${route}"
+    status_is_healthy "$status" \
+      || die "authenticated public page did not return 2xx: ${route} (${status})"
+  done
+
+  for route in /sanat/ /sanat/flats /avalon/ /tencorp/ /tencrop/; do
+    status="$(curl \
+      --disable \
+      --config "$AUTH_SMOKE_CURL_CONFIG" \
+      --silent \
+      --show-error \
+      --output /dev/null \
+      --write-out '%{http_code}' \
+      --connect-timeout 3 \
+      --max-time 15 \
+      --header "Host: ${HOST_HEADER}" \
+      --header 'Accept: text/html' \
+      "${PUBLIC_ORIGIN}${route}")" \
+      || die "authenticated public page request failed: ${route}"
+    status_is_healthy "$status" \
+      || die "authenticated public page did not return 2xx: ${route} (${status})"
+  done
+
+  headers_file="$(mktemp /run/residence-auth-authenticated-headers.XXXXXX)"
+  status="$(curl \
+    --disable \
+    --config "$AUTH_SMOKE_CURL_CONFIG" \
+    --silent \
+    --show-error \
+    --output /dev/null \
+    --dump-header "$headers_file" \
+    --write-out '%{http_code}' \
+    --connect-timeout 3 \
+    --max-time 15 \
+    --header "Host: ${HOST_HEADER}" \
+    "${PUBLIC_ORIGIN}${FRAMEWORK_ASSET_PATH}")" || {
+      rm -f -- "$headers_file"
+      die "authenticated public framework asset request failed"
+    }
+  content_type="$(awk 'BEGIN { IGNORECASE=1 } /^Content-Type:/ { value=$0 } END { sub(/^[^:]+:[[:space:]]*/, "", value); sub(/\r$/, "", value); print tolower(value) }' "$headers_file")"
+  rm -f -- "$headers_file"
+  status_is_healthy "$status" \
+    || die "authenticated public framework asset did not return 2xx (${status})"
+  case "$FRAMEWORK_ASSET_PATH:$content_type" in
+    *.css:text/css*|*.js:*javascript*) ;;
+    *) die "authenticated public framework asset has unexpected content type: ${content_type}" ;;
+  esac
+
+  headers_file="$(mktemp /run/residence-auth-catalog-headers.XXXXXX)"
+  status="$(curl \
+    --disable \
+    --config "$AUTH_SMOKE_CURL_CONFIG" \
+    --silent \
+    --show-error \
+    --output /dev/null \
+    --dump-header "$headers_file" \
+    --write-out '%{http_code}' \
+    --connect-timeout 3 \
+    --max-time 15 \
+    --header "Host: ${HOST_HEADER}" \
+    --header 'Accept: application/json' \
+    "${PUBLIC_ORIGIN}/residence-api/catalog/")" || {
+      rm -f -- "$headers_file"
+      die "authenticated public catalog request failed"
+    }
+  content_type="$(awk 'BEGIN { IGNORECASE=1 } /^Content-Type:/ { value=$0 } END { sub(/^[^:]+:[[:space:]]*/, "", value); sub(/\r$/, "", value); print tolower(value) }' "$headers_file")"
+  rm -f -- "$headers_file"
+  status_is_healthy "$status" && [[ "$content_type" == application/json* ]] \
+    || die "authenticated public catalog contract failed (${status}, ${content_type})"
+
+  body_file="$(mktemp /run/residence-auth-me.XXXXXX)"
+  AUTH_SMOKE_IDENTITY_FILE="$body_file"
+  status="$(curl \
+    --disable \
+    --config "$AUTH_SMOKE_CURL_CONFIG" \
+    --silent \
+    --show-error \
+    --output "$body_file" \
+    --write-out '%{http_code}' \
+    --connect-timeout 3 \
+    --max-time 15 \
+    --header "Host: ${HOST_HEADER}" \
+    --header 'Accept: application/json' \
+    "${PUBLIC_ORIGIN}/__auth/me")" || {
+      rm -f -- "$body_file"
+      die "authenticated identity smoke request failed"
+    }
+  if [[ "$status" != 200 ]] \
+    || ! grep -Eq '"telegramId"[[:space:]]*:[[:space:]]*[1-9][0-9]*' "$body_file" \
+    || ! grep -Eq '"phoneNumberVerified"[[:space:]]*:[[:space:]]*true' "$body_file" \
+    || grep -Eq '"(id|phoneNumber|pictureUrl)"[[:space:]]*:' "$body_file"; then
+    rm -f -- "$body_file"
+    die "authenticated identity smoke lacks a Telegram id/verified-phone status or exposes unnecessary PII"
+  fi
+  rm -f -- "$body_file"
+  AUTH_SMOKE_IDENTITY_FILE=""
+
+  body_file="$(mktemp /run/residence-auth-account.XXXXXX)"
+  AUTH_SMOKE_IDENTITY_FILE="$body_file"
+  status="$(curl \
+    --disable \
+    --config "$AUTH_SMOKE_CURL_CONFIG" \
+    --silent \
+    --show-error \
+    --output "$body_file" \
+    --write-out '%{http_code}' \
+    --connect-timeout 3 \
+    --max-time 15 \
+    --header "Host: ${HOST_HEADER}" \
+    --header 'Accept: text/html' \
+    "${PUBLIC_ORIGIN}/__auth/account")" || {
+      rm -f -- "$body_file"
+      die "authenticated account-page smoke request failed"
+    }
+  if [[ "$status" != 200 ]] \
+    || ! grep -Fq 'action="/__auth/logout"' "$body_file" \
+    || ! grep -Fq 'action="/__auth/logout-all"' "$body_file"; then
+    rm -f -- "$body_file"
+    die "authenticated account page lacks the sign-out controls"
+  fi
+  rm -f -- "$body_file"
+  AUTH_SMOKE_IDENTITY_FILE=""
+  log "Public authenticated auth-gate contract passed"
+}
+
 rollback_current() {
   log "Rolling back root-current to ${PREVIOUS_RELEASE}"
   if ! atomic_switch "$PREVIOUS_RELEASE"; then
@@ -504,6 +968,7 @@ on_exit() {
   set +e
   stop_candidate
   safe_remove_staging "$STAGING_RELEASE"
+  cleanup_auth_smoke_config
 
   if (( status != 0 && CURRENT_SWITCHED == 1 && DEPLOYMENT_CONFIRMED == 0 )); then
     rollback_current
@@ -538,6 +1003,10 @@ main() {
   id "$SERVICE_USER" >/dev/null 2>&1 || die "service user does not exist: ${SERVICE_USER}"
   id "$NGINX_USER" >/dev/null 2>&1 || die "nginx user does not exist: ${NGINX_USER}"
   getent group "$SERVICE_GROUP" >/dev/null 2>&1 || die "service group does not exist: ${SERVICE_GROUP}"
+
+  # This explicit root-owned marker selects the public contract before any
+  # release is created or switched. A malformed marker/session fails closed.
+  configure_public_auth_smoke_mode
 
   exec 9>"$DEPLOY_LOCK"
   flock -n 9 || die "another residence root deployment holds ${DEPLOY_LOCK}"
@@ -632,8 +1101,13 @@ main() {
   wait_for_service_release "$FINAL_RELEASE/frontend" 30
   smoke_routes "http://127.0.0.1:${PRODUCTION_PORT}" 30
   smoke_asset_contract "http://127.0.0.1:${PRODUCTION_PORT}" "/4u/apartments" "$FINAL_RELEASE/frontend"
-  smoke_routes "$PUBLIC_ORIGIN" 5
-  smoke_asset_contract "$PUBLIC_ORIGIN" "/4u/apartments"
+  if (( PUBLIC_AUTH_GATE_ENABLED == 1 )); then
+    smoke_public_unauthenticated_contract
+    smoke_public_authenticated_contract
+  else
+    smoke_routes "$PUBLIC_ORIGIN" 5
+    smoke_asset_contract "$PUBLIC_ORIGIN" "/4u/apartments"
+  fi
 
   # DEPLOY_COMMIT identifies release content, while DEPLOY_CONFIRMED is the
   # durable publication authority. Never create it until every post-switch and
@@ -648,8 +1122,9 @@ main() {
   log "Deployment completed: commit=${COMMIT} release=${FINAL_RELEASE}"
 }
 
-trap on_exit EXIT
-trap 'exit 130' INT
-trap 'exit 143' TERM
-
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  trap on_exit EXIT
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
+  main "$@"
+fi

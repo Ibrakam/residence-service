@@ -1,0 +1,55 @@
+[Unit]
+Description=TENCORP shared Telegram authentication gateway
+After=network-online.target postgresql.service
+Wants=network-online.target postgresql.service
+StartLimitIntervalSec=60s
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=tencorp-auth-gateway
+Group=tencorp-auth-gateway
+WorkingDirectory=/opt/tencorp-auth-gateway/current
+EnvironmentFile=/etc/tencorp-auth-gateway/gateway.env
+ExecStartPre=/usr/bin/test -x /opt/tencorp-auth-gateway/current/auth-gateway
+ExecStartPre=/usr/bin/test -d /opt/tencorp-auth-gateway/current/migrations
+ExecStart=/usr/bin/env AUTH_GATEWAY_ADDR=127.0.0.1:4340 AUTH_AUTO_MIGRATE=false MIGRATIONS_DIR=/opt/tencorp-auth-gateway/current/migrations /opt/tencorp-auth-gateway/current/auth-gateway
+Restart=on-failure
+RestartSec=5s
+TimeoutStartSec=30s
+TimeoutStopSec=30s
+KillSignal=SIGTERM
+UMask=0077
+
+RuntimeDirectory=tencorp-auth-gateway
+RuntimeDirectoryMode=0700
+ReadOnlyPaths=/etc/tencorp-auth-gateway
+InaccessiblePaths=/etc/residence-service /etc/residence-frontend /etc/tencorp-ticket-bot /var/lib/tencorp-ticket-bot /root
+
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectClock=true
+ProtectHostname=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectProc=invisible
+ProcSubset=pid
+RestrictSUIDSGID=true
+RestrictNamespaces=true
+RestrictRealtime=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RemoveIPC=true
+KeyringMode=private
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

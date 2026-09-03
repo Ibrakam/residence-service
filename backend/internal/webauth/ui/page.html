@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="{{.Language}}" dir="{{.Direction}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#07111d">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="description" content="{{.Copy.PageDescription}}">
+  <title>{{if .IsError}}{{.Copy.ErrorPageTitle}}{{else}}{{.Copy.PageTitle}}{{end}}</title>
+  <style>{{.Styles}}</style>
+</head>
+<body>
+  <a class="skip-link" href="#auth-panel">{{.Copy.SkipLink}}</a>
+  <div class="scene" aria-hidden="true">
+    <span class="scene__image"></span>
+    <span class="scene__veil"></span>
+    <span class="scene__grain"></span>
+  </div>
+
+  <div class="page-shell">
+    <header class="topbar">
+      <div class="topbar__index" aria-hidden="true"><span>01</span><i></i><span>Private access</span></div>
+      <a class="brand" href="/" aria-label="TENCORP">
+        <svg viewBox="0 0 230.34 59.17" aria-hidden="true" focusable="false">
+          <polygon points="0 13.57 0 28.77 15.2 28.77 15.2 43.97 15.2 59.17 30.4 52.4 30.4 37.2 30.4 22 15.2 13.57 0 13.57"></polygon>
+          <polygon points="30.38 6.77 30.38 21.96 45.58 15.2 45.58 0 30.38 6.77"></polygon>
+          <path fill-rule="evenodd" d="M93.25 34.77 87.43 38.74h12.43v4.14H79.42v-4.14l5.82-3.97-5.82-3.97v-4.14h20.44v4.14H87.43l5.82 3.97Zm13.86 8.11V32.27l11.13 10.61h5.44V26.64h-4.81v10.61l-11.13-10.61h-5.44v16.23h4.81Zm28.48-16.15h16.99v3.97h-15.26c-.65 0-1.18.53-1.18 1.18v5.91c0 .65.53 1.18 1.18 1.18h15.26v3.97h-16.99c-2.6 0-4.73-2.13-4.73-4.73v-6.75c0-2.6 2.13-4.73 4.73-4.73Zm26.06 3.88h9.65c1.14 0 2.07.93 2.07 2.07v4.3c0 1.14-.93 2.07-2.07 2.07h-9.65c-1.14 0-2.07-.93-2.07-2.07v-4.3c0-1.14.93-2.07 2.07-2.07Zm-2-4.09h13.65c2.64 0 4.8 2.16 4.8 4.8v7.02c0 2.64-2.16 4.8-4.8 4.8h-13.65c-2.64 0-4.8-2.16-4.8-4.8v-7.02c0-2.64 2.16-4.8 4.8-4.8Zm50.57 4.25h10.12c.89 0 1.62.73 1.62 1.62s-.73 1.62-1.62 1.62h-10.12v-3.24Zm-4.88-4.25h15.77c3.14 0 5.71 2.57 5.71 5.71s-2.57 5.71-5.71 5.71h-10.9v5.04h-4.95V26.51h.07Zm-19.28 4.25h10.12c.89 0 1.62.73 1.62 1.62s-.73 1.62-1.62 1.62h-10.12v-3.24Zm-4.88-4.25h15.77c3.14 0 5.71 2.57 5.71 5.71 0 4.12-3.85 5.4-3.85 5.4l4.21 5.35h-5.52l-3.96-5.04h-7.49v5.04h-4.95V26.52h.07ZM54.15 26.65H76.5v4.14h-8.79v12.09h-4.78V30.79h-8.79v-4.14Zm171.96 12.1v4.23l4.23-1.88v-4.23l-4.23 1.88Z"></path>
+        </svg>
+      </a>
+      <nav class="language-switch" aria-label="{{.Copy.LanguageNavigation}}">
+        {{range .Languages}}<a href="{{.URL}}" lang="{{.Code}}"{{if .Current}} aria-current="page"{{end}}>{{.Code}}</a>{{end}}
+      </nav>
+    </header>
+
+    <main class="auth-main" id="auth-panel" tabindex="-1">
+      <div class="brand-stage" aria-hidden="true">
+        <div class="brand-stage__wordmark"><span>TEN</span><i></i><span>CORP</span></div>
+        <div class="brand-stage__meta"><span>TENCORP · TASHKENT</span><span>PRIVATE / ACCESS</span></div>
+      </div>
+
+      <section class="auth-card{{if .IsError}} auth-card--error{{end}}" aria-labelledby="card-title">
+        <div class="auth-card__topline">
+          <p class="card-eyebrow"><span aria-hidden="true"></span>{{if .IsError}}{{.Copy.ErrorEyebrow}}{{else}}{{.Copy.CardEyebrow}}{{end}}</p>
+          <span class="protocol-badge">OIDC</span>
+        </div>
+
+        <div class="auth-card__intro">
+          {{if .IsError}}
+            <div class="status-mark status-mark--error" aria-hidden="true">!</div>
+            <div class="auth-card__heading" role="alert"><h1 id="card-title">{{.ErrorTitle}}</h1><p class="auth-card__lead">{{.ErrorMessage}}</p></div>
+          {{else}}
+            <div class="status-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.2 11.4 20.8 3l-6.3 18-3.8-6.7-7.5-2.9Z"></path><path d="m10.7 14.3 4.8-5.1"></path></svg></div>
+            <div class="auth-card__heading"><h1 id="card-title">{{.Copy.CardTitle}}</h1><p class="auth-card__lead">{{.Copy.CardLead}}</p></div>
+          {{end}}
+        </div>
+
+        {{if not .IsError}}
+          {{if .Notice}}<p class="inline-notice" role="status">{{.Notice}}</p>{{end}}
+
+          <div class="phone-notice">
+            <span class="phone-notice__icon" aria-hidden="true">✓</span>
+            <div class="phone-notice__content">
+              <p class="phone-notice__heading"><small>{{.Copy.PhoneRequired}}</small><strong>{{.Copy.PhoneTitle}}</strong></p>
+              <p>{{.Copy.PhoneText}}</p>
+              <details>
+                <summary>{{.Copy.PhoneDetailsTitle}}<span aria-hidden="true">＋</span></summary>
+                <p>{{.Copy.PhoneDetailsText}}</p>
+              </details>
+            </div>
+          </div>
+        {{end}}
+
+        <form class="telegram-form" method="post" action="/__auth/telegram/start">
+          <input type="hidden" name="return_to" value="{{.ReturnTo}}">
+          <input type="hidden" name="lang" value="{{.Language}}">
+          {{if .CSRFToken}}<input type="hidden" name="csrf_token" value="{{.CSRFToken}}">{{end}}
+          <button class="telegram-button" type="submit">
+            <span class="telegram-button__mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.2 11.4 20.8 3l-6.3 18-3.8-6.7-7.5-2.9Z"></path><path d="m10.7 14.3 4.8-5.1"></path></svg></span>
+            <span class="telegram-button__copy"><strong>{{if .IsError}}{{.Copy.Retry}}{{else}}{{.Copy.CTA}}{{end}}</strong><small>{{.Copy.CTANote}}</small></span>
+            <span class="telegram-button__arrow" aria-hidden="true">↗</span>
+          </button>
+        </form>
+
+        {{if .IsError}}<a class="back-link" href="{{.LoginURL}}">{{.Copy.BackToLogin}}</a>{{end}}
+
+        <p class="privacy-copy">{{.Copy.PrivacyBefore}} <a href="{{.PrivacyURL}}">{{.Copy.PrivacyLink}}</a>{{.Copy.PrivacyAfter}}</p>
+
+        <div class="session-note">
+          <span class="session-note__shield" aria-hidden="true">✓</span>
+          <p class="session-note__copy"><strong class="session-note__title">{{.Copy.SessionTitle}}</strong><span class="session-note__text">{{.Copy.SessionText}}</span></p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>{{.Copy.Footer}}</span>
+      <span>{{.Copy.SecurityFooter}}</span>
+    </footer>
+  </div>
+</body>
+</html>

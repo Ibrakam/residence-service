@@ -114,6 +114,8 @@ func (fake *fakeOIDCServer) claimsForCode(code string) map[string]any {
 		claims["exp"] = now.Add(-time.Hour).Unix()
 	case "missing-expiry":
 		delete(claims, "exp")
+	case "missing-nonce":
+		delete(claims, "nonce")
 	case "unverified-phone":
 		claims["phone_number_verified"] = false
 	case "missing-phone":
@@ -184,6 +186,18 @@ func TestOIDCExchangeValidatesTokenAndNormalizesPhone(t *testing.T) {
 	}
 	if fake.tokenCalls.Load() != 1 || fake.jwksCalls.Load() != 1 {
 		t.Fatalf("provider calls token=%d jwks=%d", fake.tokenCalls.Load(), fake.jwksCalls.Load())
+	}
+}
+
+func TestOIDCExchangeAllowsTelegramTokenWithoutNonceClaim(t *testing.T) {
+	fake := newFakeOIDCServer(t)
+	provider := newOIDCClientForFake(t, fake)
+	identity, err := provider.Exchange(context.Background(), "missing-nonce", "test-verifier", fake.nonce)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if identity.TelegramID != 556677 || identity.PhoneNumber != "+998901234567" {
+		t.Fatalf("identity = %#v", identity)
 	}
 }
 

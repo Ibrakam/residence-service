@@ -110,7 +110,11 @@ func (provider *TelegramOIDC) Exchange(ctx context.Context, code, verifier, expe
 	if err := idToken.Claims(&claims); err != nil {
 		return TelegramIdentity{}, ErrOIDCToken
 	}
-	if claims.Nonce == "" || claims.Nonce != expectedNonce {
+	// Telegram's authorization-code documentation and discovery metadata do not
+	// advertise or guarantee a nonce claim. The callback is still bound by
+	// state, the browser cookie, a one-time transaction, and S256 PKCE. If
+	// Telegram does return a nonce, require it to match the transaction exactly.
+	if claims.Nonce != "" && claims.Nonce != expectedNonce {
 		return TelegramIdentity{}, ErrOIDCToken
 	}
 	now := time.Now()

@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdir, mkdtemp, readFile, readdir, stat, writeFile } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import { mkdir, mkdtemp, readFile, readdir, rm, stat, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { assertLoopbackCdp, matchAllowedUrl, safeUrlMetadata } from '../src/allowlist.mjs';
 import { atomicRunDirectory, atomicWriteFile, pruneRunDirectories } from '../src/atomic.mjs';
 import { classifyRequest, parseUysotReadOnlyBody } from '../src/capture.mjs';
@@ -11,6 +13,16 @@ import { loadTemplate } from '../src/cli.mjs';
 import { normalizeNrgBiCapture, normalizeRegnumPages, normalizeSunPages, normalizeUysotTable } from '../src/normalize.mjs';
 import { getProvider } from '../src/providers.mjs';
 import { containsObviousSecret, sanitizeValue } from '../src/redact.mjs';
+
+test('CLI executes when the installed package is reached through a release symlink', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'live-sync-symlink-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const link = join(root, 'current');
+  await symlink(fileURLToPath(new URL('../', import.meta.url)), link, 'dir');
+  const output = execFileSync(process.execPath, [join(link, 'src', 'cli.mjs'), 'status', '--json'], { encoding: 'utf8' });
+  const rows = JSON.parse(output);
+  assert.ok(Array.isArray(rows) && rows.some((row) => row.id === 'mbc'));
+});
 
 test('CDP is loopback-only and safe URL metadata drops values', () => {
   assert.equal(assertLoopbackCdp('http://127.0.0.1:9222').port, '9222');

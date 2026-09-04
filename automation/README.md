@@ -7,12 +7,12 @@ The safe default is review-only: `RUNNER_DRY_RUN` defaults to `true`, so a missi
 The Codex agent is allowed to diagnose and edit a disposable worktree. It is never allowed to deploy, push, commit, read secrets, or change release configuration. The runner owns every privileged transition:
 
 1. Lease one ticket and keep the lease alive.
-2. Fetch `origin/main` and create a detached root-repository worktree.
+2. Resolve the server-supplied project key against the operator-owned profile registry, fetch that profile's `origin/main`, and create a detached worktree under its private worktree root.
 3. Download bounded, allowlisted attachments into a temporary worktree directory. Images are also passed with repeated Codex `-i` flags.
 4. Send the ticket to non-ephemeral `codex exec --json` over stdin, capture `thread.started.thread_id`, and persist it for resume.
 5. Delete ticket inputs, freeze and scan a staged tree, reject forbidden paths/secrets/history or linked-worktree metadata changes, then remove ignored agent artifacts.
 6. In review mode, run fixed verification commands under macOS Seatbelt. `npm ci --include=dev` uses an empty HOME and cannot execute lifecycle scripts; lint/build have no network access.
-7. In production mode, export the exact staged Git tree into the reviewed pinned native-Linux Docker image through a labeled runner-owned volume, install dev dependencies without lifecycle scripts, disconnect the container network, run lint/build, confirm the complete PID namespace stopped, export through a separate networkless read-only container, reject native runtime content, and seal the standalone artifact outside the worktree.
+7. In production mode, run the selected profile's fixed verifier and seal bytes from the exact staged Git tree outside the worktree. Residence uses the reviewed pinned native-Linux Docker build; market-map runs its fixed offline Python/JavaScript checks and seals only its reviewed platform-neutral runtime source set.
 8. Create one hook-free commit with `git commit-tree`. Review mode leaves it local. Production uses a commit lease to push that direct child to `origin/main`, invokes the fixed trusted wrapper with the sealed artifact, and then runs public smoke checks.
 9. Report the redacted result to the worker API, which replies in Telegram, then take the next ticket.
 
@@ -21,10 +21,11 @@ The Codex agent is allowed to diagnose and edit a disposable worktree. It is nev
 - Ticket text and attachments are explicitly delimited as untrusted data. The prompt is written to Codex stdin, never interpolated into a shell or exposed in process arguments/logs.
 - Structured logs contain ticket ids, phases, timings, hashes, and safe errors, but never the ticket body, attachment URL, lease/API token, or command output.
 - The Codex child receives a minimal environment and a temporary runtime containing only a short-lived copy of its login. A single deny-by-default Seatbelt profile limits writes to the isolated worktree/runtime and explicitly denies SSH/cloud credentials, the original Codex configuration/history, runner token/env files, Docker sockets, Keychains, and browser profiles while leaving only the Codex API network path available.
-- Changed paths default to `website/`. `automation/`, `.github/`, `.git*` control files, `website/app/api/**`, `website/app/v1/**`, `website/proxy.*`, package manifests/locks, `.npmrc`, executable/symlink files, scripts, env/credential/key files, configuration, and deploy/release paths are rejected. Production fixes are capped at 25 files, 3,000 added/deleted lines, and 16 MiB per changed blob. Production requires the exact `website` prefix; it cannot be widened by runner configuration.
+- Project routing comes only from the normalized `projectKey` in the trusted lease response. Missing keys retain the legacy `residence` default; unknown or disabled keys fail closed and are reported to Telegram. The selected key is persisted in every checkpoint and cannot change during recovery.
+- Residence changed paths default to `website/`. `automation/`, `.github/`, `.git*` control files, `website/app/api/**`, `website/app/v1/**`, `website/proxy.*`, package manifests/locks, `.npmrc`, executable/symlink files, scripts, env/credential/key files, configuration, and deploy/release paths are rejected. Production fixes are capped at 25 files, 3,000 added/deleted lines, and 16 MiB per changed blob. Production requires the exact `website` prefix; it cannot be widened by runner configuration.
 - Review verification commands are operator configuration, never ticket or agent output. They get no secret-like environment variables. Production uses the fixed container sequence instead. Preflight runs before verification and the staged tree must remain byte-identical through commit.
 - Review verification is macOS-only and fail-closed on `/usr/bin/sandbox-exec`. Production verification is a fixed, resource-limited native-Linux Docker build from the exact staged Git tree (`linux/arm64` on Apple silicon, `linux/amd64` on Intel Mac). The OCI index, host-specific child manifest/image ID, and Docker CLI identity/SHA-256 are pinned and rechecked. Image/index resolution and `npm ci --include=dev` are the only verification network uses; lint/build deny network. The LaunchAgent deliberately does not set a global `NODE_ENV`.
-- The deploy script is invoked directly without a shell from the fixed `$RUNNER_STATE_DIR/bin/deploy-residence-root-remote` path. That state directory is outside the agent sandbox; the wrapper must be owned by the runner user, be a non-symlink with mode `0700`, and its device, inode, mode, and SHA-256 are pinned at startup and checked immediately before execution. No configurable arguments or inherited deployment environment are allowed.
+- The selected deploy script is invoked directly without a shell from its fixed `$RUNNER_STATE_DIR/bin/` path. That state directory is outside the agent sandbox; each wrapper must be owned by the runner user, be a non-symlink with mode `0700`, and its device, inode, mode, and SHA-256 are pinned at startup and checked immediately before execution. No configurable arguments or inherited deployment environment are allowed.
 - Attachments require HTTPS, an exact hostname allowlist, supported MIME types, count/byte limits, and (when supplied) a SHA-256 match. Lease credentials are only sent back to the worker API origin.
 - A local process lock and the server lease enforce one active ticket at a time.
 
@@ -66,6 +67,17 @@ Validate configuration without leasing a ticket:
 RUNNER_ENV_FILE="$HOME/Library/Application Support/AvalonTicketRunner/runner.env" \
   /usr/local/bin/node automation/src/index.mjs --config-check
 ```
+
+### Optional market-map profile
+
+The global worker and lease remain single-instance. Market-map is a second, independently isolated runtime selected only by a trusted `projectKey=market-map` lease. It is disabled unless both values below are present in the protected runner env file:
+
+```text
+RUNNER_MARKET_MAP_ENABLED=true
+RUNNER_MARKET_MAP_REPO_ROOT=/absolute/path/to/capi-map
+```
+
+Production requires that repository's origin to be exactly `https://github.com/Ibrakam/tencorp-market-map.git` and pins the separate `$RUNNER_STATE_DIR/bin/deploy-market-map-remote` wrapper. Automatic diffs are limited to `server.py`, `dshk_sync.py`, `test_dshk_sync.py`, `leadora_carto_map.html`, `vendor/leaflet.css`, and `vendor/leaflet.js`. `data.json` is read-only to Codex changes but is taken from the exact Git tree into the sealed runtime artifact. The fixed verifier compiles/tests Python without network, parses inline JavaScript without executing the HTML, and the public post-deploy smoke preserves the protected `/market-map/` HTTP 401 contract.
 
 ### Production opt-in
 

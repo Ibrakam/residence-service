@@ -16,6 +16,7 @@ type fakeRunnerStore struct {
 	progressCalled  bool
 	leaseOwnerCalls int
 	completeCalls   int
+	enqueuedProject string
 }
 
 func (f *fakeRunnerStore) Health(context.Context) (Health, error) { return f.health, nil }
@@ -44,7 +45,8 @@ func (f *fakeRunnerStore) Fail(context.Context, int64, string, string) error { r
 func (f *fakeRunnerStore) AttachmentForWorker(context.Context, int64, int64, string, string) (Attachment, error) {
 	return Attachment{}, ErrAttachmentAbsent
 }
-func (f *fakeRunnerStore) EnqueueTest(context.Context, int64, string) (int64, error) {
+func (f *fakeRunnerStore) EnqueueTest(_ context.Context, _ int64, _, projectKey string) (int64, error) {
+	f.enqueuedProject = projectKey
 	return f.enqueuedID, nil
 }
 
@@ -106,7 +108,7 @@ func TestLeaseShapeUsesConfiguredPublicBaseInsteadOfHostHeader(t *testing.T) {
 	size := int64(42)
 	store := &fakeRunnerStore{claim: ClaimResult{
 		ExpiresAt: time.Date(2026, 9, 2, 12, 5, 0, 0, time.UTC),
-		Ticket: &Ticket{ID: 7, Source: "telegram", Body: "Fix reset", AttemptCount: 1, Attachments: []Attachment{{
+		Ticket: &Ticket{ID: 7, Source: "telegram", ProjectKey: ProjectMarketMap, Body: "Fix reset", AttemptCount: 1, Attachments: []Attachment{{
 			ID: 9, TicketID: 7, MIMEType: "image/png", FileName: "screen.png", ByteSize: &size, SHA256: strings.Repeat("a", 64),
 		}}},
 	}}
@@ -124,9 +126,33 @@ func TestLeaseShapeUsesConfiguredPublicBaseInsteadOfHostHeader(t *testing.T) {
 	if !strings.Contains(body, expectedURL) || strings.Contains(body, "attacker.example") {
 		t.Fatalf("lease attachment URL = %s", body)
 	}
-	for _, field := range []string{`"leaseToken"`, `"leaseExpiresAt"`, `"attempt":1`, `"title":"Fix reset"`} {
+	for _, field := range []string{`"leaseToken"`, `"leaseExpiresAt"`, `"attempt":1`, `"title":"Fix reset"`, `"projectKey":"market-map"`} {
 		if !strings.Contains(body, field) {
 			t.Fatalf("lease missing %s: %s", field, body)
+		}
+	}
+}
+
+func TestTestTicketProjectIsAllowlistedAndDefaultsToResidence(t *testing.T) {
+	store := &fakeRunnerStore{enqueuedID: 19}
+	server, cfg := newTestWorkerServer(t, store)
+
+	for _, test := range []struct {
+		body       string
+		wantStatus int
+		wantKey    string
+	}{
+		{body: `{"text":"default"}`, wantStatus: http.StatusCreated, wantKey: ProjectResidence},
+		{body: `{"text":"map","projectKey":"market-map"}`, wantStatus: http.StatusCreated, wantKey: ProjectMarketMap},
+		{body: `{"text":"bad","projectKey":"other"}`, wantStatus: http.StatusBadRequest},
+	} {
+		store.enqueuedProject = ""
+		request := httptest.NewRequest(http.MethodPost, "/internal/ticket-runner/test-tickets", strings.NewReader(test.body))
+		request.Header.Set("Authorization", "Bearer "+cfg.WorkerAPIToken)
+		recorder := httptest.NewRecorder()
+		server.Handler().ServeHTTP(recorder, request)
+		if recorder.Code != test.wantStatus || store.enqueuedProject != test.wantKey {
+			t.Fatalf("body=%s status=%d project=%q response=%s", test.body, recorder.Code, store.enqueuedProject, recorder.Body.String())
 		}
 	}
 }

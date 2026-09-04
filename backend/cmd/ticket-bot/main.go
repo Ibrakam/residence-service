@@ -101,6 +101,7 @@ func enqueueTest(arguments []string, stdin io.Reader, stdout io.Writer) error {
 	flags := flag.NewFlagSet("enqueue-test", flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
 	textFlag := flags.String("text", "", "synthetic ticket text; stdin is used when omitted")
+	projectFlag := flags.String("project", tickets.ProjectResidence, "ticket project: residence or market-map")
 	timeout := flags.Duration("timeout", 10*time.Second, "request timeout")
 	if err := flags.Parse(arguments); err != nil {
 		return errors.New("invalid enqueue-test arguments")
@@ -122,6 +123,10 @@ func enqueueTest(arguments []string, stdin io.Reader, stdout io.Writer) error {
 	if text == "" {
 		return errors.New("test ticket text is required")
 	}
+	projectKey := strings.TrimSpace(*projectFlag)
+	if err := tickets.ValidateProjectKey(projectKey); err != nil {
+		return errors.New("invalid enqueue-test project")
+	}
 	address := strings.TrimSpace(os.Getenv("TICKET_BOT_ADDR"))
 	if address == "" {
 		address = "127.0.0.1:8090"
@@ -133,7 +138,7 @@ func enqueueTest(arguments []string, stdin io.Reader, stdout io.Writer) error {
 	if len(token) < 32 {
 		return errors.New("TICKET_WORKER_API_TOKEN must contain at least 32 characters")
 	}
-	payload, _ := json.Marshal(map[string]string{"text": text})
+	payload, _ := json.Marshal(map[string]string{"text": text, "projectKey": projectKey})
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost,

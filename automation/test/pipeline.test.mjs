@@ -358,6 +358,40 @@ exit 3
 
   const originalWriteTicket = stateStore.writeTicket.bind(stateStore);
   stateStore.writeTicket = async (ticketId, attempt, nextState) => {
+    if (ticketId === "TNC-POST-PUSH-CHECKPOINT" && nextState.phase === "pushed") {
+      const error = new Error("synthetic ENOSPC immediately after push");
+      error.code = "ENOSPC";
+      throw error;
+    }
+    return originalWriteTicket(ticketId, attempt, nextState);
+  };
+  const callsBeforePostPushCheckpoint = calls.length;
+  const postPushCheckpointFailure = await processLease({
+    lease: {
+      leaseToken: "lease-test-post-push-checkpoint",
+      ticket: { id: "TNC-POST-PUSH-CHECKPOINT", attempt: 1, title: "Synthetic", body: "Create the synthetic test fix", attachments: [] },
+    },
+    config,
+    client,
+    stateStore,
+    gitWorkspace,
+    logger,
+    shutdownSignal: new AbortController().signal,
+    productionVerifier,
+  });
+  stateStore.writeTicket = originalWriteTicket;
+  assert.equal(postPushCheckpointFailure.outcome, "failed");
+  assert.equal(postPushCheckpointFailure.pushed, true);
+  assert.equal(postPushCheckpointFailure.deployed, false);
+  assert.equal(postPushCheckpointFailure.pushRolledBack, true);
+  assert.equal(postPushCheckpointFailure.haltWorker, false);
+  assert.equal(calls.slice(callsBeforePostPushCheckpoint).some(([kind]) => kind === "fail"), true);
+  assert.equal(git(fixture.remote, "rev-parse", "refs/heads/main"), baseSha);
+  const postPushCheckpointState = await stateStore.readTicket("TNC-POST-PUSH-CHECKPOINT", 1);
+  assert.equal(postPushCheckpointState.phase, "failed");
+  assert.equal(postPushCheckpointState.pushRolledBack, true);
+
+  stateStore.writeTicket = async (ticketId, attempt, nextState) => {
     if (ticketId === "TNC-CHECKPOINT-FAIL" && nextState.phase === "failed") {
       const error = new Error("synthetic ENOSPC while persisting terminal checkpoint");
       error.code = "ENOSPC";

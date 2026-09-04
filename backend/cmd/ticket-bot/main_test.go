@@ -15,7 +15,8 @@ import (
 func TestEnqueueTestReadsStdinAndAuthenticates(t *testing.T) {
 	token := strings.Repeat("t", 32)
 	var received struct {
-		Text string `json:"text"`
+		Text       string `json:"text"`
+		ProjectKey string `json:"projectKey"`
 	}
 	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
 		if request.URL.Path != "/internal/ticket-runner/test-tickets" {
@@ -39,14 +40,21 @@ func TestEnqueueTestReadsStdinAndAuthenticates(t *testing.T) {
 	t.Setenv("TICKET_BOT_ADDR", parsedURL.Host)
 	t.Setenv("TICKET_WORKER_API_TOKEN", token)
 	var output bytes.Buffer
-	if err := enqueueTest(nil, strings.NewReader("small synthetic task\n"), &output); err != nil {
+	if err := enqueueTest([]string{"--project=market-map"}, strings.NewReader("small synthetic task\n"), &output); err != nil {
 		t.Fatal(err)
 	}
-	if received.Text != "small synthetic task" {
-		t.Fatalf("received text = %q", received.Text)
+	if received.Text != "small synthetic task" || received.ProjectKey != "market-map" {
+		t.Fatalf("received = %#v", received)
 	}
 	if !strings.Contains(output.String(), `"id":17`) {
 		t.Fatalf("output = %q", output.String())
+	}
+}
+
+func TestEnqueueTestRejectsUnknownProjectBeforeLoadingCredentials(t *testing.T) {
+	if err := enqueueTest([]string{"--project=unknown", "--text=test"}, strings.NewReader(""), io.Discard); err == nil ||
+		!strings.Contains(err.Error(), "invalid enqueue-test project") {
+		t.Fatalf("unknown project error = %v", err)
 	}
 }
 

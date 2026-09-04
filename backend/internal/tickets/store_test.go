@@ -30,6 +30,16 @@ func TestNormalizeMessageInputRejectsInvalidMessageWithoutLosingUpdateIdentity(t
 	}
 }
 
+func TestNormalizeMessageInputRejectsUnknownProject(t *testing.T) {
+	input := normalizeMessageInput(MessageInput{
+		UpdateID: 43, ChatID: -100, MessageID: 11, Body: "invalid project",
+		ProjectKey: "other", Accept: true, ExplicitFix: true,
+	})
+	if input.Accept {
+		t.Fatalf("unknown project accepted: %#v", input)
+	}
+}
+
 func TestQueuedReplyOverflowRequiresFollowUpTicket(t *testing.T) {
 	existing := strings.Repeat("a", maxTicketBodyBytes-2)
 	if canAppendTicketBody(existing, "x") {

@@ -143,15 +143,15 @@ func (s *Store) ApplyUpdate(ctx context.Context, consumer string, input MessageI
 func (s *Store) resolveTicketForMessage(ctx context.Context, tx pgx.Tx, input MessageInput) (int64, bool, error) {
 	if input.ReplyToMessage != nil {
 		var ticketID int64
-		var status, body string
+		var status, body, projectKey string
 		err := tx.QueryRow(ctx, `
-			SELECT id,status,body FROM tickets
+			SELECT id,status,body,project_key FROM tickets
 			WHERE chat_id=$1 AND status_message_id=$2
-			FOR UPDATE`, input.ChatID, *input.ReplyToMessage).Scan(&ticketID, &status, &body)
+			FOR UPDATE`, input.ChatID, *input.ReplyToMessage).Scan(&ticketID, &status, &body, &projectKey)
 		if err == nil {
 			if status == StatusQueued {
 				if !canAppendTicketBody(body, input.Body) {
-					return s.insertTicket(ctx, tx, input)
+					return s.insertTicket(ctx, tx, input, projectKey)
 				}
 				_, err = tx.Exec(ctx, `
 					UPDATE tickets SET body=$2,ready_after=GREATEST(ready_after,$3),updated_at=now()
@@ -160,7 +160,7 @@ func (s *Store) resolveTicketForMessage(ctx context.Context, tx pgx.Tx, input Me
 			}
 			// A worker has already received a working ticket's immutable body. Preserve
 			// the reply as a new queued follow-up instead of silently appending it.
-			return s.insertTicket(ctx, tx, input)
+			return s.insertTicket(ctx, tx, input, projectKey)
 		}
 		if !errors.Is(err, pgx.ErrNoRows) {
 			return 0, false, err
@@ -170,48 +170,51 @@ func (s *Store) resolveTicketForMessage(ctx context.Context, tx pgx.Tx, input Me
 		}
 	}
 	if input.MediaGroupID != "" {
-		if !input.ExplicitFix {
-			var exists bool
-			if err := tx.QueryRow(ctx, `
-				SELECT EXISTS (
-					SELECT 1 FROM tickets WHERE chat_id=$1 AND media_group_id=$2
-				)`, input.ChatID, input.MediaGroupID).Scan(&exists); err != nil {
-				return 0, false, err
-			}
-			if !exists {
-				return 0, false, nil
-			}
+		var existingProjectKey string
+		err := tx.QueryRow(ctx, `
+			SELECT project_key FROM tickets
+			WHERE chat_id=$1 AND media_group_id=$2`, input.ChatID, input.MediaGroupID).Scan(&existingProjectKey)
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			return 0, false, err
+		}
+		if errors.Is(err, pgx.ErrNoRows) && !input.ExplicitFix {
+			return 0, false, nil
+		}
+		projectKey := existingProjectKey
+		if projectKey == "" {
+			projectKey = projectKeyOrDefault(input.ProjectKey)
 		}
 		var ticketID int64
 		var created bool
-		err := tx.QueryRow(ctx, `
+		err = tx.QueryRow(ctx, `
 			INSERT INTO tickets (
-				chat_id, message_thread_id, first_message_id, media_group_id, body, ready_after
-			) VALUES ($1,$2,$3,$4,$5,$6)
+				chat_id, message_thread_id, first_message_id, media_group_id, body, ready_after, project_key
+			) VALUES ($1,$2,$3,$4,$5,$6,$7)
 			ON CONFLICT (chat_id, media_group_id) WHERE media_group_id IS NOT NULL DO UPDATE SET
 				body=ticket_cap_body(tickets.body,EXCLUDED.body),
 				ready_after=GREATEST(tickets.ready_after,EXCLUDED.ready_after),
 				updated_at=now()
 			WHERE tickets.status='queued'
 			RETURNING id, (xmax=0)`, input.ChatID, input.MessageThread, input.MessageID,
-			input.MediaGroupID, input.Body, input.ReadyAfter).Scan(&ticketID, &created)
+			input.MediaGroupID, input.Body, input.ReadyAfter, projectKey).Scan(&ticketID, &created)
 		if errors.Is(err, pgx.ErrNoRows) {
 			// The original album is already immutable for its worker (or terminal).
 			// The unique Telegram media_group_id stays on that original ticket; this
 			// delayed part is preserved as a separate queued follow-up.
-			return s.insertTicket(ctx, tx, input)
+			return s.insertTicket(ctx, tx, input, projectKey)
 		}
 		return ticketID, created, err
 	}
-	return s.insertTicket(ctx, tx, input)
+	return s.insertTicket(ctx, tx, input, input.ProjectKey)
 }
 
-func (s *Store) insertTicket(ctx context.Context, tx pgx.Tx, input MessageInput) (int64, bool, error) {
+func (s *Store) insertTicket(ctx context.Context, tx pgx.Tx, input MessageInput, projectKey string) (int64, bool, error) {
 	var ticketID int64
 	err := tx.QueryRow(ctx, `
-		INSERT INTO tickets (chat_id, message_thread_id, first_message_id, body, ready_after)
-		VALUES ($1,$2,$3,$4,$5)
-		RETURNING id`, input.ChatID, input.MessageThread, input.MessageID, input.Body, input.ReadyAfter).Scan(&ticketID)
+		INSERT INTO tickets (chat_id, message_thread_id, first_message_id, body, ready_after, project_key)
+		VALUES ($1,$2,$3,$4,$5,$6)
+		RETURNING id`, input.ChatID, input.MessageThread, input.MessageID, input.Body, input.ReadyAfter,
+		projectKeyOrDefault(projectKey)).Scan(&ticketID)
 	return ticketID, err == nil, err
 }
 
@@ -219,6 +222,7 @@ const maxTicketBodyBytes = 65536
 
 func normalizeMessageInput(input MessageInput) MessageInput {
 	input.Body = truncateUTF8Bytes(strings.ToValidUTF8(input.Body, "�"), maxTicketBodyBytes)
+	input.ProjectKey = strings.TrimSpace(input.ProjectKey)
 	if input.Accept && !validAcceptedMessageInput(input) {
 		input.Accept = false
 	}
@@ -239,6 +243,9 @@ func validAcceptedMessageInput(input MessageInput) bool {
 		return false
 	}
 	if input.Body == "" && len(input.Attachments) == 0 {
+		return false
+	}
+	if input.ProjectKey != "" && ValidateProjectKey(input.ProjectKey) != nil {
 		return false
 	}
 	if !input.ExplicitFix && input.ReplyToMessage == nil && input.MediaGroupID == "" {
@@ -299,7 +306,10 @@ func truncateUTF8Bytes(value string, maxBytes int) string {
 	return value[:cut]
 }
 
-func (s *Store) EnqueueTest(ctx context.Context, chatID int64, body string) (int64, error) {
+func (s *Store) EnqueueTest(ctx context.Context, chatID int64, body, projectKey string) (int64, error) {
+	if err := ValidateProjectKey(projectKey); err != nil {
+		return 0, err
+	}
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return 0, err
@@ -307,9 +317,9 @@ func (s *Store) EnqueueTest(ctx context.Context, chatID int64, body string) (int
 	defer func() { _ = tx.Rollback(context.Background()) }()
 	var ticketID int64
 	err = tx.QueryRow(ctx, `
-		INSERT INTO tickets (chat_id, first_message_id, source, body, ready_after)
-		VALUES ($1,0,'operator_test',$2,now())
-		RETURNING id`, chatID, body).Scan(&ticketID)
+		INSERT INTO tickets (chat_id, first_message_id, source, body, ready_after, project_key)
+		VALUES ($1,0,'operator_test',$2,now(),$3)
+		RETURNING id`, chatID, body, projectKey).Scan(&ticketID)
 	if err != nil {
 		return 0, err
 	}
@@ -456,11 +466,11 @@ func loadClaimedTicket(ctx context.Context, tx pgx.Tx, ticketID int64, workerID,
 func loadTicket(ctx context.Context, tx pgx.Tx, ticketID int64) (*Ticket, error) {
 	var ticket Ticket
 	err := tx.QueryRow(ctx, `
-		SELECT id,chat_id,message_thread_id,first_message_id,source,body,status,
+		SELECT id,chat_id,message_thread_id,first_message_id,source,project_key,body,status,
 			progress_summary,attempt_count,created_at,claimed_at
 		FROM tickets WHERE id=$1`, ticketID).Scan(
 		&ticket.ID, &ticket.ChatID, &ticket.MessageThread, &ticket.FirstMessageID, &ticket.Source,
-		&ticket.Body, &ticket.Status, &ticket.ProgressSummary, &ticket.AttemptCount,
+		&ticket.ProjectKey, &ticket.Body, &ticket.Status, &ticket.ProgressSummary, &ticket.AttemptCount,
 		&ticket.CreatedAt, &ticket.ClaimedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -716,7 +726,7 @@ func (s *Store) StatusViewsForSync(ctx context.Context, limit int) ([]StatusView
 }
 
 const statusViewSQL = `
-	SELECT t.id,t.chat_id,t.message_thread_id,t.first_message_id,t.source,
+	SELECT t.id,t.chat_id,t.message_thread_id,t.first_message_id,t.source,t.project_key,
 		t.status_message_id,t.last_status_text,t.status,
 		CASE WHEN t.status='queued' THEN (
 			SELECT count(*) FROM tickets q
@@ -734,7 +744,7 @@ func scanStatusView(row rowScanner) (StatusView, error) {
 	var view StatusView
 	err := row.Scan(
 		&view.ID, &view.ChatID, &view.MessageThread, &view.FirstMessageID, &view.Source,
-		&view.StatusMessageID, &view.LastStatusText, &view.Status, &view.QueuePosition,
+		&view.ProjectKey, &view.StatusMessageID, &view.LastStatusText, &view.Status, &view.QueuePosition,
 		&view.ProgressSummary, &view.ResultSummary, &view.FailureSummary,
 		&view.CommitSHA, &view.ProductionURL, &view.UpdatedAt,
 	)
@@ -959,4 +969,20 @@ func ValidateTicketID(value int64) error {
 		return fmt.Errorf("invalid ticket id")
 	}
 	return nil
+}
+
+func ValidateProjectKey(value string) error {
+	switch value {
+	case ProjectResidence, ProjectMarketMap:
+		return nil
+	default:
+		return errors.New("unsupported project key")
+	}
+}
+
+func projectKeyOrDefault(value string) string {
+	if value == "" {
+		return ProjectResidence
+	}
+	return value
 }

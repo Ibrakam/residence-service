@@ -123,13 +123,15 @@ export function scanAddedLinesForSecrets(diffText) {
   return findings;
 }
 
-export function assertSafeChangedPaths(paths, { allowedPrefixes, deniedPatterns }) {
+export function assertSafeChangedPaths(paths, { allowedPrefixes, allowedExactPaths, deniedPatterns }) {
   const normalized = paths.map(normalizeRepoRelativePath);
   for (const changedPath of normalized) {
-    const allowed = allowedPrefixes.some((prefix) => {
-      const cleanPrefix = prefix.replace(/^\.\//, "").replace(/\/$/, "");
-      return changedPath === cleanPrefix || changedPath.startsWith(`${cleanPrefix}/`);
-    });
+    const allowed = Array.isArray(allowedExactPaths)
+      ? allowedExactPaths.map(normalizeRepoRelativePath).includes(changedPath)
+      : allowedPrefixes.some((prefix) => {
+        const cleanPrefix = prefix.replace(/^\.\//, "").replace(/\/$/, "");
+        return changedPath === cleanPrefix || changedPath.startsWith(`${cleanPrefix}/`);
+      });
     if (!allowed) {
       throw new TypeError(`Changed path is outside the allowlist: ${changedPath}`);
     }

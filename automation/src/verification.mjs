@@ -47,7 +47,10 @@ export async function runVerification({ config, worktreePath, ticketId, signal, 
       profile: ({ tempPath }) => buildVerificationProfile({
         worktreePath: resolvedWorktree,
         tempPath,
-        runtimePaths: verificationRuntimePaths(process.env),
+        runtimePaths: [
+          ...verificationRuntimePaths(process.env),
+          ...(Array.isArray(config.verificationRuntimePaths) ? config.verificationRuntimePaths : []),
+        ],
         // Dependency download is the sole network exception. Lint/build and
         // every other fixed verification command have no network capability.
         allowNetwork: isNpmInstall,
@@ -65,6 +68,8 @@ export async function runVerification({ config, worktreePath, ticketId, signal, 
         NPM_CONFIG_FUND: "false",
         NPM_CONFIG_PRODUCTION: "false",
         NPM_CONFIG_UPDATE_NOTIFIER: "false",
+        PYTHONDONTWRITEBYTECODE: "1",
+        PYTHONPYCACHEPREFIX: path.join(sandbox.tempPath, "python-pycache"),
       });
       if (isNpmInstall) delete env.NODE_ENV;
       const result = await runCommand({
@@ -136,6 +141,7 @@ export async function runDeployment({ config, worktreePath, ticketId, commitSha,
         TICKET_RUNNER_ARTIFACT_DIR: artifactSeal.artifactPath,
         TICKET_RUNNER_ARTIFACT_MANIFEST: artifactSeal.manifestPath,
         TICKET_RUNNER_ARTIFACT_SHA256: artifactSeal.manifestSha256,
+        TICKET_RUNNER_PROJECT_KEY: config.projectKey || "residence",
       }),
       timeoutMs: config.deployTimeoutMs,
       signal,
@@ -158,7 +164,7 @@ export async function queryDeploymentStatus({ config, worktreePath, commitSha, s
     const result = await runCommand({
       argv: [script, "--status", commitSha],
       cwd: config.repoRoot,
-      env: baseTrustedEnv(),
+      env: baseTrustedEnv({ TICKET_RUNNER_PROJECT_KEY: config.projectKey || "residence" }),
       timeoutMs: Math.min(config.deployTimeoutMs, 60_000),
       signal,
       label: "deploy.query_status",
@@ -179,7 +185,17 @@ export async function queryDeploymentStatus({ config, worktreePath, commitSha, s
 
 export async function runSmokeChecks({ config, ticketId, signal, logger }) {
   const checks = [];
-  for (const url of config.smokeUrls) {
+  const configuredChecks = Array.isArray(config.smokeChecks)
+    ? config.smokeChecks
+    : (config.smokeUrls || []).map((url) => ({ url, expectedStatuses: null }));
+  for (const configured of configuredChecks) {
+    const url = configured instanceof URL ? configured : configured.url;
+    if (!(url instanceof URL)) throw new PolicyError("Production smoke check has no trusted URL");
+    const expectedStatuses = Array.isArray(configured.expectedStatuses) ? configured.expectedStatuses : null;
+    if (expectedStatuses && (expectedStatuses.length === 0
+      || expectedStatuses.some((status) => !Number.isSafeInteger(status) || status < 100 || status > 599))) {
+      throw new PolicyError("Production smoke check has invalid expected statuses");
+    }
     const startedAt = Date.now();
     const timeout = AbortSignal.timeout(config.smokeTimeoutMs);
     const combined = signal ? AbortSignal.any([signal, timeout]) : timeout;
@@ -196,7 +212,10 @@ export async function runSmokeChecks({ config, ticketId, signal, logger }) {
     }
     if (response.body) await response.body.cancel();
     const durationMs = Date.now() - startedAt;
-    if (response.status < 200 || response.status >= 400) {
+    const statusAccepted = expectedStatuses
+      ? expectedStatuses.includes(response.status)
+      : response.status >= 200 && response.status < 400;
+    if (!statusAccepted) {
       throw new PolicyError(`Production smoke returned HTTP ${response.status} for ${url.hostname}`);
     }
     const check = { host: url.hostname, path: url.pathname, status: response.status, durationMs };

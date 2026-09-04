@@ -140,6 +140,65 @@ restarts the old release, and performs a local rollback smoke. Failed immutable
 release directories are retained for diagnosis; incomplete `.incoming-*`
 directories created by the current invocation are removed safely.
 
+## Install the market-map deploy boundary
+
+Market-map is a separate project whose only approved Git origin is
+`https://github.com/Ibrakam/tencorp-market-map.git`. Its runner profile must use
+its own checkout and the fixed project key `market-map`; never route a
+market-map ticket through the Residence worktree or deploy key.
+
+1. Generate a second, unencrypted Ed25519 identity on the runner Mac at
+   `/Users/ibragimkadamzanov/.ssh/tencorp_market_map_deploy_ed25519`. It must
+   differ from both the personal root key and the Residence deployment key.
+2. Install `deploy-tencorp-market-map.sh` on production as
+   `/usr/local/sbin/deploy-tencorp-market-map`, owned by `root:root`, mode
+   `0750`. Install `tencorp-market-map-deploy-gate.sh` as
+   `/usr/local/sbin/tencorp-market-map-deploy-gate`, owned by `root:root`, mode
+   `0755`.
+3. Add only the new public key to `/root/.ssh/authorized_keys`, using the exact
+   `restrict` and forced-command entry in
+   `ssh/tencorp-market-map-deploy.authorized_keys.example`. The key must not
+   receive a shell, forwarding, a caller-selected rsync path, or access to the
+   Residence deployment protocol.
+4. Install `deploy-market-map-remote.sh` outside every agent-editable checkout
+   at the fixed runner-owned mode-`0700`
+   `$RUNNER_STATE_DIR/bin/deploy-market-map-remote` path. The runner pins this
+   file and invokes it only with `TICKET_RUNNER_PROJECT_KEY=market-map`.
+5. Create `/srv/tencorp-market-map-deploy/uploads` as a root-owned mode-`0750`
+   directory. Keep `/var/www/tencorp-market-map/releases` root-owned and keep
+   the writable live database only at
+   `/var/lib/tencorp-market-map/market_map.db` under the `www-data` runtime
+   identity.
+
+The local wrapper proves the clean commit is exactly private `origin/main` and
+that the sealed runtime bytes equal the tracked `server.py`, `dshk_sync.py`,
+`leadora_carto_map.html`, `data.json`, `vendor/leaflet.css`, and
+`vendor/leaflet.js` files. The forced command accepts only prepare, write-only
+rsync, deploy, status, and cleanup for one exact direct-child upload path. The
+root deployer copies no database or credentials. It performs an isolated
+temporary-database probe, atomically switches the release, verifies the
+service process working directory, and validates loopback `/api/health`,
+`/api/meta`, and `/api/points` responses. A failed post-switch check restores
+the previous symlink, restarts it, and repeats the loopback checks.
+
+A legacy market-map release without matching `DEPLOY_COMMIT` and
+`DEPLOY_CONFIRMED` markers is deliberately an unknown state, so unattended
+deployment must remain stopped during bootstrap. Either publish one reviewed
+commit directly through the forced-command protocol, bypassing only the local
+wrapper's initial status query, or first prove every approved runtime file in
+the active release is byte-for-byte identical to one full `origin/main`
+commit. Only in the latter case may both root-owned mode-`0644` markers be
+enrolled with that exact full SHA. Verify the service MainPID cwd and all three
+loopback API checks, then require `deploy-market-map-remote --status COMMIT` to
+return `deployed` before starting the runner.
+
+Run the parser, artifact, project-identity, and wrapper transport checks before
+provisioning or after any deployment-boundary change:
+
+```bash
+automation/deploy/test-market-map-forced-command-gate.sh
+```
+
 ## Manual Residence rollback
 
 Automatic rollback is the normal path. For a manual rollback:

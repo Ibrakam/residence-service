@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import { loadConfig } from "./config.mjs";
-import { GitWorkspace } from "./git-worktree.mjs";
 import { createLogger, safeError } from "./logger.mjs";
 import { runWorker } from "./pipeline.mjs";
+import { ProjectRuntimeRegistry } from "./project-profiles.mjs";
 import { FileTicketClient, TicketServerClient } from "./server-client.mjs";
 import { ProcessLock, StateStore } from "./state-store.mjs";
 
@@ -25,12 +25,11 @@ async function main() {
   await stateStore.initialize();
   await processLock.acquire();
   try {
-    const gitWorkspace = new GitWorkspace(config, logger);
-    await gitWorkspace.initialize();
+    const projectRegistry = new ProjectRuntimeRegistry(config, logger);
+    await projectRegistry.initialize();
     if (config.configCheck) {
       logger.info("runner.config_ok", {
-        repoRoot: config.repoRoot,
-        worktreeRoot: config.worktreeRoot,
+        projects: projectRegistry.list(),
         codexBin: config.codexBin,
         dryRun: config.dryRun,
         testMode: config.testMode,
@@ -42,7 +41,7 @@ async function main() {
       ? new FileTicketClient(config, stateStore, logger)
       : new TicketServerClient(config, logger);
     logger.info("runner.started", { dryRun: config.dryRun, testMode: config.testMode, once: config.once });
-    await runWorker({ config, client, stateStore, gitWorkspace, logger, shutdownSignal: shutdown.signal });
+    await runWorker({ config, client, stateStore, projectRegistry, logger, shutdownSignal: shutdown.signal });
     logger.info("runner.stopped", {});
   } finally {
     await processLock.release();

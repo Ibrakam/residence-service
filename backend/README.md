@@ -216,7 +216,9 @@ docker compose config --quiet
 ошибочно внесён в allowlist, update с `is_bot=true` всегда игнорируется.
 Неавторизованный update молча фиксируется в offset/dedupe, но не создаёт тикет
 и не получает ответ. Новый top-level тикет обязан начинаться с `/fix` (для
-альбома — в caption). `/help`, `/status` и `/cancel` доступны только allowlist-
+альбома — в caption). Обычный `/fix` относится к проекту `residence`; точная
+ссылка `form.tencorp.uz/market-map` в его тексте либо команда `/fix_map`
+выбирает allowlisted-проект `market-map`. `/help`, `/status` и `/cancel` доступны только allowlist-
 пользователям и являются управляющими командами. Ответ на реальное статусное
 сообщение `TNC-*` можно отправить без `/fix`: пока тикет queued, он дополнится,
 а после claim станет отдельным follow-up. Ответ без `/fix` на любое другое
@@ -224,6 +226,9 @@ docker compose config --quiet
 Telegram media album объединяются по `media_group_id` и получают небольшой
 `ready_after`; запоздавшая часть уже working/terminal альбома становится новым
 queued follow-up и не меняет тело, которое уже получил worker.
+Reply/follow-up и следующие части альбома всегда наследуют проект исходного
+тикета, поэтому текст ответа не может случайно перенаправить работу в другой
+репозиторий. Lease response передаёт worker'у поле `ticket.projectKey`.
 
 Чтобы Telegram действительно передавал боту обычные сообщения группы, а не
 только команды и ответы, для него нужно отключить Group Privacy в BotFather
@@ -241,6 +246,9 @@ lease возвращает незавершённый тикет в очеред
 или при переполнении 65 536 octets он становится отдельным queued follow-up.
 Миграция `0013_ticket_attachment_retention.sql` добавляет состояние `purged` и
 время очистки локального файла без удаления аудита тикета/сообщения.
+Миграция `0016_ticket_project_key.sql` добавляет `project_key` с DB-ограничением
+на значения `residence` и `market-map`; существующие тикеты получают
+безопасный default `residence`.
 
 Секреты задаются только окружением:
 
@@ -306,6 +314,9 @@ Worker API `ticket-runner/v1`:
 ```bash
 printf '%s\n' 'Проверить маленькое изменение без публикации' |
   go run ./cmd/ticket-bot enqueue-test
+
+printf '%s\n' 'Проверить Market Map без публикации' |
+  go run ./cmd/ticket-bot enqueue-test --project=market-map
 ```
 
 Команда обращается только к loopback API и не запускает shell-команд из текста.

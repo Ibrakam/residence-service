@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { LeaseLostError, RunnerError } from "./errors.mjs";
+import { normalizeProjectKey } from "./project-profiles.mjs";
 import { cleanText, safeTicketId } from "./sanitize.mjs";
 
 const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
@@ -52,6 +53,7 @@ export function normalizeLease(raw, bodyMaxChars = 40_000) {
     ticket: {
       id,
       attempt: Number.isSafeInteger(ticket.attempt) && ticket.attempt > 0 ? ticket.attempt : 1,
+      projectKey: normalizeProjectKey(ticket.projectKey),
       title: cleanText(ticket.title || "", 500),
       body,
       attachments: Array.isArray(ticket.attachments) ? ticket.attachments.map(normalizeAttachment) : [],
@@ -144,8 +146,8 @@ export class TicketServerClient {
       body: {
         summary: cleanText(result.summary || "Ticket completed", 12_000),
         commitSha: cleanText(result.commitSha || "", 128),
-        productionUrl: result.deployment?.deployed && this.config.productionPublicUrl
-          ? this.config.productionPublicUrl.toString()
+        productionUrl: result.deployment?.deployed && (result.productionUrl || this.config.productionPublicUrl)
+          ? String(result.productionUrl || this.config.productionPublicUrl)
           : "",
       },
       leaseToken,

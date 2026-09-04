@@ -32,11 +32,74 @@ const PRODUCTION_ORIGIN = "https://github.com/Ibrakam/residence-service.git";
 const PRODUCTION_WORKER_API_URL = "https://form.tencorp.uz/__residence-ticket-worker/";
 const PRODUCTION_PUBLIC_ORIGIN = "https://form.tencorp.uz";
 const TRUSTED_DEPLOY_SCRIPT_BASENAME = "deploy-residence-root-remote";
+const MARKET_MAP_PROJECT_KEY = "market-map";
+const MARKET_MAP_ORIGIN = "https://github.com/Ibrakam/tencorp-market-map.git";
+const MARKET_MAP_PUBLIC_URL = `${PRODUCTION_PUBLIC_ORIGIN}/market-map/`;
+const MARKET_MAP_DEPLOY_SCRIPT_BASENAME = "deploy-market-map-remote";
+const MARKET_MAP_PYTHON_BIN = "/Applications/Xcode.app/Contents/Developer/usr/bin/python3";
+const MARKET_MAP_PYTHON_RUNTIME_ROOT = "/Applications/Xcode.app/Contents/Developer";
+const MARKET_MAP_CHANGED_PATHS = Object.freeze([
+  "server.py",
+  "dshk_sync.py",
+  "leadora_carto_map.html",
+  "test_dshk_sync.py",
+  "vendor/leaflet.css",
+  "vendor/leaflet.js",
+]);
+const MARKET_MAP_ARTIFACT_PATHS = Object.freeze([
+  "server.py",
+  "dshk_sync.py",
+  "leadora_carto_map.html",
+  "vendor/leaflet.css",
+  "vendor/leaflet.js",
+  "data.json",
+]);
+const MARKET_MAP_REQUIRED_ARTIFACT_PATHS = Object.freeze([
+  "server.py",
+  "dshk_sync.py",
+  "leadora_carto_map.html",
+  "data.json",
+]);
 
 const DEFAULT_VERIFY_COMMANDS = [
   { name: "website-install", cwd: "website", argv: ["npm", "ci", "--include=dev", "--ignore-scripts", "--no-audit", "--no-fund"], timeoutMs: 15 * 60_000 },
   { name: "website-lint", cwd: "website", argv: ["npm", "run", "lint"], timeoutMs: 10 * 60_000 },
   { name: "website-build", cwd: "website", argv: ["npm", "run", "build"], timeoutMs: 20 * 60_000 },
+];
+
+const MARKET_MAP_INLINE_SCRIPT_CHECK = String.raw`const fs=require("node:fs"),vm=require("node:vm");const html=fs.readFileSync("leadora_carto_map.html","utf8");const scripts=[...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)].filter((match)=>!/(?:^|\s)src\s*=/i.test(match[1])).map((match)=>match[2]).filter((source)=>source.trim());if(scripts.length===0)throw new Error("No inline scripts found");scripts.forEach((source,index)=>new vm.Script(source,{filename:"leadora_carto_map.html#script-"+(index+1)}));`;
+
+const DEFAULT_MARKET_MAP_VERIFY_COMMANDS = [
+  {
+    name: "market-map-python-compile",
+    cwd: ".",
+    argv: [MARKET_MAP_PYTHON_BIN, "-m", "py_compile", "server.py", "dshk_sync.py", "test_dshk_sync.py"],
+    timeoutMs: 2 * 60_000,
+  },
+  {
+    name: "market-map-unit-tests",
+    cwd: ".",
+    argv: [MARKET_MAP_PYTHON_BIN, "-m", "unittest", "-v", "test_dshk_sync.py"],
+    timeoutMs: 5 * 60_000,
+  },
+  {
+    name: "market-map-data-json",
+    cwd: ".",
+    argv: [process.execPath, "-e", "JSON.parse(require('node:fs').readFileSync('data.json','utf8'));"],
+    timeoutMs: 60_000,
+  },
+  {
+    name: "market-map-vendor-js-syntax",
+    cwd: ".",
+    argv: [process.execPath, "--check", "vendor/leaflet.js"],
+    timeoutMs: 60_000,
+  },
+  {
+    name: "market-map-inline-js-syntax",
+    cwd: ".",
+    argv: [process.execPath, "-e", MARKET_MAP_INLINE_SCRIPT_CHECK],
+    timeoutMs: 60_000,
+  },
 ];
 
 const DEFAULT_DENIED_PATH_PATTERNS = [
@@ -209,6 +272,136 @@ function selectedEnvironment(env, names, { allowSecrets = false } = {}) {
   return selected;
 }
 
+function sameStringArray(left, right) {
+  return Array.isArray(left) && left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+function pinProjectDeployScript(profile, label) {
+  if (!profile.deployScript || !path.isAbsolute(profile.deployScript)) {
+    throw new ConfigError(`${label} deployment script must use its fixed absolute path`);
+  }
+  if (path.resolve(profile.deployScript) !== path.resolve(profile.requiredDeployScriptPath)) {
+    throw new ConfigError(`${label} deployment script must be the fixed trusted wrapper: ${profile.requiredDeployScriptPath}`);
+  }
+  const lstat = fs.lstatSync(profile.deployScript);
+  if (!lstat.isFile() || lstat.isSymbolicLink()) throw new ConfigError(`${label} deployment script must be a regular non-symlink file`);
+  if ((lstat.mode & 0o111) === 0 || (lstat.mode & 0o022) !== 0) {
+    throw new ConfigError(`${label} deployment script has unsafe permissions`);
+  }
+  const requiredOwnerUid = Number.isSafeInteger(profile.requiredDeployOwnerUid)
+    ? profile.requiredDeployOwnerUid
+    : (typeof process.getuid === "function" ? process.getuid() : lstat.uid);
+  if (lstat.uid !== requiredOwnerUid) throw new ConfigError(`${label} deployment script must be owned by uid ${requiredOwnerUid}`);
+  const requiredMode = Number.isSafeInteger(profile.requiredDeployMode) ? profile.requiredDeployMode : 0o700;
+  if ((lstat.mode & 0o777) !== requiredMode) {
+    throw new ConfigError(`${label} deployment script must have mode ${requiredMode.toString(8)}`);
+  }
+  const realPath = fs.realpathSync(profile.deployScript);
+  profile.deployScriptPin = {
+    realPath,
+    sha256: crypto.createHash("sha256").update(fs.readFileSync(realPath)).digest("hex"),
+    uid: lstat.uid,
+    dev: lstat.dev,
+    ino: lstat.ino,
+    mode: lstat.mode,
+  };
+}
+
+function createProjectProfiles(config, env, defaultCommandTimeoutMs) {
+  const marketMapEnabled = parseBoolean(env.RUNNER_MARKET_MAP_ENABLED, false);
+  const marketMapRepoRoot = cleanText(env.RUNNER_MARKET_MAP_REPO_ROOT || "", 1_024);
+  if (marketMapEnabled && !marketMapRepoRoot) {
+    throw new ConfigError("RUNNER_MARKET_MAP_REPO_ROOT is required when RUNNER_MARKET_MAP_ENABLED=true");
+  }
+  const marketMapDeployScript = path.join(config.stateDir, "bin", MARKET_MAP_DEPLOY_SCRIPT_BASENAME);
+  const marketMapProfile = {
+    key: MARKET_MAP_PROJECT_KEY,
+    label: "Tencorp Market Map",
+    enabled: marketMapEnabled,
+    productionVerifierKey: "market-map-source",
+    productionVerificationStage: "production_source_verification",
+    repoRoot: marketMapRepoRoot ? path.resolve(marketMapRepoRoot) : "",
+    worktreeRoot: path.resolve(env.RUNNER_MARKET_MAP_WORKTREE_ROOT || path.join(config.stateDir, "worktrees-market-map")),
+    expectedOrigin: MARKET_MAP_ORIGIN,
+    requiredExpectedOrigin: MARKET_MAP_ORIGIN,
+    allowedPrefixes: [...MARKET_MAP_CHANGED_PATHS],
+    allowedExactPaths: [...MARKET_MAP_CHANGED_PATHS],
+    deniedPathPatterns: DEFAULT_DENIED_PATH_PATTERNS,
+    enforceSingleProjectScope: false,
+    verifyCommands: normalizeVerifyCommands(DEFAULT_MARKET_MAP_VERIFY_COMMANDS, defaultCommandTimeoutMs),
+    verificationEnvAllowlist: [],
+    verificationEnvironment: {},
+    verificationRuntimePaths: [MARKET_MAP_PYTHON_RUNTIME_ROOT],
+    deployScript: marketMapDeployScript,
+    requiredDeployScriptPath: marketMapDeployScript,
+    requiredDeployOwnerUid: typeof process.getuid === "function" ? process.getuid() : null,
+    requiredDeployMode: 0o700,
+    deployArgs: [],
+    deployEnvAllowlist: [],
+    deployEnvironment: {},
+    productionPublicUrl: new URL(MARKET_MAP_PUBLIC_URL),
+    smokeUrls: [new URL(MARKET_MAP_PUBLIC_URL)],
+    smokeChecks: [{ url: new URL(MARKET_MAP_PUBLIC_URL), expectedStatuses: [401] }],
+    sourceArtifactPaths: [...MARKET_MAP_ARTIFACT_PATHS],
+    sourceArtifactRequiredPaths: [...MARKET_MAP_REQUIRED_ARTIFACT_PATHS],
+  };
+  return {
+    residence: {
+      key: "residence",
+      label: "Residence Service",
+      enabled: true,
+      productionVerifierKey: "residence-docker",
+    },
+    [MARKET_MAP_PROJECT_KEY]: marketMapProfile,
+  };
+}
+
+export function validateProjectProfiles(config) {
+  const marketMap = config.projectProfiles?.[MARKET_MAP_PROJECT_KEY];
+  if (!marketMap?.enabled) return;
+  if (!marketMap.repoRoot) throw new ConfigError("Enabled market-map profile has no repository root");
+  if (marketMap.expectedOrigin !== MARKET_MAP_ORIGIN || marketMap.requiredExpectedOrigin !== MARKET_MAP_ORIGIN) {
+    throw new ConfigError(`Market-map profile requires the fixed Git origin: ${MARKET_MAP_ORIGIN}`);
+  }
+  if (!sameStringArray(marketMap.allowedPrefixes, MARKET_MAP_CHANGED_PATHS)) {
+    throw new ConfigError("Market-map changed-path allowlist does not match the reviewed fixed scope");
+  }
+  if (!sameStringArray(marketMap.allowedExactPaths, MARKET_MAP_CHANGED_PATHS)) {
+    throw new ConfigError("Market-map exact changed-path allowlist does not match the reviewed fixed scope");
+  }
+  if (!sameStringArray(marketMap.sourceArtifactPaths, MARKET_MAP_ARTIFACT_PATHS)) {
+    throw new ConfigError("Market-map source artifact scope does not match the reviewed fixed scope");
+  }
+  if (!sameStringArray(marketMap.sourceArtifactRequiredPaths, MARKET_MAP_REQUIRED_ARTIFACT_PATHS)) {
+    throw new ConfigError("Market-map required source artifact files do not match the reviewed fixed scope");
+  }
+  if (marketMap.productionVerifierKey !== "market-map-source"
+    || !sameStringArray(marketMap.verificationRuntimePaths, [MARKET_MAP_PYTHON_RUNTIME_ROOT])
+    || marketMap.deployArgs.length !== 0
+    || marketMap.deployEnvAllowlist.length !== 0
+    || Object.keys(marketMap.deployEnvironment).length !== 0) {
+    throw new ConfigError("Market-map verifier/deployer contract cannot be overridden");
+  }
+  let pythonStat;
+  try {
+    pythonStat = fs.statSync(MARKET_MAP_PYTHON_BIN);
+  } catch (cause) {
+    throw new ConfigError(`Market-map requires the fixed Xcode Python runtime: ${MARKET_MAP_PYTHON_BIN}`, { cause });
+  }
+  if (!pythonStat.isFile() || (pythonStat.mode & 0o111) === 0 || pythonStat.uid !== 0 || (pythonStat.mode & 0o022) !== 0) {
+    throw new ConfigError("The fixed market-map Python runtime has unsafe identity or permissions");
+  }
+  if (marketMap.productionPublicUrl?.href !== MARKET_MAP_PUBLIC_URL) {
+    throw new ConfigError(`Market-map profile requires the fixed production URL: ${MARKET_MAP_PUBLIC_URL}`);
+  }
+  if (!Array.isArray(marketMap.smokeChecks) || marketMap.smokeChecks.length !== 1
+    || marketMap.smokeChecks[0].url?.href !== MARKET_MAP_PUBLIC_URL
+    || !sameStringArray(marketMap.smokeChecks[0].expectedStatuses, [401])) {
+    throw new ConfigError("Market-map profile requires the fixed protected-route HTTP 401 smoke contract");
+  }
+  if (!config.dryRun) pinProjectDeployScript(marketMap, "Market-map");
+}
+
 export function parseCliArgs(argv) {
   const result = { once: false, dryRun: false, configCheck: false, testTicketFile: "" };
   for (let index = 0; index < argv.length; index += 1) {
@@ -341,6 +534,8 @@ export function loadConfig({ env: rawEnv = process.env, argv = process.argv.slic
   };
 
   validateStaticConfig(config);
+  config.projectProfiles = createProjectProfiles(config, env, defaultCommandTimeoutMs);
+  validateProjectProfiles(config);
   return config;
 }
 
@@ -507,11 +702,22 @@ export function safeChildEnv(baseEnv, { extraAllowlist = [], codexHome } = {}) {
   return result;
 }
 
-export { DEFAULT_DENIED_PATH_PATTERNS, DEFAULT_VERIFY_COMMANDS };
+export {
+  DEFAULT_DENIED_PATH_PATTERNS,
+  DEFAULT_MARKET_MAP_VERIFY_COMMANDS,
+  DEFAULT_VERIFY_COMMANDS,
+  MARKET_MAP_ARTIFACT_PATHS,
+  MARKET_MAP_CHANGED_PATHS,
+  MARKET_MAP_REQUIRED_ARTIFACT_PATHS,
+};
 export {
   DEFAULT_DOCKER_IMAGE,
   DEFAULT_DOCKER_HOST_PIN,
   DEFAULT_GITHUB_CLI_BIN,
+  MARKET_MAP_DEPLOY_SCRIPT_BASENAME,
+  MARKET_MAP_ORIGIN,
+  MARKET_MAP_PROJECT_KEY,
+  MARKET_MAP_PUBLIC_URL,
   PRODUCTION_ENABLE_CONFIRMATION,
   PRODUCTION_ORIGIN,
   PRODUCTION_PUBLIC_ORIGIN,

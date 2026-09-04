@@ -8,6 +8,7 @@ import {
   assertSafeChangedPaths,
   assertSingleResidenceProject,
   isPathInside,
+  normalizeRepoRelativePath,
   safeSlug,
   scanAddedLinesForSecrets,
 } from "./sanitize.mjs";
@@ -340,6 +341,7 @@ export class GitWorkspace {
     try {
       normalized = assertSafeChangedPaths(paths, {
         allowedPrefixes: this.config.allowedPrefixes,
+        allowedExactPaths: this.config.allowedExactPaths,
         deniedPatterns: this.config.deniedPathPatterns,
       });
     } catch (cause) {
@@ -430,14 +432,21 @@ export class GitWorkspace {
     });
   }
 
-  async exportTreeArchive({ worktreePath, treeSha, destination, signal }) {
+  async exportTreeArchive({ worktreePath, treeSha, destination, paths = [], signal }) {
     await this.assertWorktreeIntegrity(worktreePath);
     if (!/^[a-f0-9]{40,64}$/.test(treeSha)) throw new PolicyError("Invalid staged tree id for verifier export");
     const absoluteDestination = path.resolve(destination);
     if (absoluteDestination === path.resolve(worktreePath) || isPathInside(worktreePath, absoluteDestination)) {
       throw new PolicyError("Verifier source archive must be outside the agent worktree");
     }
-    await this.git(["archive", "--format=tar", `--output=${absoluteDestination}`, treeSha], {
+    const scopedPaths = paths.map(normalizeRepoRelativePath);
+    await this.git([
+      "archive",
+      "--format=tar",
+      `--output=${absoluteDestination}`,
+      treeSha,
+      ...(scopedPaths.length ? ["--", ...scopedPaths] : []),
+    ], {
       cwd: this.repoRoot,
       label: "git.export_verifier_tree",
       signal,

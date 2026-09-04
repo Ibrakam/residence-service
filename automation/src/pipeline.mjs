@@ -4,6 +4,7 @@ import { runCodex } from "./codex-runner.mjs";
 import { runDockerVerification } from "./docker-verification.mjs";
 import { LeaseLostError, PublishingUncertainError, RunnerError } from "./errors.mjs";
 import { safeError } from "./logger.mjs";
+import { DEFAULT_PROJECT_KEY, normalizeProjectKey } from "./project-profiles.mjs";
 import { safeExcerpt } from "./sanitize.mjs";
 import { queryDeploymentStatus, runDeployment, runSmokeChecks, runVerification } from "./verification.mjs";
 
@@ -101,6 +102,7 @@ function phaseState({
   return {
     ticketId: ticket.id,
     attempt: ticket.attempt,
+    projectKey: ticket.projectKey || DEFAULT_PROJECT_KEY,
     phase,
     worktreePath: worktreePath || "",
     baseSha: baseSha || "",
@@ -124,6 +126,7 @@ export async function assertNoUnresolvedPublications({
   config,
   stateStore,
   gitWorkspace,
+  projectRegistry,
   logger,
   signal,
   deploymentStatusReader = queryDeploymentStatus,
@@ -136,15 +139,41 @@ export async function assertNoUnresolvedPublications({
   for (const state of pending) {
     let originMain = "unknown";
     let production = "unknown";
+    let stateProjectKey = DEFAULT_PROJECT_KEY;
+    let runtimeConfig = config;
+    let runtimeWorkspace = gitWorkspace;
     try {
-      originMain = await gitWorkspace.resolveOriginMain(signal);
+      stateProjectKey = normalizeProjectKey(state.projectKey);
+      if (projectRegistry) {
+        const runtime = projectRegistry.resolve(stateProjectKey);
+        runtimeConfig = runtime.config;
+        runtimeWorkspace = runtime.gitWorkspace;
+      } else if (stateProjectKey !== DEFAULT_PROJECT_KEY) {
+        throw new RunnerError(`Unresolved publication targets unavailable project profile: ${stateProjectKey}`, {
+          code: "UNKNOWN_PROJECT_PROFILE",
+        });
+      }
+    } catch (error) {
+      observations.push({
+        ticketId: state.ticketId,
+        attempt: state.attempt,
+        projectKey: stateProjectKey,
+        phase: state.phase,
+        originMain,
+        production,
+        profileError: safeError(error),
+      });
+      continue;
+    }
+    try {
+      originMain = await runtimeWorkspace.resolveOriginMain(signal);
     } catch (error) {
       logger.warn("reconciliation.origin_unavailable", { ticketId: state.ticketId, error: safeError(error) });
     }
     if (/^[a-f0-9]{40}$/.test(state.commitSha || "") && state.worktreePath) {
       try {
         production = await deploymentStatusReader({
-          config,
+          config: runtimeConfig,
           worktreePath: state.worktreePath,
           commitSha: state.commitSha,
           signal,
@@ -154,7 +183,7 @@ export async function assertNoUnresolvedPublications({
         logger.warn("reconciliation.production_unavailable", { ticketId: state.ticketId, error: safeError(error) });
       }
     }
-    observations.push({ ticketId: state.ticketId, attempt: state.attempt, phase: state.phase, originMain, production });
+    observations.push({ ticketId: state.ticketId, attempt: state.attempt, projectKey: stateProjectKey, phase: state.phase, originMain, production });
   }
   throw new PublishingUncertainError(`Unresolved publication checkpoint blocks new leases: ${JSON.stringify(observations)}`);
 }
@@ -165,13 +194,18 @@ export async function processLease({
   client,
   stateStore,
   gitWorkspace,
+  projectRegistry,
   logger,
   shutdownSignal,
   productionVerifier = runDockerVerification,
 }) {
-  const { ticket, leaseToken } = lease;
+  const { ticket: leasedTicket, leaseToken } = lease;
+  let ticket = leasedTicket;
   const keeper = new LeaseKeeper({ client, ticketId: ticket.id, leaseToken, config, logger, parentSignal: shutdownSignal });
-  let previousState = await stateStore.readTicket(ticket.id, ticket.attempt);
+  let runtimeConfig = config;
+  let runtimeWorkspace = gitWorkspace;
+  let selectedProductionVerifier = productionVerifier;
+  let previousState = null;
   let worktreePath = previousState?.worktreePath || "";
   let baseSha = previousState?.baseSha || "";
   let threadId = previousState?.threadId || "";
@@ -187,26 +221,59 @@ export async function processLease({
   let artifactSeal = null;
 
   keeper.start();
-  logger.info("ticket.started", { ticketId: ticket.id, attempt: ticket.attempt, attachmentCount: ticket.attachments.length });
 
   try {
+    const projectKey = normalizeProjectKey(ticket.projectKey);
+    if (projectRegistry) {
+      const runtime = projectRegistry.resolve(projectKey);
+      runtimeConfig = runtime.config;
+      runtimeWorkspace = runtime.gitWorkspace;
+      selectedProductionVerifier = runtime.productionVerifier;
+      ticket = { ...ticket, projectKey: runtime.projectKey };
+    } else {
+      if (projectKey !== DEFAULT_PROJECT_KEY) {
+        throw new RunnerError(`Ticket targets unavailable project profile: ${projectKey}`, {
+          code: "UNKNOWN_PROJECT_PROFILE",
+        });
+      }
+      ticket = { ...ticket, projectKey };
+    }
+    if (!runtimeWorkspace) throw new RunnerError("Ticket project workspace is unavailable", { code: "PROJECT_RUNTIME_UNAVAILABLE" });
+    previousState = await stateStore.readTicket(ticket.id, ticket.attempt);
+    worktreePath = previousState?.worktreePath || "";
+    baseSha = previousState?.baseSha || "";
+    threadId = previousState?.threadId || "";
+    if (previousState) {
+      const recordedProjectKey = normalizeProjectKey(previousState.projectKey);
+      if (recordedProjectKey !== ticket.projectKey) {
+        throw new RunnerError("Ticket project does not match its durable recovery checkpoint", {
+          code: "PROJECT_CHECKPOINT_MISMATCH",
+        });
+      }
+    }
+    logger.info("ticket.started", {
+      ticketId: ticket.id,
+      attempt: ticket.attempt,
+      projectKey: ticket.projectKey,
+      attachmentCount: ticket.attachments.length,
+    });
     keeper.setPhase("preparing_worktree");
     await bestEffortProgress(client, lease, "taken", { attempt: ticket.attempt }, logger);
-    const prepared = await gitWorkspace.prepareWorktree(ticket, previousState, keeper.signal);
+    const prepared = await runtimeWorkspace.prepareWorktree(ticket, previousState, keeper.signal);
     worktreePath = prepared.worktreePath;
     baseSha = prepared.baseSha;
     await stateStore.writeTicket(ticket.id, ticket.attempt, phaseState({ ticket, phase: "worktree_ready", worktreePath, baseSha, threadId }));
 
     keeper.setPhase("downloading_attachments");
     await cleanupAttachmentDirectory(worktreePath);
-    const downloaded = await downloadAttachments({ ticket, leaseToken, worktreePath, config, client, signal: keeper.signal, logger });
+    const downloaded = await downloadAttachments({ ticket, leaseToken, worktreePath, config: runtimeConfig, client, signal: keeper.signal, logger });
     attachmentsPrepared = true;
 
     keeper.setPhase("codex_running");
     await bestEffortProgress(client, lease, "in_progress", { stage: "diagnose_and_fix" }, logger);
     await stateStore.writeTicket(ticket.id, ticket.attempt, phaseState({ ticket, phase: "codex_running", worktreePath, baseSha, threadId }));
     const codex = await runCodex({
-      config,
+      config: runtimeConfig,
       ticket,
       worktreePath,
       attachments: downloaded.attachments,
@@ -225,19 +292,21 @@ export async function processLease({
 
     keeper.setPhase("preflight");
     await bestEffortProgress(client, lease, "verifying", { stage: "security_preflight" }, logger);
-    const preflight = await gitWorkspace.preflight({ worktreePath, baseSha, signal: keeper.signal });
-    await gitWorkspace.cleanIgnoredArtifacts(worktreePath, keeper.signal);
+    const preflight = await runtimeWorkspace.preflight({ worktreePath, baseSha, signal: keeper.signal });
+    await runtimeWorkspace.cleanIgnoredArtifacts(worktreePath, keeper.signal);
 
     keeper.setPhase("verifying");
     let verification;
-    if (config.dryRun) {
+    if (runtimeConfig.dryRun) {
       await bestEffortProgress(client, lease, "verifying", { stage: "sandboxed_checks" }, logger);
-      verification = await runVerification({ config, worktreePath, ticketId: ticket.id, signal: keeper.signal, logger });
+      verification = await runVerification({ config: runtimeConfig, worktreePath, ticketId: ticket.id, signal: keeper.signal, logger });
     } else {
-      await bestEffortProgress(client, lease, "verifying", { stage: "production_linux_build" }, logger);
-      const verified = await productionVerifier({
-        config,
-        gitWorkspace,
+      await bestEffortProgress(client, lease, "verifying", {
+        stage: runtimeConfig.productionVerificationStage || "production_linux_build",
+      }, logger);
+      const verified = await selectedProductionVerifier({
+        config: runtimeConfig,
+        gitWorkspace: runtimeWorkspace,
         worktreePath,
         treeSha: preflight.treeSha,
         ticketId: ticket.id,
@@ -255,7 +324,7 @@ export async function processLease({
     }
 
     keeper.setPhase("committing");
-    if (!config.dryRun) {
+    if (!runtimeConfig.dryRun) {
       await stateStore.writeTicket(ticket.id, ticket.attempt, phaseState({
         ticket,
         phase: "committing",
@@ -269,7 +338,7 @@ export async function processLease({
         verification,
       }));
     }
-    const committed = await gitWorkspace.inspectAndCommit({
+    const committed = await runtimeWorkspace.inspectAndCommit({
       ticket,
       worktreePath,
       baseSha,
@@ -279,7 +348,7 @@ export async function processLease({
     commitSha = committed.commitSha;
     await stateStore.writeTicket(ticket.id, ticket.attempt, phaseState({
       ticket,
-      phase: config.dryRun ? "dry_run_committed" : "committed",
+      phase: runtimeConfig.dryRun ? "dry_run_committed" : "committed",
       worktreePath,
       baseSha,
       threadId,
@@ -291,9 +360,9 @@ export async function processLease({
       verification,
     }));
 
-    let deployment = { pushed: false, deployed: false, dryRun: config.dryRun };
+    let deployment = { pushed: false, deployed: false, dryRun: runtimeConfig.dryRun };
     let smoke = [];
-    if (!config.dryRun) {
+    if (!runtimeConfig.dryRun) {
       keeper.setPhase("pushing");
       await bestEffortProgress(client, lease, "publishing", { stage: "push" }, logger);
       await stateStore.writeTicket(ticket.id, ticket.attempt, phaseState({
@@ -301,7 +370,7 @@ export async function processLease({
         summary: codexSummary, artifactSeal, changedPaths: committed.changedPaths,
         diffStat: committed.diffStat, verification,
       }));
-      await gitWorkspace.safePush({ worktreePath, baseSha, commitSha, signal: keeper.signal });
+      await runtimeWorkspace.safePush({ worktreePath, baseSha, commitSha, signal: keeper.signal });
       pushed = true;
       deployment.pushed = true;
       await stateStore.writeTicket(ticket.id, ticket.attempt, phaseState({
@@ -318,7 +387,7 @@ export async function processLease({
         diffStat: committed.diffStat, verification,
       }));
       const deploymentResult = await runDeployment({
-        config,
+        config: runtimeConfig,
         worktreePath,
         ticketId: ticket.id,
         commitSha,
@@ -340,11 +409,13 @@ export async function processLease({
         summary: codexSummary, pushed, deployed, artifactSeal,
         changedPaths: committed.changedPaths, diffStat: committed.diffStat, verification,
       }));
-      smoke = await runSmokeChecks({ config, ticketId: ticket.id, signal: keeper.signal, logger });
+      smoke = await runSmokeChecks({ config: runtimeConfig, ticketId: ticket.id, signal: keeper.signal, logger });
     }
 
     const result = {
-      outcome: config.dryRun ? "dry_run" : "published",
+      outcome: runtimeConfig.dryRun ? "dry_run" : "published",
+      projectKey: ticket.projectKey,
+      productionUrl: runtimeConfig.productionPublicUrl?.toString() || "",
       summary: safeExcerpt(codexSummary || committed.diffStat || "Ticket fix completed", 4_000),
       threadId,
       baseSha,
@@ -357,7 +428,7 @@ export async function processLease({
     };
     await stateStore.writeTicket(ticket.id, ticket.attempt, phaseState({
       ticket,
-      phase: config.dryRun ? "reporting_dry_run" : "reporting_completion",
+      phase: runtimeConfig.dryRun ? "reporting_dry_run" : "reporting_completion",
       worktreePath,
       baseSha,
       threadId,
@@ -374,14 +445,14 @@ export async function processLease({
     try {
       await client.complete(ticket.id, leaseToken, result);
     } catch (cause) {
-      if (!config.dryRun && deployed) {
+      if (!runtimeConfig.dryRun && deployed) {
         throw new PublishingUncertainError("Production was deployed but ticket completion acknowledgement is unknown", { cause });
       }
       throw cause;
     }
     await stateStore.writeTicket(ticket.id, ticket.attempt, phaseState({
       ticket,
-      phase: config.dryRun ? "dry_run_complete" : "complete",
+      phase: runtimeConfig.dryRun ? "dry_run_complete" : "complete",
       worktreePath,
       baseSha,
       threadId,
@@ -395,13 +466,13 @@ export async function processLease({
       smoke,
     }));
     completed = true;
-    logger.info("ticket.completed", { ticketId: ticket.id, outcome: result.outcome, commitSha, changedFileCount: committed.changedPaths.length });
+    logger.info("ticket.completed", { ticketId: ticket.id, projectKey: ticket.projectKey, outcome: result.outcome, commitSha, changedFileCount: committed.changedPaths.length });
     // Publication and acknowledgement are already durably complete. Cleanup is
     // intentionally best-effort: a transient filesystem/Git failure must never
     // rewrite an accepted production ticket back to `failed` or report failure
     // to the control plane after it has received `complete`.
-    if (!config.keepSuccessfulWorktrees) {
-      await gitWorkspace.removeWorktree(worktreePath).catch((cleanupError) => {
+    if (!runtimeConfig.keepSuccessfulWorktrees) {
+      await runtimeWorkspace.removeWorktree(worktreePath).catch((cleanupError) => {
         logger.warn("worktree.cleanup_failed_after_complete", { ticketId: ticket.id, error: safeError(cleanupError) });
       });
     }
@@ -416,10 +487,13 @@ export async function processLease({
         ? keeper.signal.reason
         : caught;
     let reconciliationRequired = error instanceof PublishingUncertainError || (deployed && !completed);
-    if (pushed && !deployed && deploymentStarted && !reconciliationRequired) {
+    // Once source main moved, every definite pre-deploy or not-deployed
+    // failure must restore it. This also covers a durable-checkpoint failure
+    // immediately after safePush, before deploymentStarted becomes true.
+    if (pushed && !deployed && !reconciliationRequired) {
       try {
-        const rollbackSignal = AbortSignal.timeout(config.commandTimeoutMs);
-        await gitWorkspace.rollbackPush({ worktreePath, baseSha, commitSha, signal: rollbackSignal });
+        const rollbackSignal = AbortSignal.timeout(runtimeConfig.commandTimeoutMs);
+        await runtimeWorkspace.rollbackPush({ worktreePath, baseSha, commitSha, signal: rollbackSignal });
         pushRolledBack = true;
         logger.warn("push.rolled_back", { ticketId: ticket.id, commitSha, baseSha });
       } catch (rollbackCaught) {
@@ -435,6 +509,7 @@ export async function processLease({
     }
     const report = {
       outcome: "failed",
+      projectKey: ticket.projectKey || DEFAULT_PROJECT_KEY,
       error: safeError(error),
       threadId,
       baseSha,
@@ -473,9 +548,9 @@ export async function processLease({
     if (reconciliationRequired) {
       await bestEffortProgress(client, lease, "publishing", { stage: "operator_reconciliation_required" }, logger);
     }
-    logger.error("ticket.failed", { ticketId: ticket.id, error: safeError(error), reconciliationRequired, worktreeRetained: Boolean(worktreePath && config.keepFailedWorktrees) });
-    if (worktreePath && !config.keepFailedWorktrees && !reconciliationRequired) {
-      await gitWorkspace.removeWorktree(worktreePath).catch((cleanupError) => {
+    logger.error("ticket.failed", { ticketId: ticket.id, projectKey: ticket.projectKey || "unknown", error: safeError(error), reconciliationRequired, worktreeRetained: Boolean(worktreePath && runtimeConfig.keepFailedWorktrees) });
+    if (worktreePath && !runtimeConfig.keepFailedWorktrees && !reconciliationRequired) {
+      await runtimeWorkspace.removeWorktree(worktreePath).catch((cleanupError) => {
         logger.warn("worktree.cleanup_failed", { ticketId: ticket.id, error: safeError(cleanupError) });
       });
     }
@@ -493,8 +568,8 @@ export async function processLease({
   }
 }
 
-export async function runWorker({ config, client, stateStore, gitWorkspace, logger, shutdownSignal }) {
-  await assertNoUnresolvedPublications({ config, stateStore, gitWorkspace, logger, signal: shutdownSignal });
+export async function runWorker({ config, client, stateStore, gitWorkspace, projectRegistry, logger, shutdownSignal }) {
+  await assertNoUnresolvedPublications({ config, stateStore, gitWorkspace, projectRegistry, logger, signal: shutdownSignal });
   let consecutiveLeaseFailures = 0;
   while (!shutdownSignal.aborted) {
     let lease;
@@ -514,7 +589,7 @@ export async function runWorker({ config, client, stateStore, gitWorkspace, logg
       await new Promise((resolve) => setTimeout(resolve, config.pollIntervalMs));
       continue;
     }
-    const result = await processLease({ lease, config, client, stateStore, gitWorkspace, logger, shutdownSignal });
+    const result = await processLease({ lease, config, client, stateStore, gitWorkspace, projectRegistry, logger, shutdownSignal });
     if (result?.haltWorker) {
       throw new PublishingUncertainError("Runner stopped before leasing another ticket because publication reconciliation is required");
     }

@@ -17,6 +17,10 @@ func TestFormatStatusCoversQueueWorkingAndCompletion(t *testing.T) {
 	if !strings.Contains(working, "взят в работу") || !strings.Contains(working, "Проверяю форму") {
 		t.Fatalf("working text = %q", working)
 	}
+	market := FormatStatus(StatusView{ID: 13, ProjectKey: ProjectMarketMap, Status: StatusQueued, QueuePosition: 1})
+	if !strings.Contains(market, "TNC-13 [MARKET MAP]") {
+		t.Fatalf("market status text = %q", market)
+	}
 	completed := FormatStatus(StatusView{
 		ID: 12, Status: StatusCompleted, ResultSummary: "Исправлена кнопка",
 		ProductionURL: "https://example.test/4u", CommitSHA: "abc123",

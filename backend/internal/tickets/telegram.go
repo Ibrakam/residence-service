@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"unicode"
 )
 
 var ErrTelegramMessageNotModified = errors.New("telegram message is not modified")
@@ -111,7 +112,7 @@ func ParseTelegramUpdate(update TelegramUpdate, configuredChatID int64, allowedU
 	if body == "" {
 		body = strings.TrimSpace(message.Caption)
 	}
-	wasFixCommand := hasFixCommand(body)
+	projectKey, wasFixCommand := fixCommandProject(body)
 	body = stripFixCommand(body)
 	attachments := telegramAttachments(message)
 	replyToBot := message.ReplyToMessage != nil && message.ReplyToMessage.From != nil && message.ReplyToMessage.From.IsBot
@@ -139,6 +140,7 @@ func ParseTelegramUpdate(update TelegramUpdate, configuredChatID int64, allowedU
 		MessageThread: message.MessageThreadID,
 		MediaGroupID:  message.MediaGroupID,
 		Body:          body,
+		ProjectKey:    projectKey,
 		TelegramDate:  time.Unix(message.Date, 0).UTC(),
 		Attachments:   attachments,
 		ReadyAfter:    readyAfter,
@@ -175,15 +177,67 @@ func stripFixCommand(text string) string {
 		return ""
 	}
 	name := strings.ToLower(strings.SplitN(fields[0], "@", 2)[0])
-	if name != "/fix" {
+	if name != "/fix" && name != "/fix_map" {
 		return text
 	}
 	return strings.TrimSpace(strings.TrimPrefix(text, fields[0]))
 }
 
-func hasFixCommand(text string) bool {
+func fixCommandProject(text string) (string, bool) {
 	fields := strings.Fields(text)
-	return len(fields) > 0 && strings.ToLower(strings.SplitN(fields[0], "@", 2)[0]) == "/fix"
+	if len(fields) == 0 {
+		return "", false
+	}
+	name := strings.ToLower(strings.SplitN(fields[0], "@", 2)[0])
+	switch name {
+	case "/fix_map":
+		return ProjectMarketMap, true
+	case "/fix":
+		if containsMarketMapURL(text) {
+			return ProjectMarketMap, true
+		}
+		return ProjectResidence, true
+	default:
+		return "", false
+	}
+}
+
+func containsMarketMapURL(text string) bool {
+	const hostAndPath = "form.tencorp.uz/market-map"
+	for _, token := range strings.FieldsFunc(text, func(character rune) bool {
+		return unicode.IsSpace(character) || strings.ContainsRune("[]()<>{}\"'", character)
+	}) {
+		token = strings.TrimRight(token, ".,!;:")
+		lower := strings.ToLower(token)
+		index := strings.Index(lower, hostAndPath)
+		if index < 0 {
+			continue
+		}
+		start := index
+		prefix := lower[:index]
+		switch {
+		case strings.HasSuffix(prefix, "https://"):
+			start -= len("https://")
+		case strings.HasSuffix(prefix, "http://"):
+			start -= len("http://")
+		case index != 0:
+			continue
+		}
+		candidate := token[start:]
+		if !strings.Contains(strings.ToLower(candidate), "://") {
+			candidate = "https://" + candidate
+		}
+		parsed, err := url.Parse(candidate)
+		if err != nil || parsed.User != nil || parsed.Port() != "" ||
+			!strings.EqualFold(parsed.Scheme, "https") ||
+			!strings.EqualFold(parsed.Hostname(), "form.tencorp.uz") {
+			continue
+		}
+		if parsed.EscapedPath() == "/market-map" || parsed.EscapedPath() == "/market-map/" {
+			return true
+		}
+	}
+	return false
 }
 
 func telegramAttachments(message *TelegramMessage) []AttachmentInput {

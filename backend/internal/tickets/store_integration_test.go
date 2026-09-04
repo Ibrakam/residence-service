@@ -48,7 +48,8 @@ func TestStoreQueueLifecycleIntegration(t *testing.T) {
 	now := time.Now().UTC()
 	first, err := store.ApplyUpdate(t.Context(), "integration", MessageInput{
 		UpdateID: 1, ChatID: -100, MessageID: 10, MediaGroupID: "album",
-		Body: "first", ReadyAfter: now.Add(-time.Second), Accept: true, ExplicitFix: true,
+		Body: "first", ProjectKey: ProjectMarketMap,
+		ReadyAfter: now.Add(-time.Second), Accept: true, ExplicitFix: true,
 	})
 	if err != nil || !first.Created || first.TicketID == 0 {
 		t.Fatalf("first ingest = %#v, %v", first, err)
@@ -68,7 +69,7 @@ func TestStoreQueueLifecycleIntegration(t *testing.T) {
 	if err != nil || claim.Ticket == nil || claim.Ticket.ID != first.TicketID {
 		t.Fatalf("claim = %#v, %v", claim, err)
 	}
-	if claim.Ticket.Body != "first\n\nsecond" || claim.Ticket.AttemptCount != 1 {
+	if claim.Ticket.Body != "first\n\nsecond" || claim.Ticket.AttemptCount != 1 || claim.Ticket.ProjectKey != ProjectMarketMap {
 		t.Fatalf("claimed ticket = %#v", claim.Ticket)
 	}
 	if err := store.UpdateProgress(t.Context(), first.TicketID, "integration-worker", claim.LeaseToken, "testing"); err != nil {
@@ -100,6 +101,13 @@ func TestStoreQueueLifecycleIntegration(t *testing.T) {
 	})
 	if err != nil || !followUp.Created || followUp.TicketID == first.TicketID {
 		t.Fatalf("terminal follow-up = %#v, %v", followUp, err)
+	}
+	var followUpProject string
+	if err := pool.QueryRow(t.Context(), `SELECT project_key FROM tickets WHERE id=$1`, followUp.TicketID).Scan(&followUpProject); err != nil {
+		t.Fatal(err)
+	}
+	if followUpProject != ProjectMarketMap {
+		t.Fatalf("terminal follow-up project = %q", followUpProject)
 	}
 	var ticketCountBefore int64
 	if err := pool.QueryRow(t.Context(), `SELECT count(*) FROM tickets`).Scan(&ticketCountBefore); err != nil {
@@ -163,12 +171,64 @@ func TestStoreQueueLifecycleIntegration(t *testing.T) {
 	}
 }
 
+func TestRepliesInheritParentProjectIntegration(t *testing.T) {
+	store, pool := openTicketIntegrationStore(t)
+	now := time.Now().UTC().Add(-time.Second)
+	created, err := store.ApplyUpdate(t.Context(), "reply-project", MessageInput{
+		UpdateID: 1, ChatID: -150, MessageID: 15, Body: "market task",
+		ProjectKey: ProjectMarketMap, ReadyAfter: now, Accept: true, ExplicitFix: true,
+	})
+	if err != nil || !created.Created {
+		t.Fatalf("create = %#v, %v", created, err)
+	}
+	const statusMessageID int64 = 715
+	if _, err := pool.Exec(t.Context(), `UPDATE tickets SET status_message_id=$2 WHERE id=$1`, created.TicketID, statusMessageID); err != nil {
+		t.Fatal(err)
+	}
+	replyTo := statusMessageID
+	queuedReply, err := store.ApplyUpdate(t.Context(), "reply-project", MessageInput{
+		UpdateID: 2, ChatID: -150, MessageID: 16, ReplyToMessage: &replyTo,
+		Body: "queued note", ProjectKey: ProjectResidence, ReadyAfter: now, Accept: true, ExplicitFix: true,
+	})
+	if err != nil || queuedReply.Created || queuedReply.TicketID != created.TicketID {
+		t.Fatalf("queued reply = %#v, %v", queuedReply, err)
+	}
+	var queuedProject string
+	if err := pool.QueryRow(t.Context(), `SELECT project_key FROM tickets WHERE id=$1`, created.TicketID).Scan(&queuedProject); err != nil {
+		t.Fatal(err)
+	}
+	if queuedProject != ProjectMarketMap {
+		t.Fatalf("queued reply changed project to %q", queuedProject)
+	}
+	claim, err := store.Claim(t.Context(), "reply-worker", "reply-lease", time.Minute)
+	if err != nil || claim.Ticket == nil {
+		t.Fatalf("claim = %#v, %v", claim, err)
+	}
+	if err := store.Complete(t.Context(), created.TicketID, claim.LeaseToken, Completion{Summary: "done"}); err != nil {
+		t.Fatal(err)
+	}
+	followUp, err := store.ApplyUpdate(t.Context(), "reply-project", MessageInput{
+		UpdateID: 3, ChatID: -150, MessageID: 17, ReplyToMessage: &replyTo,
+		Body: "terminal follow-up", ProjectKey: ProjectResidence, ReadyAfter: now, Accept: true, ExplicitFix: true,
+	})
+	if err != nil || !followUp.Created || followUp.TicketID == created.TicketID {
+		t.Fatalf("terminal follow-up = %#v, %v", followUp, err)
+	}
+	var followUpProject string
+	if err := pool.QueryRow(t.Context(), `SELECT project_key FROM tickets WHERE id=$1`, followUp.TicketID).Scan(&followUpProject); err != nil {
+		t.Fatal(err)
+	}
+	if followUpProject != ProjectMarketMap {
+		t.Fatalf("terminal follow-up project = %q", followUpProject)
+	}
+}
+
 func TestDelayedMediaAlbumCreatesFollowUpAfterClaimAndCompletionIntegration(t *testing.T) {
 	store, pool := openTicketIntegrationStore(t)
 	now := time.Now().UTC().Add(-time.Second)
 	first, err := store.ApplyUpdate(t.Context(), "delayed-album", MessageInput{
 		UpdateID: 1, ChatID: -200, MessageID: 20, MediaGroupID: "late-album",
-		Body: "original", ReadyAfter: now, Accept: true, ExplicitFix: true,
+		Body: "original", ProjectKey: ProjectMarketMap, ReadyAfter: now, Accept: true, ExplicitFix: true,
 	})
 	if err != nil || !first.Created {
 		t.Fatalf("first album part = %#v, %v", first, err)
@@ -183,6 +243,13 @@ func TestDelayedMediaAlbumCreatesFollowUpAfterClaimAndCompletionIntegration(t *t
 	})
 	if err != nil || !workingFollowUp.Created || workingFollowUp.TicketID == first.TicketID {
 		t.Fatalf("working delayed part = %#v, %v", workingFollowUp, err)
+	}
+	var workingFollowUpProject string
+	if err := pool.QueryRow(t.Context(), `SELECT project_key FROM tickets WHERE id=$1`, workingFollowUp.TicketID).Scan(&workingFollowUpProject); err != nil {
+		t.Fatal(err)
+	}
+	if workingFollowUpProject != ProjectMarketMap {
+		t.Fatalf("working delayed project = %q", workingFollowUpProject)
 	}
 	var originalBody, originalStatus string
 	if err := pool.QueryRow(t.Context(), `SELECT body,status FROM tickets WHERE id=$1`, first.TicketID).Scan(&originalBody, &originalStatus); err != nil {
@@ -200,6 +267,13 @@ func TestDelayedMediaAlbumCreatesFollowUpAfterClaimAndCompletionIntegration(t *t
 	})
 	if err != nil || !completedFollowUp.Created || completedFollowUp.TicketID == first.TicketID || completedFollowUp.TicketID == workingFollowUp.TicketID {
 		t.Fatalf("completed delayed part = %#v, %v", completedFollowUp, err)
+	}
+	var completedFollowUpProject string
+	if err := pool.QueryRow(t.Context(), `SELECT project_key FROM tickets WHERE id=$1`, completedFollowUp.TicketID).Scan(&completedFollowUpProject); err != nil {
+		t.Fatal(err)
+	}
+	if completedFollowUpProject != ProjectMarketMap {
+		t.Fatalf("completed delayed project = %q", completedFollowUpProject)
 	}
 	if err := pool.QueryRow(t.Context(), `SELECT body,status FROM tickets WHERE id=$1`, first.TicketID).Scan(&originalBody, &originalStatus); err != nil {
 		t.Fatal(err)

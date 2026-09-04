@@ -382,7 +382,8 @@ test("deployment status accepts only the fixed deployed/not-deployed/unknown con
   await fs.writeFile(wrapper, `#!/bin/sh
 [ "$1" = "--status" ] || exit 64
 case "$2" in
-  ${"a".repeat(40)}) echo deployed; exit 0 ;;
+  ${"a".repeat(40)}) [ "\${TICKET_RUNNER_PROJECT_KEY:-}" = residence ] || exit 65; echo deployed; exit 0 ;;
+  ${"d".repeat(40)}) [ "\${TICKET_RUNNER_PROJECT_KEY:-}" = market-map ] || exit 65; echo deployed; exit 0 ;;
   ${"b".repeat(40)}) echo not-deployed; exit 3 ;;
   *) exit 75 ;;
 esac
@@ -403,6 +404,7 @@ esac
     deployTimeoutMs: 5_000,
   };
   assert.equal(await queryDeploymentStatus({ config, worktreePath: worktree, commitSha: "a".repeat(40) }), "deployed");
+  assert.equal(await queryDeploymentStatus({ config: { ...config, projectKey: "market-map" }, worktreePath: worktree, commitSha: "d".repeat(40) }), "deployed");
   assert.equal(await queryDeploymentStatus({ config, worktreePath: worktree, commitSha: "b".repeat(40) }), "not-deployed");
   await assert.rejects(queryDeploymentStatus({ config, worktreePath: worktree, commitSha: "c".repeat(40) }), /could not be queried authoritatively/);
 });

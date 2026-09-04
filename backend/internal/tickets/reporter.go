@@ -93,6 +93,9 @@ func (r *Reporter) SyncQueue(ctx context.Context) error {
 
 func FormatStatus(view StatusView) string {
 	prefix := fmt.Sprintf("TNC-%d", view.ID)
+	if view.ProjectKey == ProjectMarketMap {
+		prefix += " [MARKET MAP]"
+	}
 	if view.Source == "operator_test" {
 		prefix += " [TEST]"
 	}

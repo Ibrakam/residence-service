@@ -30,7 +30,7 @@ type runnerStore interface {
 	Complete(context.Context, int64, string, Completion) error
 	Fail(context.Context, int64, string, string) error
 	AttachmentForWorker(context.Context, int64, int64, string, string) (Attachment, error)
-	EnqueueTest(context.Context, int64, string) (int64, error)
+	EnqueueTest(context.Context, int64, string, string) (int64, error)
 }
 
 type WorkerServer struct {
@@ -163,7 +163,7 @@ func (s *WorkerServer) leaseResponse(claim ClaimResult) map[string]any {
 		"leaseToken": claim.LeaseToken, "leaseExpiresAt": claim.ExpiresAt,
 		"ticket": map[string]any{
 			"id": ticket.ID, "attempt": ticket.AttemptCount, "title": ticketTitle(*ticket),
-			"body": ticket.Body, "attachments": attachments,
+			"projectKey": projectKeyOrDefault(ticket.ProjectKey), "body": ticket.Body, "attachments": attachments,
 		},
 	}
 }
@@ -282,17 +282,26 @@ func (s *WorkerServer) handleFail(response http.ResponseWriter, request *http.Re
 
 func (s *WorkerServer) handleTestTicket(response http.ResponseWriter, request *http.Request) {
 	var input struct {
-		Text string `json:"text"`
+		Text       string `json:"text"`
+		ProjectKey string `json:"projectKey"`
 	}
 	if err := decodeJSON(response, request, &input); err != nil {
 		return
 	}
 	input.Text = strings.TrimSpace(input.Text)
+	input.ProjectKey = strings.TrimSpace(input.ProjectKey)
+	if input.ProjectKey == "" {
+		input.ProjectKey = ProjectResidence
+	}
 	if input.Text == "" || len(input.Text) > 12000 {
 		writeError(response, http.StatusBadRequest, "invalid_test_text")
 		return
 	}
-	ticketID, err := s.store.EnqueueTest(request.Context(), s.chatID, input.Text)
+	if err := ValidateProjectKey(input.ProjectKey); err != nil {
+		writeError(response, http.StatusBadRequest, "invalid_project_key")
+		return
+	}
+	ticketID, err := s.store.EnqueueTest(request.Context(), s.chatID, input.Text, input.ProjectKey)
 	if err != nil {
 		writeError(response, http.StatusServiceUnavailable, "enqueue_failed")
 		return

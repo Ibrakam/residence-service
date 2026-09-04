@@ -10,6 +10,11 @@ const (
 	StatusCancelled = "cancelled"
 )
 
+const (
+	ProjectResidence = "residence"
+	ProjectMarketMap = "market-map"
+)
+
 type AttachmentInput struct {
 	FileID       string
 	FileUniqueID string
@@ -27,6 +32,7 @@ type MessageInput struct {
 	ReplyToMessage *int64
 	MediaGroupID   string
 	Body           string
+	ProjectKey     string
 	TelegramDate   time.Time
 	Attachments    []AttachmentInput
 	ReadyAfter     time.Time
@@ -65,6 +71,7 @@ type Ticket struct {
 	MessageThread   *int64       `json:"-"`
 	FirstMessageID  int64        `json:"-"`
 	Source          string       `json:"source"`
+	ProjectKey      string       `json:"projectKey"`
 	Body            string       `json:"body"`
 	Status          string       `json:"status"`
 	ProgressSummary string       `json:"progressSummary,omitempty"`
@@ -93,6 +100,7 @@ type StatusView struct {
 	MessageThread   *int64
 	FirstMessageID  int64
 	Source          string
+	ProjectKey      string
 	StatusMessageID *int64
 	LastStatusText  string
 	Status          string

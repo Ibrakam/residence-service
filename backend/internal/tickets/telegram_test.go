@@ -24,6 +24,9 @@ func TestParseTelegramUpdateBuildsAlbumTicketAndStripsFix(t *testing.T) {
 	if !parsed.Input.ExplicitFix {
 		t.Fatal("explicit /fix marker was lost")
 	}
+	if parsed.Input.ProjectKey != ProjectResidence {
+		t.Fatalf("project key = %q", parsed.Input.ProjectKey)
+	}
 	if got := parsed.Input.ReadyAfter; !got.Equal(now.Add(2 * time.Second)) {
 		t.Fatalf("readyAfter = %s", got)
 	}
@@ -47,6 +50,37 @@ func TestParseTelegramUpdateRequiresFixForTopLevelTicket(t *testing.T) {
 	}
 }
 
+func TestParseTelegramUpdateRoutesOnlyExactMarketMapURL(t *testing.T) {
+	tests := []struct {
+		name    string
+		text    string
+		project string
+	}{
+		{name: "exact", text: "/fix https://form.tencorp.uz/market-map", project: ProjectMarketMap},
+		{name: "scheme omitted", text: "/fix form.tencorp.uz/market-map", project: ProjectMarketMap},
+		{name: "trailing slash and query", text: "/fix смотри https://form.tencorp.uz/market-map/?selected=7", project: ProjectMarketMap},
+		{name: "markdown", text: "/fix [карта](https://form.tencorp.uz/market-map)", project: ProjectMarketMap},
+		{name: "explicit command", text: "/fix_map поправь выбранный маркер", project: ProjectMarketMap},
+		{name: "ordinary fix", text: "/fix поправь форму", project: ProjectResidence},
+		{name: "child path", text: "/fix https://form.tencorp.uz/market-map/admin", project: ProjectResidence},
+		{name: "lookalike host", text: "/fix https://evil.form.tencorp.uz/market-map", project: ProjectResidence},
+		{name: "lookalike path", text: "/fix https://form.tencorp.uz/market-mapper", project: ProjectResidence},
+		{name: "insecure scheme", text: "/fix http://form.tencorp.uz/market-map", project: ProjectResidence},
+		{name: "userinfo host confusion", text: "/fix https://form.tencorp.uz@evil.example/market-map", project: ProjectResidence},
+		{name: "custom port", text: "/fix https://form.tencorp.uz:8443/market-map", project: ProjectResidence},
+	}
+	for index, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			parsed := ParseTelegramUpdate(TelegramUpdate{UpdateID: int64(100 + index), Message: &TelegramMessage{
+				MessageID: int64(100 + index), Chat: TelegramChat{ID: -123}, From: &TelegramUser{ID: 5}, Text: test.text,
+			}}, -123, TelegramUserIDSet{5: {}}, time.Second, time.Now())
+			if !parsed.Input.Accept || !parsed.Input.ExplicitFix || parsed.Input.ProjectKey != test.project {
+				t.Fatalf("parsed = %#v", parsed)
+			}
+		})
+	}
+}
+
 func TestParseTelegramUpdateAllowsBotReplyCandidateWithoutFix(t *testing.T) {
 	replyID := int64(700)
 	parsed := ParseTelegramUpdate(TelegramUpdate{UpdateID: 12, Message: &TelegramMessage{
@@ -55,6 +89,9 @@ func TestParseTelegramUpdateAllowsBotReplyCandidateWithoutFix(t *testing.T) {
 	}}, -123, TelegramUserIDSet{5: {}}, time.Second, time.Now())
 	if !parsed.Input.Accept || parsed.Input.ExplicitFix || parsed.Input.ReplyToMessage == nil || *parsed.Input.ReplyToMessage != replyID {
 		t.Fatalf("bot reply candidate = %#v", parsed)
+	}
+	if parsed.Input.ProjectKey != "" {
+		t.Fatalf("reply selected a project before parent lookup: %#v", parsed.Input)
 	}
 }
 

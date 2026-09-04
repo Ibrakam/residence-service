@@ -97,7 +97,7 @@ func (s *Service) handleCommand(ctx context.Context, command Command, message *T
 	switch command {
 	case CommandHelp:
 		_, err := s.telegram.SendMessage(ctx, message.Chat.ID, message.MessageThreadID, message.MessageID,
-			"Новый тикет: начните сообщение или подпись к альбому с /fix. Ответ на статус TNC можно отправить без /fix — он станет заметкой или follow-up. /status — очередь, /cancel — отменить queued-тикет ответом на его статус.")
+			"Новый тикет: начните сообщение или подпись к альбому с /fix. Ссылка form.tencorp.uz/market-map автоматически направит задачу в Market Map; также можно использовать /fix_map. Ответ на статус TNC наследует проект и станет заметкой или follow-up. /status — очередь, /cancel — отменить queued-тикет ответом на его статус.")
 		return err
 	case CommandStatus:
 		health, err := s.store.Health(ctx)

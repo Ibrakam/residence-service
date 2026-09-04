@@ -3,7 +3,7 @@ import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
 import { PolicyError } from "./errors.mjs";
-import { isPathInside, safeSlug } from "./sanitize.mjs";
+import { isPathInside, normalizeRepoRelativePath, safeSlug } from "./sanitize.mjs";
 
 async function hashFile(filename) {
   const hash = crypto.createHash("sha256");
@@ -82,7 +82,7 @@ async function assertPureRuntimeClosure(rootPath) {
   }
 }
 
-async function assertPlatformNeutralArtifact(rootPath) {
+async function assertPlatformNeutralArtifact(rootPath, { requireRuntimeManifest = true, rejectSymlinks = false } = {}) {
   const canonicalRoot = await fsp.realpath(rootPath);
   const scannedRealFiles = new Set();
   async function inspectFile(absolute, displayPath) {
@@ -112,12 +112,31 @@ async function assertPlatformNeutralArtifact(rootPath) {
       } else if (stat.isFile() && !stat.isSymbolicLink()) {
         await inspectFile(absolute, portablePath(path.relative(rootPath, absolute)));
       } else if (stat.isSymbolicLink()) {
+        if (rejectSymlinks) throw new PolicyError(`Source artifact contains a symlink: ${portablePath(path.relative(rootPath, absolute))}`);
         await inspectFile(absolute, portablePath(path.relative(rootPath, absolute)));
       }
     }
   }
   await visit(rootPath);
-  await assertPureRuntimeClosure(rootPath);
+  if (requireRuntimeManifest) await assertPureRuntimeClosure(rootPath);
+}
+
+async function assertReviewedSourceArtifact(rootPath, { allowedPaths, requiredPaths }) {
+  const allowed = allowedPaths.map(normalizeRepoRelativePath);
+  const required = requiredPaths.map(normalizeRepoRelativePath);
+  if (allowed.length === 0 || required.length === 0) throw new PolicyError("Source artifact scope must not be empty");
+  const manifest = await createArtifactManifest(rootPath);
+  for (const entry of manifest.entries) {
+    const inScope = allowed.some((reviewedPath) => entry.path === reviewedPath
+      || (entry.type === "directory" && reviewedPath.startsWith(`${entry.path}/`)));
+    if (!inScope) throw new PolicyError(`Source artifact contains an unreviewed path: ${entry.path}`);
+    if (entry.type === "symlink") throw new PolicyError(`Source artifact contains a symlink: ${entry.path}`);
+  }
+  const files = new Set(manifest.entries.filter((entry) => entry.type === "file").map((entry) => entry.path));
+  for (const requiredPath of required) {
+    if (!files.has(requiredPath)) throw new PolicyError(`Source artifact is missing required file: ${requiredPath}`);
+  }
+  await assertPlatformNeutralArtifact(rootPath, { requireRuntimeManifest: false, rejectSymlinks: true });
 }
 
 export async function createArtifactManifest(rootPath) {
@@ -183,7 +202,15 @@ async function makeRemovable(directory) {
   }
 }
 
-async function sealArtifactSource({ config, sourcePath, ticketId, sealId }) {
+async function sealArtifactSource({
+  config,
+  sourcePath,
+  ticketId,
+  sealId,
+  kind = "standalone",
+  allowedPaths = [],
+  requiredPaths = [],
+}) {
   const source = await fsp.realpath(sourcePath);
   const sourceStat = await fsp.lstat(source);
   if (!sourceStat.isDirectory() || sourceStat.isSymbolicLink()) throw new PolicyError("Build artifact root must be a regular directory");
@@ -202,7 +229,9 @@ async function sealArtifactSource({ config, sourcePath, ticketId, sealId }) {
       preserveTimestamps: true,
       verbatimSymlinks: true,
     });
-    await assertPlatformNeutralArtifact(artifactPath);
+    if (kind === "standalone") await assertPlatformNeutralArtifact(artifactPath);
+    else if (kind === "reviewed-source") await assertReviewedSourceArtifact(artifactPath, { allowedPaths, requiredPaths });
+    else throw new PolicyError(`Unsupported sealed artifact kind: ${kind}`);
     await makeReadOnly(artifactPath);
     await fsp.chmod(artifactPath, 0o555);
     const manifest = await createArtifactManifest(artifactPath);
@@ -220,6 +249,7 @@ async function sealArtifactSource({ config, sourcePath, ticketId, sealId }) {
     await fsp.rename(staging, finalPath);
     await fsp.chmod(finalPath, 0o500);
     return {
+      kind,
       rootPath: finalPath,
       artifactPath: path.join(finalPath, "standalone"),
       manifestPath: path.join(finalPath, "manifest.json"),
@@ -244,6 +274,31 @@ export async function sealExternalBuildArtifact({ config, sourcePath, trustedSou
   const trustedRoot = await fsp.realpath(trustedSourceRoot);
   if (!isPathInside(trustedRoot, source)) throw new PolicyError("Container artifact escaped its trusted export directory");
   return sealArtifactSource({ config, sourcePath: source, ticketId, sealId: treeSha });
+}
+
+export async function sealExternalSourceArtifact({
+  config,
+  sourcePath,
+  trustedSourceRoot,
+  ticketId,
+  treeSha,
+  allowedPaths,
+  requiredPaths,
+}) {
+  const source = await fsp.realpath(sourcePath);
+  const trustedRoot = await fsp.realpath(trustedSourceRoot);
+  if (source !== trustedRoot && !isPathInside(trustedRoot, source)) {
+    throw new PolicyError("Source artifact escaped its trusted export directory");
+  }
+  return sealArtifactSource({
+    config,
+    sourcePath: source,
+    ticketId,
+    sealId: treeSha,
+    kind: "reviewed-source",
+    allowedPaths,
+    requiredPaths,
+  });
 }
 
 export async function verifySealedArtifact(seal) {

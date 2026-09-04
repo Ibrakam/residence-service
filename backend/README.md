@@ -216,8 +216,8 @@ docker compose config --quiet
 ошибочно внесён в allowlist, update с `is_bot=true` всегда игнорируется.
 Неавторизованный update молча фиксируется в offset/dedupe, но не создаёт тикет
 и не получает ответ. Новый top-level тикет обязан начинаться с `/fix` (для
-альбома — в caption). Обычный `/fix` относится к проекту `residence`; точная
-ссылка `form.tencorp.uz/market-map` в его тексте либо команда `/fix_map`
+альбома — в caption). Обычный `/fix` относится к проекту `residence`; ссылка
+`form.tencorp.uz/market-map` или её дочерний путь в тексте либо команда `/fix_map`
 выбирает allowlisted-проект `market-map`. `/help`, `/status` и `/cancel` доступны только allowlist-
 пользователям и являются управляющими командами. Ответ на реальное статусное
 сообщение `TNC-*` можно отправить без `/fix`: пока тикет queued, он дополнится,

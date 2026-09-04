@@ -50,7 +50,7 @@ func TestParseTelegramUpdateRequiresFixForTopLevelTicket(t *testing.T) {
 	}
 }
 
-func TestParseTelegramUpdateRoutesOnlyExactMarketMapURL(t *testing.T) {
+func TestParseTelegramUpdateRoutesMarketMapURLAndDescendants(t *testing.T) {
 	tests := []struct {
 		name    string
 		text    string
@@ -62,7 +62,8 @@ func TestParseTelegramUpdateRoutesOnlyExactMarketMapURL(t *testing.T) {
 		{name: "markdown", text: "/fix [карта](https://form.tencorp.uz/market-map)", project: ProjectMarketMap},
 		{name: "explicit command", text: "/fix_map поправь выбранный маркер", project: ProjectMarketMap},
 		{name: "ordinary fix", text: "/fix поправь форму", project: ProjectResidence},
-		{name: "child path", text: "/fix https://form.tencorp.uz/market-map/admin", project: ProjectResidence},
+		{name: "child path", text: "/fix https://form.tencorp.uz/market-map/admin", project: ProjectMarketMap},
+		{name: "text stuck to trailing slash", text: "/fix https://form.tencorp.uz/market-map/Разметка районов", project: ProjectMarketMap},
 		{name: "lookalike host", text: "/fix https://evil.form.tencorp.uz/market-map", project: ProjectResidence},
 		{name: "lookalike path", text: "/fix https://form.tencorp.uz/market-mapper", project: ProjectResidence},
 		{name: "insecure scheme", text: "/fix http://form.tencorp.uz/market-map", project: ProjectResidence},

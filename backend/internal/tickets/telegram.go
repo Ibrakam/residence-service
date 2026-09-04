@@ -233,7 +233,8 @@ func containsMarketMapURL(text string) bool {
 			!strings.EqualFold(parsed.Hostname(), "form.tencorp.uz") {
 			continue
 		}
-		if parsed.EscapedPath() == "/market-map" || parsed.EscapedPath() == "/market-map/" {
+		path := parsed.EscapedPath()
+		if path == "/market-map" || strings.HasPrefix(path, "/market-map/") {
 			return true
 		}
 	}

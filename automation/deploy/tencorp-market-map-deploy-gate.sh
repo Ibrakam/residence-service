@@ -115,11 +115,24 @@ parse_admin_command() {
       PARSED_UPLOAD="${fields[1]}"
       PARSED_COMMIT="${fields[2]}"
       ;;
+    validate)
+      (( ${#fields[@]} == 3 )) || die "validate requires UPLOAD and COMMIT"
+      validate_upload_path "${fields[1]}" >/dev/null
+      validate_commit "${fields[2]}"
+      validate_upload_commit_pair "${fields[1]}" "${fields[2]}"
+      PARSED_ACTION="validate"
+      PARSED_UPLOAD="${fields[1]}"
+      PARSED_COMMIT="${fields[2]}"
+      ;;
     status)
       (( ${#fields[@]} == 2 )) || die "status requires COMMIT"
       validate_commit "${fields[1]}"
       PARSED_ACTION="status"
       PARSED_COMMIT="${fields[1]}"
+      ;;
+    policy)
+      (( ${#fields[@]} == 1 )) || die "policy accepts no arguments"
+      PARSED_ACTION="policy"
       ;;
     cleanup)
       (( ${#fields[@]} == 2 )) || die "cleanup requires UPLOAD"
@@ -242,18 +255,42 @@ run_restricted_rsync() {
     "$target"
 }
 
-deploy_upload() {
-  local commit="$1"
-  local upload="$2"
+validate_deployer() {
   local deployer_mode
 
-  validate_upload_commit_pair "$upload" "$commit"
-  validate_existing_upload "$upload"
   [[ -x "$DEPLOYER" && ! -L "$DEPLOYER" ]] || die "fixed market-map deployer is absent or unsafe"
   [[ "$($STAT -c '%u' -- "$DEPLOYER")" == "0" ]] || die "fixed market-map deployer must be root-owned"
   deployer_mode="$($STAT -c '%a' -- "$DEPLOYER")"
   (( (8#$deployer_mode & 0022) == 0 )) || die "fixed market-map deployer is writable by group or others"
+}
+
+deploy_upload() {
+  local commit="$1"
+  local upload="$2"
+
+  exec 8>"$UPLOAD_LOCK"
+  "$FLOCK" -w 120 8 || die "timed out waiting for the market-map upload lock"
+  validate_upload_commit_pair "$upload" "$commit"
+  validate_existing_upload "$upload"
+  validate_deployer
   exec "$DEPLOYER" "$upload" "$commit"
+}
+
+validate_upload() {
+  local commit="$1"
+  local upload="$2"
+
+  exec 8>"$UPLOAD_LOCK"
+  "$FLOCK" -w 120 8 || die "timed out waiting for the market-map upload lock"
+  validate_upload_commit_pair "$upload" "$commit"
+  validate_existing_upload "$upload"
+  validate_deployer
+  exec "$DEPLOYER" --validate-upload "$upload" "$commit"
+}
+
+policy_version() {
+  validate_deployer
+  exec "$DEPLOYER" --policy-version
 }
 
 status_commit() {
@@ -363,8 +400,10 @@ main() {
   parse_admin_command "$original"
   case "$PARSED_ACTION" in
     prepare) prepare_upload "$PARSED_COMMIT" "$PARSED_UPLOAD" ;;
+    validate) validate_upload "$PARSED_COMMIT" "$PARSED_UPLOAD" ;;
     deploy) deploy_upload "$PARSED_COMMIT" "$PARSED_UPLOAD" ;;
     status) status_commit "$PARSED_COMMIT" ;;
+    policy) policy_version ;;
     cleanup) cleanup_upload "$PARSED_UPLOAD" ;;
     *) die "internal command dispatch failure" ;;
   esac

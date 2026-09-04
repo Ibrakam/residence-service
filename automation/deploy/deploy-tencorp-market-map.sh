@@ -22,6 +22,10 @@ readonly UPLOAD_ROOT="/srv/tencorp-market-map-deploy/uploads"
 readonly DEPLOY_LOCK="/run/lock/tencorp-market-map-deploy.lock"
 readonly PYTHON_BIN="/usr/bin/python3"
 readonly CURL_BIN="/usr/bin/curl"
+readonly HTML_VALIDATOR="/usr/local/libexec/tencorp-market-map/validate-market-map-html.py"
+readonly HTML_VALIDATOR_SHA256="c6ee6cbd875de1486eb3d2ee2727815d820b2567cd341ba4b00c0c94ab83506f"
+readonly POLICY_PROTOCOL_VERSION="v1"
+readonly YANDEX_API_KEY_FILE="/etc/tencorp-market-map/yandex-maps-api-key"
 readonly LOOPBACK_ORIGIN="http://127.0.0.1:8765"
 readonly MIN_FREE_KB=1048576
 readonly COMMIT_RE='^[0-9a-f]{40}$'
@@ -35,8 +39,10 @@ STAGING_RELEASE=""
 FINAL_RELEASE=""
 PREVIOUS_RELEASE=""
 PROBE_DIR=""
+VALIDATOR_SNAPSHOT=""
 CURRENT_SWITCHED=0
 DEPLOYMENT_CONFIRMED=0
+VALIDATE_ONLY=0
 
 log() {
   printf '[deploy-tencorp-market-map] %s\n' "$*" >&2
@@ -50,6 +56,8 @@ die() {
 usage() {
   cat >&2 <<'EOF'
 Usage: deploy-tencorp-market-map.sh UPLOAD COMMIT
+       deploy-tencorp-market-map.sh --validate-upload UPLOAD COMMIT
+       deploy-tencorp-market-map.sh --policy-version
 
 UPLOAD must be the root-owned direct child prepared by the market-map forced
 command gate. Its artifact directory contains only the approved application
@@ -88,6 +96,22 @@ safe_remove_probe() {
       ;;
     *)
       log "Refusing to remove unexpected probe path: ${path}"
+      return 1
+      ;;
+  esac
+}
+
+safe_remove_validator_snapshot() {
+  local path="${1:-}"
+
+  [[ -n "$path" && -f "$path" && ! -L "$path" ]] || return 0
+  case "$path" in
+    /run/tencorp-market-map-validator.*)
+      /usr/bin/rm -f -- "$path"
+      VALIDATOR_SNAPSHOT=""
+      ;;
+    *)
+      log "Refusing to remove unexpected validator snapshot: ${path}"
       return 1
       ;;
   esac
@@ -244,6 +268,7 @@ rollback_on_failure() {
   set +e
   safe_remove_probe "$PROBE_DIR"
   safe_remove_staging "$STAGING_RELEASE"
+  safe_remove_validator_snapshot "$VALIDATOR_SNAPSHOT"
 
   if (( original_status != 0 && CURRENT_SWITCHED == 1 && DEPLOYMENT_CONFIRMED == 0 )); then
     log "Deployment failed after the current pointer changed; rolling back"
@@ -294,6 +319,44 @@ validate_upload_path() {
   mode="$(stat -c '%a' -- "$candidate")"
   [[ "$owner" == 0 ]] || die "UPLOAD must be root-owned"
   (( (8#$mode & 0022) == 0 )) || die "UPLOAD must not be writable by group or others"
+}
+
+prepare_html_validator_snapshot() {
+  local owner mode digest snapshot_owner snapshot_mode
+
+  [[ -f "$HTML_VALIDATOR" && ! -L "$HTML_VALIDATOR" ]] \
+    || die "fixed market-map HTML validator is absent or unsafe"
+  [[ "$(realpath -e -- "$HTML_VALIDATOR")" == "$HTML_VALIDATOR" ]] \
+    || die "fixed market-map HTML validator path is not canonical"
+  owner="$(stat -c '%u' -- "$HTML_VALIDATOR")"
+  mode="$(stat -c '%a' -- "$HTML_VALIDATOR")"
+  [[ "$owner" == 0 ]] || die "fixed market-map HTML validator must be root-owned"
+  (( (8#$mode & 0022) == 0 )) \
+    || die "fixed market-map HTML validator must not be writable by group or others"
+  VALIDATOR_SNAPSHOT="$(/usr/bin/mktemp /run/tencorp-market-map-validator.XXXXXX)"
+  if ! /usr/bin/install -o root -g root -m 0500 -- "$HTML_VALIDATOR" "$VALIDATOR_SNAPSHOT"; then
+    safe_remove_validator_snapshot "$VALIDATOR_SNAPSHOT"
+    die "fixed market-map HTML validator could not be snapshotted"
+  fi
+  if [[ ! -f "$VALIDATOR_SNAPSHOT" || -L "$VALIDATOR_SNAPSHOT" ]]; then
+    safe_remove_validator_snapshot "$VALIDATOR_SNAPSHOT"
+    die "market-map HTML validator snapshot is unsafe"
+  fi
+  snapshot_owner="$(stat -c '%u' -- "$VALIDATOR_SNAPSHOT")"
+  snapshot_mode="$(stat -c '%a' -- "$VALIDATOR_SNAPSHOT")"
+  if [[ "$snapshot_owner" != 0 || "$snapshot_mode" != 500 ]]; then
+    safe_remove_validator_snapshot "$VALIDATOR_SNAPSHOT"
+    die "market-map HTML validator snapshot has unsafe ownership or permissions"
+  fi
+  if ! digest="$(/usr/bin/sha256sum -- "$VALIDATOR_SNAPSHOT")"; then
+    safe_remove_validator_snapshot "$VALIDATOR_SNAPSHOT"
+    die "market-map HTML validator snapshot could not be hashed"
+  fi
+  digest="${digest%% *}"
+  if [[ "$digest" != "$HTML_VALIDATOR_SHA256" ]]; then
+    safe_remove_validator_snapshot "$VALIDATOR_SNAPSHOT"
+    die "fixed market-map HTML validator content does not match the deployed policy"
+  fi
 }
 
 validate_artifact() {
@@ -354,10 +417,8 @@ for filename in ("server.py", "dshk_sync.py"):
 data = json.loads((root / "data.json").read_text(encoding="utf-8"))
 if not isinstance(data, (dict, list)):
     raise SystemExit("data.json must contain an object or array")
-html = (root / "leadora_carto_map.html").read_text(encoding="utf-8")
-if "<html" not in html.lower() or "vendor/leaflet" not in html:
-    raise SystemExit("market-map HTML entrypoint is incomplete")
 VERIFY_LAYOUT
+  "$PYTHON_BIN" "$VALIDATOR_SNAPSHOT" "${artifact}/leadora_carto_map.html" >/dev/null
 }
 
 assert_state_is_external() {
@@ -391,9 +452,14 @@ copy_release() {
   /usr/bin/install -o root -g root -m 0644 -- \
     "${ARTIFACT}/server.py" \
     "${ARTIFACT}/dshk_sync.py" \
-    "${ARTIFACT}/leadora_carto_map.html" \
     "${ARTIFACT}/data.json" \
     "$STAGING_RELEASE/"
+  "$PYTHON_BIN" "$VALIDATOR_SNAPSHOT" --render \
+    "${ARTIFACT}/leadora_carto_map.html" \
+    "${STAGING_RELEASE}/leadora_carto_map.html" \
+    "$YANDEX_API_KEY_FILE" >/dev/null
+  /usr/bin/chown root:root -- "${STAGING_RELEASE}/leadora_carto_map.html"
+  /usr/bin/chmod 0644 -- "${STAGING_RELEASE}/leadora_carto_map.html"
   /usr/bin/install -o root -g root -m 0644 -- \
     "${ARTIFACT}/vendor/leaflet.css" \
     "${ARTIFACT}/vendor/leaflet.js" \
@@ -457,21 +523,62 @@ resolve_previous_release() {
 }
 
 main() {
-  local supplied_upload supplied_commit timestamp
+  local supplied_upload supplied_commit timestamp key_status
 
-  (( $# == 2 )) || {
-    usage
-    exit 64
-  }
-  supplied_upload="$1"
-  supplied_commit="$2"
+  if [[ "${1:-}" == "--policy-version" ]]; then
+    (( $# == 1 )) || {
+      usage
+      exit 64
+    }
+    for command in realpath stat "$PYTHON_BIN" /usr/bin/flock /usr/bin/install /usr/bin/mktemp /usr/bin/rm /usr/bin/sha256sum; do
+      require_command "$command"
+    done
+    exec 9>"$DEPLOY_LOCK"
+    /usr/bin/flock -s -w 45 9 || die "timed out waiting for the market-map deployment lock"
+    trap 'safe_remove_validator_snapshot "$VALIDATOR_SNAPSHOT"' EXIT
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
+    prepare_html_validator_snapshot
+    key_status="yandex-key-unavailable"
+    if "$PYTHON_BIN" "$VALIDATOR_SNAPSHOT" --check-key "$YANDEX_API_KEY_FILE" >/dev/null 2>&1; then
+      key_status="yandex-key-present"
+    fi
+    printf 'market-map-policy %s %s %s\n' "$POLICY_PROTOCOL_VERSION" "$HTML_VALIDATOR_SHA256" "$key_status"
+    safe_remove_validator_snapshot "$VALIDATOR_SNAPSHOT"
+    trap - EXIT INT TERM
+    return
+  fi
+
+  if [[ "${1:-}" == "--validate-upload" ]]; then
+    (( $# == 3 )) || {
+      usage
+      exit 64
+    }
+    VALIDATE_ONLY=1
+    supplied_upload="$2"
+    supplied_commit="$3"
+  else
+    (( $# == 2 )) || {
+      usage
+      exit 64
+    }
+    supplied_upload="$1"
+    supplied_commit="$2"
+  fi
   [[ "$supplied_commit" =~ $COMMIT_RE ]] || die "COMMIT must be 40 lowercase hexadecimal characters"
   COMMIT="$supplied_commit"
 
-  for command in awk basename date dirname df du find grep realpath stat \
+  for command in awk basename date dirname df du find grep realpath stat /usr/bin/mktemp /usr/bin/rm /usr/bin/sha256sum \
     "$PYTHON_BIN" "$CURL_BIN" /usr/bin/flock /usr/bin/install /usr/bin/systemctl /usr/sbin/runuser; do
     require_command "$command"
   done
+
+  exec 9>"$DEPLOY_LOCK"
+  /usr/bin/flock -w 180 9 || die "timed out waiting for the market-map deployment lock"
+  trap rollback_on_failure EXIT
+  trap 'exit 130' INT
+  trap 'exit 143' TERM
+  prepare_html_validator_snapshot
 
   UPLOAD="$(realpath -e -- "$supplied_upload")"
   [[ "$UPLOAD" == "$supplied_upload" ]] || die "UPLOAD must use its canonical fixed-root path"
@@ -487,21 +594,29 @@ main() {
   (( (8#$(stat -c '%a' -- "$SERVICE_ROOT") & 0022) == 0 )) || die "market-map service root is writable by group or others"
   (( (8#$(stat -c '%a' -- "$RELEASES_DIR") & 0022) == 0 )) || die "market-map releases directory is writable by group or others"
 
-  exec 9>"$DEPLOY_LOCK"
-  /usr/bin/flock -w 180 9 || die "timed out waiting for the market-map deployment lock"
-  resolve_previous_release
   assert_release_capacity
 
   timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+  if (( VALIDATE_ONLY == 1 )); then
+    RELEASE_ID="preflight-${timestamp}-${COMMIT:0:12}"
+    STAGING_RELEASE="${RELEASES_DIR}/.incoming-${RELEASE_ID}.$$"
+    [[ ! -e "$STAGING_RELEASE" && ! -L "$STAGING_RELEASE" ]] \
+      || die "market-map preflight staging release already exists"
+    copy_release
+    runtime_probe
+    safe_remove_staging "$STAGING_RELEASE"
+    safe_remove_validator_snapshot "$VALIDATOR_SNAPSHOT"
+    trap - EXIT INT TERM
+    printf 'market-map-valid %s\n' "$COMMIT"
+    return 0
+  fi
+
+  resolve_previous_release
   RELEASE_ID="${timestamp}-${COMMIT:0:12}"
   FINAL_RELEASE="${RELEASES_DIR}/${RELEASE_ID}"
   STAGING_RELEASE="${RELEASES_DIR}/.incoming-${RELEASE_ID}.$$"
   [[ ! -e "$FINAL_RELEASE" && ! -L "$FINAL_RELEASE" ]] || die "market-map release already exists"
   [[ ! -e "$STAGING_RELEASE" && ! -L "$STAGING_RELEASE" ]] || die "market-map staging release already exists"
-
-  trap rollback_on_failure EXIT
-  trap 'exit 130' INT
-  trap 'exit 143' TERM
 
   copy_release
   runtime_probe

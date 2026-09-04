@@ -45,6 +45,11 @@ test("server client retains proxy base path and matches the Go worker contract",
     deployment: { deployed: true },
   });
   await client.fail(lease.ticket.id, lease.leaseToken, { error: { message: "Example failure" } });
+  await client.fail(lease.ticket.id, lease.leaseToken, {
+    error: { message: "Deploy rejected" },
+    pushed: true,
+    pushRolledBack: true,
+  });
 
   assert.equal(requests[0].path, "/__residence-ticket-worker/internal/ticket-runner/lease");
   assert.deepEqual(requests[0].body, { workerId: "runner-test" });
@@ -57,6 +62,9 @@ test("server client retains proxy base path and matches the Go worker contract",
     productionUrl: "https://form.tencorp.uz/",
   });
   assert.deepEqual(requests[4].body, { summary: "Example failure" });
+  assert.deepEqual(requests[5].body, {
+    summary: "Deploy rejected Deployment failed; the source push was rolled back and main was restored.",
+  });
 });
 
 test("lease treats worker_busy as no work without masking ticket lease conflicts", async (t) => {

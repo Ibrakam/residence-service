@@ -355,6 +355,9 @@ exit 3
   assert.equal(state.pushed, true);
   assert.equal(state.deployed, false);
   assert.equal(state.pushRolledBack, true);
+  assert.deepEqual(state.changedPaths, ["website/synthetic-fix.txt"]);
+  assert.match(state.diffStat, /website\/synthetic-fix\.txt/);
+  assert.equal(state.verification.length, 1);
 
   const originalWriteTicket = stateStore.writeTicket.bind(stateStore);
   stateStore.writeTicket = async (ticketId, attempt, nextState) => {

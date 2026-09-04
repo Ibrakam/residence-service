@@ -6,6 +6,7 @@ readonly TEST_DIR="$(cd -- "$(dirname -- "$0")" && pwd -P)"
 readonly GATE="${TEST_DIR}/tencorp-market-map-deploy-gate.sh"
 readonly WRAPPER="${TEST_DIR}/deploy-market-map-remote.sh"
 readonly DEPLOYER="${TEST_DIR}/deploy-tencorp-market-map.sh"
+readonly HTML_VALIDATOR="${TEST_DIR}/validate-market-map-html.py"
 readonly AUTHORIZED_KEYS_EXAMPLE="${TEST_DIR}/ssh/tencorp-market-map-deploy.authorized_keys.example"
 readonly TEST_COMMIT="0123456789abcdef0123456789abcdef01234567"
 readonly UPLOAD="/srv/tencorp-market-map-deploy/uploads/20260904T120000Z-0123456-123-999"
@@ -36,10 +37,13 @@ expect_invalid() {
 bash -n "$GATE"
 bash -n "$WRAPPER"
 bash -n "$DEPLOYER"
+PYTHONDONTWRITEBYTECODE=1 /usr/bin/python3 "$TEST_DIR/test_validate_market_map_html.py"
 
 expect_valid prepare "prepare ${TEST_COMMIT} ${UPLOAD}"
 expect_valid deploy "deploy ${UPLOAD} ${TEST_COMMIT}"
+expect_valid validate "validate ${UPLOAD} ${TEST_COMMIT}"
 expect_valid status "status ${TEST_COMMIT}"
+expect_valid policy "policy"
 expect_valid cleanup "cleanup ${UPLOAD}"
 expect_valid rsync "rsync --server --delete-delay -l -r -t --dirs --delay-updates --safe-links . ${UPLOAD_NAME}/artifact/"
 
@@ -48,10 +52,12 @@ expect_invalid "bash -s"
 expect_invalid "status ${TEST_COMMIT};id"
 expect_invalid $'status 0123456789abcdef0123456789abcdef01234567\nid'
 expect_invalid "status ABCDEF456789abcdef0123456789abcdef01234567"
+expect_invalid "policy extra"
 expect_invalid "prepare ${TEST_COMMIT} /srv/tencorp-market-map-deploy/uploads/../repository"
 expect_invalid "prepare ${TEST_COMMIT} /srv/tencorp-market-map-deploy/uploads-not/${UPLOAD_NAME}"
 expect_invalid "prepare ${TEST_COMMIT} /srv/tencorp-market-map-deploy/uploads/20260904T120000Z-fffffff-123-999"
 expect_invalid "deploy ${TEST_COMMIT} ${UPLOAD}"
+expect_invalid "validate ${TEST_COMMIT} ${UPLOAD}"
 expect_invalid "cleanup /srv/tencorp-market-map-deploy/uploads"
 expect_invalid "rsync --server --sender -r . ${UPLOAD_NAME}/artifact/"
 expect_invalid "rsync --server --delete-delay -l -r -t --log-file=/tmp/out --dirs --delay-updates --safe-links . ${UPLOAD_NAME}/artifact/"
@@ -76,14 +82,41 @@ if grep -Eq 'ssh_remote[[:space:]]+(bash|sh)|bash -s|--rsync-path|--link-dest' "
 fi
 grep -Fq 'ssh_remote cleanup "$REMOTE_UPLOAD"' "$WRAPPER" || fail "cleanup is not routed through the market-map gate"
 grep -Fq 'ssh_remote status "$commit"' "$WRAPPER" || fail "status is not routed through the market-map gate"
+grep -Fq 'ssh_remote policy' "$WRAPPER" || fail "policy version is not routed through the market-map gate"
+grep -Fq 'ssh_remote validate "$REMOTE_UPLOAD" "$COMMIT"' "$WRAPPER" \
+  || fail "server-side pre-publication validation is not routed through the market-map gate"
 grep -Fq 'exec "$RSYNC" \' "$GATE" || fail "gate does not exec fixed write-side rsync"
 grep -Fq 'target="${upload_name}/artifact/"' "$GATE" || fail "gate does not reconstruct the exact artifact target"
 grep -Fq 'exec "$DEPLOYER" "$upload" "$commit"' "$GATE" || fail "gate does not exec the fixed deployer"
+grep -Fq 'exec "$DEPLOYER" --validate-upload "$upload" "$commit"' "$GATE" \
+  || fail "gate does not expose fixed server-side pre-publication validation"
+grep -Fq 'exec "$DEPLOYER" --policy-version' "$GATE" || fail "gate does not expose the fixed server policy version"
+deploy_upload_body="$(sed -n '/^deploy_upload()/,/^}/p' "$GATE")"
+case "$deploy_upload_body" in
+  *'exec 8>"$UPLOAD_LOCK"'*'"$FLOCK" -w 120 8'*'validate_existing_upload "$upload"'*'exec "$DEPLOYER" "$upload" "$commit"'*) ;;
+  *) fail "deploy does not hold the upload lock across validation and every artifact read" ;;
+esac
+validate_upload_body="$(sed -n '/^validate_upload()/,/^}/p' "$GATE")"
+case "$validate_upload_body" in
+  *'exec 8>"$UPLOAD_LOCK"'*'"$FLOCK" -w 120 8'*'validate_existing_upload "$upload"'*'exec "$DEPLOYER" --validate-upload "$upload" "$commit"'*) ;;
+  *) fail "preflight validation does not hold the upload lock across every artifact read" ;;
+esac
 grep -Fq 'readonly LIVE_DB="${STATE_DIR}/market_map.db"' "$DEPLOYER" || fail "deployer does not pin the external live database"
 grep -Fq 'readonly RELEASES_DIR="${SERVICE_ROOT}/releases"' "$DEPLOYER" || fail "deployer does not pin the release root"
 grep -Fq 'readonly SERVICE_UNIT="tencorp-market-map.service"' "$DEPLOYER" || fail "deployer does not pin the service"
+grep -Fq 'readonly HTML_VALIDATOR="/usr/local/libexec/tencorp-market-map/validate-market-map-html.py"' "$DEPLOYER" \
+  || fail "deployer does not pin the shared HTML validator"
+validator_digest="$(/usr/bin/shasum -a 256 "$HTML_VALIDATOR" | /usr/bin/awk '{print $1}')"
+grep -Fq "readonly HTML_VALIDATOR_SHA256=\"${validator_digest}\"" "$DEPLOYER" \
+  || fail "deployer does not pin the exact shared HTML validator content"
+grep -Fq 'readonly YANDEX_API_KEY_FILE="/etc/tencorp-market-map/yandex-maps-api-key"' "$DEPLOYER" \
+  || fail "deployer does not pin the operator-owned Yandex API key file"
+grep -Fq '"$PYTHON_BIN" "$VALIDATOR_SNAPSHOT" --render' "$DEPLOYER" \
+  || fail "deployer does not render the operator-owned Yandex API key into the release"
 grep -Fq 'Deployment failed after the current pointer changed; rolling back' "$DEPLOYER" \
   || fail "deployer has no post-switch rollback path"
+grep -Fq 'market-map-valid %s\n' "$DEPLOYER" \
+  || fail "deployer has no server-side pre-publication success marker"
 for endpoint in health meta points; do
   grep -Fq '"${LOOPBACK_ORIGIN}/api/${endpoint}"' "$DEPLOYER" \
     || fail "deployer does not smoke /api/${endpoint}"
@@ -123,6 +156,21 @@ fi
   [[ "$(status_only "$TEST_COMMIT")" == "deployed" ]] || fail "status-only did not preserve the deployed contract"
 )
 
+(
+  source "$WRAPPER"
+  ssh_remote() { printf 'market-map-policy v1 %064d yandex-key-present\n' 0; }
+  [[ "$(policy_version_only)" == "market-map-policy v1 $(printf '%064d' 0) yandex-key-present" ]] \
+    || fail "policy-version did not preserve the exact server contract"
+)
+
+if (
+  source "$WRAPPER"
+  ssh_remote() { printf 'market-map-policy malformed\n'; }
+  policy_version_only
+) >/dev/null 2>&1; then
+  fail "policy-version accepted a malformed server response"
+fi
+
 if (
   source "$WRAPPER"
   unset TICKET_RUNNER_PROJECT_KEY
@@ -133,6 +181,31 @@ fi
 
 fixture_root="$(mktemp -d)"
 trap '/bin/chmod -R u+w -- "$fixture_root" 2>/dev/null || true; /bin/rm -rf -- "$fixture_root"' EXIT
+provider_fixture="${fixture_root}/providers"
+mkdir -p "$provider_fixture"
+printf '<!doctype html><html><head><link rel="stylesheet" href="./vendor/leaflet.css"><script src="./vendor/leaflet.js"></script></head><body><script>const ready = true;</script></body></html>\n' \
+  > "${provider_fixture}/leaflet.html"
+/usr/bin/python3 "$HTML_VALIDATOR" "${provider_fixture}/leaflet.html" >/dev/null \
+  || fail "deployer rejected pinned local Leaflet"
+printf '<!doctype html><html><head><script src="https://api-maps.yandex.ru/2.1/?apikey=__TENCORP_YANDEX_MAPS_API_KEY__&amp;lang=ru_RU"></script></head><body><script>const ready = true;</script></body></html>\n' \
+  > "${provider_fixture}/yandex.html"
+/usr/bin/python3 "$HTML_VALIDATOR" "${provider_fixture}/yandex.html" >/dev/null \
+  || fail "deployer rejected approved Yandex Maps"
+printf '<html><script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU"></script></html>\n' \
+  > "${provider_fixture}/yandex-without-key.html"
+if /usr/bin/python3 "$HTML_VALIDATOR" "${provider_fixture}/yandex-without-key.html" >/dev/null 2>&1; then
+  fail "deployer accepted Yandex Maps without an API key"
+fi
+printf '<html><script src="https://cdn.example.test/map.js"></script></html>\n' \
+  > "${provider_fixture}/unapproved.html"
+if /usr/bin/python3 "$HTML_VALIDATOR" "${provider_fixture}/unapproved.html" >/dev/null 2>&1; then
+  fail "deployer accepted an unapproved remote script"
+fi
+printf '<html><link rel="stylesheet" href="./vendor/leaflet.css"><script data-x="<script src=\x27./vendor/leaflet.js\x27>" src="https://evil.example/payload.js" src="./vendor/leaflet.js"></script></html>\n' \
+  > "${provider_fixture}/parser-bypass.html"
+if /usr/bin/python3 "$HTML_VALIDATOR" "${provider_fixture}/parser-bypass.html" >/dev/null 2>&1; then
+  fail "shared validator accepted duplicate script sources through a parser differential"
+fi
 fixture_worktree="${fixture_root}/worktree"
 fixture_seal="${fixture_root}/seal"
 fixture_artifact="${fixture_seal}/artifact"
@@ -194,16 +267,33 @@ git -C "$fixture_worktree" branch -M main
 git init --bare --quiet "$fixture_remote"
 git -C "$fixture_worktree" remote add origin "$fixture_remote"
 git -C "$fixture_worktree" push --quiet origin main
-fixture_commit="$(git -C "$fixture_worktree" rev-parse HEAD)"
+fixture_base_commit="$(git -C "$fixture_worktree" rev-parse HEAD)"
 
 cat > "${fixture_bin}/ssh" <<'STUB_SSH'
 #!/bin/bash
 for argument in "$@"; do
   case "$argument" in
-    status) printf 'market-map-not-deployed\n'; exit 3 ;;
-    prepare) printf 'market-map-prepared\n'; exit 0 ;;
-    deploy) exit 7 ;;
-    cleanup) printf 'market-map-cleaned\n'; exit 0 ;;
+    status)
+      [ -n "${STUB_SSH_CALL_LOG:-}" ] && printf 'status\n' >> "$STUB_SSH_CALL_LOG"
+      [ "${STUB_STATUS_MODE:-}" = unknown ] && exit 75
+      printf 'market-map-not-deployed\n'; exit 3
+      ;;
+    prepare)
+      [ -n "${STUB_SSH_CALL_LOG:-}" ] && printf 'prepare\n' >> "$STUB_SSH_CALL_LOG"
+      printf 'market-map-prepared\n'; exit 0
+      ;;
+    validate)
+      [ -n "${STUB_SSH_CALL_LOG:-}" ] && printf 'validate\n' >> "$STUB_SSH_CALL_LOG"
+      printf 'market-map-valid %s\n' "${@: -1}"; exit 0
+      ;;
+    deploy)
+      [ -n "${STUB_SSH_CALL_LOG:-}" ] && printf 'deploy\n' >> "$STUB_SSH_CALL_LOG"
+      exit 7
+      ;;
+    cleanup)
+      [ -n "${STUB_SSH_CALL_LOG:-}" ] && printf 'cleanup\n' >> "$STUB_SSH_CALL_LOG"
+      printf 'market-map-cleaned\n'; exit 0
+      ;;
   esac
 done
 exit 64
@@ -239,6 +329,33 @@ sed \
   "$WRAPPER" > "$fixture_wrapper"
 chmod 0700 "$fixture_wrapper"
 
+git -C "$fixture_worktree" -c user.name=Fixture -c user.email=fixture@example.test \
+  commit --quiet --allow-empty -m preflight
+fixture_preflight_commit="$(git -C "$fixture_worktree" rev-parse HEAD)"
+stub_call_log="${fixture_root}/ssh-calls.log"
+: > "$stub_call_log"
+preflight_output="$(
+  STUB_SSH_CALL_LOG="$stub_call_log" \
+  TICKET_RUNNER_PROJECT_KEY=market-map \
+  TICKET_RUNNER_TICKET_ID=123 \
+  TICKET_RUNNER_ARTIFACT_DIR="$fixture_artifact" \
+  TICKET_RUNNER_ARTIFACT_MANIFEST="$fixture_seal/manifest.json" \
+  TICKET_RUNNER_ARTIFACT_SHA256="$fixture_digest" \
+  "$fixture_wrapper" --preflight "$fixture_worktree" "$fixture_preflight_commit"
+)" || fail "actual wrapper rejected a valid server-side pre-publication preflight"
+[[ "$preflight_output" == "preflight-ok" ]] \
+  || fail "actual wrapper returned an invalid preflight success marker: $preflight_output"
+[[ "$(grep -Fxc 'prepare' "$stub_call_log")" == 1 \
+  && "$(grep -Fxc 'validate' "$stub_call_log")" == 1 \
+  && "$(grep -Fxc 'cleanup' "$stub_call_log")" == 1 ]] \
+  || fail "preflight did not prepare, validate, and clean exactly one remote upload"
+if grep -Eq '^(status|deploy)$' "$stub_call_log"; then
+  fail "preflight queried or changed production deployment state"
+fi
+
+git -C "$fixture_worktree" push --quiet origin main
+fixture_commit="$fixture_preflight_commit"
+
 set +e
 integration_output="$(
   TICKET_RUNNER_PROJECT_KEY=market-map \
@@ -254,6 +371,28 @@ set -e
   || fail "actual wrapper did not preserve authoritative market-map not-deployed exit 3: $integration_output"
 [[ "$(grep -Fxc 'DEPLOYMENT_NOT_DEPLOYED' <<< "$integration_output")" == 1 ]] \
   || fail "actual wrapper did not emit the exact authoritative not-deployed marker once"
+
+: > "$stub_call_log"
+set +e
+unknown_output="$(
+  STUB_STATUS_MODE=unknown \
+  STUB_SSH_CALL_LOG="$stub_call_log" \
+  TICKET_RUNNER_PROJECT_KEY=market-map \
+  TICKET_RUNNER_TICKET_ID=123 \
+  TICKET_RUNNER_ARTIFACT_DIR="$fixture_artifact" \
+  TICKET_RUNNER_ARTIFACT_MANIFEST="$fixture_seal/manifest.json" \
+  TICKET_RUNNER_ARTIFACT_SHA256="$fixture_digest" \
+  "$fixture_wrapper" "$fixture_worktree" "$fixture_commit" 2>&1
+)"
+unknown_status=$?
+set -e
+[[ "$unknown_status" == 75 ]] \
+  || fail "actual wrapper did not preserve an unknown initial deployment state: $unknown_output"
+[[ "$(grep -Fxc 'status' "$stub_call_log")" == 1 ]] \
+  || fail "unknown-state regression did not issue exactly one status query"
+if grep -Eq '^(prepare|validate|deploy)$' "$stub_call_log"; then
+  fail "wrapper uploaded or deployed after an unknown initial status"
+fi
 
 chmod 0600 "$fixture_artifact/server.py"
 printf 'value = 999\n' > "$fixture_artifact/server.py"

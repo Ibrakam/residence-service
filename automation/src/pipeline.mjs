@@ -6,7 +6,13 @@ import { LeaseLostError, PublishingUncertainError, RunnerError } from "./errors.
 import { safeError } from "./logger.mjs";
 import { DEFAULT_PROJECT_KEY, normalizeProjectKey } from "./project-profiles.mjs";
 import { safeExcerpt } from "./sanitize.mjs";
-import { queryDeploymentStatus, runDeployment, runSmokeChecks, runVerification } from "./verification.mjs";
+import {
+  queryDeploymentStatus,
+  runDeployment,
+  runDeploymentPreflight,
+  runSmokeChecks,
+  runVerification,
+} from "./verification.mjs";
 
 const UNRESOLVED_PUBLICATION_PHASES = new Set([
   "committing",
@@ -219,6 +225,10 @@ export async function processLease({
   let pushRolledBack = false;
   let rollbackError = null;
   let artifactSeal = null;
+  let changedPaths = [];
+  let diffStat = "";
+  let verification = [];
+  let smoke = [];
 
   keeper.start();
 
@@ -293,10 +303,11 @@ export async function processLease({
     keeper.setPhase("preflight");
     await bestEffortProgress(client, lease, "verifying", { stage: "security_preflight" }, logger);
     const preflight = await runtimeWorkspace.preflight({ worktreePath, baseSha, signal: keeper.signal });
+    changedPaths = preflight.changedPaths;
+    diffStat = preflight.diffStat;
     await runtimeWorkspace.cleanIgnoredArtifacts(worktreePath, keeper.signal);
 
     keeper.setPhase("verifying");
-    let verification;
     if (runtimeConfig.dryRun) {
       await bestEffortProgress(client, lease, "verifying", { stage: "sandboxed_checks" }, logger);
       verification = await runVerification({ config: runtimeConfig, worktreePath, ticketId: ticket.id, signal: keeper.signal, logger });
@@ -346,6 +357,8 @@ export async function processLease({
       signal: keeper.signal,
     });
     commitSha = committed.commitSha;
+    changedPaths = committed.changedPaths;
+    diffStat = committed.diffStat;
     await stateStore.writeTicket(ticket.id, ticket.attempt, phaseState({
       ticket,
       phase: runtimeConfig.dryRun ? "dry_run_committed" : "committed",
@@ -361,8 +374,26 @@ export async function processLease({
     }));
 
     let deployment = { pushed: false, deployed: false, dryRun: runtimeConfig.dryRun };
-    let smoke = [];
     if (!runtimeConfig.dryRun) {
+      if (runtimeConfig.prePushDeploymentValidation) {
+        await bestEffortProgress(client, lease, "verifying", { stage: "production_server_preflight" }, logger);
+        const deploymentPreflight = await runDeploymentPreflight({
+          config: runtimeConfig,
+          worktreePath,
+          ticketId: ticket.id,
+          commitSha,
+          artifactSeal,
+          signal: keeper.signal,
+          logger,
+        });
+        verification.push({
+          name: "production-server-preflight",
+          ok: true,
+          durationMs: deploymentPreflight.durationMs,
+          sandboxed: false,
+          network: "fixed-forced-command-ssh",
+        });
+      }
       keeper.setPhase("pushing");
       await bestEffortProgress(client, lease, "publishing", { stage: "push" }, logger);
       await stateStore.writeTicket(ticket.id, ticket.attempt, phaseState({
@@ -518,6 +549,9 @@ export async function processLease({
       deployed,
       pushRolledBack,
       rollbackError,
+      changedPaths,
+      diffStat,
+      verification,
     };
     try {
       await stateStore.writeTicket(ticket.id, ticket.attempt, phaseState({
@@ -533,6 +567,9 @@ export async function processLease({
         pushRolledBack,
         rollbackError,
         artifactSeal,
+        changedPaths,
+        diffStat,
+        verification,
         reconciliation: reconciliationRequired ? { required: true, reason: report.error.code || "unknown" } : null,
       }));
     } catch (checkpointCaught) {

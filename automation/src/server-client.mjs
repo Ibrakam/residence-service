@@ -155,7 +155,13 @@ export class TicketServerClient {
   }
 
   fail(ticketId, leaseToken, result) {
-    const publishState = result.deployed ? " Failure occurred after deployment." : result.pushed ? " Failure occurred after main was pushed." : "";
+    const publishState = result.deployed
+      ? " Failure occurred after deployment."
+      : result.pushRolledBack
+        ? " Deployment failed; the source push was rolled back and main was restored."
+        : result.pushed
+          ? " Failure occurred after main was pushed; operator reconciliation is required."
+          : "";
     return this.request(`/internal/ticket-runner/tickets/${encodeURIComponent(safeTicketId(ticketId))}/fail`, {
       body: { summary: cleanText(`${result.error?.message || result.summary || "Ticket runner failed"}${publishState}`, 12_000) },
       leaseToken,

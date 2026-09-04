@@ -30,6 +30,7 @@ REMOTE_UPLOAD=""
 REMOTE_UPLOAD_NAME=""
 REMOTE_PREPARED=0
 DEPLOYMENT_CONFIRMED=0
+PREFLIGHT_ONLY=0
 
 readonly -a SSH_OPTIONS=(
   -F /dev/null
@@ -58,7 +59,9 @@ die() {
 usage() {
   cat >&2 <<'EOF'
 Usage: deploy-market-map-remote.sh [WORKTREE COMMIT]
+       deploy-market-map-remote.sh --preflight WORKTREE COMMIT
        deploy-market-map-remote.sh --status COMMIT
+       deploy-market-map-remote.sh --policy-version
 
 With no arguments, WORKTREE and COMMIT are read from TICKET_RUNNER_WORKTREE
 and TICKET_RUNNER_COMMIT_SHA. TICKET_RUNNER_PROJECT_KEY must be market-map.
@@ -120,7 +123,7 @@ cleanup_remote_upload() {
   set +e
   if (( REMOTE_PREPARED == 1 )); then
     log "Removing exact remote upload ${REMOTE_UPLOAD}"
-    ssh_remote cleanup "$REMOTE_UPLOAD"
+    ssh_remote cleanup "$REMOTE_UPLOAD" >/dev/null
     cleanup_status=$?
     if (( cleanup_status != 0 )); then
       log "CRITICAL: remote upload cleanup failed; remove only this exact path manually: ${REMOTE_UPLOAD}"
@@ -307,12 +310,39 @@ status_only() {
   deployment_status_unknown "could not establish the market-map production marker for ${commit}"
 }
 
+policy_version_only() {
+  local output=""
+  local transport_status=0
+
+  if output="$(ssh_remote policy)"; then
+    transport_status=0
+  else
+    transport_status=$?
+  fi
+  if (( transport_status != 0 )) || [[ ! "$output" =~ ^market-map-policy\ v1\ [0-9a-f]{64}\ yandex-key-(present|unavailable)$ ]]; then
+    die "remote market-map policy version is unavailable or malformed"
+  fi
+  printf '%s\n' "$output"
+}
+
 main() {
   local supplied_worktree supplied_commit top_level head_commit origin_url origin_commit
+  local commit_line
+  local -a commit_parts
   local artifact manifest artifact_digest timestamp short_commit ticket_component rsync_shell
-  local preflight_status deploy_transport_status=0 confirmation_status
+  local preflight_status=0 deploy_transport_status=0 confirmation_status output
 
   validate_project_context
+
+  if [[ "${1:-}" == "--policy-version" ]]; then
+    if (( $# != 1 )); then
+      usage
+      exit 64
+    fi
+    validate_ssh_material
+    policy_version_only
+    return
+  fi
 
   if [[ "${1:-}" == "--status" ]]; then
     if (( $# != 2 )); then
@@ -326,7 +356,15 @@ main() {
     return
   fi
 
-  if (( $# == 0 )); then
+  if [[ "${1:-}" == "--preflight" ]]; then
+    if (( $# != 3 )); then
+      usage
+      exit 64
+    fi
+    PREFLIGHT_ONLY=1
+    supplied_worktree="$2"
+    supplied_commit="$3"
+  elif (( $# == 0 )); then
     supplied_worktree="${TICKET_RUNNER_WORKTREE:-}"
     supplied_commit="${TICKET_RUNNER_COMMIT_SHA:-}"
   elif (( $# == 2 )); then
@@ -361,7 +399,15 @@ main() {
   GIT_TERMINAL_PROMPT=0 git -C "$LOCAL_WORKTREE" fetch --quiet --no-tags origin \
     '+refs/heads/main:refs/remotes/origin/main'
   origin_commit="$(git -C "$LOCAL_WORKTREE" rev-parse --verify 'refs/remotes/origin/main^{commit}')"
-  [[ "$origin_commit" == "$COMMIT" ]] || die "market-map origin/main does not equal COMMIT"
+  if (( PREFLIGHT_ONLY == 1 )); then
+    commit_line="$(git -C "$LOCAL_WORKTREE" rev-list --parents -n 1 "$COMMIT")"
+    read -r -a commit_parts <<< "$commit_line"
+    (( ${#commit_parts[@]} == 2 )) || die "market-map preflight commit must have exactly one parent"
+    [[ "${commit_parts[0]}" == "$COMMIT" && "${commit_parts[1]}" == "$origin_commit" ]] \
+      || die "market-map preflight commit is not based on the current origin/main"
+  else
+    [[ "$origin_commit" == "$COMMIT" ]] || die "market-map origin/main does not equal COMMIT"
+  fi
 
   artifact="${TICKET_RUNNER_ARTIFACT_DIR:-}"
   manifest="${TICKET_RUNNER_ARTIFACT_MANIFEST:-}"
@@ -370,15 +416,17 @@ main() {
     || die "sealed artifact path, manifest, and digest are required"
   validate_local_artifact "$artifact" "$manifest" "$artifact_digest"
 
-  if query_remote_deployment_status "$COMMIT"; then
-    DEPLOYMENT_CONFIRMED=1
-    log "Market-map production already reports commit ${COMMIT}; no upload is needed"
-    return 0
-  else
-    preflight_status=$?
-  fi
-  if (( preflight_status == 75 )); then
-    deployment_status_unknown "could not establish the market-map production marker before deployment"
+  if (( PREFLIGHT_ONLY == 0 )); then
+    if query_remote_deployment_status "$COMMIT"; then
+      DEPLOYMENT_CONFIRMED=1
+      log "Market-map production already reports commit ${COMMIT}; no upload is needed"
+      return 0
+    else
+      preflight_status=$?
+    fi
+    if (( preflight_status == 75 )); then
+      deployment_status_unknown "could not establish the market-map production marker before deployment"
+    fi
   fi
 
   timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
@@ -394,7 +442,7 @@ main() {
 
   REMOTE_PREPARED=1
   log "Preparing root-owned market-map upload for ${COMMIT}"
-  ssh_remote prepare "$COMMIT" "$REMOTE_UPLOAD"
+  ssh_remote prepare "$COMMIT" "$REMOTE_UPLOAD" >/dev/null
 
   rsync_shell="${SSH_BIN} -F /dev/null -i ${SSH_KEY} -o BatchMode=yes -o ClearAllForwardings=yes -o IdentitiesOnly=yes -o RequestTTY=no -o StrictHostKeyChecking=yes -o UserKnownHostsFile=${KNOWN_HOSTS} -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o LogLevel=ERROR"
   log "Transferring the sealed market-map source artifact"
@@ -408,6 +456,16 @@ main() {
     --safe-links \
     --rsh="$rsync_shell" \
     -- "$artifact/" "${REMOTE_HOST}:${REMOTE_UPLOAD_NAME}/artifact/"
+
+  if (( PREFLIGHT_ONLY == 1 )); then
+    log "Requesting server-side market-map validation before publication"
+    output="$(ssh_remote validate "$REMOTE_UPLOAD" "$COMMIT")" \
+      || die "server-side market-map preflight rejected the sealed artifact"
+    [[ "$output" == "market-map-valid ${COMMIT}" ]] \
+      || die "server-side market-map preflight returned an invalid success marker"
+    printf 'preflight-ok\n'
+    return 0
+  fi
 
   log "Requesting market-map deployment through the forced-command SSH gate"
   if ssh_remote deploy "$REMOTE_UPLOAD" "$COMMIT"; then

@@ -124,6 +124,38 @@ export function deploymentFailureIsUncertain(cause, { signalAborted = false } = 
   return signalAborted || !definiteNotDeployed;
 }
 
+export async function runDeploymentPreflight({
+  config, worktreePath, ticketId, commitSha, artifactSeal, signal, logger,
+}) {
+  if (!config.prePushDeploymentValidation) return { ok: true, skipped: true, durationMs: 0 };
+  if (!/^[a-f0-9]{40}$/.test(commitSha)) {
+    throw new PolicyError("Deployment preflight requires a full commit SHA");
+  }
+  const script = await validateDeployScript(config, worktreePath);
+  if (!artifactSeal) throw new PolicyError("A sealed build artifact is required for deployment preflight");
+  await verifySealedArtifact(artifactSeal);
+  const result = await runCommand({
+    argv: [script, "--preflight", worktreePath, commitSha],
+    cwd: config.repoRoot,
+    env: baseTrustedEnv({
+      ...config.deployEnvironment,
+      TICKET_RUNNER_TICKET_ID: ticketId,
+      TICKET_RUNNER_ARTIFACT_DIR: artifactSeal.artifactPath,
+      TICKET_RUNNER_ARTIFACT_MANIFEST: artifactSeal.manifestPath,
+      TICKET_RUNNER_ARTIFACT_SHA256: artifactSeal.manifestSha256,
+      TICKET_RUNNER_PROJECT_KEY: config.projectKey || "residence",
+    }),
+    timeoutMs: config.deployTimeoutMs,
+    signal,
+    label: "deploy.prepush_server_validation",
+    logger,
+  });
+  if (result.stdout !== "preflight-ok\n") {
+    throw new PolicyError("Deployment preflight wrapper returned an invalid success response");
+  }
+  return { ok: true, skipped: false, durationMs: result.durationMs };
+}
+
 export async function runDeployment({ config, worktreePath, ticketId, commitSha, artifactSeal, signal, logger }) {
   const script = await validateDeployScript(config, worktreePath);
   if (!artifactSeal) throw new PolicyError("A sealed build artifact is required for deployment");

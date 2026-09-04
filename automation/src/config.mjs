@@ -67,7 +67,7 @@ const DEFAULT_VERIFY_COMMANDS = [
   { name: "website-build", cwd: "website", argv: ["npm", "run", "build"], timeoutMs: 20 * 60_000 },
 ];
 
-const MARKET_MAP_INLINE_SCRIPT_CHECK = String.raw`const fs=require("node:fs"),vm=require("node:vm");const html=fs.readFileSync("leadora_carto_map.html","utf8");const scripts=[...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)].filter((match)=>!/(?:^|\s)src\s*=/i.test(match[1])).map((match)=>match[2]).filter((source)=>source.trim());if(scripts.length===0)throw new Error("No inline scripts found");scripts.forEach((source,index)=>new vm.Script(source,{filename:"leadora_carto_map.html#script-"+(index+1)}));`;
+const MARKET_MAP_SCRIPT_GOAL_CHECK = String.raw`const fs=require("node:fs"),vm=require("node:vm");const filename=process.argv[1];new vm.Script(fs.readFileSync(filename,"utf8"),{filename});`;
 
 const DEFAULT_MARKET_MAP_VERIFY_COMMANDS = [
   {
@@ -91,13 +91,7 @@ const DEFAULT_MARKET_MAP_VERIFY_COMMANDS = [
   {
     name: "market-map-vendor-js-syntax",
     cwd: ".",
-    argv: [process.execPath, "--check", "vendor/leaflet.js"],
-    timeoutMs: 60_000,
-  },
-  {
-    name: "market-map-inline-js-syntax",
-    cwd: ".",
-    argv: [process.execPath, "-e", MARKET_MAP_INLINE_SCRIPT_CHECK],
+    argv: [process.execPath, "-e", MARKET_MAP_SCRIPT_GOAL_CHECK, "vendor/leaflet.js"],
     timeoutMs: 60_000,
   },
 ];
@@ -320,6 +314,7 @@ function createProjectProfiles(config, env, defaultCommandTimeoutMs) {
     enabled: marketMapEnabled,
     productionVerifierKey: "market-map-source",
     productionVerificationStage: "production_source_verification",
+    prePushDeploymentValidation: true,
     repoRoot: marketMapRepoRoot ? path.resolve(marketMapRepoRoot) : "",
     worktreeRoot: path.resolve(env.RUNNER_MARKET_MAP_WORKTREE_ROOT || path.join(config.stateDir, "worktrees-market-map")),
     expectedOrigin: MARKET_MAP_ORIGIN,
@@ -332,6 +327,7 @@ function createProjectProfiles(config, env, defaultCommandTimeoutMs) {
     verificationEnvAllowlist: [],
     verificationEnvironment: {},
     verificationRuntimePaths: [MARKET_MAP_PYTHON_RUNTIME_ROOT],
+    marketMapPythonBin: MARKET_MAP_PYTHON_BIN,
     deployScript: marketMapDeployScript,
     requiredDeployScriptPath: marketMapDeployScript,
     requiredDeployOwnerUid: typeof process.getuid === "function" ? process.getuid() : null,
@@ -376,7 +372,9 @@ export function validateProjectProfiles(config) {
     throw new ConfigError("Market-map required source artifact files do not match the reviewed fixed scope");
   }
   if (marketMap.productionVerifierKey !== "market-map-source"
+    || marketMap.prePushDeploymentValidation !== true
     || !sameStringArray(marketMap.verificationRuntimePaths, [MARKET_MAP_PYTHON_RUNTIME_ROOT])
+    || marketMap.marketMapPythonBin !== MARKET_MAP_PYTHON_BIN
     || marketMap.deployArgs.length !== 0
     || marketMap.deployEnvAllowlist.length !== 0
     || Object.keys(marketMap.deployEnvironment).length !== 0) {
@@ -716,6 +714,7 @@ export {
   DEFAULT_GITHUB_CLI_BIN,
   MARKET_MAP_DEPLOY_SCRIPT_BASENAME,
   MARKET_MAP_ORIGIN,
+  MARKET_MAP_PYTHON_BIN,
   MARKET_MAP_PROJECT_KEY,
   MARKET_MAP_PUBLIC_URL,
   PRODUCTION_ENABLE_CONFIRMATION,

@@ -152,7 +152,9 @@ market-map ticket through the Residence worktree or deploy key.
    differ from both the personal root key and the Residence deployment key.
 2. Install `deploy-tencorp-market-map.sh` on production as
    `/usr/local/sbin/deploy-tencorp-market-map`, owned by `root:root`, mode
-   `0750`. Install `tencorp-market-map-deploy-gate.sh` as
+   `0750`. Install `validate-market-map-html.py` as
+   `/usr/local/libexec/tencorp-market-map/validate-market-map-html.py`, owned
+   by `root:root`, mode `0644`. Install `tencorp-market-map-deploy-gate.sh` as
    `/usr/local/sbin/tencorp-market-map-deploy-gate`, owned by `root:root`, mode
    `0755`.
 3. Add only the new public key to `/root/.ssh/authorized_keys`, using the exact
@@ -169,17 +171,88 @@ market-map ticket through the Residence worktree or deploy key.
    the writable live database only at
    `/var/lib/tencorp-market-map/market_map.db` under the `www-data` runtime
    identity.
+6. Before enabling Yandex Maps, create the domain-restricted JavaScript API
+   key in `/etc/tencorp-market-map/yandex-maps-api-key`, owned by `root:root`
+   with mode `0600`. Source HTML contains only the fixed
+   `__TENCORP_YANDEX_MAPS_API_KEY__` placeholder; the root deployer substitutes
+   the operator-owned key into the immutable release.
 
-The local wrapper proves the clean commit is exactly private `origin/main` and
-that the sealed runtime bytes equal the tracked `server.py`, `dshk_sync.py`,
-`leadora_carto_map.html`, `data.json`, `vendor/leaflet.css`, and
-`vendor/leaflet.js` files. The forced command accepts only prepare, write-only
-rsync, deploy, status, and cleanup for one exact direct-child upload path. The
-root deployer copies no database or credentials. It performs an isolated
-temporary-database probe, atomically switches the release, verifies the
-service process working directory, and validates loopback `/api/health`,
-`/api/meta`, and `/api/points` responses. A failed post-switch check restores
-the previous symlink, restarts it, and repeats the loopback checks.
+Stop the runner on the runner Mac before replacing this four-part boundary:
+
+```bash
+set -e
+if launchctl print "gui/$(id -u)/com.tencorp.residence-ticket-runner" >/dev/null 2>&1; then
+  launchctl bootout "gui/$(id -u)/com.tencorp.residence-ticket-runner"
+fi
+```
+
+After securely copying the three reviewed `automation/deploy` files to a
+trusted checkout on production, run this block on the Linux production server.
+It installs them together while holding the deployment lock. The conditional
+key-file command is non-destructive when a real key already exists:
+
+```bash
+set -e
+sudo flock /run/lock/tencorp-market-map-deploy.lock bash -c '
+  install -d -o root -g root -m 0755 /usr/local/libexec/tencorp-market-map
+  install -o root -g root -m 0644 automation/deploy/validate-market-map-html.py /usr/local/libexec/tencorp-market-map/validate-market-map-html.py
+  install -o root -g root -m 0750 automation/deploy/deploy-tencorp-market-map.sh /usr/local/sbin/deploy-tencorp-market-map
+  install -o root -g root -m 0755 automation/deploy/tencorp-market-map-deploy-gate.sh /usr/local/sbin/tencorp-market-map-deploy-gate
+'
+sudo install -d -o root -g root -m 0755 /etc/tencorp-market-map
+sudo test -e /etc/tencorp-market-map/yandex-maps-api-key || sudo install -o root -g root -m 0600 /dev/null /etc/tencorp-market-map/yandex-maps-api-key
+sudoedit /etc/tencorp-market-map/yandex-maps-api-key
+sudo chown root:root /etc/tencorp-market-map/yandex-maps-api-key
+sudo chmod 0600 /etc/tencorp-market-map/yandex-maps-api-key
+```
+
+Back on the runner Mac, install the matching wrapper outside the checkout and
+require the exact protocol and validator digest before restarting the
+LaunchAgent:
+
+```bash
+set -e
+install -d -m 0700 '/Users/ibragimkadamzanov/Library/Application Support/AvalonTicketRunner/bin'
+install -m 0700 automation/deploy/deploy-market-map-remote.sh '/Users/ibragimkadamzanov/Library/Application Support/AvalonTicketRunner/bin/deploy-market-map-remote'
+market_map_expected_policy="market-map-policy v1 $(shasum -a 256 automation/deploy/validate-market-map-html.py | awk '{print $1}') yandex-key-present"
+market_map_actual_policy="$(env TICKET_RUNNER_PROJECT_KEY=market-map '/Users/ibragimkadamzanov/Library/Application Support/AvalonTicketRunner/bin/deploy-market-map-remote' --policy-version)"
+test "$market_map_actual_policy" = "$market_map_expected_policy"
+launchctl bootstrap "gui/$(id -u)" "$HOME/Library/LaunchAgents/com.tencorp.residence-ticket-runner.plist"
+launchctl kickstart -k "gui/$(id -u)/com.tencorp.residence-ticket-runner"
+```
+
+Before a market-map commit is created, the runner asks the fixed forced-command
+endpoint for `policy` and requires both protocol `v1` and its exact validator
+SHA-256 to match the local shared parser. After creating the local commit but
+before pushing it, the runner transfers the sealed artifact through the same
+restricted channel and requires a server-side `validate` preflight. That
+preflight renders the operator-owned key when needed and runs the isolated
+runtime probe with the production Python runtime. Therefore parser/runtime
+differences are rejected while `origin/main` still points to the previous
+commit. The root deployer independently pins the validator digest and uses one
+private root-owned snapshot throughout both preflight and deployment.
+
+For preflight, the local wrapper proves the clean commit has exactly one parent
+and that parent is current `origin/main`; for deployment it proves the commit
+itself is `origin/main`. In both modes it proves the sealed runtime bytes equal
+the tracked `server.py`, `dshk_sync.py`, `leadora_carto_map.html`, `data.json`,
+`vendor/leaflet.css`, and `vendor/leaflet.js` files. The forced command accepts
+only policy, prepare, write-only rsync, validate, deploy, status, and cleanup
+for one exact direct-child upload path. The root deployer copies no database or
+credentials. It performs an isolated temporary-database probe, atomically
+switches the release only in deploy mode, verifies the service process working
+directory, and validates loopback `/api/health`, `/api/meta`, and `/api/points`
+responses. A failed post-switch check restores the previous symlink, restarts
+it, and repeats the loopback checks.
+
+The HTML entrypoint may use exactly one reviewed initial map provider in one
+explicit canonical `<head>`: either the two pinned local Leaflet assets, or the
+HTTPS Yandex Maps JavaScript API 2.1 endpoint with the fixed key placeholder,
+literal `&amp;` query separation, and `lang=ru_RU`. One shared parser is used
+locally, during server preflight, and again by the server deployer; it rejects
+embedded keys, mixed providers, ambiguous markup, and any other initial
+external script tag. Browser runtime restrictions such as CSP remain a
+separate operator-owned boundary and must not be replaced by this source lint.
 
 A legacy market-map release without matching `DEPLOY_COMMIT` and
 `DEPLOY_CONFIRMED` markers is deliberately an unknown state, so unattended

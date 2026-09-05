@@ -51,6 +51,8 @@ test("prompt treats the ticket as escaped untrusted data and is passed separatel
   const marketMapPrompt = buildAgentPrompt(ticket, [], { projectKey: "market-map", projectLabel: "Market Map" });
   assert.match(marketMapPrompt, /__TENCORP_YANDEX_MAPS_API_KEY__/);
   assert.match(marketMapPrompt, /never invent, request, or embed an API key/);
+  assert.match(marketMapPrompt, /never reference ymaps at top level/);
+  assert.match(marketMapPrompt, /waiting for window\.ymaps, with explicit load-error and timeout handling/);
 
   const args = buildCodexArgs({
     config: { codexModel: "" },

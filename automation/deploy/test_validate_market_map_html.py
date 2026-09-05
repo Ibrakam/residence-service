@@ -31,7 +31,7 @@ class RenderTests(unittest.TestCase):
             api_key = "AQVN-example-domain-key-1234567890"
             source.write_text(
                 '<!doctype html><html><head><script src="https://api-maps.yandex.ru/2.1/'
-                '?apikey=__TENCORP_YANDEX_MAPS_API_KEY__&amp;lang=ru_RU"></script></head>'
+                '?apikey=__TENCORP_YANDEX_MAPS_API_KEY__&amp;lang=ru_RU" defer></script></head>'
                 '<body><script>const ready = true;</script></body></html>',
                 encoding="utf-8",
             )
@@ -58,7 +58,7 @@ class RenderTests(unittest.TestCase):
             key_file = root / "yandex-key"
             source.write_text(
                 '<html><head><script src="https://api-maps.yandex.ru/2.1/'
-                '?apikey=__TENCORP_YANDEX_MAPS_API_KEY__&amp;lang=ru_RU"></script></head>'
+                '?apikey=__TENCORP_YANDEX_MAPS_API_KEY__&amp;lang=ru_RU" defer></script></head>'
                 '<body><script>const ready = true;</script></body></html>',
                 encoding="utf-8",
             )

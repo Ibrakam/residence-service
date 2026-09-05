@@ -142,12 +142,16 @@ test("market-map HTML permits only one pinned provider and an operator-owned Yan
     return filename;
   };
   const leaflet = await write("leaflet.html", '<!doctype html><html><head><title>Market map</title><link rel="stylesheet" href="./vendor/leaflet.css"><script src="./vendor/leaflet.js"></script></head><body><script>const ready = true;</script></body></html>');
-  const yandex = await write("yandex.html", '<!doctype html><html><head><script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU&amp;apikey=__TENCORP_YANDEX_MAPS_API_KEY__"></script></head><body><script>const ready = true;</script></body></html>');
+  const yandex = await write("yandex.html", '<!doctype html><html><head><script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU&amp;apikey=__TENCORP_YANDEX_MAPS_API_KEY__" defer></script></head><body><script>const ready = true;</script></body></html>');
   assert.equal(run(leaflet), "leaflet");
   assert.equal(run(yandex), "yandex-maps-js-2.1");
 
   const rejected = new Map([
     ["missing-key.html", '<html><script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU"></script></html>'],
+    ["blocking-yandex.html", '<!doctype html><html><head><script src="https://api-maps.yandex.ru/2.1/?apikey=__TENCORP_YANDEX_MAPS_API_KEY__&amp;lang=ru_RU"></script></head><body><script>const ready = true;</script></body></html>'],
+    ["valued-defer.html", '<!doctype html><html><head><script src="https://api-maps.yandex.ru/2.1/?apikey=__TENCORP_YANDEX_MAPS_API_KEY__&amp;lang=ru_RU" defer="false"></script></head><body><script>const ready = true;</script></body></html>'],
+    ["deferred-leaflet.html", '<!doctype html><html><head><link rel="stylesheet" href="./vendor/leaflet.css"><script src="./vendor/leaflet.js" defer></script></head><body><script>const ready = true;</script></body></html>'],
+    ["deferred-inline.html", '<!doctype html><html><head><link rel="stylesheet" href="./vendor/leaflet.css"><script src="./vendor/leaflet.js"></script></head><body><script defer>const ready = true;</script></body></html>'],
     ["embedded-key.html", '<html><script src="https://api-maps.yandex.ru/2.1/?apikey=not-a-real-key&amp;lang=ru_RU"></script></html>'],
     ["encoded-placeholder.html", '<html><script src="https://api-maps.yandex.ru/2.1/?apikey=&#95;&#95;TENCORP_YANDEX_MAPS_API_KEY&#95;&#95;&amp;lang=ru_RU"></script><script>const ready = true;</script></html>'],
     ["unapproved.html", '<html><script src="https://cdn.example.test/map.js"></script></html>'],
@@ -401,7 +405,7 @@ test("market-map verifier tests code but seals only the exact staged runtime tre
 
   await fs.writeFile(
     path.join(worktree, "leadora_carto_map.html"),
-    '<html><head><script src="https://api-maps.yandex.ru/2.1/?apikey=__TENCORP_YANDEX_MAPS_API_KEY__&amp;lang=ru_RU"></script></head><body><script>const ready = true;</script></body></html>\n',
+    '<html><head><script src="https://api-maps.yandex.ru/2.1/?apikey=__TENCORP_YANDEX_MAPS_API_KEY__&amp;lang=ru_RU" defer></script></head><body><script>const ready = true;</script></body></html>\n',
   );
   execFileSync("/usr/bin/git", ["add", "leadora_carto_map.html"], { cwd: worktree });
   execFileSync("/usr/bin/git", ["-c", "user.name=Fixture", "-c", "user.email=fixture@example.test", "commit", "-m", "yandex fixture"], { cwd: worktree });

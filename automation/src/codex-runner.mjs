@@ -36,7 +36,7 @@ export function buildAgentPrompt(ticket, attachments, {
     ? "This is a resumed run after an interrupted worker. Inspect the existing worktree changes, then finish the same ticket safely."
     : "Start by reproducing or tracing the reported issue, then implement the smallest correct fix.";
   const projectInstruction = projectKey === "market-map"
-    ? "- For Yandex Maps JavaScript API 2.1, use the exact key placeholder __TENCORP_YANDEX_MAPS_API_KEY__; never invent, request, or embed an API key. Production substitutes the operator-owned domain-restricted key."
+    ? "- For Yandex Maps JavaScript API 2.1, use one deferred provider script with the exact key placeholder __TENCORP_YANDEX_MAPS_API_KEY__; never invent, request, or embed an API key. A deferred provider executes after later parser-run inline scripts, so never reference ymaps at top level: start data/UI independently and initialize the map only after waiting for window.ymaps, with explicit load-error and timeout handling. Production substitutes the operator-owned domain-restricted key."
     : "";
 
   return `You are fixing one software ticket inside an isolated git worktree.

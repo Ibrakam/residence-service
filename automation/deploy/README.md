@@ -175,7 +175,12 @@ market-map ticket through the Residence worktree or deploy key.
    key in `/etc/tencorp-market-map/yandex-maps-api-key`, owned by `root:root`
    with mode `0600`. Source HTML contains only the fixed
    `__TENCORP_YANDEX_MAPS_API_KEY__` placeholder; the root deployer substitutes
-   the operator-owned key into the immutable release.
+   the operator-owned key into the immutable release. The provider tag must use
+   the boolean `defer` attribute so the data UI cannot be blocked by the remote
+   SDK. Because Yandex validates domain restrictions through `Referer`, the
+   `/market-map/` response must use `Referrer-Policy: strict-origin-when-cross-origin`
+   (or `origin`), not `same-origin`; this shares only the public origin and keeps
+   paths and query strings private.
 
 Stop the runner on the runner Mac before replacing this four-part boundary:
 

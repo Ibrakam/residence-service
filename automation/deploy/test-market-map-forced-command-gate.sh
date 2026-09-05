@@ -187,7 +187,7 @@ printf '<!doctype html><html><head><link rel="stylesheet" href="./vendor/leaflet
   > "${provider_fixture}/leaflet.html"
 /usr/bin/python3 "$HTML_VALIDATOR" "${provider_fixture}/leaflet.html" >/dev/null \
   || fail "deployer rejected pinned local Leaflet"
-printf '<!doctype html><html><head><script src="https://api-maps.yandex.ru/2.1/?apikey=__TENCORP_YANDEX_MAPS_API_KEY__&amp;lang=ru_RU"></script></head><body><script>const ready = true;</script></body></html>\n' \
+printf '<!doctype html><html><head><script src="https://api-maps.yandex.ru/2.1/?apikey=__TENCORP_YANDEX_MAPS_API_KEY__&amp;lang=ru_RU" defer></script></head><body><script>const ready = true;</script></body></html>\n' \
   > "${provider_fixture}/yandex.html"
 /usr/bin/python3 "$HTML_VALIDATOR" "${provider_fixture}/yandex.html" >/dev/null \
   || fail "deployer rejected approved Yandex Maps"

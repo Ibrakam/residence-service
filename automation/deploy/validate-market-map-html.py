@@ -50,6 +50,7 @@ class MapProviderParser(HTMLParser):
         self.script_sources = []
         self.script_raw_sources = []
         self.script_raw_placeholder_counts = []
+        self.script_defer_flags = []
         self.stylesheet_sources = []
         self.stylesheet_raw_sources = []
         self.blocked_contexts = []
@@ -161,8 +162,10 @@ class MapProviderParser(HTMLParser):
                 source = attributes["src"] or ""
                 if source != source.strip():
                     fail("market-map script source must not contain surrounding whitespace")
-                if set(attributes) - {"src", "type"}:
+                if set(attributes) - {"src", "type", "defer"}:
                     fail("market-map provider script has unsupported execution attributes")
+                if "defer" in attributes and attributes["defer"] not in {None, ""}:
+                    fail("market-map provider defer must be a boolean attribute")
                 script_type = attributes.get("type")
                 if script_type is not None and script_type != "text/javascript":
                     fail("market-map provider script must use the classic JavaScript type")
@@ -173,6 +176,7 @@ class MapProviderParser(HTMLParser):
                 self.script_raw_placeholder_counts.append(
                     self.get_starttag_text().count(YANDEX_KEY_PLACEHOLDER)
                 )
+                self.script_defer_flags.append("defer" in attributes)
             else:
                 if set(attributes) - {"type"}:
                     fail("market-map inline script has unsupported execution attributes")
@@ -312,15 +316,22 @@ def validate(filename, expected_api_key=None, inline_directory=None):
 
     leaflet_scripts = [source for source in parser.script_sources if source == LEAFLET_SCRIPT]
     yandex_scripts = []
-    for source, raw_source, raw_placeholder_count in zip(
-        parser.script_sources, parser.script_raw_sources, parser.script_raw_placeholder_counts
+    for source, raw_source, raw_placeholder_count, deferred in zip(
+        parser.script_sources,
+        parser.script_raw_sources,
+        parser.script_raw_placeholder_counts,
+        parser.script_defer_flags,
     ):
         if source == LEAFLET_SCRIPT:
             if raw_source != LEAFLET_SCRIPT:
                 fail("market-map Leaflet script source must use its literal pinned path")
+            if deferred:
+                fail("market-map Leaflet script must preserve synchronous execution")
             continue
         match = YANDEX_SCRIPT.fullmatch(source)
         if match is not None:
+            if not deferred:
+                fail("market-map Yandex Maps script must use defer so application data is not blocked")
             api_key = match.group(1) or match.group(2)
             canonical_raw_sources = {
                 f"https://api-maps.yandex.ru/2.1/?apikey={api_key}&amp;lang=ru_RU",

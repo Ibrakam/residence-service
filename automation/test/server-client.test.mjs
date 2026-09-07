@@ -15,7 +15,14 @@ test("server client retains proxy base path and matches the Go worker contract",
       response.end(JSON.stringify({
         leaseToken: "lease-123",
         leaseExpiresAt: new Date().toISOString(),
-        ticket: { id: 42, attempt: 1, title: "Synthetic", body: "Fix the test", attachments: [] },
+        ticket: { id: 42, attempt: 1, title: "Synthetic", body: "Fix the test", attachments: [{
+          id: 7,
+          url: "https://form.tencorp.uz/__residence-ticket-worker/internal/ticket-runner/tickets/42/attachments/7",
+          mimeType: "image/svg+xml",
+          fileName: "4u-floor.svg",
+          sizeBytes: 512,
+          sha256: "a".repeat(64),
+        }] },
       }));
     } else {
       response.end('{"ok":true}');
@@ -37,6 +44,14 @@ test("server client retains proxy base path and matches the Go worker contract",
   };
   const client = new TicketServerClient(config, { warn() {} });
   const lease = await client.lease();
+  assert.deepEqual(lease.ticket.attachments[0], {
+    id: "7",
+    url: "https://form.tencorp.uz/__residence-ticket-worker/internal/ticket-runner/tickets/42/attachments/7",
+    mimeType: "image/svg+xml",
+    fileName: "4u-floor.svg",
+    sizeBytes: 512,
+    sha256: "a".repeat(64),
+  });
   await client.heartbeat(lease.ticket.id, lease.leaseToken, "verifying");
   await client.progress(lease.ticket.id, lease.leaseToken, "verifying", { stage: "tests" });
   await client.complete(lease.ticket.id, lease.leaseToken, {

@@ -35,6 +35,28 @@ func TestParseTelegramUpdateBuildsAlbumTicketAndStripsFix(t *testing.T) {
 	}
 }
 
+func TestParseTelegramUpdateAcceptsSVGDocumentMetadata(t *testing.T) {
+	size := int64(4096)
+	parsed := ParseTelegramUpdate(TelegramUpdate{UpdateID: 93, Message: &TelegramMessage{
+		MessageID: 19, Chat: TelegramChat{ID: -123}, From: &TelegramUser{ID: 5},
+		Caption: "/fix Добавить интерактивный план этажа 4U",
+		Document: &TelegramDocument{
+			FileID: "svg-file", FileUniqueID: "svg-unique", FileName: "4u-floor-03.svg",
+			MIMEType: "image/svg+xml", FileSize: &size,
+		},
+	}}, -123, TelegramUserIDSet{5: {}}, time.Second, time.Now())
+	if !parsed.Input.Accept || parsed.Input.Body != "Добавить интерактивный план этажа 4U" {
+		t.Fatalf("parsed input = %#v", parsed.Input)
+	}
+	if len(parsed.Input.Attachments) != 1 {
+		t.Fatalf("attachments = %#v", parsed.Input.Attachments)
+	}
+	attachment := parsed.Input.Attachments[0]
+	if attachment.Kind != "document" || attachment.MIMEType != "image/svg+xml" || attachment.FileName != "4u-floor-03.svg" {
+		t.Fatalf("SVG attachment = %#v", attachment)
+	}
+}
+
 func TestParseTelegramUpdateRequiresFixForTopLevelTicket(t *testing.T) {
 	base := TelegramMessage{MessageID: 1, Chat: TelegramChat{ID: -123}, From: &TelegramUser{ID: 5}}
 	base.Text = "Сломана кнопка"

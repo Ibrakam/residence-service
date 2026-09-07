@@ -10,6 +10,7 @@ const MIME_EXTENSIONS = new Map([
   ["image/jpeg", ".jpg"],
   ["image/webp", ".webp"],
   ["image/gif", ".gif"],
+  ["image/svg+xml", ".svg"],
   ["application/pdf", ".pdf"],
   ["text/plain", ".txt"],
   ["video/mp4", ".mp4"],
@@ -22,6 +23,83 @@ function normalizedMime(value) {
 
 function isImageMime(mimeType) {
   return mimeType === "image/png" || mimeType === "image/jpeg" || mimeType === "image/webp" || mimeType === "image/gif";
+}
+
+function skipWhitespace(text, start) {
+  let cursor = start;
+  while (cursor < text.length && /\s/u.test(text[cursor])) cursor += 1;
+  return cursor;
+}
+
+function hasSvgRoot(text) {
+  let cursor = text.charCodeAt(0) === 0xfeff ? 1 : 0;
+  cursor = skipWhitespace(text, cursor);
+  if (/^<\?xml(?:\s|\?>)/iu.test(text.slice(cursor, cursor + 8))) {
+    const declarationEnd = text.indexOf("?>", cursor + 5);
+    if (declarationEnd < 0) return false;
+    cursor = skipWhitespace(text, declarationEnd + 2);
+  }
+  while (text.startsWith("<!--", cursor)) {
+    const commentEnd = text.indexOf("-->", cursor + 4);
+    if (commentEnd < 0) return false;
+    cursor = skipWhitespace(text, commentEnd + 3);
+  }
+  return /^<svg(?:\s|>)/iu.test(text.slice(cursor, cursor + 8));
+}
+
+function assertSafeSvgContent(buffer, attachmentNumber) {
+  let text;
+  try {
+    text = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+  } catch (cause) {
+    throw new PolicyError(`Attachment ${attachmentNumber} SVG is not valid UTF-8`, { cause });
+  }
+  if (!text || text.includes("\u0000")) {
+    throw new PolicyError(`Attachment ${attachmentNumber} does not contain a valid SVG root`);
+  }
+  const processingInstructions = text.match(/<\?/gu) ?? [];
+  const start = skipWhitespace(text, text.charCodeAt(0) === 0xfeff ? 1 : 0);
+  const hasLeadingXmlDeclaration = /^<\?xml(?:\s|\?>)/iu.test(text.slice(start, start + 8));
+  if (processingInstructions.length !== (hasLeadingXmlDeclaration ? 1 : 0) || /<!\s*(?:doctype|entity)\b/iu.test(text)) {
+    throw new PolicyError(`Attachment ${attachmentNumber} SVG contains disallowed XML declarations`);
+  }
+  if (!hasSvgRoot(text)) {
+    throw new PolicyError(`Attachment ${attachmentNumber} does not contain a valid SVG root`);
+  }
+  if (/<\s*\/?\s*(?:[^\s<>/:]+:)?(?:script|foreignobject|iframe|object|embed|handler|animate|animatemotion|animatetransform|set|discard)\b/iu.test(text)) {
+    throw new PolicyError(`Attachment ${attachmentNumber} SVG contains active elements`);
+  }
+  if (/(?:^|[\s<])(?:[^\s<>=]+:)?on[a-z][a-z0-9_.:-]*\s*=/imu.test(text) || /\bxml:base\s*=/iu.test(text)) {
+    throw new PolicyError(`Attachment ${attachmentNumber} SVG contains active attributes`);
+  }
+  if (text.includes("\\") || /&#(?:x[0-9a-f]+|[0-9]+);/iu.test(text) || /@import\b|\bexpression\s*\(|\b(?:java|vb)script\s*:|\bbehavior\s*:/iu.test(text)) {
+    throw new PolicyError(`Attachment ${attachmentNumber} SVG contains active styles or URLs`);
+  }
+
+  const safeFragment = /^#[a-z0-9_.:-]+$/iu;
+  const referenceAttribute = /\b(?:href|xlink:href|src)\s*=\s*(["'])([\s\S]*?)\1/giu;
+  const withoutReferences = text.replace(referenceAttribute, (_match, _quote, value) => {
+    const reference = String(value).trim();
+    if (reference && !safeFragment.test(reference)) {
+      throw new PolicyError(`Attachment ${attachmentNumber} SVG contains an external reference`);
+    }
+    return "";
+  });
+  if (/\b(?:href|xlink:href|src)\s*=/iu.test(withoutReferences)) {
+    throw new PolicyError(`Attachment ${attachmentNumber} SVG contains an invalid reference`);
+  }
+
+  const cssUrl = /\burl\s*\(\s*(?:(["'])(.*?)\1|([^)]*))\s*\)/giu;
+  const withoutCssUrls = text.replace(cssUrl, (_match, _quote, quotedValue, bareValue) => {
+    const reference = String(quotedValue ?? bareValue ?? "").trim();
+    if (!safeFragment.test(reference)) {
+      throw new PolicyError(`Attachment ${attachmentNumber} SVG contains an external style URL`);
+    }
+    return "";
+  });
+  if (/\burl\s*\(/iu.test(withoutCssUrls)) {
+    throw new PolicyError(`Attachment ${attachmentNumber} SVG contains an invalid style URL`);
+  }
 }
 
 function validateAttachmentUrl(rawUrl, config) {
@@ -109,27 +187,40 @@ export async function downloadAttachments({ ticket, leaseToken, worktreePath, co
     const response = await fetchWithValidatedRedirects(attachment.url, config, client, leaseToken, signal);
     const responseMime = normalizedMime(response.headers.get("content-type"));
     const declaredMime = normalizedMime(attachment.mimeType);
-    const mimeType = MIME_EXTENSIONS.has(responseMime) ? responseMime : declaredMime;
+    const responseIsGeneric = responseMime === "application/octet-stream";
+    const responseIsSupported = MIME_EXTENSIONS.has(responseMime);
+    const declaredIsSupported = MIME_EXTENSIONS.has(declaredMime);
+    if (!responseIsSupported && !responseIsGeneric) {
+      throw new PolicyError(`Attachment ${index + 1} response has unsupported MIME type`);
+    }
+    const mimeType = responseIsSupported ? responseMime : declaredMime;
     const extension = MIME_EXTENSIONS.get(mimeType);
     if (!extension) throw new PolicyError(`Attachment ${index + 1} has unsupported MIME type`);
-    if (MIME_EXTENSIONS.has(responseMime) && MIME_EXTENSIONS.has(declaredMime) && responseMime !== declaredMime) {
+    if (responseIsSupported && declaredIsSupported && responseMime !== declaredMime) {
       throw new PolicyError(`Attachment ${index + 1} MIME type does not match server metadata`);
     }
     const filename = `attachment-${String(index + 1).padStart(2, "0")}${extension}`;
     const absolutePath = path.join(inputDir, filename);
     const saved = await writeResponseBody(response, absolutePath, config.attachmentMaxBytes);
-    const expectedSha = /^[a-f0-9]{64}$/.test(attachment.sha256) ? attachment.sha256 : "";
-    if (attachment.sha256 && !expectedSha) {
+    try {
+      if (mimeType === "image/svg+xml") {
+        assertSafeSvgContent(await fs.readFile(absolutePath), index + 1);
+      }
+      const expectedSha = /^[a-f0-9]{64}$/.test(attachment.sha256) ? attachment.sha256 : "";
+      if (attachment.sha256 && !expectedSha) {
+        throw new PolicyError(`Attachment ${index + 1} has an invalid checksum`);
+      }
+      if (expectedSha && !crypto.timingSafeEqual(Buffer.from(saved.sha256, "hex"), Buffer.from(expectedSha, "hex"))) {
+        throw new PolicyError(`Attachment ${index + 1} checksum does not match`);
+      }
+    } catch (error) {
       await fs.rm(absolutePath, { force: true });
-      throw new PolicyError(`Attachment ${index + 1} has an invalid checksum`);
-    }
-    if (expectedSha && !crypto.timingSafeEqual(Buffer.from(saved.sha256, "hex"), Buffer.from(expectedSha, "hex"))) {
-      await fs.rm(absolutePath, { force: true });
-      throw new PolicyError(`Attachment ${index + 1} checksum does not match`);
+      throw error;
     }
     downloaded.push({
       relativePath: path.posix.join(INPUT_DIRECTORY_NAME, filename),
       absolutePath,
+      originalFileName: attachment.fileName,
       mimeType,
       isImage: isImageMime(mimeType),
       bytes: saved.bytes,

@@ -8,7 +8,7 @@ The Codex agent is allowed to diagnose and edit a disposable worktree. It is nev
 
 1. Lease one ticket and keep the lease alive.
 2. Resolve the server-supplied project key against the operator-owned profile registry, fetch that profile's `origin/main`, and create a detached worktree under its private worktree root.
-3. Download bounded, allowlisted attachments into a temporary worktree directory. Images are also passed with repeated Codex `-i` flags.
+3. Download bounded, allowlisted attachments into a temporary worktree directory. Raster images are also passed with repeated Codex `-i` flags; SVG remains an untrusted XML file for textual inspection and sanitization.
 4. Send the ticket to non-ephemeral `codex exec --json` over stdin, capture `thread.started.thread_id`, and persist it for resume.
 5. Delete ticket inputs, freeze and scan a staged tree, reject forbidden paths/secrets/history or linked-worktree metadata changes, then remove ignored agent artifacts.
 6. In review mode, run fixed verification commands under macOS Seatbelt. `npm ci --include=dev` uses an empty HOME and cannot execute lifecycle scripts; lint/build have no network access.
@@ -26,7 +26,7 @@ The Codex agent is allowed to diagnose and edit a disposable worktree. It is nev
 - Review verification commands are operator configuration, never ticket or agent output. They get no secret-like environment variables. Production uses the fixed container sequence instead. Preflight runs before verification and the staged tree must remain byte-identical through commit.
 - Review verification is macOS-only and fail-closed on `/usr/bin/sandbox-exec`. Production verification is a fixed, resource-limited native-Linux Docker build from the exact staged Git tree (`linux/arm64` on Apple silicon, `linux/amd64` on Intel Mac). The OCI index, host-specific child manifest/image ID, and Docker CLI identity/SHA-256 are pinned and rechecked. Image/index resolution and `npm ci --include=dev` are the only verification network uses; lint/build deny network. The LaunchAgent deliberately does not set a global `NODE_ENV`.
 - The selected deploy script is invoked directly without a shell from its fixed `$RUNNER_STATE_DIR/bin/` path. That state directory is outside the agent sandbox; each wrapper must be owned by the runner user, be a non-symlink with mode `0700`, and its device, inode, mode, and SHA-256 are pinned at startup and checked immediately before execution. No configurable arguments or inherited deployment environment are allowed.
-- Attachments require HTTPS, an exact hostname allowlist, supported MIME types, count/byte limits, and (when supplied) a SHA-256 match. Lease credentials are only sent back to the worker API origin.
+- Attachments require HTTPS, an exact hostname allowlist, supported MIME types, count/byte limits, and (when supplied) a SHA-256 match. Supported types are PNG, JPEG, WebP, GIF, SVG, PDF, plain text, MP4, and QuickTime MOV. Original filenames are shown to the agent only as escaped untrusted metadata; local files retain normalized runner-owned names. Lease credentials are only sent back to the worker API origin.
 - A local process lock and the server lease enforce one active ticket at a time.
 
 The Telegram bot token previously pasted into chat must be rotated before production. Do not place the replacement token in this directory; it belongs to the server-side ticket bot configuration.

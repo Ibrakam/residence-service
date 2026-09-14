@@ -58,37 +58,76 @@ function canonicalRequestPath(requestUrl: string) {
 }
 
 function containsCanonicalPath(pathname: string, target: string) {
-  return pathname === target || pathname.endsWith(target) || pathname.includes(`${target}/`);
+  return (
+    pathname === target ||
+    pathname.endsWith(target) ||
+    pathname.includes(`${target}/`)
+  );
 }
 
 function isRegnumPrivatePath(pathname: string) {
   const dataPath = /\/data\/(regnum-plaza[^/]*)(?:\/|$)/.exec(pathname);
-  return containsCanonicalPath(pathname, '/source/regnum-plaza')
-    || Boolean(dataPath && dataPath[1] !== 'regnum-plaza-client.json')
-    || containsCanonicalPath(pathname, '/app/api/regnum-plaza-lead')
-    || /\/scripts\/[^/]*regnum-plaza[^/]*(?:\/|$)/.test(pathname);
+  return (
+    containsCanonicalPath(pathname, '/source/regnum-plaza') ||
+    Boolean(dataPath && dataPath[1] !== 'regnum-plaza-client.json') ||
+    containsCanonicalPath(pathname, '/app/api/regnum-plaza-lead') ||
+    /\/scripts\/[^/]*regnum-plaza[^/]*(?:\/|$)/.test(pathname)
+  );
 }
 
 function isSunPrivatePath(pathname: string) {
   const dataPath = /\/data\/(sun[^/]*)(?:\/|$)/.exec(pathname);
-  return containsCanonicalPath(pathname, '/source/sun')
-    || Boolean(dataPath && dataPath[1] !== 'sun-client.json')
-    || containsCanonicalPath(pathname, '/app/api/sun-lead')
-    || /\/scripts\/[^/]*sun[^/]*(?:\/|$)/.test(pathname);
+  return (
+    containsCanonicalPath(pathname, '/source/sun') ||
+    Boolean(dataPath && dataPath[1] !== 'sun-client.json') ||
+    containsCanonicalPath(pathname, '/app/api/sun-lead') ||
+    /\/scripts\/[^/]*sun[^/]*(?:\/|$)/.test(pathname)
+  );
+}
+
+function isSoyBoyiPrivatePath(pathname: string) {
+  return (
+    containsCanonicalPath(pathname, '/source/soy-boyi') ||
+    containsCanonicalPath(pathname, '/data/soy-boyi-catalog.json') ||
+    containsCanonicalPath(pathname, '/data/soy-boyi-catalog-manifest.json') ||
+    /\/scripts\/[^/]*soy-boyi[^/]*(?:\/|$)/.test(pathname)
+  );
 }
 
 function regnumPrivateSourceGuard() {
   return {
     name: 'regnum-private-source-guard',
     enforce: 'pre' as const,
-    configureServer(server: { middlewares: { use: (handler: (request: { url?: string }, response: { statusCode: number; setHeader: (name: string, value: string) => void; end: (body?: string) => void }, next: () => void) => void) => void } }) {
+    configureServer(server: {
+      middlewares: {
+        use: (
+          handler: (
+            request: { url?: string },
+            response: {
+              statusCode: number;
+              setHeader: (name: string, value: string) => void;
+              end: (body?: string) => void;
+            },
+            next: () => void,
+          ) => void,
+        ) => void;
+      };
+    }) {
       server.middlewares.use((request, response, next) => {
         const pathname = canonicalRequestPath(request.url ?? '/');
-        const fsPath = pathname?.startsWith('/@fs/') ? pathname.slice(4) : pathname;
-        if (pathname === null
-          || isRegnumPrivatePath(pathname)
-          || isSunPrivatePath(pathname)
-          || (fsPath !== null && (isRegnumPrivatePath(fsPath) || isSunPrivatePath(fsPath)))) {
+        const fsPath = pathname?.startsWith('/@fs/')
+          ? pathname.slice(4)
+          : pathname;
+        if (
+          pathname === null ||
+          isRegnumPrivatePath(pathname) ||
+          isSunPrivatePath(pathname) ||
+          isSoyBoyiPrivatePath(pathname) ||
+          (fsPath !== null &&
+            (isRegnumPrivatePath(fsPath) ||
+              isSunPrivatePath(fsPath) ||
+              isSoyBoyiPrivatePath(fsPath)))
+        ) {
           response.statusCode = 404;
           response.setHeader('Cache-Control', 'no-store');
           response.setHeader('Content-Type', 'text/plain; charset=utf-8');

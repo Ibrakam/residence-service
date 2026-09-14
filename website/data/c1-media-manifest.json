@@ -1,0 +1,195 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "outputFile": "/c1/images/hero.webp",
+      "outputBytes": 280684,
+      "outputSha256": "53f97d576ad7d9586ee684ad3b92a2c7142f0859fb7eb645fd94c6b60c57e940",
+      "mime": "image/webp",
+      "width": 1920,
+      "height": 870,
+      "officialLabel": "Desktop project hero",
+      "classification": "cgi-render"
+    },
+    {
+      "outputFile": "/c1/images/hero-mobile.webp",
+      "outputBytes": 359920,
+      "outputSha256": "123f9c282761b6928b0a3e40826de340c03f4e1f24ea2899c5532ba5595d689c",
+      "mime": "image/webp",
+      "width": 1088,
+      "height": 1450,
+      "officialLabel": "Mobile project hero",
+      "classification": "cgi-render"
+    },
+    {
+      "outputFile": "/c1/images/logo.webp",
+      "outputBytes": 9854,
+      "outputSha256": "5a395b663eadfa8aef3183059c9a4bc72c353b1058cc3e55fa4d3aad2a433d79",
+      "mime": "image/webp",
+      "width": 129,
+      "height": 320,
+      "officialLabel": "C1 wordmark",
+      "classification": "official-logo"
+    },
+    {
+      "outputFile": "/c1/images/aerial.webp",
+      "outputBytes": 433886,
+      "outputSha256": "81b81823e218f8b5d70f062f332cf6283306374b66c6e56526df47f059a3a166",
+      "mime": "image/webp",
+      "width": 1594,
+      "height": 961,
+      "officialLabel": "Project aerial",
+      "classification": "cgi-render"
+    },
+    {
+      "outputFile": "/c1/images/architecture-01.webp",
+      "outputBytes": 155538,
+      "outputSha256": "28c3e8f57bc46db8fddca50318d503dbda6864912bb4bb8a5c088850ee69504c",
+      "mime": "image/webp",
+      "width": 1035,
+      "height": 867,
+      "officialLabel": "Architecture view 1",
+      "classification": "cgi-render"
+    },
+    {
+      "outputFile": "/c1/images/architecture-02.webp",
+      "outputBytes": 104200,
+      "outputSha256": "75b8a00705b1ae7d9e1c968acdd9bd2178529171dfb9c6bb249343bbfc7f17ec",
+      "mime": "image/webp",
+      "width": 1001,
+      "height": 1271,
+      "officialLabel": "Architecture view 2",
+      "classification": "cgi-render"
+    },
+    {
+      "outputFile": "/c1/images/architecture-03.webp",
+      "outputBytes": 215298,
+      "outputSha256": "efd1e82ae22058c16cb2b62f427ddc06e7049ddc779dd8e04312e7e9a6536680",
+      "mime": "image/webp",
+      "width": 1134,
+      "height": 950,
+      "officialLabel": "Architecture view 3",
+      "classification": "cgi-render"
+    },
+    {
+      "outputFile": "/c1/images/lobby.webp",
+      "outputBytes": 205724,
+      "outputSha256": "484656d80b74e1878a80867d7bb742c5c71986a1cb25ad2c94ba1d3d84e25f4c",
+      "mime": "image/webp",
+      "width": 1114,
+      "height": 1171,
+      "officialLabel": "Lobby",
+      "classification": "cgi-render"
+    },
+    {
+      "outputFile": "/c1/images/pool.webp",
+      "outputBytes": 207162,
+      "outputSha256": "b226653d40070741caf26de6c328676769e1d8dcbfd77b2c46ffca4452fbe6e2",
+      "mime": "image/webp",
+      "width": 1551,
+      "height": 959,
+      "officialLabel": "Open-air pool",
+      "classification": "cgi-render"
+    },
+    {
+      "outputFile": "/c1/images/guest-room.webp",
+      "outputBytes": 304260,
+      "outputSha256": "5132fae0341e719c675716c675589f15bfb978edde1a8803629e9043cf03fdf0",
+      "mime": "image/webp",
+      "width": 1920,
+      "height": 1186,
+      "officialLabel": "Guest room",
+      "classification": "cgi-render"
+    },
+    {
+      "outputFile": "/c1/images/kids.webp",
+      "outputBytes": 143378,
+      "outputSha256": "cd42486c127e72b4190f0ce434d3c2bb3587dce2a0702e89643db3db72aa2870",
+      "mime": "image/webp",
+      "width": 1440,
+      "height": 890,
+      "officialLabel": "Children playroom",
+      "classification": "cgi-render"
+    },
+    {
+      "outputFile": "/c1/images/fitness.webp",
+      "outputBytes": 197624,
+      "outputSha256": "57871d1f1ff05fba8e9640b24d8da38820b39df2767723f59699ed244cc9f791",
+      "mime": "image/webp",
+      "width": 1920,
+      "height": 1186,
+      "officialLabel": "Shared fitness room",
+      "classification": "cgi-render"
+    },
+    {
+      "outputFile": "/c1/images/women-fitness.webp",
+      "outputBytes": 128582,
+      "outputSha256": "0d7d75b8d6790db831e6a672103ee7b429609f7b1efddccbc1928f3e4819a52d",
+      "mime": "image/webp",
+      "width": 1440,
+      "height": 890,
+      "officialLabel": "Women-only fitness room",
+      "classification": "cgi-render"
+    },
+    {
+      "outputFile": "/c1/images/stroller.webp",
+      "outputBytes": 106074,
+      "outputSha256": "d435b7b578da56cfb5c89c103ff9160f924b0018f9832aed9bbda5ad48d5866c",
+      "mime": "image/webp",
+      "width": 1920,
+      "height": 1186,
+      "officialLabel": "Stroller room",
+      "classification": "cgi-render"
+    },
+    {
+      "outputFile": "/c1/images/massage.webp",
+      "outputBytes": 96832,
+      "outputSha256": "58c2133f34ae882f74514aa9ecc075f033b822b9fa4433230af43d6641014243",
+      "mime": "image/webp",
+      "width": 1233,
+      "height": 850,
+      "officialLabel": "Massage room",
+      "classification": "cgi-render"
+    },
+    {
+      "outputFile": "/c1/images/dry-clean.webp",
+      "outputBytes": 178444,
+      "outputSha256": "6d507889334a52080577ec0b9700672061cc4a22fd343d018119f5abd3f23f7c",
+      "mime": "image/webp",
+      "width": 1800,
+      "height": 1346,
+      "officialLabel": "Dry cleaning service",
+      "classification": "cgi-render"
+    },
+    {
+      "outputFile": "/c1/images/security.webp",
+      "outputBytes": 73498,
+      "outputSha256": "188290a3604503e811dba644a2c48c24543c0e67719a2e452b5c5b1184ec7162",
+      "mime": "image/webp",
+      "width": 1920,
+      "height": 1280,
+      "officialLabel": "Security systems",
+      "classification": "illustrative-photo"
+    },
+    {
+      "outputFile": "/c1/images/parking.webp",
+      "outputBytes": 116850,
+      "outputSha256": "c04084dcbf7cbd6c5a6c350e5d2b94c2efd8e9911a8a354c3413aa28f816dfe0",
+      "mime": "image/webp",
+      "width": 1920,
+      "height": 959,
+      "officialLabel": "Parking",
+      "classification": "cgi-render"
+    },
+    {
+      "outputFile": "/c1/video/c1-film.mp4",
+      "outputBytes": 15508333,
+      "outputSha256": "11e83a5c8308c8984ad9b10016f626ee8bb8d863c3ff01a1c5e24e0a56484bc7",
+      "mime": "video/mp4",
+      "width": 1492,
+      "height": 900,
+      "officialLabel": "Official C1 CGI film",
+      "classification": "cgi-video"
+    }
+  ]
+}

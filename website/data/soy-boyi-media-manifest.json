@@ -1,0 +1,213 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-14T10:38:11.179Z",
+  "project": "Soy Bo‘yi",
+  "assets": [
+    {
+      "name": "hero",
+      "classification": "cgi-render",
+      "localPath": "/soy-boyi/media/hero-ff90e01e163f.webp",
+      "sha256": "ff90e01e163f09a89ec531d256978bec019f6eb248cdf3817a57873c46fe185f",
+      "mime": "image/webp",
+      "bytes": 497382,
+      "width": 2200,
+      "height": 1000
+    },
+    {
+      "name": "hero-mobile",
+      "classification": "cgi-render",
+      "localPath": "/soy-boyi/media/hero-mobile-d5118c78f2c7.webp",
+      "sha256": "d5118c78f2c7f1d683fd416c67e837573b0adb38f545e136a49fe664b788e2c0",
+      "mime": "image/webp",
+      "bytes": 261758,
+      "width": 803,
+      "height": 1200
+    },
+    {
+      "name": "about",
+      "classification": "cgi-render",
+      "localPath": "/soy-boyi/media/about-33884c87161b.webp",
+      "sha256": "33884c87161b93f7df656390558af17e69426af5fb421ec7a0f30a8199595970",
+      "mime": "image/webp",
+      "bytes": 306720,
+      "width": 1493,
+      "height": 900
+    },
+    {
+      "name": "architecture-river",
+      "classification": "cgi-render",
+      "localPath": "/soy-boyi/media/architecture-river-3234c4583c05.webp",
+      "sha256": "3234c4583c05016c3d52cbffb2c9bfffad585ca606eea677bf0ad14afc90c4fb",
+      "mime": "image/webp",
+      "bytes": 371484,
+      "width": 1305,
+      "height": 1092
+    },
+    {
+      "name": "architecture-facade",
+      "classification": "cgi-render",
+      "localPath": "/soy-boyi/media/architecture-facade-95edff8cf3c2.webp",
+      "sha256": "95edff8cf3c2ab2ce71354bb1be1e7fb60491272f7f4b36cc7bf7db0259bb6ec",
+      "mime": "image/webp",
+      "bytes": 84348,
+      "width": 1000,
+      "height": 1270
+    },
+    {
+      "name": "architecture-materials",
+      "classification": "cgi-render",
+      "localPath": "/soy-boyi/media/architecture-materials-e8b57c9479d7.webp",
+      "sha256": "e8b57c9479d7565f39098008c39932a4769a05f3a5828c2e39c5cb77d6bbc71b",
+      "mime": "image/webp",
+      "bytes": 405726,
+      "width": 1083,
+      "height": 906
+    },
+    {
+      "name": "courtyard",
+      "classification": "cgi-render",
+      "localPath": "/soy-boyi/media/courtyard-f7300aa9cd6c.webp",
+      "sha256": "f7300aa9cd6cd613c080fb627c3dd75f526aa504b2a19fbd7aa94e7dd7c757b9",
+      "mime": "image/webp",
+      "bytes": 520888,
+      "width": 1490,
+      "height": 920
+    },
+    {
+      "name": "playground",
+      "classification": "cgi-render",
+      "localPath": "/soy-boyi/media/playground-4548d760e7a8.webp",
+      "sha256": "4548d760e7a8aafdcf8f02aaa79ebd7285b4a7fbc88f6bb35355c98f8ec646eb",
+      "mime": "image/webp",
+      "bytes": 393958,
+      "width": 1490,
+      "height": 920
+    },
+    {
+      "name": "workout",
+      "classification": "cgi-render",
+      "localPath": "/soy-boyi/media/workout-eea241b96f6c.webp",
+      "sha256": "eea241b96f6cf84d8536a343936a174993dc164c1df2a4d715c3fa0f1081ef4e",
+      "mime": "image/webp",
+      "bytes": 303058,
+      "width": 1490,
+      "height": 920
+    },
+    {
+      "name": "summer-cinema",
+      "classification": "cgi-render",
+      "localPath": "/soy-boyi/media/summer-cinema-ea6bc511af0d.webp",
+      "sha256": "ea6bc511af0d73161162d93b6c6f4c72cac129a94d36f5d73158a366b568e1c0",
+      "mime": "image/webp",
+      "bytes": 145232,
+      "width": 1109,
+      "height": 803
+    },
+    {
+      "name": "teahouse",
+      "classification": "cgi-render",
+      "localPath": "/soy-boyi/media/teahouse-1d17391fdc9f.webp",
+      "sha256": "1d17391fdc9fa90225b1e3a8067f1dffdb0fe11e8d9efc0fe35bdf2bb82cc432",
+      "mime": "image/webp",
+      "bytes": 178368,
+      "width": 1110,
+      "height": 803
+    },
+    {
+      "name": "summer-pool",
+      "classification": "cgi-render",
+      "localPath": "/soy-boyi/media/summer-pool-851d64ca3c41.webp",
+      "sha256": "851d64ca3c41dc9dbe70cc3c8fb70eff24efb8e33ffcd0546fa080098f97b248",
+      "mime": "image/webp",
+      "bytes": 366644,
+      "width": 1490,
+      "height": 920
+    },
+    {
+      "name": "bakery",
+      "classification": "cgi-render",
+      "localPath": "/soy-boyi/media/bakery-fba966d61870.webp",
+      "sha256": "fba966d618703f3e9d35556a31a3c3a5d914c5a72ecf92a34506cabfe4aebb25",
+      "mime": "image/webp",
+      "bytes": 151054,
+      "width": 1110,
+      "height": 803
+    },
+    {
+      "name": "guest-room",
+      "classification": "cgi-render",
+      "localPath": "/soy-boyi/media/guest-room-c4d493f42416.webp",
+      "sha256": "c4d493f42416023c16e1295ac1e980cd01ea89422f24c51899db652dc0952b49",
+      "mime": "image/webp",
+      "bytes": 129312,
+      "width": 1108,
+      "height": 803
+    },
+    {
+      "name": "playroom",
+      "classification": "cgi-render",
+      "localPath": "/soy-boyi/media/playroom-ce42d6ebe435.webp",
+      "sha256": "ce42d6ebe43544adcfcae4e0c37dc3293570819621acc1153b473365eb5eb720",
+      "mime": "image/webp",
+      "bytes": 105534,
+      "width": 1109,
+      "height": 803
+    },
+    {
+      "name": "lobby",
+      "classification": "cgi-render",
+      "localPath": "/soy-boyi/media/lobby-19fc47ed116c.webp",
+      "sha256": "19fc47ed116c658fc611b478d1aade269207234668208a9e6ced1e1a46665366",
+      "mime": "image/webp",
+      "bytes": 116234,
+      "width": 1101,
+      "height": 1158
+    },
+    {
+      "name": "genplan",
+      "classification": "official-partial-genplan",
+      "localPath": "/soy-boyi/media/genplan-d447f51c8bb6.webp",
+      "sha256": "d447f51c8bb63dd6ce20b48394efd7e86be3a1b7eb375f32dfd6a61c21061053",
+      "mime": "image/webp",
+      "bytes": 467700,
+      "width": 2200,
+      "height": 996
+    },
+    {
+      "name": "opening-01",
+      "classification": "actual-photo",
+      "localPath": "/soy-boyi/media/opening-01-5fbc9d21e922.webp",
+      "sha256": "5fbc9d21e92297ff816ff8319edeb4a30de68f280fe312441235e6b708a425a5",
+      "mime": "image/webp",
+      "bytes": 518252,
+      "width": 1255,
+      "height": 1601
+    },
+    {
+      "name": "opening-02",
+      "classification": "actual-photo",
+      "localPath": "/soy-boyi/media/opening-02-4c63cb33e80d.webp",
+      "sha256": "4c63cb33e80dfd4a9ef5ee0e6a99497709ddcc54dbfcd0dc403f44ca4cafc9bf",
+      "mime": "image/webp",
+      "bytes": 450088,
+      "width": 1800,
+      "height": 1201
+    },
+    {
+      "name": "logo",
+      "classification": "official-logo",
+      "localPath": "/soy-boyi/media/logo-bc8875384ed9.svg",
+      "sha256": "bc8875384ed9b250fb27ba0b9430607b4f538ab2d72a53d492f6fc7f05088ade",
+      "mime": "image/svg+xml",
+      "bytes": 17729
+    },
+    {
+      "name": "river-film",
+      "classification": "official-project-video",
+      "localPath": "/soy-boyi/media/river-film-0d96a1ebc06a.mp4",
+      "sha256": "0d96a1ebc06aa811f01161efb15381003e34f1f42bb418a4633074a22d5b0236",
+      "mime": "video/mp4",
+      "bytes": 8906903
+    }
+  ]
+}

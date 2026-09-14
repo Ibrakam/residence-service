@@ -173,6 +173,22 @@ if (
   catalogPage.includes("identifier: unit.crmId")
 )
   fail("JSON-LD exposes an internal CRM identifier.");
+if (
+  !/["']@type["']\s*:\s*["']CollectionPage["']/.test(catalogPage) ||
+  !/["']@type["']\s*:\s*["']ApartmentComplex["']/.test(catalogPage) ||
+  !/["']@type["']\s*:\s*["']BreadcrumbList["']/.test(catalogPage)
+)
+  fail(
+    "Soy Bo‘yi catalogue JSON-LD must describe only the stable collection page, project and breadcrumbs.",
+  );
+if (
+  /["']@type["']\s*:\s*["']ItemList["']|itemListElement\s*:\s*catalog\.units\.map|numberOfItems\s*:\s*catalog\.units\.length|dateModified\s*:\s*catalog\.capturedAt/.test(
+    catalogPage,
+  )
+)
+  fail(
+    "Soy Bo‘yi catalogue JSON-LD must not publish embedded fallback units as live inventory.",
+  );
 
 if (
   planManifest.counts.units !== 209 ||
@@ -382,10 +398,22 @@ if (
 if (
   !/projectSlug="soy-boyi"/.test(landing) ||
   !/projectSlug="soy-boyi"/.test(catalogue) ||
-  !/unitId=\{lead\.unit\?\.id\}/.test(`${landing}\n${catalogue}`) ||
-  !/unitKey=\{lead\.unit\?\.unitKey\}/.test(`${landing}\n${catalogue}`)
+  !/catalogLeadIdentity/.test(landing) ||
+  !/catalogLeadIdentity/.test(catalogue) ||
+  !/rememberLiveCatalogUnit/.test(landing) ||
+  !/rememberLiveCatalogUnit/.test(catalogue)
 )
-  fail("Exact lead identity/context is incomplete.");
+  fail("Canonical live lead identity/context is incomplete.");
+if (/\bunitId\b|\bcrmId\b/.test(`${landing}\n${catalogue}\n${landingPage}\n${catalogPage}`))
+  fail("Soy Bo‘yi client code must not serialize legacy unitId or CRM identifiers.");
+if (
+  !/useLiveCatalogUnits\("soy-boyi"/.test(landing) ||
+  !/useLiveCatalogSnapshot\("soy-boyi"/.test(catalogue) ||
+  !/liveCatalog\.project\?\.availableUnits\s*\?\?\s*availableCount/.test(landing)
+)
+  fail("Soy Bo‘yi landing and catalogue must use live data with embedded fallbacks and a dynamic count.");
+if (/свежем официальном (?:snapshot|снимке)|Yangi rasmiy snapshotda|Latest official availability snapshot/iu.test(`${landing}\n${catalogue}`))
+  fail("Soy Bo‘yi user copy must not expose snapshot terminology.");
 if (
   !/aria-label=\{t\.language\}/.test(landing) ||
   !/className="sbc-langs"[\s\S]{0,80}role="group"[\s\S]{0,80}aria-label=\{t\.language\}/.test(
@@ -438,12 +466,8 @@ if (
   !vite.includes("soy-boyi[^/]*(?:\\/|$)")
 )
   fail("Vite dev guard does not deny Soy server-only data paths.");
-if (
-  !/'\/soy-boyi'/.test(proxy) ||
-  !/'\/soy-boyi\/apartments'/.test(proxy) ||
-  /'\/soy-boyi\/:path\*'/.test(proxy)
-)
-  fail("Proxy must match only the two Soy Bo‘yi document routes.");
+if (!/'\/soy-boyi\/:path\*'/.test(proxy))
+  fail("Proxy must cover all Soy Bo‘yi document routes.");
 if (
   !/["']soy-boyi["']:\s*\{[\s\S]{0,100}name:\s*["']SOY BO‘YI["'][\s\S]{0,100}path:\s*["']\/soy-boyi["']/.test(
     privacy,

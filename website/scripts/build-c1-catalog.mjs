@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import sharp from 'sharp';
+import { opaqueMbcSourceKey, templateMbcSourceKey } from '../../scripts/live-sync/src/mbc-identity.mjs';
 
 const root = process.cwd();
 const sourceRoot = path.join(root, 'source', 'c1');
@@ -16,6 +17,17 @@ const rows = raw.pages.flatMap((page) => page.payload.plans.data);
 const units = rows.filter((unit) => unit.type === 'residential' && unit.status === 'AVAILABLE');
 const hash = (value) => createHash('sha256').update(value).digest('hex');
 const shortHash = (value) => hash(value).slice(0, 16);
+let retainedSourceKeyByCrmId = new Map();
+try {
+  const previousSnapshot = JSON.parse(await readFile(dataPath, 'utf8'));
+  retainedSourceKeyByCrmId = new Map((previousSnapshot.units ?? []).flatMap((unit) => {
+    const crmId = String(unit?.crmId ?? '').trim();
+    const sourceKey = templateMbcSourceKey('c1', unit);
+    return crmId && sourceKey ? [[crmId, sourceKey]] : [];
+  }));
+} catch (error) {
+  if (error?.code !== 'ENOENT') throw error;
+}
 
 async function writeStablePlan(file, buffer) {
   try {
@@ -50,12 +62,17 @@ await Promise.all(Array.from({ length: 6 }, () => worker()));
 
 const missingIds = new Set(capture.missingFromBuilding.map((unit) => unit.crmId));
 const normalizedUnits = units.map((unit, sourceOrder) => ({
-  id: String(unit.id), crmId: String(unit.crm_id), sourceOrder, number: String(unit.number), rooms: Number(unit.rooms), area: Number(unit.square), floor: Number(unit.floor), section: String(unit.section), phase: String(unit.queue), completionYear: String(unit.end), status: unit.status, priceVisible: Boolean(unit.is_price), plan: media.get(unit.image).file, sourcePlanSha256: media.get(unit.image).sourceSha256, localPlanSha256: media.get(unit.image).outputSha256, sourceCreatedAt: unit.created_at, sourceUpdatedAt: unit.updated_at, hasOfficialFloorPolygon: !missingIds.has(String(unit.crm_id)),
+  id: String(unit.id), crmId: String(unit.crm_id), sourceKey: retainedSourceKeyByCrmId.get(String(unit.crm_id)) ?? opaqueMbcSourceKey('c1', unit.crm_id), sourceOrder, number: String(unit.number), rooms: Number(unit.rooms), area: Number(unit.square), floor: Number(unit.floor), section: String(unit.section), phase: String(unit.queue), completionYear: String(unit.end), status: unit.status, priceVisible: Boolean(unit.is_price), plan: media.get(unit.image).file, sourcePlanSha256: media.get(unit.image).sourceSha256, localPlanSha256: media.get(unit.image).outputSha256, sourceCreatedAt: unit.created_at, sourceUpdatedAt: unit.updated_at, hasOfficialFloorPolygon: !missingIds.has(String(unit.crm_id)),
 }));
 const values = (key) => [...new Set(normalizedUnits.map((unit) => unit[key]))].sort((a, b) => Number(a) - Number(b));
 const countBy = (key) => Object.fromEntries(values(key).map((value) => [String(value), normalizedUnits.filter((unit) => unit[key] === value).length]));
 const snapshot = {
-  project: { id: 2, slug: 'c1', name: 'C1', class: 'premium', blockCount: 1, apartmentCount: 252, phaseCount: 1, siteAreaM2: 4300, buildingFloors: 30, completion: 'Q1 2028' },
+  schemaVersion: 1,
+  source: 'https://mbc.uz/api/plans',
+  sourceLanding: 'https://mbc.uz/ru/project/c1',
+  officialTotalAtCapture: normalizedUnits.length,
+  sourceCount: normalizedUnits.length,
+  project: { id: 2, slug: 'c1', name: 'C1', class: 'premium', developerSlug: 'murad-buildings', blockCount: 1, apartmentCount: 252, phaseCount: 1, siteAreaM2: 4300, buildingFloors: 30, completion: 'Q1 2028' },
   capturedAt: capture.captureCompletedAt, serverDate: capture.serverDates.finalResult, availableTotal: normalizedUnits.length, interactiveBuildingTotal: capture.counts.buildingAvailableUnique, missingOfficialFloorPolygons: capture.missingFromBuilding, reconciliation: capture.reconciliation,
   counts: { rooms: countBy('rooms') },
   filters: { rooms: values('rooms'), sections: values('section'), phases: values('phase'), floors: values('floor'), area: { min: Math.min(...normalizedUnits.map((unit) => unit.area)), max: Math.max(...normalizedUnits.map((unit) => unit.area)) } },

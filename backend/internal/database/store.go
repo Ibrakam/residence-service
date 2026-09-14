@@ -12,6 +12,12 @@ import (
 	"github.com/tencorp/real-estate-platform/backend/internal/domain"
 )
 
+const unitCompletionSelect = `CASE
+        WHEN jsonb_typeof(u.source_payload->'completion') = 'string'
+         AND char_length(btrim(u.source_payload->>'completion')) BETWEEN 1 AND 64
+        THEN btrim(u.source_payload->>'completion')
+    END`
+
 var ErrNotFound = errors.New("not found")
 var ErrUnitNotFound = errors.New("unit reference not found")
 var ErrUnitProjectMismatch = errors.New("unit does not belong to project")
@@ -187,6 +193,7 @@ func (s *Store) ListUnits(ctx context.Context, filter domain.UnitFilter) (domain
                     u.property_type, u.raw_property_type, u.status, u.raw_status,
                     u.number, u.entrance, u.floor, u.area::float8, u.rooms,
                     u.price, u.price_per_m2::float8, u.currency, u.plan_image_url,
+                    ` + unitCompletionSelect + `,
                     u.is_active, u.source_updated_at, u.updated_at ` + where + `
               ORDER BY ph.id, u.entrance, u.floor, u.number
               LIMIT $10 OFFSET $11`
@@ -212,6 +219,7 @@ func (s *Store) GetUnit(ctx context.Context, id int64) (domain.Unit, error) {
                u.property_type, u.raw_property_type, u.status, u.raw_status,
                u.number, u.entrance, u.floor, u.area::float8, u.rooms,
                u.price, u.price_per_m2::float8, u.currency, u.plan_image_url,
+               `+unitCompletionSelect+`,
                u.is_active, u.source_updated_at, u.updated_at
         FROM units u
         JOIN phases ph ON ph.id=u.phase_id
@@ -233,11 +241,12 @@ func scanUnit(row rowScanner) (domain.Unit, error) {
 	var rooms sql.NullInt64
 	var price sql.NullInt64
 	var pricePerM2 sql.NullFloat64
+	var completion sql.NullString
 	err := row.Scan(
 		&item.ID, &item.SourceKey, &item.ProjectSlug, &item.PhaseSlug, &item.PhaseName,
 		&item.PropertyType, &item.RawPropertyType, &item.Status, &item.RawStatus,
 		&item.Number, &item.Entrance, &item.Floor, &item.Area, &rooms,
-		&price, &pricePerM2, &item.Currency, &item.PlanImageURL,
+		&price, &pricePerM2, &item.Currency, &item.PlanImageURL, &completion,
 		&item.IsActive, &item.SourceUpdatedAt, &item.UpdatedAt,
 	)
 	if err != nil {
@@ -254,6 +263,10 @@ func scanUnit(row rowScanner) (domain.Unit, error) {
 	if pricePerM2.Valid {
 		value := pricePerM2.Float64
 		item.PricePerM2 = &value
+	}
+	if completion.Valid {
+		value := completion.String
+		item.Completion = &value
 	}
 	return item, nil
 }

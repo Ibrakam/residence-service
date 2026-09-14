@@ -1,6 +1,6 @@
 # Residence live catalogue collectors
 
-These adapters capture complete, current unit catalogues for the 16 Residence
+These adapters capture complete, current unit catalogues for the 19 Residence
 projects without changing any source CRM. They publish only full
 `*-catalog.json` files (plus `avalon-units.json`); an authentication, schema,
 pagination, identity, or count uncertainty makes the command exit non-zero.
@@ -11,7 +11,7 @@ pagination, identity, or count uncertainty makes the command exit non-zero.
 | --- | --- | --- | --- |
 | `kayan` | Mirador, Ofiyat | Authorized Profitbase OOPIF, exact `GET https://pb21432.profitbase.ru/api/v4/json/property`; allowed query keys are `houseId`, `returnFilteredCount`, `showQueueCount`; house IDs `154813`, `153505`, `153506`, `154273` | Mirador 209; Ofiyat apartments/parking 585; every response satisfied `properties.length === filteredCount` |
 | `uysot` | Avalon Residence | Authorized showroom; exact read-only `POST https://service.app.uysot.uz/v1/smart-catalog/table`, body keys `page,size,orders,houseId`, forced to page 1/size 500/house 1074 | 268 unique units, declared 268, one page, buildings A/B1/B2 |
-| `mbc` | Regnum Plaza | Public read-only `POST https://mbc.uz/api/plans`, URL-encoded exact keys `project=1&page=N` | 11 unique public IDs and 11 unique CRM IDs over two declared pages |
+| `mbc` | Regnum Plaza, C1, Soy Bo‘yi, Saadiyat | Public read-only `POST https://mbc.uz/api/plans`; each project uses the exact URL-encoded keys `project={1\|2\|3\|18}&type=residential&page=N` | Every project must provide all declared pages, only `AVAILABLE residential` rows, and unique public and CRM IDs; all four artifacts publish atomically |
 | `sun` | SUN | Public `GET /estate/embedjs/`, `GET /estate/request/get_request_url/`, then read-only `POST https://api.macroserver.uz/estate/catalog/` action `objects_list` | Pages 0–10 contain 336 overlapping rows and exactly 306 stable unique IDs: 51 available, 41 reserved, 214 sold |
 | `nrg-bi` | 4U, Bayterak, Botanika Saroyi, Flagman, Jomiy, Maftun Makon, Meros, Sado, Voha, Yangibaxt, Zamon | Public read-only `POST https://apigw.bi.group/sales-picker/microfe-v3/placementList` and `/realEstateList`; apartment type and project UUID are allowlisted; page size is capped at 300 and pagination must reach an empty page | Counts: 181, 132, 218, 22, 118, 201, 249, 331, 104, 262, 102. Each identity is unique and each real-estate cross-check contains the apartment property type |
 
@@ -34,7 +34,17 @@ public BI sales-picker source.
 - Every browser request is checked against an exact host/path/method/query-key
   allowlist. Mutating methods are blocked. Uysot has one exact read-only POST
   exception whose request is constrained to house 1074.
-- MBC, SUN, and NRG use fixed read-only query bodies and no credentials.
+- MBC, SUN, and NRG use fixed read-only query bodies and no credentials. One
+  MBC run owns Regnum Plaza, C1, Soy Bo‘yi, and Saadiyat together; an invalid
+  row or incomplete pagination in any one project prevents all four artifacts
+  from being published.
+- MBC's public response `id` is retained only as provenance because it changes
+  when the listing set changes. Stable unit matching uses `crm_id`, but raw CRM
+  IDs are never embedded in public `sourceKey` values. Existing template keys
+  are retained by CRM ID (or Regnum's exact unambiguous public-fact tuple); a
+  previously unseen row gets a deterministic, project-namespaced SHA-256 key.
+  Templates that predate explicit keys retain the backend importer's historical
+  opaque key so an upgrade does not break saved lead/unit references.
 - SUN's short-lived signed catalogue URL exists only in memory. It is never
   logged or written. Request bodies and headers are never written.
 - Response JSON is sanitized before evidence is written; capability links,
@@ -83,6 +93,7 @@ Revalidate an existing capture without writing a catalogue:
 ```sh
 node src/cli.mjs dry-run --provider kayan --input /tmp/residence-captures/kayan/RUN_ID
 node src/cli.mjs dry-run --provider uysot --input /tmp/residence-captures/uysot/RUN_ID
+node src/cli.mjs dry-run --provider mbc --input /tmp/residence-captures/mbc/RUN_ID
 node src/cli.mjs dry-run --provider nrg-bi --input /tmp/residence-captures/nrg-bi/RUN_ID
 ```
 
@@ -100,19 +111,22 @@ Optional environment variables are `LIVE_SYNC_CAPTURE_DIR`,
 `LIVE_SYNC_CDP_KAYAN_URL`, and `LIVE_SYNC_CDP_UYSOT_URL`. MBC, SUN, and NRG do
 not need CDP.
 
-Kayan, SUN, and Regnum deliberately require their public artwork-enrichment
-templates; the collector fails before capture if they are missing or malformed,
-so a standalone installation cannot silently erase plans/layouts during sync.
-Package these three files with the collector:
+Kayan, SUN, and all four MBC projects deliberately require their public
+artwork-enrichment templates; the collector fails before capture if one is
+missing or malformed, so a standalone installation cannot silently erase
+plans/layouts during sync. Package these six files with the collector:
 
 ```text
 /opt/residence-live-sync/templates/kayan-catalog.json
 /opt/residence-live-sync/templates/regnum-plaza-client.json
+/opt/residence-live-sync/templates/c1-catalog.json
+/opt/residence-live-sync/templates/soy-boyi-catalog.json
+/opt/residence-live-sync/templates/saadiyat-catalog.json
 /opt/residence-live-sync/templates/sun-client.json
 ```
 
-Their canonical repository sources are `website/data/kayan-catalog.json`,
-`website/data/regnum-plaza-client.json`, and `website/data/sun-client.json`.
+Their canonical repository sources are `website/data/kayan-catalog.json`, the
+four matching MBC files under `website/data`, and `website/data/sun-client.json`.
 Alternatively set `LIVE_SYNC_TEMPLATE_DIR` to a read-only directory containing
 those filenames, or preserve `website/data` below the collector working
 directory. These files contain public catalogue/artwork metadata; the packaging
@@ -129,5 +143,6 @@ cd backend
 go run ./cmd/import-catalogs -dry-run -data-dir /run/residence-sync/catalogs
 ```
 
-The verified combined run produced 15 files, 16 projects, 3,299 complete
-records, zero partial records, and zero duplicate identities.
+A combined run now produces exactly 18 catalog files for 19 projects. Record
+counts are intentionally validated against each capture's official declaration
+and the configured last-known-good baseline rather than frozen in this guide.

@@ -80,34 +80,55 @@ function recordResponse(records, { id, canonicalUrl, scope, result }) {
   }));
 }
 
-async function captureMbc(records) {
-  let total = null;
-  let lastPage = null;
-  for (let page = 1; page <= 100; page += 1) {
-    const form = new URLSearchParams({ project: '1', page: String(page) });
-    exactKeys(Object.fromEntries(form), ['page', 'project'], 'MBC request');
-    const result = await jsonResponse({
-      label: `MBC plans page ${page}`,
-      url: MBC_ENDPOINT,
-      method: 'POST',
-      headers: {
-        'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        'x-requested-with': 'XMLHttpRequest',
-      },
-      body: form.toString(),
-    });
-    const plans = assertObject(result.value?.plans, `MBC page ${page}.plans`);
-    if (!Array.isArray(plans.data)) throw new Error(`MBC page ${page}.plans.data is not an array`);
-    if (Number(plans.current_page) !== page) throw new Error(`MBC page ${page} current_page mismatch`);
-    if (!Number.isSafeInteger(Number(plans.total)) || Number(plans.total) <= 0) throw new Error(`MBC page ${page} total is invalid`);
-    if (!Number.isSafeInteger(Number(plans.last_page)) || Number(plans.last_page) <= 0) throw new Error(`MBC page ${page} last_page is invalid`);
-    total ??= Number(plans.total);
-    lastPage ??= Number(plans.last_page);
-    if (Number(plans.total) !== total || Number(plans.last_page) !== lastPage) throw new Error('MBC pagination declaration changed during capture');
-    recordResponse(records, { id: `mbc-plans-${page}`, canonicalUrl: MBC_ENDPOINT, scope: { endpoint: 'plans', page }, result });
-    if (page === lastPage) return;
+function mbcPlansBody(project, page) {
+  if (!Number.isSafeInteger(project?.id) || project.id <= 0 || typeof project.slug !== 'string' || !project.slug) {
+    throw new Error('MBC project definition is invalid');
   }
-  throw new Error('MBC pagination exceeded the safety limit');
+  if (!Number.isSafeInteger(page) || page <= 0) throw new Error(`MBC ${project.slug} page is invalid`);
+  const values = { project: String(project.id), type: 'residential', page: String(page) };
+  exactKeys(values, ['page', 'project', 'type'], `MBC ${project.slug} request`);
+  return new URLSearchParams(values);
+}
+
+async function captureMbc(provider, records) {
+  if (!Array.isArray(provider.projectDefinitions) || provider.projectDefinitions.length === 0) {
+    throw new Error('MBC provider has no project definitions');
+  }
+  for (const project of provider.projectDefinitions) {
+    let total = null;
+    let lastPage = null;
+    for (let page = 1; page <= 100; page += 1) {
+      const form = mbcPlansBody(project, page);
+      const result = await jsonResponse({
+        label: `MBC ${project.slug} residential plans page ${page}`,
+        url: MBC_ENDPOINT,
+        method: 'POST',
+        headers: {
+          'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'x-requested-with': 'XMLHttpRequest',
+        },
+        body: form.toString(),
+      });
+      const plans = assertObject(result.value?.plans, `MBC ${project.slug} page ${page}.plans`);
+      if (!Array.isArray(plans.data)) throw new Error(`MBC ${project.slug} page ${page}.plans.data is not an array`);
+      if (Number(plans.current_page) !== page) throw new Error(`MBC ${project.slug} page ${page} current_page mismatch`);
+      if (!Number.isSafeInteger(Number(plans.total)) || Number(plans.total) <= 0) throw new Error(`MBC ${project.slug} page ${page} total is invalid`);
+      if (!Number.isSafeInteger(Number(plans.last_page)) || Number(plans.last_page) <= 0) throw new Error(`MBC ${project.slug} page ${page} last_page is invalid`);
+      total ??= Number(plans.total);
+      lastPage ??= Number(plans.last_page);
+      if (Number(plans.total) !== total || Number(plans.last_page) !== lastPage) {
+        throw new Error(`MBC ${project.slug} pagination declaration changed during capture`);
+      }
+      recordResponse(records, {
+        id: `mbc-${project.slug}-plans-${page}`,
+        canonicalUrl: MBC_ENDPOINT,
+        scope: { projectSlug: project.slug, projectId: project.id, propertyType: 'residential', endpoint: 'plans', page },
+        result,
+      });
+      if (page === lastPage) break;
+      if (page === 100) throw new Error(`MBC ${project.slug} pagination exceeded the safety limit`);
+    }
+  }
 }
 
 function nrgPlacementBody(provider, project, pageNo) {
@@ -298,7 +319,7 @@ export async function captureFromDirectSource(provider) {
   const records = [];
   const errors = [];
   try {
-    if (provider.id === 'mbc') await captureMbc(records);
+    if (provider.id === 'mbc') await captureMbc(provider, records);
     else if (provider.id === 'nrg-bi') await captureNrgBi(provider, records);
     else if (provider.id === 'sun') await captureSun(records);
     else throw new Error(`${provider.id}: no direct-source adapter`);
@@ -328,6 +349,7 @@ export async function captureFromDirectSource(provider) {
 export const directSourceInternals = Object.freeze({
   exactKeys,
   assertExactUrl,
+  mbcPlansBody,
   nrgPlacementBody,
   nrgEstateBody,
   sunObjectsBody,

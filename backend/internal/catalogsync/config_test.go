@@ -106,7 +106,7 @@ func TestProductionExampleOwnsAllLiveProjects(t *testing.T) {
 	want := map[string][]string{
 		"human2human": {"sun"},
 		"kayan":       {"mirador", "ofiyat"},
-		"mbc":         {"regnum-plaza"},
+		"mbc":         {"c1", "regnum-plaza", "saadiyat", "soy-boyi"},
 		"nrg-bi": {
 			"4u", "bayterak", "botanika-saroyi", "flagman", "jomiy", "maftun-makon",
 			"meros", "sado", "voha", "yangibaxt", "zamon",

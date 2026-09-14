@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import sharp from 'sharp';
+import { opaqueMbcSourceKey, templateMbcSourceKey } from '../../scripts/live-sync/src/mbc-identity.mjs';
 
 const root = process.cwd();
 const rawPath = path.join(root, 'source', 'saadiyat', 'raw', 'plans-all-pages.json');
@@ -14,6 +15,17 @@ const rows = raw.pages.flatMap((page) => page.payload.plans.data);
 const units = rows.filter((unit) => unit.type === 'residential' && unit.status === 'AVAILABLE');
 const hash = (value) => createHash('sha256').update(value).digest('hex');
 const shortHash = (value) => hash(value).slice(0, 16);
+let retainedSourceKeyByCrmId = new Map();
+try {
+  const previousSnapshot = JSON.parse(await readFile(dataPath, 'utf8'));
+  retainedSourceKeyByCrmId = new Map((previousSnapshot.units ?? []).flatMap((unit) => {
+    const crmId = String(unit?.crmId ?? '').trim();
+    const sourceKey = templateMbcSourceKey('saadiyat', unit);
+    return crmId && sourceKey ? [[crmId, sourceKey]] : [];
+  }));
+} catch (error) {
+  if (error?.code !== 'ENOENT') throw error;
+}
 
 await mkdir(outDir, { recursive: true });
 const urls = [...new Set(units.map((unit) => unit.image))];
@@ -44,6 +56,7 @@ await Promise.all(Array.from({ length: 6 }, () => worker()));
 const normalizedUnits = units.map((unit, sourceOrder) => ({
   id: String(unit.id),
   crmId: String(unit.crm_id),
+  sourceKey: retainedSourceKeyByCrmId.get(String(unit.crm_id)) ?? opaqueMbcSourceKey('saadiyat', unit.crm_id),
   sourceOrder,
   number: String(unit.number),
   rooms: Number(unit.rooms),
@@ -62,7 +75,12 @@ const normalizedUnits = units.map((unit, sourceOrder) => ({
 
 const summaryValues = (key) => [...new Set(normalizedUnits.map((unit) => unit[key]))].sort((a, b) => String(a).localeCompare(String(b), undefined, { numeric: true }));
 const snapshot = {
-  project: { id: 18, slug: 'saadiyat', name: 'SAADIYAT', class: 'business' },
+  schemaVersion: 1,
+  source: 'https://mbc.uz/api/plans',
+  sourceLanding: 'https://mbc.uz/ru/project/saadiyat',
+  officialTotalAtCapture: normalizedUnits.length,
+  sourceCount: normalizedUnits.length,
+  project: { id: 18, slug: 'saadiyat', name: 'SAADIYAT', class: 'business', developerSlug: 'murad-buildings' },
   capturedAt: captureManifest.captureCompletedAt,
   serverDate: captureManifest.serverDates.finalResult,
   officialUntypedTotal: captureManifest.counts.plans.all,

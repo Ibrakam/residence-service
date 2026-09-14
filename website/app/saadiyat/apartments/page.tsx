@@ -11,10 +11,12 @@ const basePath = configuredBasePath ? `/${configuredBasePath.replace(/^\/+|\/+$/
 const origin = 'https://form.tencorp.uz';
 const languageOf = (value?: string): Language => value === 'uz' || value === 'en' ? value : 'ru';
 const canonical = (language: Language) => `${basePath}/saadiyat/apartments?lang=${language}`;
+const projectCanonical = (language: Language) => `${basePath}/saadiyat?lang=${language}`;
+const languageTag = (language: Language) => language === 'ru' ? 'ru-RU' : language === 'uz' ? 'uz-UZ' : 'en';
 const copy = {
-  ru: { title: 'Квартиры Saadiyat — 159 доступных планировок', description: 'Актуальный каталог 159 доступных жилых позиций Saadiyat: комнаты, площадь, этаж, секция и очередь. Цены — по запросу.', apartment: 'Квартира', list: 'Доступные квартиры Saadiyat' },
-  uz: { title: 'Saadiyat xonadonlari — 159 ta mavjud reja', description: 'Saadiyatning 159 ta mavjud turar joy pozitsiyasi: xonalar, maydon, qavat, seksiya va bosqich. Narxlar — so‘rov bo‘yicha.', apartment: 'Xonadon', list: 'Saadiyat mavjud xonadonlari' },
-  en: { title: 'Saadiyat apartments — 159 available layouts', description: 'Current catalogue of 159 available Saadiyat residential entries: rooms, area, floor, section and phase. Prices on request.', apartment: 'Apartment', list: 'Available Saadiyat apartments' },
+  ru: { title: 'Квартиры Saadiyat — актуальный каталог', description: 'Актуальные доступные квартиры Saadiyat: комнаты, площадь, этаж, секция и очередь. Данные обновляются автоматически, цены — по запросу.', home: 'Главная', list: 'Доступные квартиры Saadiyat' },
+  uz: { title: 'Saadiyat xonadonlari — dolzarb katalog', description: 'Saadiyatdagi mavjud xonadonlar: xonalar, maydon, qavat, seksiya va bosqich. Ma’lumotlar avtomatik yangilanadi, narxlar — so‘rov bo‘yicha.', home: 'Bosh sahifa', list: 'Saadiyat mavjud xonadonlari' },
+  en: { title: 'Saadiyat apartments — current catalogue', description: 'Available Saadiyat apartments by rooms, area, floor, section and phase. Data updates automatically; prices are available on request.', home: 'Home', list: 'Available Saadiyat apartments' },
 } as const;
 
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
@@ -24,7 +26,37 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 
 export default async function Page({ searchParams }: PageProps) {
   const language = languageOf((await searchParams)?.lang); const current = copy[language]; const url = `${origin}${canonical(language)}`;
-  if (catalog.units.some((unit) => unit.status !== 'AVAILABLE' || unit.priceVisible || !unit.plan.startsWith('/saadiyat/plans/'))) throw new Error('Saadiyat public snapshot failed the AVAILABLE/local-media/hidden-price contract.');
-  const structuredData = { '@context': 'https://schema.org', '@type': 'ItemList', name: current.list, url, numberOfItems: catalog.units.length, dateModified: catalog.capturedAt, itemListElement: catalog.units.map((unit, index) => ({ '@type': 'ListItem', position: index + 1, item: { '@type': 'Apartment', identifier: unit.id, name: `${current.apartment} №${unit.number}`, image: `${origin}${basePath}${unit.plan}`, ...(unit.rooms > 0 ? { numberOfRooms: unit.rooms } : {}), floorLevel: unit.floor, floorSize: { '@type': 'QuantitativeValue', value: unit.area, unitCode: 'MTK' }, containedInPlace: { '@type': 'ApartmentComplex', name: 'Saadiyat' }, additionalProperty: [{ '@type': 'PropertyValue', name: 'Section', value: unit.section }, { '@type': 'PropertyValue', name: 'Phase', value: unit.phase }, { '@type': 'PropertyValue', name: 'Status', value: unit.status }] } })) };
-  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, '\\u003c') }} /><SaadiyatCatalog snapshot={publicClientPayload(catalog)} initialLanguage={language} /></>;
+  const projectUrl = `${origin}${projectCanonical(language)}`;
+  if (catalog.units.some((unit) => unit.status !== 'AVAILABLE' || unit.priceVisible || !unit.plan.startsWith('/saadiyat/plans/'))) throw new Error('Saadiyat catalogue failed the AVAILABLE/local-media/hidden-price contract.');
+  // The client replaces this embedded fallback with the live API response. Do
+  // not describe fallback units as current inventory in server-rendered JSON-LD.
+  const structuredData = { '@context': 'https://schema.org', '@graph': [
+    { '@type': 'CollectionPage', '@id': `${url}#catalogue`, name: current.list, description: current.description, inLanguage: languageTag(language), url, about: { '@id': `${projectUrl}#project` } },
+    { '@type': 'ApartmentComplex', '@id': `${projectUrl}#project`, name: 'Saadiyat', url: projectUrl },
+    { '@type': 'BreadcrumbList', '@id': `${url}#breadcrumbs`, itemListElement: [{ '@type': 'ListItem', position: 1, name: current.home, item: `${origin}${basePath}/` }, { '@type': 'ListItem', position: 2, name: 'Saadiyat', item: projectUrl }, { '@type': 'ListItem', position: 3, name: current.list, item: url }] },
+  ] };
+  const safeCatalog = {
+    capturedAt: catalog.capturedAt,
+    serverDate: catalog.serverDate,
+    officialUntypedTotal: catalog.officialUntypedTotal,
+    excludedCommercial: catalog.excludedCommercial,
+    availableResidentialTotal: catalog.availableResidentialTotal,
+    filters: catalog.filters,
+    units: catalog.units.map((unit) => ({
+      id: unit.id,
+      sourceOrder: unit.sourceOrder,
+      number: unit.number,
+      rooms: unit.rooms,
+      area: unit.area,
+      floor: unit.floor,
+      section: unit.section,
+      phase: unit.phase,
+      completionYear: unit.completionYear,
+      status: unit.status,
+      priceVisible: unit.priceVisible,
+      plan: unit.plan,
+      sourceUpdatedAt: unit.sourceUpdatedAt,
+    })),
+  };
+  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, '\\u003c') }} /><SaadiyatCatalog snapshot={publicClientPayload(safeCatalog)} initialLanguage={language} /></>;
 }

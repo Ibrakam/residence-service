@@ -38,6 +38,7 @@ export type LiveCatalogUnit = {
   pricePerM2?: number;
   currency: string;
   planImageUrl?: string;
+  completion?: string;
   isActive: boolean;
   sourceUpdatedAt: string;
   updatedAt: string;
@@ -90,7 +91,19 @@ const refreshIntervalMs = 60_000;
 const requestTimeoutMs = 15_000;
 const cachedPayloadMaxAgeMs = 7 * 24 * 60 * 60 * 1_000;
 const cacheVersion = 1;
-const availableOnlyCatalogues = new Set(['4u', 'flagman', 'maftun-makon', 'regnum-plaza', 'sado', 'sun', 'voha']);
+const availableOnlyCatalogues = new Set([
+  '4u',
+  'c1',
+  'flagman',
+  'maftun-makon',
+  'regnum-plaza',
+  'saadiyat',
+  'sado',
+  'soy-boyi',
+  'sun',
+  'voha',
+]);
+const mbcCatalogues = new Set(['c1', 'regnum-plaza', 'saadiyat', 'soy-boyi']);
 
 function cacheKey(projectSlug: string) {
   return `tencorp:live-catalog:v${cacheVersion}:${projectSlug}`;
@@ -115,6 +128,8 @@ function isLiveUnit(value: unknown, projectSlug: string): value is LiveCatalogUn
     && Number.isFinite(value.area)
     && typeof value.sourceUpdatedAt === 'string'
     && Number.isFinite(Date.parse(value.sourceUpdatedAt))
+    && (value.completion === undefined
+      || (typeof value.completion === 'string' && value.completion.trim().length > 0 && value.completion.length <= 64))
     && typeof value.status === 'string'
     && ['available', 'reserved', 'sold', 'unavailable'].includes(value.status);
 }
@@ -453,18 +468,27 @@ function adaptUnit(
   assignIfPresent(result, 'snapshotCampaignPrice', null);
   assignIfPresent(result, 'campaignActive', false);
   assignIfPresent(result, 'promotion', null);
+
+  if (mbcCatalogues.has(projectSlug)) {
+    const completion = live.completion?.trim() ?? '';
+    assignIfPresent(result, 'completion', completion || (projectSlug === 'soy-boyi' ? null : ''));
+    assignIfPresent(result, 'completionYear', completion);
+  }
   assignIfPresent(result, 'maxFloor', maxFloor);
   assignIfPresent(result, 'totalFloors', maxFloor);
   assignIfPresent(result, 'sourceOrder', index);
 
   const phaseName = live.phaseName || live.phaseSlug;
-  assignIfPresent(result, 'phase', phaseName);
+  const queue = Number(live.phaseSlug.match(/q(\d+)/i)?.[1] ?? live.phaseName.match(/q(\d+)/i)?.[1]);
+  const displayPhase = mbcCatalogues.has(projectSlug) && Number.isFinite(queue)
+    ? String(queue)
+    : phaseName;
+  assignIfPresent(result, 'phase', displayPhase);
   assignIfPresent(result, 'building', phaseName);
   assignIfPresent(result, 'buildingDisplay', phaseName);
   assignIfPresent(result, 'buildingId', live.phaseSlug);
   assignIfPresent(result, 'block', phaseName);
   assignIfPresent(result, 'blockName', phaseName);
-  const queue = Number(live.phaseSlug.match(/\d+/)?.[0] ?? live.phaseName.match(/\d+/)?.[0]);
   if (Number.isFinite(queue)) assignIfPresent(result, 'queue', queue);
 
   const planPath = publicPlanPath(live.planImageUrl);
@@ -492,6 +516,12 @@ function updateFilterMetadata(snapshot: Record<string, unknown>, units: Record<s
   const rooms = units.map((unit) => unit.rooms).filter((value): value is number => typeof value === 'number');
   const floors = units.map((unit) => unit.floor).filter((value): value is number => typeof value === 'number');
   const entrances = units.map((unit) => localEntrance(unit)).filter((value) => value !== '');
+  const phases = units
+    .map((unit) => unit.phase ?? unit.phaseName ?? unit.phaseSlug)
+    .filter((value): value is string | number => typeof value === 'string' || typeof value === 'number');
+  const completions = units
+    .map((unit) => unit.completion ?? unit.completionYear ?? unit.completionDate)
+    .filter((value): value is string | null => value === null || typeof value === 'string');
   const areas = units.map((unit) => unit.area);
   const prices = units.map((unit) => unit.price);
   const pricePerM2 = units.map((unit) => unit.pricePerM2 ?? unit.currentPricePerM2 ?? unit.sourcePricePerM2);
@@ -530,9 +560,13 @@ function updateFilterMetadata(snapshot: Record<string, unknown>, units: Record<s
 
   if (isRecord(snapshot.filters)) {
     const filters = { ...snapshot.filters };
+    if (Array.isArray(filters.rooms)) filters.rooms = [...new Set(rooms)].sort((a, b) => a - b);
     if (Array.isArray(filters.roomCounts)) filters.roomCounts = summary(rooms);
     if (Array.isArray(filters.floors)) filters.floors = [...new Set(floors)].sort((a, b) => a - b);
     if (Array.isArray(filters.entrances)) filters.entrances = [...new Set(entrances)].sort();
+    if (Array.isArray(filters.sections)) filters.sections = [...new Set(entrances)].sort((a, b) => String(a).localeCompare(String(b), undefined, { numeric: true }));
+    if (Array.isArray(filters.phases)) filters.phases = [...new Set(phases)].sort((a, b) => String(a).localeCompare(String(b), undefined, { numeric: true }));
+    if (Array.isArray(filters.completions)) filters.completions = [...new Set(completions)];
     if (Array.isArray(filters.statuses)) filters.statuses = summary(units.map((unit) => unit.statusOriginal ?? unit.rawStatus ?? unit.status)).map(({ value, count }) => ({ status: value, count }));
     if (isRecord(filters.area)) filters.area = numericRange(areas);
     if (isRecord(filters.campaignPrice)) filters.campaignPrice = numericRange(prices);
@@ -575,13 +609,30 @@ function mergeSnapshot<T extends { units: readonly object[] }>(projectSlug: stri
   const next = { ...embedded, units } as T;
   const mutable = next as unknown as Record<string, unknown>;
   const freshness = payload.project.updatedAt || payload.units[0]?.sourceUpdatedAt || payload.refreshedAt;
-  for (const key of ['capturedAt', 'capturedAtUzt', 'generatedAt', 'dbUpdatedAt']) {
+  for (const key of ['capturedAt', 'capturedAtUzt', 'generatedAt', 'dbUpdatedAt', 'serverDate']) {
     if (key in mutable) mutable[key] = freshness;
   }
   for (const key of ['officialTotalAtCapture', 'sourceCount']) {
     if (key in mutable) mutable[key] = payload.project.totalUnits;
   }
-  if ('offerCount' in mutable) mutable.offerCount = payload.project.availableUnits;
+  for (const key of ['offerCount', 'availableResidentialTotal', 'availableTotal']) {
+    if (key in mutable) mutable[key] = payload.project.availableUnits;
+  }
+  if ('planCount' in mutable) {
+    mutable.planCount = (units as Record<string, unknown>[]).filter((unit) => {
+      const plan = unit.plan ?? unit.planImageUrl ?? unit.planUrl ?? unit.planPublicPath;
+      return typeof plan === 'string' && plan.length > 0;
+    }).length;
+  }
+  if ('missingPlanCount' in mutable && typeof mutable.planCount === 'number') {
+    mutable.missingPlanCount = Math.max(0, units.length - mutable.planCount);
+  }
+  if (isRecord(mutable.counts) && isRecord(mutable.counts.rooms)) {
+    mutable.counts = {
+      ...mutable.counts,
+      rooms: Object.fromEntries(countBy((units as Record<string, unknown>[]).map((unit) => unit.rooms)).entries()),
+    };
+  }
   updateFilterMetadata(mutable, units as Record<string, unknown>[]);
   return next;
 }

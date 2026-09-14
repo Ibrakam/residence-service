@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { realpathSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
-import { basename, resolve } from 'node:path';
+import { basename, dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { atomicRunDirectory, atomicWriteFile, jsonBody } from './atomic.mjs';
 import { captureFiles, captureFromAuthorizedTab } from './capture.mjs';
@@ -11,12 +11,13 @@ import {
   loadLegacyProviderInput,
   normalizeKayanSnapshots,
   normalizeKayanPropertyResponses,
+  normalizeMbcProjects,
   normalizeNrgBiCapture,
   normalizeRegnumPages,
   normalizeSunPages,
   normalizeUysotTable,
 } from './normalize.mjs';
-import { getProvider, providerStatus } from './providers.mjs';
+import { getProvider, mbcProjects, providerStatus } from './providers.mjs';
 
 const repositoryRoot = resolve(fileURLToPath(new URL('../../..', import.meta.url)));
 const packageRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -59,14 +60,29 @@ function providerAlias(value) {
   return value;
 }
 
-function validateTemplate(providerId, template, path) {
+function validateTemplate(providerId, template, path, project = null) {
   if (providerId === 'kayan') {
     const projects = Array.isArray(template?.projects) ? template.projects : [];
     const slugs = new Set(projects.map((item) => item?.project?.slug));
     const layouts = projects.reduce((sum, item) => sum + (Array.isArray(item?.layouts) ? item.layouts.length : 0), 0);
     if (!slugs.has('mirador') || !slugs.has('ofiyat') || layouts === 0) throw new Error(`KAYAN enrichment template is incomplete: ${path}`);
   } else if (providerId === 'mbc') {
-    if (!Array.isArray(template?.units) || !template.units.some((unit) => typeof unit?.planPublicPath === 'string')) throw new Error(`MBC enrichment template has no plans: ${path}`);
+    const units = Array.isArray(template?.units) ? template.units : [];
+    const observedSlug = template?.projectSlug ?? template?.project?.slug;
+    if (project && observedSlug !== project.slug) throw new Error(`MBC ${project.slug} enrichment template has unexpected project ${JSON.stringify(observedSlug)}: ${path}`);
+    const ids = new Set();
+    const crmIds = new Set();
+    for (const unit of units) {
+      const id = String(unit?.id ?? '').trim();
+      if (!id || ids.has(id)) throw new Error(`MBC ${project?.slug ?? ''} enrichment template has invalid or duplicate unit IDs: ${path}`);
+      ids.add(id);
+      const crmId = String(unit?.crmId ?? unit?.sourceId ?? '').trim();
+      if (crmId && crmIds.has(crmId)) throw new Error(`MBC ${project?.slug ?? ''} enrichment template has a duplicate CRM ID: ${path}`);
+      if (crmId) crmIds.add(crmId);
+    }
+    const hasLocalPlan = units.some((unit) => ['planImageUrl', 'plan', 'planPublicPath', 'primaryPlanPath']
+      .some((key) => typeof unit?.[key] === 'string' && unit[key].startsWith(`/${project.slug}/`) && !unit[key].startsWith('//')));
+    if (!units.length || !hasLocalPlan) throw new Error(`MBC ${project?.slug ?? ''} enrichment template has no local plans: ${path}`);
   } else if (providerId === 'sun') {
     if (!Array.isArray(template?.units) || !template.units.some((unit) => typeof unit?.primaryPlanPath === 'string')) throw new Error(`SUN enrichment template has no plans: ${path}`);
   }
@@ -76,9 +92,36 @@ function validateTemplate(providerId, template, path) {
 export async function loadTemplate(providerId, explicitPath) {
   const defaults = {
     kayan: 'website/data/kayan-catalog.json',
-    mbc: 'website/data/regnum-plaza-client.json',
     sun: 'website/data/sun-client.json',
   };
+  if (providerId === 'mbc') {
+    const templates = {};
+    for (const project of mbcProjects) {
+      const filename = project.templateFile;
+      const explicitCandidate = explicitPath
+        ? (basename(explicitPath).endsWith('.json') ? resolve(dirname(explicitPath), filename) : resolve(explicitPath, filename))
+        : null;
+      const candidates = explicitCandidate ? [explicitCandidate] : [
+        ...(process.env.LIVE_SYNC_TEMPLATE_DIR ? [resolve(process.env.LIVE_SYNC_TEMPLATE_DIR, filename)] : []),
+        resolve(packageRoot, 'templates', filename),
+        resolve(process.cwd(), 'website/data', filename),
+        resolve(repositoryRoot, 'website/data', filename),
+      ];
+      let found = false;
+      for (const path of [...new Set(candidates)]) {
+        try {
+          templates[project.slug] = validateTemplate(providerId, JSON.parse(await readFile(path, 'utf8')), path, project);
+          found = true;
+          break;
+        } catch (error) {
+          if (error?.code === 'ENOENT' && !explicitPath) continue;
+          throw error;
+        }
+      }
+      if (!found) throw new Error(`mbc: required public enrichment template ${filename} is missing; set LIVE_SYNC_TEMPLATE_DIR or install it under ${packageRoot}/templates`);
+    }
+    return templates;
+  }
   const relative = defaults[providerId];
   if (!relative) return null;
   const filename = basename(relative);
@@ -101,7 +144,13 @@ export async function loadTemplate(providerId, explicitPath) {
 
 function normalize(providerId, input, capturedAt, template, legacy = false) {
   if (providerId === 'uysot') return normalizeUysotTable(input, capturedAt);
-  if (providerId === 'mbc') return normalizeRegnumPages(input, capturedAt, template);
+  if (providerId === 'mbc') {
+    if (legacy) {
+      const result = normalizeRegnumPages(input, capturedAt, template?.['regnum-plaza'] ?? null);
+      return { artifacts: [{ filename: 'regnum-plaza-catalog.json', artifact: result.artifact }], audit: { 'regnum-plaza': result.audit } };
+    }
+    return normalizeMbcProjects(input, capturedAt, template);
+  }
   if (providerId === 'sun') return normalizeSunPages(input, capturedAt, template);
   if (providerId === 'kayan') return legacy ? normalizeKayanSnapshots(input, capturedAt, template) : normalizeKayanPropertyResponses(input, capturedAt, template);
   if (providerId === 'nrg-bi') return normalizeNrgBiCapture(input, capturedAt);
@@ -115,15 +164,27 @@ function inputFromCapture(providerId, capture) {
     return record.value;
   }
   if (providerId === 'mbc') {
-    const pages = capture.records
-      .filter((item) => item.url?.origin === 'https://mbc.uz' && item.url?.path === '/api/plans' && item.scope?.endpoint === 'plans')
-      .sort((left, right) => Number(left.scope.page) - Number(right.scope.page))
-      .map((item, index) => {
-        if (Number(item.scope.page) !== index + 1) throw new Error('MBC pagination scope is not contiguous');
-        return item.value;
-      });
-    if (!pages.length) throw new Error('MBC capture has no complete plans pages');
-    return pages;
+    const provider = getProvider(providerId);
+    const records = capture.records
+      .filter((item) => item.url?.origin === 'https://mbc.uz' && item.url?.path === '/api/plans' && item.scope?.endpoint === 'plans');
+    const expected = new Map(provider.projectDefinitions.map((project) => [project.slug, project]));
+    for (const record of records) {
+      const project = expected.get(record.scope?.projectSlug);
+      if (!project || Number(record.scope?.projectId) !== project.id || record.scope?.propertyType !== 'residential') {
+        throw new Error('MBC capture contains a plans response outside the exact residential project scope');
+      }
+    }
+    return provider.projectDefinitions.map((project) => {
+      const pages = records
+        .filter((item) => item.scope.projectSlug === project.slug)
+        .sort((left, right) => Number(left.scope.page) - Number(right.scope.page))
+        .map((item, index) => {
+          if (Number(item.scope.page) !== index + 1) throw new Error(`MBC ${project.slug} pagination scope is not contiguous`);
+          return item.value;
+        });
+      if (!pages.length) throw new Error(`MBC capture has no complete ${project.slug} plans pages`);
+      return { project, pages };
+    });
   }
   if (providerId === 'sun') {
     const pages = capture.records
@@ -164,14 +225,13 @@ function inputFromCapture(providerId, capture) {
 function artifactFilename(providerId) {
   return {
     uysot: 'avalon-units.json',
-    mbc: 'regnum-plaza-catalog.json',
     sun: 'sun-catalog.json',
     kayan: 'kayan-catalog.json',
   }[providerId];
 }
 
 function artifactEntries(providerId, result) {
-  if (providerId === 'nrg-bi') return result.artifacts;
+  if (providerId === 'mbc' || providerId === 'nrg-bi') return result.artifacts;
   return [{ filename: artifactFilename(providerId), artifact: result.artifact }];
 }
 

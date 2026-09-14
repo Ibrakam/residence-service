@@ -57,6 +57,7 @@ type Unit struct {
 	PricePerM2      *float64  `json:"pricePerM2,omitempty"`
 	Currency        string    `json:"currency"`
 	PlanImageURL    string    `json:"planImageUrl,omitempty"`
+	Completion      *string   `json:"completion,omitempty"`
 	IsActive        bool      `json:"isActive"`
 	SourceUpdatedAt time.Time `json:"sourceUpdatedAt"`
 	UpdatedAt       time.Time `json:"updatedAt"`

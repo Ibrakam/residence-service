@@ -644,6 +644,20 @@ const legacyProjects: Record<
     phoneHref: "tel:+998781137712",
     phoneLabel: "+998 78 113 77 12",
   },
+  c1: {
+    name: "C1",
+    path: "/c1",
+    image: "/c1/images/hero.webp",
+    phoneHref: "tel:+998781137712",
+    phoneLabel: "+998 78 113 77 12",
+  },
+  saadiyat: {
+    name: "SAADIYAT",
+    path: "/saadiyat",
+    image: "/saadiyat/images/hero.webp",
+    phoneHref: "tel:+998781137712",
+    phoneLabel: "+998 78 113 77 12",
+  },
   "soy-boyi": {
     name: "SOY BO‘YI",
     path: "/soy-boyi",

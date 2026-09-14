@@ -17,3 +17,4 @@
 .c1c-card-detail__panel>.c1c-detail{position:static;width:100%;min-height:100%}
 @media(max-width:850px){.c1c-card-detail__panel{top:auto;right:0;bottom:0;left:0;width:100%;max-height:78svh}}
 @media(max-width:560px){.c1c-header>a img,.c1c-footer img{width:auto;height:46px;max-height:46px}}
+.c1c-detail__plan.is-missing{display:grid;place-items:center;cursor:default}.c1c-detail__plan.is-missing span{max-width:190px;color:rgba(1,38,30,.58);font-size:.63rem;font-weight:750;letter-spacing:.07em;text-align:center;text-transform:uppercase}

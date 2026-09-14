@@ -22,7 +22,10 @@
       "freshnessWindow": "30m",
       "maximumRecordDropPercent": 25,
       "projects": {
-        "regnum-plaza": {"minimumRecords": 8}
+        "c1": {"minimumRecords": 30},
+        "regnum-plaza": {"minimumRecords": 8},
+        "saadiyat": {"minimumRecords": 120},
+        "soy-boyi": {"minimumRecords": 150}
       }
     },
     {

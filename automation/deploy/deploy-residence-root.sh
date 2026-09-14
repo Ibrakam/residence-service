@@ -45,6 +45,7 @@ readonly -a DIRECT_PROJECTS=(
   4u
   bayterak
   botanika-saroyi
+  c1
   flagman
   jomiy
   maftun-makon
@@ -52,7 +53,9 @@ readonly -a DIRECT_PROJECTS=(
   mirador
   ofiyat
   regnum-plaza
+  saadiyat
   sado
+  soy-boyi
   sun
   voha
   yangibaxt

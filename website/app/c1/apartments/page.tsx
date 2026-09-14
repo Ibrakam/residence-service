@@ -10,10 +10,12 @@ const basePath = configuredBasePath ? `/${configuredBasePath.replace(/^\/+|\/+$/
 const origin = 'https://form.tencorp.uz';
 const languageOf = (value?: string): Language => value === 'uz' || value === 'en' ? value : 'ru';
 const canonical = (language: Language) => `${basePath}/c1/apartments?lang=${language}`;
+const projectCanonical = (language: Language) => `${basePath}/c1?lang=${language}`;
+const languageTag = (language: Language) => language === 'ru' ? 'ru-RU' : language === 'uz' ? 'uz-UZ' : 'en';
 const copy = {
-  ru: { title: 'Квартиры C1 — 42 доступные планировки', description: 'Свежий каталог 42 доступных квартир C1: 1–5 комнат, 30,41–242,32 м², этажи 5–30. Цены — по запросу.', apartment: 'Квартира', list: 'Доступные квартиры C1' },
-  uz: { title: 'C1 xonadonlari — 42 ta mavjud reja', description: 'C1 ning 42 ta mavjud xonadoni: 1–5 xona, 30,41–242,32 m², 5–30-qavatlar. Narxlar — so‘rov bo‘yicha.', apartment: 'Xonadon', list: 'C1 mavjud xonadonlari' },
-  en: { title: 'C1 apartments — 42 available layouts', description: 'Current catalogue of 42 available C1 apartments: 1–5 rooms, 30.41–242.32 m², floors 5–30. Prices on request.', apartment: 'Apartment', list: 'Available C1 apartments' },
+  ru: { title: 'Квартиры C1 — актуальные предложения', description: 'Автоматически обновляемый каталог доступных квартир C1. Цены и актуальные условия — по запросу.', home: 'Главная', list: 'Доступные квартиры C1' },
+  uz: { title: 'C1 xonadonlari — dolzarb takliflar', description: 'C1 mavjud xonadonlarining avtomatik yangilanadigan katalogi. Narxlar va amaldagi shartlar — so‘rov bo‘yicha.', home: 'Bosh sahifa', list: 'C1 mavjud xonadonlari' },
+  en: { title: 'C1 apartments — current availability', description: 'An automatically updated catalogue of available C1 apartments. Prices and current terms are available on request.', home: 'Home', list: 'Available C1 apartments' },
 } as const;
 
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
@@ -23,8 +25,16 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 
 export default async function Page({ searchParams }: PageProps) {
   const language = languageOf((await searchParams)?.lang); const current = copy[language]; const url = `${origin}${canonical(language)}`;
-  if (catalog.units.some((unit) => unit.status !== 'AVAILABLE' || unit.priceVisible || !unit.plan.startsWith('/c1/plans/'))) throw new Error('C1 snapshot failed the AVAILABLE/local-media/hidden-price contract.');
-  const clientSnapshot = { capturedAt: catalog.capturedAt, serverDate: catalog.serverDate, availableTotal: catalog.availableTotal, interactiveBuildingTotal: catalog.interactiveBuildingTotal, reconciliation: catalog.reconciliation, counts: catalog.counts, filters: catalog.filters, units: catalog.units.map((unit) => ({ id: unit.id, crmId: unit.crmId, sourceOrder: unit.sourceOrder, number: unit.number, rooms: unit.rooms, area: unit.area, floor: unit.floor, section: unit.section, phase: unit.phase, completionYear: unit.completionYear, status: unit.status, priceVisible: unit.priceVisible, plan: unit.plan, hasOfficialFloorPolygon: unit.hasOfficialFloorPolygon })) };
-  const structuredData = { '@context': 'https://schema.org', '@type': 'ItemList', name: current.list, url, numberOfItems: catalog.units.length, dateModified: catalog.capturedAt, itemListElement: catalog.units.map((unit, index) => ({ '@type': 'ListItem', position: index + 1, item: { '@type': 'Apartment', identifier: unit.id, name: `${current.apartment} №${unit.number}`, image: `${origin}${basePath}${unit.plan}`, numberOfRooms: unit.rooms, floorLevel: unit.floor, floorSize: { '@type': 'QuantitativeValue', value: unit.area, unitCode: 'MTK' }, containedInPlace: { '@type': 'ApartmentComplex', name: 'C1' }, additionalProperty: [{ '@type': 'PropertyValue', name: 'Section', value: unit.section }, { '@type': 'PropertyValue', name: 'Phase', value: unit.phase }, { '@type': 'PropertyValue', name: 'Status', value: unit.status }, { '@type': 'PropertyValue', name: 'Public price', value: 'On request' }] } })) };
+  const projectUrl = `${origin}${projectCanonical(language)}`;
+  if (catalog.units.some((unit) => unit.status !== 'AVAILABLE' || unit.priceVisible || !unit.plan.startsWith('/c1/plans/'))) throw new Error('C1 catalogue failed the AVAILABLE/local-media/hidden-price contract.');
+  const clientSnapshot = { capturedAt: catalog.capturedAt, serverDate: catalog.serverDate, availableTotal: catalog.availableTotal, interactiveBuildingTotal: catalog.interactiveBuildingTotal, reconciliation: catalog.reconciliation, counts: catalog.counts, filters: catalog.filters, units: catalog.units.map((unit) => ({ id: unit.id, sourceOrder: unit.sourceOrder, number: unit.number, rooms: unit.rooms, area: unit.area, floor: unit.floor, section: unit.section, phase: unit.phase, completionYear: unit.completionYear, status: unit.status, priceVisible: unit.priceVisible, plan: unit.plan, hasOfficialFloorPolygon: unit.hasOfficialFloorPolygon })) };
+  // Availability is hydrated from the live catalogue API. Keep server-rendered
+  // structured data limited to stable project/page facts so crawlers never see
+  // the embedded fallback inventory presented as the current live inventory.
+  const structuredData = { '@context': 'https://schema.org', '@graph': [
+    { '@type': 'CollectionPage', '@id': `${url}#catalogue`, name: current.list, description: current.description, inLanguage: languageTag(language), url, about: { '@id': `${projectUrl}#project` } },
+    { '@type': 'ApartmentComplex', '@id': `${projectUrl}#project`, name: 'C1', url: projectUrl },
+    { '@type': 'BreadcrumbList', '@id': `${url}#breadcrumbs`, itemListElement: [{ '@type': 'ListItem', position: 1, name: current.home, item: `${origin}${basePath}/` }, { '@type': 'ListItem', position: 2, name: 'C1', item: projectUrl }, { '@type': 'ListItem', position: 3, name: current.list, item: url }] },
+  ] };
   return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, '\\u003c') }} /><C1Catalog snapshot={clientSnapshot} initialLanguage={language} /></>;
 }

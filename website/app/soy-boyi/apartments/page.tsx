@@ -22,26 +22,23 @@ const copy = {
   ru: {
     title: "Квартиры Soy Bo‘yi — актуальный каталог",
     description:
-      "Актуальный официальный снимок доступных квартир Soy Bo‘yi: площади, этажи, секции, очереди и планировки. Цены — по запросу.",
+      "Актуальные доступные квартиры Soy Bo‘yi: площади, этажи, секции, очереди и планировки. Цены — по запросу.",
     list: "Квартиры Soy Bo‘yi",
-    room: (n: number) =>
-      n === 0 ? "Квартира, число комнат не указано" : `${n}-комнатная квартира`,
+    home: "Главная",
   },
   uz: {
     title: "Soy Bo‘yi xonadonlari — yangilangan katalog",
     description:
-      "Soy Bo‘yi mavjud xonadonlarining rasmiy snapshoti: maydon, qavat, seksiya, navbat va rejalar. Narxlar — so‘rov bo‘yicha.",
+      "Soy Bo‘yi mavjud xonadonlari: maydon, qavat, seksiya, navbat va rejalar. Narxlar — so‘rov bo‘yicha.",
     list: "Soy Bo‘yi xonadonlari",
-    room: (n: number) =>
-      n === 0 ? "Xonalar soni ko‘rsatilmagan xonadon" : `${n} xonali xonadon`,
+    home: "Bosh sahifa",
   },
   en: {
     title: "Soy Bo‘yi apartments — current catalogue",
     description:
-      "The current official snapshot of available Soy Bo‘yi apartments: areas, floors, sections, phases and plans. Prices are on request.",
+      "Currently available Soy Bo‘yi apartments: areas, floors, sections, phases and plans. Prices are on request.",
     list: "Soy Bo‘yi apartments",
-    room: (n: number) =>
-      n === 0 ? "Apartment with rooms not specified" : `${n}-room apartment`,
+    home: "Home",
   },
 } as const;
 
@@ -88,57 +85,18 @@ export default async function Page({ searchParams }: PageProps) {
   const current = copy[language];
   const url = `${siteOrigin}${canonical(language)}`;
   const projectUrl = `${siteOrigin}${local(`/soy-boyi?lang=${language}`)}`;
-  const itemList = {
-    "@type": "ItemList",
-    "@id": `${url}#catalogue`,
-    name: current.list,
-    inLanguage: language,
-    url,
-    numberOfItems: catalog.units.length,
-    dateModified: catalog.capturedAt,
-    itemListOrder: "https://schema.org/ItemListOrderAscending",
-    itemListElement: catalog.units.map((unit, index) => ({
-      "@type": "ListItem",
-      position: index + 1,
-      item: {
-        "@type": "Apartment",
-        identifier: unit.unitKey,
-        name: `${current.room(unit.rooms)} №${unit.number}`,
-        ...(unit.plan ? { image: `${siteOrigin}${local(unit.plan)}` } : {}),
-        floorSize: {
-          "@type": "QuantitativeValue",
-          value: unit.area,
-          unitCode: "MTK",
-        },
-        ...(unit.rooms > 0 ? { numberOfRooms: unit.rooms } : {}),
-        floorLevel: unit.floor,
-        containedInPlace: { "@id": `${projectUrl}#project` },
-        additionalProperty: [
-          { "@type": "PropertyValue", name: "Section", value: unit.section },
-          { "@type": "PropertyValue", name: "Phase", value: unit.phase },
-          {
-            "@type": "PropertyValue",
-            name: "Completion",
-            value: unit.completion ?? "not specified",
-          },
-          {
-            "@type": "PropertyValue",
-            name: "Availability",
-            value: "AVAILABLE",
-          },
-          {
-            "@type": "PropertyValue",
-            name: "Price visibility",
-            value: "on request",
-          },
-        ],
-      },
-    })),
-  };
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
-      itemList,
+      {
+        "@type": "CollectionPage",
+        "@id": `${url}#catalogue`,
+        name: current.list,
+        description: current.description,
+        inLanguage: language,
+        url,
+        about: { "@id": `${projectUrl}#project` },
+      },
       {
         "@type": "ApartmentComplex",
         "@id": `${projectUrl}#project`,
@@ -158,10 +116,16 @@ export default async function Page({ searchParams }: PageProps) {
           {
             "@type": "ListItem",
             position: 1,
+            name: current.home,
+            item: `${siteOrigin}${local("/")}`,
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
             name: "Soy Bo‘yi",
             item: projectUrl,
           },
-          { "@type": "ListItem", position: 2, name: current.list, item: url },
+          { "@type": "ListItem", position: 3, name: current.list, item: url },
         ],
       },
     ],

@@ -9,13 +9,18 @@ import {
   useRef,
   useState,
 } from "react";
-import { LeadModal } from "@/app/lead-modal";
+import { LeadModal, rememberLiveCatalogUnit } from "@/app/lead-modal";
+import {
+  catalogLeadIdentity,
+  useLiveCatalogSnapshot,
+} from "@/app/live-catalog";
 import { soyBoyiLeadSubmitUrl } from "../soy-boyi-lead";
 import { type SoyLanguage, useSoyDocumentLanguage } from "../soy-boyi-language";
 
 type Unit = {
   id: string;
   unitKey: string;
+  sourceKey?: string;
   sourceOrder: number;
   number: string;
   rooms: number;
@@ -90,12 +95,12 @@ const copy = {
     language: "Язык",
     skipResults: "Перейти к результатам квартир",
     title: "Квартиры у реки.",
-    subtitle: "Свежий официальный снимок доступности",
+    subtitle: "Актуальные квартиры в продаже",
     inventory: "жилых квартир",
-    commercial: "коммерческих помещений исключены",
-    plans: "квартир с планом из источника",
-    missing: "без плана в источнике",
-    updated: "Снимок",
+    commercial: "очереди",
+    plans: "квартир с планировкой",
+    missing: "без опубликованной планировки",
+    updated: "Обновлено",
     sourceStatus: "Доступна",
     price: "Цена",
     request: "По запросу",
@@ -116,7 +121,7 @@ const copy = {
     reset: "Сбросить",
     sort: "Сортировка",
     sorts: {
-      source: "По порядку источника",
+      source: "По умолчанию",
       areaAsc: "Площадь: меньше",
       areaDesc: "Площадь: больше",
       floorAsc: "Этаж: ниже",
@@ -129,7 +134,7 @@ const copy = {
     unit: "Квартира",
     openDetails: "Открыть детали",
     openPlan: "Открыть планировку",
-    planMissing: "Планировка не опубликована источником",
+    planMissing: "Планировка пока недоступна",
     showMore: "Показать ещё",
     shown: "Показано",
     of: "из",
@@ -144,13 +149,13 @@ const copy = {
     close: "Закрыть",
     ask: "Уточнить условия",
     planTitle: "Официальная планировка",
-    planNote: "Изображение сохранено локально из официального источника.",
+    planNote: "Актуальная планировка выбранной квартиры.",
     missingNote:
-      "Для этой квартиры API не публикует изображение. Мы не подменяем его похожей планировкой.",
+      "Для этой квартиры планировка пока недоступна. Менеджер поможет уточнить детали.",
     availability: "Статус",
-    captured: "Дата ответа сервера",
+    captured: "Обновлено",
     disclaimer:
-      "Цены не опубликованы источником. Доступность и условия подтверждает менеджер.",
+      "Цены уточняются по запросу. Доступность и условия подтверждает менеджер.",
     privacy: "Обработка данных",
     top: "Наверх",
   },
@@ -159,12 +164,12 @@ const copy = {
     language: "Til",
     skipResults: "Xonadonlar natijalariga o‘tish",
     title: "Daryo bo‘yidagi xonadonlar.",
-    subtitle: "Mavjudlikning yangi rasmiy snapshoti",
+    subtitle: "Sotuvdagi dolzarb xonadonlar",
     inventory: "turar joy",
-    commercial: "tijorat joyi chiqarildi",
-    plans: "manbadagi rejasi bor xonadon",
-    missing: "manbada rejasiz",
-    updated: "Snapshot",
+    commercial: "bosqich",
+    plans: "rejasi bor xonadon",
+    missing: "rejasi e’lon qilinmagan",
+    updated: "Yangilandi",
     sourceStatus: "Mavjud",
     price: "Narx",
     request: "So‘rov bo‘yicha",
@@ -185,7 +190,7 @@ const copy = {
     reset: "Tozalash",
     sort: "Saralash",
     sorts: {
-      source: "Manba tartibida",
+      source: "Standart tartibda",
       areaAsc: "Maydon: kichik",
       areaDesc: "Maydon: katta",
       floorAsc: "Qavat: past",
@@ -198,7 +203,7 @@ const copy = {
     unit: "Xonadon",
     openDetails: "Tafsilotlarni ochish",
     openPlan: "Rejani ochish",
-    planMissing: "Reja manbada e’lon qilinmagan",
+    planMissing: "Reja hozircha mavjud emas",
     showMore: "Yana ko‘rsatish",
     shown: "Ko‘rsatildi",
     of: "/",
@@ -213,13 +218,13 @@ const copy = {
     close: "Yopish",
     ask: "Shartlarni aniqlash",
     planTitle: "Rasmiy reja",
-    planNote: "Tasvir rasmiy manbadan mahalliy saqlandi.",
+    planNote: "Tanlangan xonadonning dolzarb rejasi.",
     missingNote:
-      "Bu xonadon uchun API tasvir bermaydi. Biz o‘xshash rejani uning o‘rniga qo‘ymaymiz.",
+      "Bu xonadonning rejasi hozircha mavjud emas. Menejer tafsilotlarni aniqlashga yordam beradi.",
     availability: "Holat",
-    captured: "Server javobi sanasi",
+    captured: "Yangilandi",
     disclaimer:
-      "Narxlar manbada e’lon qilinmagan. Mavjudlik va shartlarni menejer tasdiqlaydi.",
+      "Narxlar so‘rov bo‘yicha aniqlanadi. Mavjudlik va shartlarni menejer tasdiqlaydi.",
     privacy: "Ma’lumotlarni qayta ishlash",
     top: "Yuqoriga",
   },
@@ -228,12 +233,12 @@ const copy = {
     language: "Language",
     skipResults: "Skip to apartment results",
     title: "Apartments by the river.",
-    subtitle: "Latest official availability snapshot",
+    subtitle: "Currently available apartments",
     inventory: "residential apartments",
-    commercial: "commercial entries excluded",
-    plans: "apartments with source plans",
-    missing: "without a source plan",
-    updated: "Snapshot",
+    commercial: "phases",
+    plans: "apartments with a floor plan",
+    missing: "without a published floor plan",
+    updated: "Updated",
     sourceStatus: "Available",
     price: "Price",
     request: "On request",
@@ -254,7 +259,7 @@ const copy = {
     reset: "Reset",
     sort: "Sort",
     sorts: {
-      source: "Source order",
+      source: "Default order",
       areaAsc: "Area: smaller",
       areaDesc: "Area: larger",
       floorAsc: "Floor: lower",
@@ -267,7 +272,7 @@ const copy = {
     unit: "Apartment",
     openDetails: "Open details",
     openPlan: "Open plan",
-    planMissing: "Plan not published by the source",
+    planMissing: "Floor plan is not available yet",
     showMore: "Show more",
     shown: "Shown",
     of: "of",
@@ -282,13 +287,13 @@ const copy = {
     close: "Close",
     ask: "Ask about terms",
     planTitle: "Official apartment plan",
-    planNote: "The image is stored locally from the official source.",
+    planNote: "Current floor plan for the selected apartment.",
     missingNote:
-      "The API publishes no image for this apartment. We do not substitute a similar plan.",
+      "The floor plan is not available yet. A manager can help clarify the details.",
     availability: "Status",
-    captured: "Server response date",
+    captured: "Updated",
     disclaimer:
-      "The source does not publish prices. A manager confirms availability and terms.",
+      "Prices are available on request. A manager confirms availability and terms.",
     privacy: "Data processing",
     top: "Back to top",
   },
@@ -601,7 +606,7 @@ function MatrixGroup({
 }
 
 export function SoyBoyiCatalog({
-  snapshot,
+  snapshot: embeddedSnapshot,
   initialLanguage,
 }: {
   snapshot: Snapshot;
@@ -610,6 +615,7 @@ export function SoyBoyiCatalog({
   const searchParams = useSearchParams();
   const language = languageOf(searchParams.get("lang"), initialLanguage);
   const t = copy[language];
+  const { data: snapshot } = useLiveCatalogSnapshot("soy-boyi", embeddedSnapshot);
   useSoyDocumentLanguage(language);
   const [mode, setMode] = useState<Mode>("cards");
   const [sort, setSort] = useState<Sort>("source");
@@ -726,8 +732,12 @@ export function SoyBoyiCatalog({
     opener: HTMLElement | null,
   ) => {
     setModal(null);
+    if (unit) {
+      rememberLiveCatalogUnit(unit, "soy-boyi");
+    }
     setLead({ unit, surface, opener });
   };
+  const leadIdentity = catalogLeadIdentity(lead?.unit);
   const modeKey = (
     event: ReactKeyboardEvent<HTMLButtonElement>,
     index: number,
@@ -793,7 +803,7 @@ export function SoyBoyiCatalog({
                 {t.missing}
               </span>
               <span>
-                <strong>{snapshot.excludedCommercial}</strong>
+                <strong>{snapshot.filters.phases.length}</strong>
                 {t.commercial}
               </span>
             </div>
@@ -1195,7 +1205,7 @@ export function SoyBoyiCatalog({
         <LeadModal
           open
           language={language}
-          context={`projectSlug=soy-boyi;surface=catalog:${lead.surface};lang=${language};${lead.unit ? `unitId=${lead.unit.id};unitKey=${lead.unit.unitKey};number=${lead.unit.number};rooms=${lead.unit.rooms};area=${lead.unit.area};floor=${lead.unit.floor};section=${lead.unit.section};phase=${lead.unit.phase};completion=${lead.unit.completion ?? "unspecified"};price=request-only` : "unit=general"}`}
+          context={`projectSlug=soy-boyi;surface=catalog:${lead.surface};lang=${language};${lead.unit ? `${leadIdentity.unitKey ? `unitKey=${leadIdentity.unitKey};` : ""}number=${lead.unit.number};rooms=${lead.unit.rooms};area=${lead.unit.area};floor=${lead.unit.floor};section=${lead.unit.section};phase=${lead.unit.phase};completion=${lead.unit.completion ?? "unspecified"};price=request-only` : "unit=general"}`}
           brandName="TENCORP"
           projectName="SOY BO‘YI"
           tagline={
@@ -1218,8 +1228,7 @@ export function SoyBoyiCatalog({
           }
           submitUrl={soyBoyiLeadSubmitUrl()}
           projectSlug="soy-boyi"
-          unitId={lead.unit?.id}
-          unitKey={lead.unit?.unitKey}
+          {...leadIdentity}
           privacyUrl={href("/privacy", language, {
             project: "soy-boyi",
             from: "catalog",

@@ -8,10 +8,11 @@ import { fileURLToPath } from 'node:url';
 import { assertLoopbackCdp, matchAllowedUrl, safeUrlMetadata } from '../src/allowlist.mjs';
 import { atomicRunDirectory, atomicWriteFile, pruneRunDirectories } from '../src/atomic.mjs';
 import { classifyRequest, parseUysotReadOnlyBody } from '../src/capture.mjs';
-import { directSourceInternals } from '../src/direct.mjs';
+import { captureFromDirectSource, directSourceInternals } from '../src/direct.mjs';
 import { loadTemplate } from '../src/cli.mjs';
-import { normalizeNrgBiCapture, normalizeRegnumPages, normalizeSunPages, normalizeUysotTable } from '../src/normalize.mjs';
-import { getProvider } from '../src/providers.mjs';
+import { opaqueMbcSourceKey, templateMbcSourceKey } from '../src/mbc-identity.mjs';
+import { normalizeMbcProjects, normalizeNrgBiCapture, normalizeRegnumPages, normalizeSunPages, normalizeUysotTable } from '../src/normalize.mjs';
+import { getProvider, mbcProjects } from '../src/providers.mjs';
 import { containsObviousSecret, sanitizeValue } from '../src/redact.mjs';
 
 test('CLI executes when the installed package is reached through a release symlink', async (t) => {
@@ -69,6 +70,15 @@ test('redaction removes personal/capability fields and secret scan is repeatable
 });
 
 test('direct-source bodies use exact read-only scopes', () => {
+  assert.deepEqual(mbcProjects.map(({ id, slug }) => ({ id, slug })), [
+    { id: 1, slug: 'regnum-plaza' },
+    { id: 2, slug: 'c1' },
+    { id: 3, slug: 'soy-boyi' },
+    { id: 18, slug: 'saadiyat' },
+  ]);
+  assert.deepEqual(getProvider('mbc').outputFiles, ['regnum-plaza-catalog.json', 'c1-catalog.json', 'soy-boyi-catalog.json', 'saadiyat-catalog.json']);
+  const mbc = directSourceInternals.mbcPlansBody(mbcProjects[1], 2);
+  assert.deepEqual(Object.fromEntries(mbc), { project: '2', type: 'residential', page: '2' });
   const provider = getProvider('nrg-bi');
   const project = provider.projectDefinitions[0];
   assert.deepEqual(Object.keys(directSourceInternals.nrgPlacementBody(provider, project, 1)).sort(), ['companyIds', 'filterTags', 'pageNo', 'pageSize', 'propertyTypes', 'realEstateUUIDs']);
@@ -87,6 +97,9 @@ test('publishable providers require complete public artwork templates', async ()
   const incomplete = join(root, 'kayan-catalog.json');
   await writeFile(incomplete, JSON.stringify({ projects: [] }));
   await assert.rejects(loadTemplate('kayan', incomplete), /enrichment template is incomplete/);
+  const mbc = await loadTemplate('mbc');
+  assert.deepEqual(Object.keys(mbc), mbcProjects.map((project) => project.slug));
+  for (const project of mbcProjects) assert.ok(mbc[project.slug].units.length > 0);
 });
 
 test('Uysot normalization requires and emits a complete 268-row universe', () => {
@@ -106,10 +119,159 @@ test('Uysot normalization requires and emits a complete 268-row universe', () =>
 });
 
 test('Regnum normalization enforces both public and CRM identities', () => {
-  const row = { id: 1, crm_id: 11, square: 50, floor: 2, rooms: 2, project_slug: 'regnum-plaza', status: 'AVAILABLE', queue: '1', section: '2', number: '12', end: '2026' };
+  const row = { id: 1, crm_id: 11, square: 50, floor: 2, rooms: 2, project_slug: 'regnum-plaza', type: 'residential', status: 'AVAILABLE', queue: '1', section: '2', number: '12', end: '2026', is_price: 0 };
   const result = normalizeRegnumPages([{ plans: { total: 1, current_page: 1, last_page: 1, data: [row] } }]);
   assert.equal(result.audit.uniqueCrmIds, 1);
   assert.equal(result.artifact.units[0].sourceId, '11');
+  assert.equal(result.artifact.units[0].sourceKey, opaqueMbcSourceKey('regnum-plaza', '11'));
+  assert.ok(!result.artifact.units[0].sourceKey.includes('11'));
+});
+
+test('MBC source keys retain compatible templates and hide new CRM ids deterministically', () => {
+  assert.equal(templateMbcSourceKey('c1', { sourceKey: 'c1:retained-safe-key', id: '74', phase: '1' }), 'c1:retained-safe-key');
+  assert.equal(templateMbcSourceKey('c1', { id: '74', phase: '1' }), 'catalog:c1:1:eb624dbe56eb6620ae62');
+  assert.equal(templateMbcSourceKey('regnum-plaza', { id: '12', queue: 3 }), 'catalog:regnum-plaza:queue-3:6b51d431df5d7f141cbe');
+
+  const first = opaqueMbcSourceKey('c1', '14858507');
+  assert.equal(first, opaqueMbcSourceKey('c1', '14858507'));
+  assert.notEqual(first, opaqueMbcSourceKey('saadiyat', '14858507'));
+  assert.match(first, /^mbc:c1:[a-f0-9]{24}$/);
+  assert.ok(!first.includes('14858507'));
+});
+
+function mbcRow(project, id, crmId = Number(id) + 10_000) {
+  return {
+    id,
+    crm_id: crmId,
+    square: 50,
+    floor: 2,
+    rooms: 2,
+    project_slug: project.slug,
+    type: 'residential',
+    status: 'AVAILABLE',
+    queue: '1',
+    section: '2',
+    number: String(id),
+    end: '2028',
+    is_price: 0,
+  };
+}
+
+function mbcGroups() {
+  return mbcProjects.map((project, projectIndex) => {
+    const first = mbcRow(project, projectIndex * 10 + 1);
+    if (projectIndex !== 0) return { project, pages: [{ plans: { total: 1, current_page: 1, last_page: 1, data: [first] } }] };
+    const second = mbcRow(project, projectIndex * 10 + 2);
+    return {
+      project,
+      pages: [
+        { plans: { total: 2, current_page: 1, last_page: 2, data: [first] } },
+        { plans: { total: 2, current_page: 2, last_page: 2, data: [second] } },
+      ],
+    };
+  });
+}
+
+test('MBC capture posts an exact residential request for every owned project', async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  const requests = [];
+  globalThis.fetch = async (url, options) => {
+    const body = Object.fromEntries(new URLSearchParams(options.body));
+    requests.push({ url, method: options.method, body });
+    const project = mbcProjects.find((candidate) => String(candidate.id) === body.project);
+    assert.ok(project);
+    return new Response(JSON.stringify({ plans: { total: 1, current_page: 1, last_page: 1, data: [mbcRow(project, project.id)] } }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  };
+  const capture = await captureFromDirectSource(getProvider('mbc'));
+  assert.deepEqual(capture.errors, []);
+  assert.deepEqual(requests.map((request) => request.body), mbcProjects.map((project) => ({ project: String(project.id), type: 'residential', page: '1' })));
+  assert.ok(requests.every((request) => request.url === 'https://mbc.uz/api/plans' && request.method === 'POST'));
+  assert.deepEqual(capture.records.map((record) => record.scope.projectSlug), mbcProjects.map((project) => project.slug));
+});
+
+test('MBC normalization publishes four complete owned artifacts and retains local plans', () => {
+  const planFields = ['planPublicPath', 'plan', 'plan', 'planImageUrl'];
+  const expectedPlanPaths = {};
+  const templates = Object.fromEntries(mbcProjects.map((project, index) => {
+    const id = String(index * 10 + 1);
+    const crmId = String(Number(id) + 10_000);
+    const phase = project.slug === 'saadiyat' ? '2' : '1';
+    const section = project.slug === 'saadiyat' ? 'A2' : '2';
+    const templatePublicId = project.slug === 'soy-boyi' ? 'stale-public-id' : id;
+    expectedPlanPaths[project.slug] = `/${project.slug}/plans/${id}.webp`;
+    return [project.slug, { units: [{
+      id: templatePublicId,
+      crmId,
+      number: id,
+      rooms: 2,
+      area: 50,
+      floor: 2,
+      phase,
+      section,
+      [planFields[index]]: expectedPlanPaths[project.slug],
+      ...(project.slug === 'soy-boyi' ? { sourceKey: 'soy-boyi:stale-public-id' } : {}),
+    }] }];
+  }));
+  const groups = mbcGroups();
+  groups.find((group) => group.project.slug === 'saadiyat').pages[0].plans.data[0] = {
+    ...groups.find((group) => group.project.slug === 'saadiyat').pages[0].plans.data[0],
+    queue: '2',
+    section: 'A2',
+  };
+  const result = normalizeMbcProjects(groups, '2026-09-14T12:00:00.000Z', templates);
+  assert.deepEqual(result.artifacts.map((entry) => entry.filename), mbcProjects.map((project) => `${project.slug}-catalog.json`));
+  assert.ok(Object.values(result.audit).every((audit) => audit.complete && audit.propertyType === 'residential'));
+  for (const [index, entry] of result.artifacts.entries()) {
+    const project = mbcProjects[index];
+    assert.equal(entry.artifact.projectSlug, project.slug);
+    assert.equal(entry.artifact.projectId, project.id);
+    assert.equal(entry.artifact.developerSlug, 'murad-buildings');
+    assert.equal(entry.artifact.sourceCount, entry.artifact.units.length);
+    assert.equal(entry.artifact.units[0].planImageUrl, expectedPlanPaths[project.slug]);
+    assert.equal(entry.artifact.units[0].publicPrice, false);
+    assert.equal(entry.artifact.units[0].price, undefined);
+  }
+  assert.equal(result.artifacts.find((entry) => entry.artifact.projectSlug === 'soy-boyi').artifact.units[0].sourceKey, 'soy-boyi:stale-public-id');
+  assert.equal(result.artifacts.find((entry) => entry.artifact.projectSlug === 'c1').artifact.units[0].sourceKey, 'catalog:c1:1:4fc82b26aecb47d2868c');
+  const unmatchedRegnum = result.artifacts.find((entry) => entry.artifact.projectSlug === 'regnum-plaza').artifact.units[1];
+  assert.equal(unmatchedRegnum.sourceKey, opaqueMbcSourceKey('regnum-plaza', unmatchedRegnum.sourceId));
+  assert.ok(!unmatchedRegnum.sourceKey.includes(unmatchedRegnum.sourceId));
+  assert.equal(result.artifacts.find((entry) => entry.artifact.projectSlug === 'regnum-plaza').artifact.units[0].phaseSlug, 'q1-s2');
+  assert.equal(result.artifacts.find((entry) => entry.artifact.projectSlug === 'saadiyat').artifact.units[0].phaseSlug, 'q2-sa2');
+  assert.equal(result.artifacts.find((entry) => entry.artifact.projectSlug === 'saadiyat').artifact.units[0].phaseName, 'Q2/A2');
+});
+
+test('MBC normalization fails closed on missing pages, duplicates, wrong type, or an incomplete project set', () => {
+  const incomplete = mbcGroups();
+  incomplete[0].pages.pop();
+  assert.throws(() => normalizeMbcProjects(incomplete), /captured 1 of 2 pages/);
+
+  const duplicate = mbcGroups();
+  duplicate[0].pages[1].plans.data[0].id = duplicate[0].pages[0].plans.data[0].id;
+  assert.throws(() => normalizeMbcProjects(duplicate), /duplicate id/);
+
+  const duplicateCrm = mbcGroups();
+  duplicateCrm[0].pages[1].plans.data[0].crm_id = duplicateCrm[0].pages[0].plans.data[0].crm_id;
+  assert.throws(() => normalizeMbcProjects(duplicateCrm), /duplicate CRM id/);
+
+  const wrongType = mbcGroups();
+  wrongType[1].pages[0].plans.data[0].type = 'commercial';
+  assert.throws(() => normalizeMbcProjects(wrongType), /is not residential/);
+
+  const exposedPrice = mbcGroups();
+  exposedPrice[1].pages[0].plans.data[0].is_price = 1;
+  assert.throws(() => normalizeMbcProjects(exposedPrice), /public-price policy changed/);
+
+  const unmatchedTemplates = Object.fromEntries(mbcProjects.map((project) => [project.slug, { units: [{
+    id: 'not-current', crmId: 'not-current', number: 'not-current', rooms: 9, area: 999, floor: 99, phase: '9', section: '9', plan: `/${project.slug}/plans/stale.webp`,
+  }] }]));
+  assert.throws(() => normalizeMbcProjects(mbcGroups(), undefined, unmatchedTemplates), /could not match any local plan/);
+
+  assert.throws(() => normalizeMbcProjects(mbcGroups().slice(0, 3)), /requires 4 project groups/);
 });
 
 function sunRow(id, number) {

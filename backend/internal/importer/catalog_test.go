@@ -149,9 +149,9 @@ func TestReadyWorkspaceCatalogCounts(t *testing.T) {
 	}
 	want := map[string]int{
 		"4u": 33, "avalon-residence": 268, "bayterak": 140, "botanika-saroyi": 224,
-		"flagman": 8, "jomiy": 121, "mirador": 199, "ofiyat": 585,
+		"c1": 42, "flagman": 8, "jomiy": 121, "mirador": 199, "ofiyat": 585,
 		"maftun-makon": 204, "meros": 256, "regnum-plaza": 12, "sado": 338,
-		"sun": 51, "voha": 104, "yangibaxt": 265, "zamon": 104,
+		"saadiyat": 159, "soy-boyi": 209, "sun": 51, "voha": 104, "yangibaxt": 265, "zamon": 104,
 	}
 	for _, item := range audit.Items {
 		expected, tracked := want[item.ProjectSlug]
@@ -178,11 +178,20 @@ func TestReadyWorkspaceCatalogCounts(t *testing.T) {
 			}
 		}
 	}
-	if audit.Files != 15 || audit.Projects != 16 || audit.Records != 2912 || audit.CompleteRecords != 2828 || audit.PartialRecords != 84 {
+	if audit.Files != 18 || audit.Projects != 19 || audit.Records != 3322 || audit.CompleteRecords != 3238 || audit.PartialRecords != 84 {
 		t.Fatalf("unexpected workspace totals: %#v", audit)
 	}
 	if audit.FloorSchemeArtifacts != 2 || audit.FloorSchemes != 34 || audit.FloorSchemeHotspots != 209 {
 		t.Fatalf("dry-run did not validate Mirador 34/209 plus the audited Ofiyat zero sidecar: %#v", audit)
+	}
+}
+
+func TestMBCProjectsUseMuradBuildingsOwnership(t *testing.T) {
+	for _, slug := range []string{"c1", "regnum-plaza", "saadiyat", "soy-boyi"} {
+		developerSlug, developerName := catalogDeveloper(slug, nil)
+		if developerSlug != "murad-buildings" || developerName != "Murad Buildings" {
+			t.Errorf("%s ownership=(%q, %q), want Murad Buildings", slug, developerSlug, developerName)
+		}
 	}
 }
 

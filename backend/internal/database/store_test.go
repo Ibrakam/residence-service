@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
@@ -28,6 +29,22 @@ type resolverFixtureQuery struct {
 type resolverFixtureRow struct {
 	values []any
 	err    error
+}
+
+type unitCompletionFixtureRow struct {
+	completion sql.NullString
+}
+
+func (row unitCompletionFixtureRow) Scan(dest ...any) error {
+	if len(dest) != 22 {
+		return fmt.Errorf("unit fixture scan destinations=%d, want 22", len(dest))
+	}
+	completion, ok := dest[18].(*sql.NullString)
+	if !ok {
+		return fmt.Errorf("unit fixture completion destination is %T", dest[18])
+	}
+	*completion = row.completion
+	return nil
 }
 
 func (row resolverFixtureRow) Scan(dest ...any) error {
@@ -130,6 +147,37 @@ func TestClassifyUnitCandidates(t *testing.T) {
 	}
 	if _, err := classifyUnitCandidates(nil, false); !errors.Is(err, ErrUnitNotFound) {
 		t.Fatalf("missing candidate error = %v", err)
+	}
+}
+
+func TestScanUnitCompletionIsOptional(t *testing.T) {
+	t.Run("source value", func(t *testing.T) {
+		unit, err := scanUnit(unitCompletionFixtureRow{completion: sql.NullString{String: "2028", Valid: true}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if unit.Completion == nil || *unit.Completion != "2028" {
+			t.Fatalf("completion=%v, want 2028", unit.Completion)
+		}
+	})
+
+	t.Run("missing source value", func(t *testing.T) {
+		unit, err := scanUnit(unitCompletionFixtureRow{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if unit.Completion != nil {
+			t.Fatalf("completion=%q, want nil", *unit.Completion)
+		}
+	})
+
+	for _, fragment := range []string{
+		"jsonb_typeof(u.source_payload->'completion') = 'string'",
+		"char_length(btrim(u.source_payload->>'completion')) BETWEEN 1 AND 64",
+	} {
+		if !strings.Contains(unitCompletionSelect, fragment) {
+			t.Fatalf("completion selector is missing %q", fragment)
+		}
 	}
 }
 

@@ -5,13 +5,18 @@ import Lenis from "lenis";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import mediaManifest from "@/data/soy-boyi-media-manifest.json";
-import { LeadModal } from "@/app/lead-modal";
+import { LeadModal, rememberLiveCatalogUnit } from "@/app/lead-modal";
+import {
+  catalogLeadIdentity,
+  useLiveCatalogUnits,
+} from "@/app/live-catalog";
 import { soyBoyiLeadSubmitUrl } from "./soy-boyi-lead";
 import { type SoyLanguage, useSoyDocumentLanguage } from "./soy-boyi-language";
 
 type Unit = {
   id: string;
   unitKey: string;
+  sourceKey?: string;
   number: string;
   rooms: number;
   area: number;
@@ -88,7 +93,7 @@ const copy = {
     genplanEyebrow: "Официальный генплан",
     genplanTitle: "Ориентир, а не полный каталог.",
     genplanText:
-      "Опубликованный генплан показывает часть секций. Полный выбор квартир ниже строится по актуальному официальному API и не ограничивается этим изображением.",
+      "Опубликованный генплан показывает часть секций. Полный выбор квартир ниже обновляется по актуальным данным и не ограничивается этим изображением.",
     amenitiesEyebrow: "Современная махалля",
     amenitiesTitle: "Места, где соседи становятся знакомыми.",
     amenitiesText:
@@ -122,7 +127,7 @@ const copy = {
     apartmentsEyebrow: "Актуальный выбор",
     apartmentsTitle: "Квартиры без догадок.",
     apartmentsText: (count: number) =>
-      `${count} жилых квартир доступны в свежем официальном снимке. Цены источник не публикует — условия уточняются по запросу.`,
+      `Сейчас доступны ${count} жилых квартир. Цены и условия уточняются по запросу.`,
     room: (n: number) => (n === 0 ? "Комнаты не указаны" : `${n}-комнатная`),
     floor: "этаж",
     section: "секция",
@@ -190,7 +195,7 @@ const copy = {
     genplanEyebrow: "Rasmiy bosh reja",
     genplanTitle: "Yo‘nalish, ammo to‘liq katalog emas.",
     genplanText:
-      "E’lon qilingan bosh reja seksiyalarning bir qismini ko‘rsatadi. Quyidagi to‘liq tanlov joriy rasmiy API asosida tuzilgan va bu tasvir bilan cheklanmaydi.",
+      "E’lon qilingan bosh reja seksiyalarning bir qismini ko‘rsatadi. Quyidagi to‘liq tanlov dolzarb ma’lumotlar asosida yangilanadi va bu tasvir bilan cheklanmaydi.",
     amenitiesEyebrow: "Zamonaviy mahalla",
     amenitiesTitle: "Qo‘shnilar tanishadigan joylar.",
     amenitiesText:
@@ -224,7 +229,7 @@ const copy = {
     apartmentsEyebrow: "Dolzarb tanlov",
     apartmentsTitle: "Taxminsiz xonadonlar.",
     apartmentsText: (count: number) =>
-      `Yangi rasmiy snapshotda ${count} ta turar joy mavjud. Manba narxlarni e’lon qilmaydi — shartlar so‘rov bo‘yicha aniqlanadi.`,
+      `Hozir ${count} ta turar joy mavjud. Narx va shartlar so‘rov bo‘yicha aniqlanadi.`,
     room: (n: number) => (n === 0 ? "Xonalar ko‘rsatilmagan" : `${n} xonali`),
     floor: "qavat",
     section: "seksiya",
@@ -288,7 +293,7 @@ const copy = {
     genplanEyebrow: "Official masterplan",
     genplanTitle: "A guide, not the full catalogue.",
     genplanText:
-      "The published masterplan covers only part of the current sections. The complete apartment selection below comes from the current official API and is not limited to this image.",
+      "The published masterplan covers only part of the current sections. The complete apartment selection below is kept up to date and is not limited to this image.",
     amenitiesEyebrow: "A contemporary mahalla",
     amenitiesTitle: "Places where neighbours become familiar.",
     amenitiesText:
@@ -322,7 +327,7 @@ const copy = {
     apartmentsEyebrow: "Current selection",
     apartmentsTitle: "Apartments without guesswork.",
     apartmentsText: (count: number) =>
-      `${count} residential apartments are available in the latest official snapshot. The source does not publish prices, so terms are available on request.`,
+      `${count} residential apartments are currently available. Prices and terms are available on request.`,
     room: (n: number) => (n === 0 ? "Rooms not specified" : `${n}-room`),
     floor: "floor",
     section: "section",
@@ -749,6 +754,13 @@ export function SoyBoyiPage({
   const searchParams = useSearchParams();
   const language = languageOf(searchParams.get("lang"), initialLanguage);
   const t = copy[language];
+  const liveCatalog = useLiveCatalogUnits("soy-boyi", previewUnits);
+  const currentPreviewUnits = useMemo(
+    () => liveCatalog.data.slice(0, 3),
+    [liveCatalog.data],
+  );
+  const currentAvailableCount =
+    liveCatalog.project?.availableUnits ?? availableCount;
   const [menu, setMenu] = useState<HTMLElement | null>(null);
   const [scrolled, setScrolled] = useState(false);
   const [lead, setLead] = useState<LeadState | null>(null);
@@ -817,8 +829,12 @@ export function SoyBoyiPage({
   const openLead = (surface: string, opener: HTMLElement, unit?: Unit) => {
     setGallery(null);
     setMenu(null);
+    if (unit) {
+      rememberLiveCatalogUnit(unit, "soy-boyi");
+    }
     setLead({ surface, unit, opener });
   };
+  const leadIdentity = catalogLeadIdentity(lead?.unit);
   const modalOpen = Boolean(gallery || lead);
   const backgroundBlocked = Boolean(modalOpen || menu);
   useEffect(() => {
@@ -1114,10 +1130,10 @@ export function SoyBoyiPage({
               <header data-soy-reveal>
                 <p className="soy-kicker">{t.apartmentsEyebrow}</p>
                 <h2>{t.apartmentsTitle}</h2>
-                <p>{t.apartmentsText(availableCount)}</p>
+                <p>{t.apartmentsText(currentAvailableCount)}</p>
               </header>
               <div className="soy-preview-grid">
-                {previewUnits.map((unit) => (
+                {currentPreviewUnits.map((unit) => (
                   <article key={unit.id} data-soy-reveal>
                     <div className="soy-preview-plan">
                       {unit.plan ? (
@@ -1171,7 +1187,7 @@ export function SoyBoyiPage({
                 href={href("/soy-boyi/apartments")}
               >
                 {t.fullCatalog}
-                <span>{availableCount}</span>
+                <span>{currentAvailableCount}</span>
                 <i>→</i>
               </a>
             </div>
@@ -1255,7 +1271,7 @@ export function SoyBoyiPage({
         <LeadModal
           open
           language={language}
-          context={`projectSlug=soy-boyi;surface=landing:${lead.surface};lang=${language};${lead.unit ? `unitId=${lead.unit.id};unitKey=${lead.unit.unitKey};number=${lead.unit.number};rooms=${lead.unit.rooms};area=${lead.unit.area};floor=${lead.unit.floor};section=${lead.unit.section};phase=${lead.unit.phase}` : "unit=general"}`}
+          context={`projectSlug=soy-boyi;surface=landing:${lead.surface};lang=${language};${lead.unit ? `${leadIdentity.unitKey ? `unitKey=${leadIdentity.unitKey};` : ""}number=${lead.unit.number};rooms=${lead.unit.rooms};area=${lead.unit.area};floor=${lead.unit.floor};section=${lead.unit.section};phase=${lead.unit.phase}` : "unit=general"}`}
           brandName="TENCORP"
           projectName="SOY BO‘YI"
           tagline={
@@ -1274,8 +1290,7 @@ export function SoyBoyiPage({
           }
           submitUrl={soyBoyiLeadSubmitUrl()}
           projectSlug="soy-boyi"
-          unitId={lead.unit?.id}
-          unitKey={lead.unit?.unitKey}
+          {...leadIdentity}
           privacyUrl={href("/privacy", language, {
             project: "soy-boyi",
             from: "landing",

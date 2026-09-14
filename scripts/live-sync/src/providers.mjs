@@ -28,6 +28,13 @@ export const nrgBiProjects = Object.freeze([
   Object.freeze({ slug: 'zamon', name: 'Zamon', realEstateUUID: '58e48f7d-dd1c-11ed-a82c-001dd8b726aa' }),
 ]);
 
+export const mbcProjects = Object.freeze([
+  Object.freeze({ id: 1, slug: 'regnum-plaza', name: 'REGNUM PLAZA', sourceLanding: 'https://mbc.uz/project/regnum-plaza', templateFile: 'regnum-plaza-client.json' }),
+  Object.freeze({ id: 2, slug: 'c1', name: 'C1', sourceLanding: 'https://mbc.uz/ru/project/c1', templateFile: 'c1-catalog.json' }),
+  Object.freeze({ id: 3, slug: 'soy-boyi', name: 'Soy Bo\u2018yi', sourceLanding: 'https://mbc.uz/ru/project/soy-boyi', templateFile: 'soy-boyi-catalog.json' }),
+  Object.freeze({ id: 18, slug: 'saadiyat', name: 'SAADIYAT', sourceLanding: 'https://mbc.uz/ru/project/saadiyat', templateFile: 'saadiyat-catalog.json' }),
+]);
+
 /**
  * Provider definitions are intentionally data-only. A provider marked `discovery`
  * may be captured, but it cannot emit a publishable catalogue until its current
@@ -104,7 +111,8 @@ export const providers = Object.freeze({
   mbc: Object.freeze({
     id: 'mbc',
     label: 'MBC Partners',
-    projects: Object.freeze(['regnum-plaza']),
+    projects: Object.freeze(mbcProjects.map((project) => project.slug)),
+    projectDefinitions: mbcProjects,
     maturity: 'normalize-ready',
     captureMode: 'public-read-post',
     profileHint: null,
@@ -117,7 +125,7 @@ export const providers = Object.freeze({
     ]),
     probes: Object.freeze([]),
     requiredProbeIds: Object.freeze([]),
-    outputFiles: Object.freeze(['regnum-plaza-catalog.json']),
+    outputFiles: Object.freeze(mbcProjects.map((project) => `${project.slug}-catalog.json`)),
   }),
 
   sun: Object.freeze({

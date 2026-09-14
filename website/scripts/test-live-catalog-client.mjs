@@ -20,11 +20,13 @@ const integrations = new Map([
   ['4u', ['app/4u/apartments/four-u-catalog.tsx', "useLiveCatalogSnapshot('4u'"]],
   ['bayterak', ['app/bayterak/apartments/bayterak-catalog.tsx', "useLiveCatalogSnapshot('bayterak'"]],
   ['botanika-saroyi', ['app/botanika-saroyi/apartments/botanika-catalog.tsx', "useLiveCatalogSnapshot('botanika-saroyi'"]],
+  ['c1', ['app/c1/apartments/c1-catalog.tsx', "useLiveCatalogSnapshot('c1'"]],
   ['flagman', ['app/flagman/apartments/flagman-catalog-page.tsx', "useLiveCatalogSnapshot('flagman'"]],
   ['jomiy', ['app/jomiy/apartments/jomiy-catalog.tsx', 'useLiveCatalogSnapshot("jomiy"']],
   ['maftun-makon', ['app/maftun-makon/apartments/maftun-makon-catalog.tsx', "useLiveCatalogSnapshot('maftun-makon'"]],
   ['regnum-plaza', ['app/regnum-plaza/apartments/regnum-catalog.tsx', "useLiveCatalogSnapshot('regnum-plaza'"]],
   ['sado', ['app/sado/apartments/sado-catalog-page.tsx', "useLiveCatalogUnits('sado'"]],
+  ['soy-boyi', ['app/soy-boyi/apartments/soy-boyi-catalog.tsx', 'useLiveCatalogSnapshot("soy-boyi"']],
   ['sun', ['app/sun/apartments/sun-catalog.tsx', "useLiveCatalogSnapshot('sun'"]],
   ['voha', ['app/voha/apartments/voha-catalog.tsx', "useLiveCatalogSnapshot('voha'"]],
   ['yangibaxt', ['app/yangibaxt/apartments/yangibaxt-catalog.tsx', 'useLiveCatalogSnapshot("yangibaxt"']],
@@ -44,12 +46,14 @@ const landingIntegrations = new Map([
   ['4u', ['app/4u/four-u-page.tsx', "useLiveCatalogProject('4u'"]],
   ['bayterak', ['app/bayterak/bayterak-page.tsx', "useLiveCatalogProject('bayterak'"]],
   ['botanika-saroyi', ['app/botanika-saroyi/botanika-saroyi-page.tsx', "useLiveCatalogProject('botanika-saroyi'"]],
+  ['c1', ['app/c1/c1-page.tsx', "useLiveCatalogUnits('c1'"]],
   ['flagman', ['app/flagman/flagman-page.tsx', "useLiveCatalogProject('flagman'"]],
   ['jomiy', ['app/jomiy/jomiy-page.tsx', "useLiveCatalogProject('jomiy'"]],
   ['maftun-makon', ['app/maftun-makon/maftun-makon-page.tsx', "useLiveCatalogProject('maftun-makon'"]],
   ['meros', ['app/meros/meros-page.tsx', "useLiveCatalogProject('meros'"]],
   ['regnum-plaza', ['app/regnum-plaza/regnum-page.tsx', "useLiveCatalogUnits('regnum-plaza'"]],
   ['sado', ['app/sado/sado-page.tsx', "useLiveCatalogProject('sado'"]],
+  ['soy-boyi', ['app/soy-boyi/soy-boyi-page.tsx', 'useLiveCatalogUnits("soy-boyi"']],
   ['sun', ['app/sun/sun-page.tsx', "useLiveCatalogSnapshot('sun'"]],
   ['voha', ['app/voha/voha-page.tsx', "useLiveCatalogProject('voha'"]],
   ['yangibaxt', ['app/yangibaxt/yangibaxt-page.tsx', "useLiveCatalogProject('yangibaxt'"]],
@@ -59,6 +63,33 @@ const landingIntegrations = new Map([
 for (const [slug, [relativePath, marker]] of landingIntegrations) {
   const page = await readFile(new URL(`../${relativePath}`, import.meta.url), 'utf8');
   assert.ok(page.includes(marker), `${slug} landing availability must use live catalogue data`);
+}
+
+const newLiveSites = new Map([
+  ['c1', {
+    catalogue: 'app/c1/apartments/c1-catalog.tsx',
+    landing: 'app/c1/c1-page.tsx',
+    dynamicCount: /project\?\.availableUnits\s*\?\?\s*initialAvailableCount/,
+  }],
+  ['soy-boyi', {
+    catalogue: 'app/soy-boyi/apartments/soy-boyi-catalog.tsx',
+    landing: 'app/soy-boyi/soy-boyi-page.tsx',
+    dynamicCount: /liveCatalog\.project\?\.availableUnits\s*\?\?\s*availableCount/,
+  }],
+]);
+
+for (const [slug, paths] of newLiveSites) {
+  const [catalogue, landing] = await Promise.all([
+    readFile(new URL(`../${paths.catalogue}`, import.meta.url), 'utf8'),
+    readFile(new URL(`../${paths.landing}`, import.meta.url), 'utf8'),
+  ]);
+  for (const [surface, page] of [['catalogue', catalogue], ['landing', landing]]) {
+    assert.ok(page.includes('catalogLeadIdentity'), `${slug} ${surface} must submit only a canonical live source key`);
+    assert.ok(page.includes('rememberLiveCatalogUnit'), `${slug} ${surface} must remember only live catalogue identities`);
+    assert.doesNotMatch(page, /unitId=\{/, `${slug} ${surface} must not submit a stale embedded unit id`);
+    assert.doesNotMatch(page, /свежем официальном (?:snapshot|снимке)|Снимок получен|Yangi rasmiy snapshotda|Snapshot olingan vaqt|fresh official snapshot|Latest official availability snapshot|Snapshot captured/iu, `${slug} ${surface} must not show snapshot terminology to users`);
+  }
+  assert.match(landing, paths.dynamicCount, `${slug} landing count must follow the live project payload with an embedded fallback`);
 }
 
 const kayan = await readFile(new URL('../app/kayan/project-page.tsx', import.meta.url), 'utf8');
@@ -140,6 +171,39 @@ assert.equal(mergeLiveCatalogUnits('4u', embedded, [reserved4U]).length, 0, 'ava
 const soldSun = { ...live[0], projectSlug: 'sun', status: 'sold', price: undefined };
 assert.equal(mergeLiveCatalogUnits('sun', embedded, [soldSun]).length, 0, 'SUN must not expose sold or reserved rows as available at zero price');
 assert.equal(mergeLiveCatalogUnits('safe-project', embedded, live).length, 1, 'status-aware UI keeps non-available units');
+
+const mbcTemplate = [{ ...embedded[0], phase: '2', section: 'A5', entrance: undefined, completionYear: '2027' }];
+const mbcSaadiyat = {
+  ...live[0],
+  projectSlug: 'saadiyat',
+  phaseSlug: 'q2-sa5',
+  phaseName: 'Q2/A5',
+  entrance: 'A5',
+  status: 'available',
+  completion: '2029',
+};
+const [adaptedMbc] = mergeLiveCatalogUnits('saadiyat', mbcTemplate, [mbcSaadiyat]);
+assert.equal(adaptedMbc.phase, '2', 'MBC phase filters must display the queue, not repeat the section');
+assert.equal(adaptedMbc.section, 'A5');
+assert.equal(adaptedMbc.completionYear, '2029', 'Saadiyat must display the live MBC completion instead of its embedded year');
+
+const [adaptedC1] = mergeLiveCatalogUnits('c1', mbcTemplate, [{ ...mbcSaadiyat, projectSlug: 'c1' }]);
+assert.equal(adaptedC1.completionYear, '2029', 'C1 must display the live MBC completion');
+
+const soyTemplate = [{ ...embedded[0], completion: '2026' }];
+const [adaptedSoy] = mergeLiveCatalogUnits('soy-boyi', soyTemplate, [{
+  ...live[0],
+  projectSlug: 'soy-boyi',
+  status: 'available',
+  completion: '2028',
+}]);
+assert.equal(adaptedSoy.completion, '2028', 'Soy Bo\u2018yi must display the live MBC completion');
+const [unmatchedSoyWithoutCompletion] = mergeLiveCatalogUnits('soy-boyi', soyTemplate, [{
+  ...live[0],
+  projectSlug: 'soy-boyi',
+  status: 'available',
+}]);
+assert.equal(unmatchedSoyWithoutCompletion.completion, null, 'an unmatched Soy Bo\u2018yi unit must not inherit a stale embedded completion');
 
 assert.deepEqual(catalogLeadIdentity({ id: 'embedded-id', sourceKey: 'nrg:unit:42' }), { unitKey: 'nrg:unit:42' });
 assert.deepEqual(catalogLeadIdentity({ id: 'embedded-id' }), {}, 'embedded presentation IDs must never be submitted as CRM identities');

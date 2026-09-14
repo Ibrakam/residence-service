@@ -61,10 +61,16 @@ Files ending in `*-client.json` are intentionally treated as partial and are
 rejected by live synchronization.
 
 For Kayan, one invocation must output both `mirador` and `ofiyat`; they commit
-together. Production ownership is Kayan → Mirador/Ofiyat, MBC → Regnum Plaza,
-Uysot → Avalon Residence, Human2Human → SUN, and NRG/BI → 4U, Bayterak,
+together. Likewise, one MBC invocation must output Regnum Plaza, C1, Soy Bo‘yi,
+and Saadiyat from exact `type=residential` requests; the four projects commit
+together and one incomplete project fails the whole provider candidate.
+MBC `crm_id` remains private source provenance: the public `sourceKey` retains
+an existing template identity when available, otherwise it is a deterministic
+project-namespaced SHA-256 value that does not contain the raw CRM identifier.
+Production ownership is Kayan → Mirador/Ofiyat, MBC → Regnum Plaza/C1/Soy
+Bo‘yi/Saadiyat, Uysot → Avalon Residence, Human2Human → SUN, and NRG/BI → 4U, Bayterak,
 Botanika Saroyi, Flagman, Jomiy, Maftun Makon, Meros, Sad'O, Voha, Yangi Baxt,
-and Zamon. These five provider entries cover all 16 projects. Alemica remains a
+and Zamon. These five provider entries cover all 19 projects. Alemica remains a
 discovery-only source until its authenticated identifiers and schema are mapped;
 its wrapper must fail closed and it is deliberately absent from the runnable
 configuration.

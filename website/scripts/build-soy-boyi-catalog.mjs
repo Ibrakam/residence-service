@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
+import { opaqueMbcSourceKey, templateMbcSourceKey } from "../../scripts/live-sync/src/mbc-identity.mjs";
 
 const root = process.cwd();
 const sourceRoot = path.join(root, "source", "soy-boyi");
@@ -39,6 +40,20 @@ const units = rows.filter(
   (unit) => unit.type === "residential" && unit.status === "AVAILABLE",
 );
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
+let retainedSourceKeyByCrmId = new Map();
+try {
+  const previousSnapshot = JSON.parse(await readFile(snapshotPath, "utf8"));
+  retainedSourceKeyByCrmId = new Map(
+    (previousSnapshot.units ?? [])
+      .flatMap((unit) => {
+        const crmId = String(unit?.crmId ?? "").trim();
+        const sourceKey = templateMbcSourceKey("soy-boyi", unit);
+        return crmId && sourceKey ? [[crmId, sourceKey]] : [];
+      }),
+  );
+} catch (error) {
+  if (error?.code !== "ENOENT") throw error;
+}
 
 if (!capture.stable || units.length !== capture.counts.plans.residential)
   throw new Error("Raw rows do not match the stable capture manifest");
@@ -98,11 +113,14 @@ await Promise.all(Array.from({ length: 6 }, () => worker()));
 
 const normalized = units.map((unit, sourceOrder) => {
   const plan = unit.image ? media.get(unit.image) : undefined;
+  const sourceKey =
+    retainedSourceKeyByCrmId.get(String(unit.crm_id)) ??
+    opaqueMbcSourceKey("soy-boyi", unit.crm_id);
   return {
     id: String(unit.id),
     crmId: String(unit.crm_id),
-    unitKey: `soy-boyi:${unit.id}`,
-    sourceKey: `soy-boyi:${unit.id}`,
+    unitKey: sourceKey,
+    sourceKey,
     sourceOrder,
     number: String(unit.number),
     rooms: Number(unit.rooms),

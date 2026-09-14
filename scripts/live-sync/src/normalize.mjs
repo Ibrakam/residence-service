@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto';
 import { readFile, readdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { opaqueMbcSourceKey, templateMbcSourceKey } from './mbc-identity.mjs';
+import { mbcProjects } from './providers.mjs';
 
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 
@@ -154,86 +156,189 @@ export function normalizeUysotTable(root, capturedAt = new Date().toISOString())
   };
 }
 
-export function normalizeRegnumPages(pages, capturedAt = new Date().toISOString(), template = null) {
-  assert(Array.isArray(pages) && pages.length > 0, 'Regnum capture has no pages');
+function localPlanPath(unit, projectSlug) {
+  for (const key of ['planImageUrl', 'plan', 'planPublicPath', 'primaryPlanPath']) {
+    const value = unit?.[key];
+    if (typeof value === 'string' && value.startsWith(`/${projectSlug}/`) && !value.startsWith('//')) return value;
+  }
+  return null;
+}
+
+function mbcUnitSignature(unit) {
+  const number = String(unit?.number ?? '').trim();
+  const rooms = integer(unit?.rooms);
+  const area = positive(unit?.square ?? unit?.area);
+  const floor = integer(unit?.floor);
+  const queue = String(unit?.queue ?? unit?.phase ?? '').trim();
+  const section = String(unit?.section ?? '').trim();
+  if (!number || rooms === null || area === null || floor === null || !queue || !section) return null;
+  return [number, rooms, area.toFixed(4), floor, queue, section].join('\u001f');
+}
+
+function mbcPhasePart(value, label) {
+  const text = numberText(value, label);
+  assert(/^[a-z0-9]+(?:[-_][a-z0-9]+)*$/i.test(text), `${label} contains unsupported characters`);
+  return { text, slug: text.toLowerCase().replaceAll('_', '-'), value: integer(text) ?? text };
+}
+
+function mbcTemplateLookup(template) {
+  const byCrmId = new Map();
+  const bySignature = new Map();
+  const ambiguousSignatures = new Set();
+  for (const unit of template?.units ?? []) {
+    const crmId = String(unit?.crmId ?? unit?.sourceId ?? '').trim();
+    if (crmId) byCrmId.set(crmId, unit);
+    const signature = mbcUnitSignature(unit);
+    if (!signature) continue;
+    if (bySignature.has(signature)) ambiguousSignatures.add(signature);
+    else bySignature.set(signature, unit);
+  }
+  for (const signature of ambiguousSignatures) bySignature.delete(signature);
+  return (row, crmId) => byCrmId.get(crmId) ?? bySignature.get(mbcUnitSignature(row)) ?? {};
+}
+
+function normalizeMbcProject(group, capturedAt, template) {
+  const project = group?.project;
+  assert(record(project), 'MBC project metadata is missing');
+  assert(Number.isSafeInteger(project.id) && project.id > 0, 'MBC project id is invalid');
+  const slug = numberText(project.slug, 'MBC project slug');
+  const pages = group?.pages;
+  assert(Array.isArray(pages) && pages.length > 0, `MBC ${slug} capture has no pages`);
   const rows = [];
   let declaredTotal = null;
   let declaredLastPage = null;
   for (const [index, root] of pages.entries()) {
-    assert(record(root?.plans) && Array.isArray(root.plans.data), `Regnum page ${index + 1} is invalid`);
+    assert(record(root?.plans) && Array.isArray(root.plans.data), `MBC ${slug} page ${index + 1} is invalid`);
     const total = integer(root.plans.total);
     const currentPage = integer(root.plans.current_page);
     const lastPage = integer(root.plans.last_page);
-    assert(total !== null && total > 0, `Regnum page ${index + 1} total is invalid`);
-    assert(currentPage === index + 1, `Regnum page ${index + 1} current_page mismatch`);
-    assert(lastPage !== null && lastPage > 0, `Regnum page ${index + 1} last_page is invalid`);
+    assert(total !== null && total > 0, `MBC ${slug} page ${index + 1} total is invalid`);
+    assert(currentPage === index + 1, `MBC ${slug} page ${index + 1} current_page mismatch`);
+    assert(lastPage !== null && lastPage > 0, `MBC ${slug} page ${index + 1} last_page is invalid`);
     if (declaredTotal === null) declaredTotal = total;
     if (declaredLastPage === null) declaredLastPage = lastPage;
-    assert(total === declaredTotal, 'Regnum total changed during capture');
-    assert(lastPage === declaredLastPage, 'Regnum last_page changed during capture');
+    assert(total === declaredTotal, `MBC ${slug} total changed during capture`);
+    assert(lastPage === declaredLastPage, `MBC ${slug} last_page changed during capture`);
     rows.push(...root.plans.data);
   }
-  assert(pages.length === declaredLastPage, `Regnum captured ${pages.length} of ${declaredLastPage} pages`);
-  assert(rows.length === declaredTotal, `Regnum captured ${rows.length} of ${declaredTotal} rows`);
-  const retainedById = new Map((template?.units ?? []).map((unit) => [String(unit.id), unit]));
-  const identities = new Set();
+  assert(pages.length === declaredLastPage, `MBC ${slug} captured ${pages.length} of ${declaredLastPage} pages`);
+  assert(rows.length === declaredTotal, `MBC ${slug} captured ${rows.length} of ${declaredTotal} rows`);
+  const retainedUnit = mbcTemplateLookup(template);
+  const publicIdentities = new Set();
   const crmIdentities = new Set();
+  const sourceKeyIdentities = new Set();
   const units = rows.map((row, index) => {
-    const id = numberText(row.id, `Regnum row ${index + 1}.id`);
-    const crmId = numberText(row.crm_id, `Regnum row ${index + 1}.crm_id`);
-    assert(!identities.has(id), `Regnum duplicate id ${id}`);
-    assert(!crmIdentities.has(crmId), `Regnum duplicate CRM id ${crmId}`);
-    identities.add(id);
+    assert(record(row), `MBC ${slug} row ${index + 1} is invalid`);
+    const id = numberText(row.id, `MBC ${slug} row ${index + 1}.id`);
+    const crmId = numberText(row.crm_id, `MBC ${slug} row ${index + 1}.crm_id`);
+    assert(!publicIdentities.has(id), `MBC ${slug} duplicate id ${id}`);
+    assert(!crmIdentities.has(crmId), `MBC ${slug} duplicate CRM id ${crmId}`);
+    publicIdentities.add(id);
     crmIdentities.add(crmId);
     const area = positive(row.square);
     const floor = integer(row.floor);
     const rooms = integer(row.rooms);
-    assert(area !== null && floor !== null && rooms !== null, `Regnum row ${id} dimensions are invalid`);
-    assert(String(row.project_slug) === 'regnum-plaza', `Regnum row ${id} has unexpected project`);
+    assert(area !== null && floor !== null && rooms !== null, `MBC ${slug} row ${id} dimensions are invalid`);
+    assert(String(row.project_slug) === slug, `MBC ${slug} row ${id} has unexpected project`);
+    assert(String(row.type) === 'residential', `MBC ${slug} row ${id} is not residential`);
+    assert(String(row.status).toUpperCase() === 'AVAILABLE', `MBC ${slug} row ${id} is not available`);
+    assert(Number(row.is_price) === 0, `MBC ${slug} row ${id} public-price policy changed`);
     const normalizedStatus = status(row.status);
-    assert(normalizedStatus !== 'unknown', `Regnum row ${id} has unknown status`);
-    const retained = retainedById.get(id) ?? {};
+    assert(normalizedStatus === 'available', `MBC ${slug} row ${id} has unexpected status`);
+    const queue = mbcPhasePart(row.queue, `MBC ${slug} row ${id}.queue`);
+    const section = mbcPhasePart(row.section, `MBC ${slug} row ${id}.section`);
+    const sectionName = integer(section.text) === null ? section.text : `S${section.text}`;
+    const retained = retainedUnit(row, crmId);
+    const planImageUrl = localPlanPath(retained, slug);
+    const sourceKey = numberText(
+      templateMbcSourceKey(slug, retained) || opaqueMbcSourceKey(slug, crmId),
+      `MBC ${slug} row ${id}.sourceKey`,
+    );
+    assert(!sourceKeyIdentities.has(sourceKey), `MBC ${slug} duplicate sourceKey ${sourceKey}`);
+    sourceKeyIdentities.add(sourceKey);
     return {
-      id,
+      id: crmId,
       sourceId: crmId,
-      sourceKey: `mbc:regnum-plaza:${id}`,
-      projectSlug: 'regnum-plaza',
-      phaseSlug: `q${integer(row.queue) ?? 0}-s${integer(row.section) ?? 0}`,
-      phaseName: `Q${integer(row.queue) ?? 0}/S${integer(row.section) ?? 0}`,
+      publicId: id,
+      sourceKey,
+      projectSlug: slug,
+      phaseSlug: `q${queue.slug}-s${section.slug}`,
+      phaseName: `Q${queue.text}/${sectionName}`,
       sourceOrder: index,
-      number: numberText(row.number, `Regnum row ${id}.number`),
+      number: numberText(row.number, `MBC ${slug} row ${id}.number`),
       rooms,
       area,
       floor,
-      queue: integer(row.queue),
-      section: integer(row.section),
-      entrance: String(row.section ?? ''),
+      queue: queue.value,
+      section: section.value,
+      entrance: section.text,
       completion: String(row.end ?? ''),
       status: normalizedStatus,
       rawStatus: String(row.status),
+      propertyType: 'apartment',
+      rawPropertyType: 'residential',
+      isSale: true,
       publicPrice: false,
       displayPriceKey: 'priceOnRequest',
-      ...(retained.planPublicPath ? { planPublicPath: retained.planPublicPath } : {}),
-      ...(retained.planWidth ? { planWidth: retained.planWidth, planHeight: retained.planHeight } : {}),
+      priceVisibility: 'request-only',
+      ...(planImageUrl ? { planImageUrl } : {}),
+      ...(positive(retained.planWidth) && positive(retained.planHeight) ? { planWidth: Number(retained.planWidth), planHeight: Number(retained.planHeight) } : {}),
     };
   });
-  const audit = completeness({ expected: declaredTotal, units, identities, extra: { uniqueCrmIds: crmIdentities.size } });
-  assert(audit.complete, 'Regnum completeness checks failed');
+  const retainedPlanCount = units.filter((unit) => unit.planImageUrl).length;
+  if (template) assert(retainedPlanCount > 0, `MBC ${slug} could not match any local plan from its enrichment template`);
+  const audit = completeness({
+    expected: declaredTotal,
+    units,
+    identities: crmIdentities,
+    extra: { uniquePublicIds: publicIdentities.size, uniqueCrmIds: crmIdentities.size, uniqueSourceKeys: sourceKeyIdentities.size, retainedPlanCount, projectId: project.id, propertyType: 'residential' },
+  });
+  assert(audit.complete, `MBC ${slug} completeness checks failed`);
   return {
     artifact: {
-      project: 'REGNUM PLAZA',
-      projectSlug: 'regnum-plaza',
-      projectId: 1,
+      schemaVersion: 1,
+      project: project.name,
+      projectSlug: slug,
+      projectId: project.id,
+      developerSlug: 'murad-buildings',
       capturedAt,
       officialTotalAtCapture: declaredTotal,
+      sourceCount: declaredTotal,
+      availableResidentialTotal: declaredTotal,
       publicPrice: false,
-      source: 'https://partners.mbc.uz/',
-      sourceLanding: 'https://mbc.uz/project/regnum-plaza',
+      source: 'https://mbc.uz/api/plans',
+      sourceLanding: project.sourceLanding,
       completeness: audit,
       units,
     },
     audit,
   };
+}
+
+export function normalizeMbcProjects(groups, capturedAt = new Date().toISOString(), templates = {}) {
+  assert(Array.isArray(groups) && groups.length === mbcProjects.length, `MBC capture requires ${mbcProjects.length} project groups, received ${groups?.length ?? 0}`);
+  const expected = new Map(mbcProjects.map((project) => [project.slug, project]));
+  const seen = new Set();
+  const artifacts = [];
+  const audits = {};
+  for (const group of groups) {
+    const slug = numberText(group?.project?.slug, 'MBC project slug');
+    const project = expected.get(slug);
+    assert(project, `MBC capture contains unexpected project ${slug}`);
+    assert(!seen.has(slug), `MBC duplicate project group ${slug}`);
+    assert(Number(group.project.id) === project.id, `MBC ${slug} project id mismatch`);
+    seen.add(slug);
+    const result = normalizeMbcProject({ project, pages: group.pages }, capturedAt, templates?.[slug] ?? null);
+    artifacts.push({ filename: `${slug}-catalog.json`, artifact: result.artifact });
+    audits[slug] = result.audit;
+  }
+  for (const project of mbcProjects) assert(seen.has(project.slug), `MBC capture is missing project ${project.slug}`);
+  return { artifacts, audit: audits };
+}
+
+// Compatibility helper for reviewing historical Regnum-only captures.
+export function normalizeRegnumPages(pages, capturedAt = new Date().toISOString(), template = null) {
+  return normalizeMbcProject({ project: mbcProjects.find((project) => project.slug === 'regnum-plaza'), pages }, capturedAt, template);
 }
 
 function nrgStatus(row) {

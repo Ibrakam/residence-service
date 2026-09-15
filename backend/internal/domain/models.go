@@ -124,6 +124,28 @@ type Availability struct {
 	Count  int64  `json:"count"`
 }
 
+// MonthlyUnitSales is derived from the first explicit CRM-observed sold
+// transition of each apartment after sale tracking was enabled.
+type MonthlyUnitSales struct {
+	ProjectSlug  string `json:"projectSlug"`
+	ProjectName  string `json:"projectName"`
+	PropertyType string `json:"propertyType"`
+	Month        string `json:"month"`
+	SoldUnits    int64  `json:"soldUnits"`
+}
+
+type MonthlyUnitSalesFilter struct {
+	ProjectSlug      string
+	FromMonth        *time.Time
+	ToMonthExclusive *time.Time
+}
+
+type MonthlyUnitSalesReport struct {
+	TrackingStartedAt time.Time          `json:"trackingStartedAt"`
+	Timezone          string             `json:"timezone"`
+	Items             []MonthlyUnitSales `json:"items"`
+}
+
 type SyncStatus struct {
 	Source       string     `json:"source"`
 	Status       string     `json:"status"`

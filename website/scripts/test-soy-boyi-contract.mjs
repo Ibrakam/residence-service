@@ -277,11 +277,32 @@ const localPlanImages =
     /<Image[\s\S]{0,160}src=\{asset\(unit\.plan\)\}[\s\S]{0,500}\/>/g,
   ) ?? [];
 if (
-  localPlanImages.length !== 2 ||
+  localPlanImages.length !== 3 ||
   localPlanImages.some((image) => !/\bunoptimized\b/.test(image))
 )
   fail(
     "Soy floor plans must bypass the shared /_next/image optimizer and load their validated local files directly.",
+  );
+const detailPlanPreview = catalogue.match(
+  /function DetailPlanPreview\([\s\S]+?\n}\n\nfunction UnitDetail/,
+)?.[0];
+if (
+  !detailPlanPreview ||
+  !/unit\.plan[\s\S]+?<Image[\s\S]+?src=\{asset\(unit\.plan\)\}[\s\S]+?loading="eager"/.test(
+    detailPlanPreview,
+  ) ||
+  !/onClick=\{\(event\) => onPlan\(event\.currentTarget\)\}/.test(
+    detailPlanPreview,
+  ) ||
+  !/!unit\.plan[\s\S]+?className="sbc-modal__detail-plan is-missing"[\s\S]+?aria-label=\{t\.planMissing\}/.test(
+    detailPlanPreview,
+  ) ||
+  !/<UnitDetail[\s\S]{0,220}<DetailPlanPreview[\s\S]{0,180}onPlan=/.test(
+    catalogue,
+  )
+)
+  fail(
+    "The detail drawer must render an eager, clickable plan preview and an honest source-missing placeholder.",
   );
 if (
   planManifest.snapshot.sha256 !== hash(catalogText) ||

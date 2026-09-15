@@ -75,6 +75,7 @@ func NewWithOptions(store *database.Store, logger *slog.Logger, options Options)
 	mux.HandleFunc("GET /v1/projects/{slug}/availability", server.availability)
 	mux.HandleFunc("GET /v1/projects/{slug}/floor-schemes", server.getFloorSchemes)
 	mux.HandleFunc("GET /v1/units/{id}", server.getUnit)
+	mux.HandleFunc("GET /v1/analytics/monthly-sales", server.monthlySales)
 	mux.HandleFunc("GET /v1/sync/status", server.syncStatus)
 	mux.HandleFunc("GET /v1/sync/catalog-status", server.catalogSyncStatus)
 	mux.HandleFunc("POST /v1/leads", server.createLead)
@@ -229,6 +230,51 @@ func (s *Server) availability(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"items": items})
 }
 
+func (s *Server) monthlySales(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query()
+	projectSlug := strings.TrimSpace(query.Get("project"))
+	if projectSlug != "" && (len(projectSlug) > 80 || !projectSlugPattern.MatchString(projectSlug)) {
+		writeError(w, http.StatusBadRequest, "invalid_project", "project must be a valid project slug")
+		return
+	}
+	propertyType := strings.TrimSpace(query.Get("propertyType"))
+	if propertyType == "" {
+		propertyType = "apartment"
+	}
+	if propertyType != "apartment" {
+		writeError(w, http.StatusBadRequest, "invalid_property_type", "monthly sale tracking currently supports apartments only")
+		return
+	}
+	fromMonth, err := parseOptionalMonth(query.Get("fromMonth"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_from_month", "fromMonth must use YYYY-MM format")
+		return
+	}
+	toMonth, err := parseOptionalMonth(query.Get("toMonth"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_to_month", "toMonth must use YYYY-MM format")
+		return
+	}
+	var toMonthExclusive *time.Time
+	if toMonth != nil {
+		value := toMonth.AddDate(0, 1, 0)
+		toMonthExclusive = &value
+	}
+	if fromMonth != nil && toMonthExclusive != nil && !fromMonth.Before(*toMonthExclusive) {
+		writeError(w, http.StatusBadRequest, "invalid_month_range", "fromMonth must not be after toMonth")
+		return
+	}
+	report, err := s.store.MonthlyUnitSales(r.Context(), domain.MonthlyUnitSalesFilter{
+		ProjectSlug: projectSlug, FromMonth: fromMonth, ToMonthExclusive: toMonthExclusive,
+	})
+	if err != nil {
+		s.internalError(w, "get monthly sales", err)
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store, max-age=0")
+	writeJSON(w, http.StatusOK, report)
+}
+
 func (s *Server) syncStatus(w http.ResponseWriter, r *http.Request) {
 	items, err := s.store.LatestSync(r.Context())
 	if err != nil {
@@ -256,6 +302,22 @@ func (s *Server) catalogSyncStatus(w http.ResponseWriter, r *http.Request) {
 
 var uzbekPhonePattern = regexp.MustCompile(`^\+998\d{9}$`)
 var projectSlugPattern = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
+var monthPattern = regexp.MustCompile(`^\d{4}-(0[1-9]|1[0-2])$`)
+
+func parseOptionalMonth(value string) (*time.Time, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil, nil
+	}
+	if !monthPattern.MatchString(value) {
+		return nil, errors.New("invalid month")
+	}
+	parsed, err := time.Parse("2006-01", value)
+	if err != nil {
+		return nil, err
+	}
+	return &parsed, nil
+}
 
 type createLeadRequest struct {
 	ProjectSlug string          `json:"projectSlug"`

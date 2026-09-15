@@ -365,6 +365,55 @@ func (s *Store) Availability(ctx context.Context, projectSlug, phaseSlug, queueK
 	return items, rows.Err()
 }
 
+// MonthlyUnitSales reports only explicit status transitions recorded by the
+// importer. It deliberately does not infer a sale from is_active=false because
+// some providers publish available inventory only and disappearance is
+// ambiguous. The underlying view groups by the Asia/Tashkent calendar month.
+func (s *Store) MonthlyUnitSales(ctx context.Context, filter domain.MonthlyUnitSalesFilter) (domain.MonthlyUnitSalesReport, error) {
+	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{AccessMode: pgx.ReadOnly})
+	if err != nil {
+		return domain.MonthlyUnitSalesReport{}, err
+	}
+	defer func() { _ = tx.Rollback(context.Background()) }()
+	result := domain.MonthlyUnitSalesReport{Timezone: "Asia/Tashkent", Items: make([]domain.MonthlyUnitSales, 0)}
+	if err := tx.QueryRow(ctx, `
+		SELECT tracking_started_at
+		FROM unit_sales_tracking_state
+		WHERE singleton=true`).Scan(&result.TrackingStartedAt); err != nil {
+		return domain.MonthlyUnitSalesReport{}, err
+	}
+	rows, err := tx.Query(ctx, `
+		SELECT project.slug, project.name, 'apartment'::text,
+		       to_char(sales.sale_month, 'YYYY-MM'), sales.sold_units
+		FROM monthly_unit_sales AS sales
+		JOIN projects AS project ON project.id = sales.project_id
+		WHERE ($1 = '' OR project.slug = $1)
+		  AND ($2::date IS NULL OR sales.sale_month >= $2::date)
+		  AND ($3::date IS NULL OR sales.sale_month < $3::date)
+		ORDER BY sales.sale_month, project.name, project.id`,
+		filter.ProjectSlug, filter.FromMonth, filter.ToMonthExclusive)
+	if err != nil {
+		return domain.MonthlyUnitSalesReport{}, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var item domain.MonthlyUnitSales
+		if err := rows.Scan(
+			&item.ProjectSlug, &item.ProjectName, &item.PropertyType, &item.Month, &item.SoldUnits,
+		); err != nil {
+			return domain.MonthlyUnitSalesReport{}, err
+		}
+		result.Items = append(result.Items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return domain.MonthlyUnitSalesReport{}, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return domain.MonthlyUnitSalesReport{}, err
+	}
+	return result, nil
+}
+
 func (s *Store) LatestSync(ctx context.Context) ([]domain.SyncStatus, error) {
 	rows, err := s.pool.Query(ctx, `
         SELECT DISTINCT ON (source) source, status, started_at, finished_at, records_read, records_saved, error

@@ -645,6 +645,10 @@
   color: var(--deep);
 }
 .sbc-modal {
+  --deep: #153f3e;
+  --river: #307473;
+  --sand: #e7bb8c;
+  --ink: #18302f;
   position: fixed;
   z-index: 1000;
   inset: 0;
@@ -654,10 +658,11 @@
 }
 .sbc-modal > article {
   position: relative;
-  width: 370px;
+  width: min(460px, 100vw);
   max-width: 100%;
   height: 100%;
   overflow: auto;
+  scrollbar-gutter: stable;
   background: var(--deep);
   color: #fff;
   padding: 2rem;
@@ -731,6 +736,49 @@
 .sbc-modal__actions p {
   font-size: 0.8rem;
   color: var(--sand);
+}
+.sbc-modal__detail-plan {
+  width: 100%;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  border: 1px solid rgba(231, 187, 140, 0.7);
+  background: #fff;
+  color: var(--deep);
+  text-align: left;
+  cursor: pointer;
+}
+.sbc-modal__detail-plan-image {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  min-height: 230px;
+  overflow: hidden;
+  background: #f4f2ea;
+}
+.sbc-modal__detail-plan-image img {
+  object-fit: contain;
+  padding: 0.75rem;
+}
+.sbc-modal__detail-plan > span:last-child {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 1rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.sbc-modal__detail-plan > span:last-child i {
+  font-size: 1rem;
+  font-style: normal;
+}
+.sbc-modal__detail-plan.is-missing {
+  display: block;
+  cursor: default;
+}
+.sbc-modal__detail-plan .sbc-plan-missing {
+  min-height: 260px;
 }
 .sbc-footer {
   background: #102f2f;

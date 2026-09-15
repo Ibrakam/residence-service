@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
   useEffect,
   useMemo,
   useRef,
@@ -459,7 +460,13 @@ function Modal({
               unit={unit}
               language={language}
               headingId="sbc-modal-title"
-            />
+            >
+              <DetailPlanPreview
+                unit={unit}
+                language={language}
+                onPlan={(opener) => onPlan(unit, state.opener ?? opener)}
+              />
+            </UnitDetail>
             <div className="sbc-modal__actions">
               {unit.plan ? (
                 <button
@@ -489,14 +496,64 @@ function Modal({
   );
 }
 
+function DetailPlanPreview({
+  unit,
+  language,
+  onPlan,
+}: {
+  unit: Unit;
+  language: SoyLanguage;
+  onPlan: (opener: HTMLButtonElement) => void;
+}) {
+  const t = copy[language];
+  if (!unit.plan) {
+    return (
+      <div
+        className="sbc-modal__detail-plan is-missing"
+        role="img"
+        aria-label={t.planMissing}
+      >
+        <div className="sbc-plan-missing">
+          <i aria-hidden="true">∿</i>
+          <strong>{t.planMissing}</strong>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <button
+      type="button"
+      className="sbc-modal__detail-plan"
+      onClick={(event) => onPlan(event.currentTarget)}
+      aria-label={`${t.openPlan}: ${t.unit} №${unit.number}`}
+    >
+      <span className="sbc-modal__detail-plan-image">
+        <Image
+          src={asset(unit.plan)}
+          alt={`${t.planTitle} · №${unit.number}`}
+          fill
+          unoptimized
+          loading="eager"
+          sizes="(max-width: 560px) calc(100vw - 64px), 396px"
+        />
+      </span>
+      <span>
+        {t.openPlan} <i aria-hidden="true">↗</i>
+      </span>
+    </button>
+  );
+}
+
 function UnitDetail({
   unit,
   language,
   headingId,
+  children,
 }: {
   unit: Unit;
   language: SoyLanguage;
   headingId?: string;
+  children?: ReactNode;
 }) {
   const t = copy[language];
   return (
@@ -512,6 +569,7 @@ function UnitDetail({
         }).format(unit.area)}{" "}
         m²
       </strong>
+      {children}
       <dl>
         <div>
           <dt>{t.floor}</dt>

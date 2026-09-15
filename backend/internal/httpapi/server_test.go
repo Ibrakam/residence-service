@@ -32,6 +32,37 @@ func TestRouterConstructionAndServiceInfo(t *testing.T) {
 	}
 }
 
+func TestParseOptionalMonth(t *testing.T) {
+	parsed, err := parseOptionalMonth("2026-09")
+	if err != nil || parsed == nil || parsed.Format("2006-01-02") != "2026-09-01" {
+		t.Fatalf("valid month parsed as (%v, %v)", parsed, err)
+	}
+	for _, value := range []string{"2026-9", "2026-13", "09-2026", "2026-09-01"} {
+		if _, err := parseOptionalMonth(value); err == nil {
+			t.Fatalf("invalid month %q was accepted", value)
+		}
+	}
+	parsed, err = parseOptionalMonth("  ")
+	if err != nil || parsed != nil {
+		t.Fatalf("empty month parsed as (%v, %v)", parsed, err)
+	}
+}
+
+func TestMonthlySalesRejectsUnsupportedFiltersBeforeDatabase(t *testing.T) {
+	handler := New(nil, slog.New(slog.NewTextHandler(io.Discard, nil)), "")
+	for _, path := range []string{
+		"/v1/analytics/monthly-sales?propertyType=parking",
+		"/v1/analytics/monthly-sales?fromMonth=2026-9",
+		"/v1/analytics/monthly-sales?fromMonth=2026-10&toMonth=2026-09",
+	} {
+		recorder := httptest.NewRecorder()
+		handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, path, nil))
+		if recorder.Code != http.StatusBadRequest {
+			t.Fatalf("invalid monthly-sales request %q returned %d: %s", path, recorder.Code, recorder.Body.String())
+		}
+	}
+}
+
 func TestCORSRequiresExactOriginAndRejectsDisallowedLeadOrigin(t *testing.T) {
 	handler := New(nil, slog.New(slog.NewTextHandler(io.Discard, nil)), "https://example.com, https://www.example.com")
 

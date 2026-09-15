@@ -256,13 +256,20 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [trackingStartedAt, timezone, items]
+                required: [trackingStartedAt, timezone, allTimeItems, items]
                 properties:
                   trackingStartedAt:
                     type: string
                     format: date-time
                     description: Начало достоверного учёта; месяцы до этой даты не являются нулевой статистикой.
                   timezone: { type: string, const: Asia/Tashkent }
+                  allTimeItems:
+                    type: array
+                    description: >-
+                      Накопительный итог по квартирам, для которых CRM подтверждает sold.
+                      Включает текущий явный sold-статус и зафиксированные переходы; дата
+                      продажи для исходного sold-состояния намеренно не придумывается.
+                    items: { $ref: '#/components/schemas/AllTimeUnitSales' }
                   items:
                     type: array
                     items: { $ref: '#/components/schemas/MonthlyUnitSales' }
@@ -485,6 +492,18 @@ components:
           format: int64
           minimum: 0
           description: Число уникальных помещений с sale-transition в этом месяце.
+    AllTimeUnitSales:
+      type: object
+      required: [projectSlug, projectName, propertyType, soldUnits]
+      properties:
+        projectSlug: { type: string }
+        projectName: { type: string }
+        propertyType: { type: string, const: apartment }
+        soldUnits:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Число уникальных квартир с подтверждённым CRM sold-статусом за всё время наблюдения.
     FloorSchemeArtifact:
       type: object
       description: >-

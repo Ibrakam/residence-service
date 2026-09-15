@@ -365,17 +365,22 @@ func (s *Store) Availability(ctx context.Context, projectSlug, phaseSlug, queueK
 	return items, rows.Err()
 }
 
-// MonthlyUnitSales reports only explicit status transitions recorded by the
-// importer. It deliberately does not infer a sale from is_active=false because
-// some providers publish available inventory only and disappearance is
-// ambiguous. The underlying view groups by the Asia/Tashkent calendar month.
+// MonthlyUnitSales reports explicit status transitions recorded by the
+// importer and a separate lifetime total of apartments with a known sold fact.
+// It deliberately does not infer a sale from is_active=false because some
+// providers publish available inventory only and disappearance is ambiguous.
+// The monthly view groups by the Asia/Tashkent calendar month.
 func (s *Store) MonthlyUnitSales(ctx context.Context, filter domain.MonthlyUnitSalesFilter) (domain.MonthlyUnitSalesReport, error) {
 	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{AccessMode: pgx.ReadOnly})
 	if err != nil {
 		return domain.MonthlyUnitSalesReport{}, err
 	}
 	defer func() { _ = tx.Rollback(context.Background()) }()
-	result := domain.MonthlyUnitSalesReport{Timezone: "Asia/Tashkent", Items: make([]domain.MonthlyUnitSales, 0)}
+	result := domain.MonthlyUnitSalesReport{
+		Timezone:     "Asia/Tashkent",
+		AllTimeItems: make([]domain.AllTimeUnitSales, 0),
+		Items:        make([]domain.MonthlyUnitSales, 0),
+	}
 	if err := tx.QueryRow(ctx, `
 		SELECT tracking_started_at
 		FROM unit_sales_tracking_state
@@ -406,6 +411,43 @@ func (s *Store) MonthlyUnitSales(ctx context.Context, filter domain.MonthlyUnitS
 		result.Items = append(result.Items, item)
 	}
 	if err := rows.Err(); err != nil {
+		return domain.MonthlyUnitSalesReport{}, err
+	}
+	rows.Close()
+	allTimeRows, err := tx.Query(ctx, `
+		WITH known_sold_units AS (
+			SELECT unit.id, phase.project_id
+			FROM units AS unit
+			JOIN phases AS phase ON phase.id = unit.phase_id
+			WHERE unit.property_type = 'apartment'
+			  AND unit.is_active
+			  AND unit.status = 'sold'
+			UNION
+			SELECT event.unit_id, event.project_id
+			FROM unit_sale_events AS event
+			JOIN units AS unit ON unit.id = event.unit_id
+			WHERE unit.property_type = 'apartment'
+		)
+		SELECT project.slug, project.name, 'apartment'::text, count(*)::bigint
+		FROM known_sold_units AS sold
+		JOIN projects AS project ON project.id = sold.project_id
+		WHERE ($1 = '' OR project.slug = $1)
+		GROUP BY project.id, project.slug, project.name
+		ORDER BY project.name, project.id`, filter.ProjectSlug)
+	if err != nil {
+		return domain.MonthlyUnitSalesReport{}, err
+	}
+	defer allTimeRows.Close()
+	for allTimeRows.Next() {
+		var item domain.AllTimeUnitSales
+		if err := allTimeRows.Scan(
+			&item.ProjectSlug, &item.ProjectName, &item.PropertyType, &item.SoldUnits,
+		); err != nil {
+			return domain.MonthlyUnitSalesReport{}, err
+		}
+		result.AllTimeItems = append(result.AllTimeItems, item)
+	}
+	if err := allTimeRows.Err(); err != nil {
 		return domain.MonthlyUnitSalesReport{}, err
 	}
 	if err := tx.Commit(ctx); err != nil {

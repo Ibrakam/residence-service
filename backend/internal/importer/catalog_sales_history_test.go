@@ -151,6 +151,9 @@ func TestExplicitSoldTransitionProducesIdempotentMonthlySale(t *testing.T) {
 	if len(report.Items) != 1 || report.Items[0].Month != expectedMonth || report.Items[0].PropertyType != "apartment" || report.Items[0].SoldUnits != 1 {
 		t.Fatalf("monthly apartment sales = %#v", report.Items)
 	}
+	if len(report.AllTimeItems) != 1 || report.AllTimeItems[0].PropertyType != "apartment" || report.AllTimeItems[0].SoldUnits != 3 {
+		t.Fatalf("all-time apartment sales = %#v", report.AllTimeItems)
+	}
 
 	server := httptest.NewServer(httpapi.New(store, slog.New(slog.NewTextHandler(io.Discard, nil)), ""))
 	defer server.Close()
@@ -166,7 +169,7 @@ func TestExplicitSoldTransitionProducesIdempotentMonthlySale(t *testing.T) {
 	if err := json.NewDecoder(response.Body).Decode(&apiReport); err != nil {
 		t.Fatal(err)
 	}
-	if !apiReport.TrackingStartedAt.Equal(report.TrackingStartedAt) || len(apiReport.Items) != 1 || apiReport.Items[0].SoldUnits != 1 {
+	if !apiReport.TrackingStartedAt.Equal(report.TrackingStartedAt) || len(apiReport.Items) != 1 || apiReport.Items[0].SoldUnits != 1 || len(apiReport.AllTimeItems) != 1 || apiReport.AllTimeItems[0].SoldUnits != 3 {
 		t.Fatalf("monthly sales API report = %#v", apiReport)
 	}
 }

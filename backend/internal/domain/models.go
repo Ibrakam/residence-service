@@ -134,6 +134,17 @@ type MonthlyUnitSales struct {
 	SoldUnits    int64  `json:"soldUnits"`
 }
 
+// AllTimeUnitSales counts apartments that the CRM currently marks sold, plus
+// apartments whose first explicit sold transition was already recorded. The
+// total intentionally has no month: an apartment first received as sold gives
+// us a trustworthy lifetime fact, but not a trustworthy historical sale date.
+type AllTimeUnitSales struct {
+	ProjectSlug  string `json:"projectSlug"`
+	ProjectName  string `json:"projectName"`
+	PropertyType string `json:"propertyType"`
+	SoldUnits    int64  `json:"soldUnits"`
+}
+
 type MonthlyUnitSalesFilter struct {
 	ProjectSlug      string
 	FromMonth        *time.Time
@@ -143,6 +154,7 @@ type MonthlyUnitSalesFilter struct {
 type MonthlyUnitSalesReport struct {
 	TrackingStartedAt time.Time          `json:"trackingStartedAt"`
 	Timezone          string             `json:"timezone"`
+	AllTimeItems      []AllTimeUnitSales `json:"allTimeItems"`
 	Items             []MonthlyUnitSales `json:"items"`
 }
 

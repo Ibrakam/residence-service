@@ -198,6 +198,25 @@ assert.equal(adapted4U.planPreviewUrl, fourOriginal.replace(/\.png$/, '_1600.png
 assert.equal(adapted4U.planThumbnailUrl, fourOriginal.replace(/\.png$/, '_200.png'));
 assert.equal(adapted4U.blockId, fourBlockId);
 
+const newFourUnitId = '746458ee-a312-4073-be02-cecfde18623b';
+const newFourOriginal = `https://s3.bi.group/crm-clients-e1csales/layouts/${fourBlockId}/${newFourUnitId}/999.png`;
+const [unmatched4U] = mergeLiveCatalogUnits('4u', fourTemplate, [{
+  ...fourLive,
+  id: 3325,
+  sourceKey: `nrg-bi:4u:${newFourUnitId}`,
+  number: '999',
+  rooms: 4,
+  floor: 14,
+  area: 123.45,
+  entrance: '9',
+  planImageUrl: newFourOriginal,
+}]);
+assert.equal(unmatched4U.phase, '4U Tashkent 1 - 2', 'a new 4U unit exposes the block name instead of its source UUID');
+assert.equal(unmatched4U.buildingId, `block-${fourBlockId}`);
+assert.equal(unmatched4U.blockId, fourBlockId);
+assert.equal(unmatched4U.planOriginalUrl, newFourOriginal);
+assert.equal(unmatched4U.planPreviewUrl, newFourOriginal.replace(/\.png$/, '_1600.png'));
+
 const [unmatchedBad4U] = mergeLiveCatalogUnits('4u', fourTemplate, [{
   ...fourLive, id: 3324, sourceKey: 'nrg-bi:4u:646458ee-a312-4073-be02-cecfde18623b', number: '11', planImageUrl: `${fourOriginal}?token=forbidden`,
 }]);

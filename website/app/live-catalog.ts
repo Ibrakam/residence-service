@@ -574,7 +574,11 @@ function adaptUnit(
   // Queue presentation comes only from explicit queue* fields. Existing
   // embedded phase/queue values are retained for backward-compatible layouts;
   // they are never parsed into a new CRM queue identity here.
-  if (!matched && !mbcCatalogues.has(projectSlug)) assignIfPresent(result, 'phase', live.phaseSlug);
+  if (!matched && !mbcCatalogues.has(projectSlug)) {
+    // NRG phase slugs contain the source block UUID. Keep that value in
+    // buildingId/blockId, but never leak it into the customer-facing label.
+    assignIfPresent(result, 'phase', projectSlug === '4u' ? phaseName : live.phaseSlug);
+  }
   assignIfPresent(result, 'building', phaseName);
   assignIfPresent(result, 'buildingDisplay', phaseName);
   assignIfPresent(result, 'buildingId', live.phaseSlug);

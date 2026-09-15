@@ -4,4 +4,6 @@ umask 077
 : "${CATALOG_OUTPUT_DIR:?CATALOG_OUTPUT_DIR is required}"
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 CAPTURE_DIR=${LIVE_SYNC_CAPTURE_DIR:-/var/lib/residence-live-sync/captures}
-exec node "$SCRIPT_DIR/src/cli.mjs" collect --provider mbc --capture-output "$CAPTURE_DIR" --catalog-output "$CATALOG_OUTPUT_DIR"
+CDP_URL=${LIVE_SYNC_CDP_MBC_URL:-http://127.0.0.1:9222}
+LOCK_FILE=${LIVE_SYNC_MBC_LOCK_FILE:-$CAPTURE_DIR/.mbc-browser.lock}
+exec flock --exclusive --timeout 180 "$LOCK_FILE" node "$SCRIPT_DIR/src/cli.mjs" collect --provider mbc --cdp "$CDP_URL" --capture-output "$CAPTURE_DIR" --catalog-output "$CATALOG_OUTPUT_DIR"

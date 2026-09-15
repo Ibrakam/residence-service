@@ -8,12 +8,13 @@ import { fileURLToPath } from 'node:url';
 import { assertLoopbackCdp, matchAllowedUrl, safeUrlMetadata } from '../src/allowlist.mjs';
 import { atomicRunDirectory, atomicWriteFile, pruneRunDirectories } from '../src/atomic.mjs';
 import { captureFiles, captureFromAuthorizedTab, classifyRequest, makeBodyRecord, parseUysotReadOnlyBody } from '../src/capture.mjs';
+import { selectProviderTarget, targetMatchesProvider } from '../src/cdp.mjs';
 import { captureFromDirectSource, directSourceInternals } from '../src/direct.mjs';
 import { loadTemplate } from '../src/cli.mjs';
 import { opaqueMbcSourceKey, templateMbcSourceKey } from '../src/mbc-identity.mjs';
 import { mergeNrgBlockRegistries, nrgBiSeedBlockRegistry, normalizeNrgBlockRegistry } from '../src/nrg-block-registry.mjs';
 import { auditNrgPlanAssets, expectedNrgOriginalUrl, expectedNrgPlanUrl, fetchNrgPlanDetails, imageMetadata, refreshNrgPlanAssets, validateNrgOriginalUrl, validateNrgPlanUrl } from '../src/nrg-plan-assets.mjs';
-import { normalizeKayanPropertyResponses, normalizeMbcProjects, normalizeNrgBiCapture, normalizeRegnumPages, normalizeSunPages, normalizeUysotTable } from '../src/normalize.mjs';
+import { normalizeKayanPropertyResponses, normalizeMbcProfitbaseCapture, normalizeMbcProjects, normalizeNrgBiCapture, normalizeRegnumPages, normalizeSunPages, normalizeUysotTable } from '../src/normalize.mjs';
 import { getProvider, mbcProjects, mbcSarbonProjects } from '../src/providers.mjs';
 import { containsObviousSecret, sanitizeValue } from '../src/redact.mjs';
 
@@ -54,6 +55,92 @@ function fakeUysotBrowser(reloadScripts, responseBody = '{}') {
   };
 }
 
+function fakeMbcBrowser(provider, { omitSingleton = null, omitHouseId = null, incompleteHouseId = null } = {}) {
+  const listeners = new Map();
+  const bodies = new Map();
+  const state = {
+    calls: [],
+    closed: false,
+    emittedUrls: [],
+    navigationPaths: [],
+    responseSequence: 0,
+  };
+
+  const emitJson = async (client, url, value) => {
+    const requestId = `mbc-response-${++state.responseSequence}`;
+    const request = { method: 'GET', url };
+    const response = { url, status: 200, mimeType: 'application/json' };
+    Object.defineProperty(request, 'headers', { get() { throw new Error('request headers must not be read'); } });
+    Object.defineProperty(response, 'headers', { get() { throw new Error('response headers must not be read'); } });
+    bodies.set(requestId, JSON.stringify(value));
+    state.emittedUrls.push(url);
+    await client.emit('Network.requestWillBeSent', { requestId, request });
+    await client.emit('Fetch.requestPaused', { requestId: `fetch-${requestId}`, networkId: requestId, request });
+    await client.emit('Network.responseReceived', { requestId, type: 'XHR', response });
+    await client.emit('Network.loadingFinished', { requestId });
+  };
+
+  const emitSingletons = async (client) => {
+    const api = `https://${provider.profitbaseHost}/api/v4/json`;
+    const rows = [
+      ['projects', `${api}/projects`, []],
+      ['houses', `${api}/house`, { success: true, data: [] }],
+      ['customStatuses', `${api}/custom-status/list?lang=ru`, { success: true, data: { customStatuses: [] } }],
+    ];
+    for (const [endpoint, url, value] of rows) {
+      if (endpoint !== omitSingleton) await emitJson(client, url, value);
+    }
+  };
+
+  const client = {
+    on(method, listener) {
+      const methodListeners = listeners.get(method) ?? new Set();
+      methodListeners.add(listener);
+      listeners.set(method, methodListeners);
+      return () => methodListeners.delete(listener);
+    },
+    async emit(method, params) {
+      for (const listener of [...(listeners.get(method) ?? [])]) await listener(params);
+    },
+    async call(method, params = {}) {
+      state.calls.push({ method, params });
+      if (method === 'Network.getResponseBody') return { body: bodies.get(params.requestId), base64Encoded: false };
+      if (method === 'Runtime.evaluate') {
+        const paths = [...String(params.expression).matchAll(/\/eco\/catalog\/(?:projects\/houses|house\/\d+\/smallGrid)/g)].map((match) => match[0]);
+        const path = paths.at(-1);
+        if (!path) throw new Error(`unexpected MBC navigation expression: ${params.expression}`);
+        state.navigationPaths.push(path);
+        // The application may refresh its common dictionaries during any
+        // route transition. Deliberate duplicates prove that evidence remains
+        // one-record-per-scope.
+        await emitSingletons(client);
+        const houseId = Number(path.match(/\/house\/(\d+)\//)?.[1]);
+        if (Number.isSafeInteger(houseId) && houseId !== omitHouseId) {
+          await emitJson(
+            client,
+            `https://${provider.profitbaseHost}/api/v4/json/property?houseId=${houseId}&returnFilteredCount=true&showQueueCount=false`,
+            { status: 'success', data: { properties: [], filteredCount: houseId === incompleteHouseId ? 1 : 0 } },
+          );
+        }
+      }
+      return {};
+    },
+    close() { state.closed = true; },
+  };
+
+  return {
+    state,
+    connectTarget: async () => ({
+      client,
+      target: {
+        id: `${provider.id}-profitbase`,
+        type: 'iframe',
+        url: { origin: 'https://smart-catalog.profitbase.ru', path: '/eco/catalog/projects/houses', queryKeys: ['accountId'] },
+      },
+    }),
+  };
+}
+
 test('CLI executes when the installed package is reached through a release symlink', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'live-sync-symlink-'));
   t.after(() => rm(root, { recursive: true, force: true }));
@@ -70,6 +157,114 @@ test('CDP is loopback-only and safe URL metadata drops values', () => {
   assert.deepEqual(safeUrlMetadata('https://example.test/x?token=secret&page=2'), {
     origin: 'https://example.test', path: '/x', queryKeys: ['page', 'token'],
   });
+});
+
+test('Profitbase target selection requires a tenant-specific house or an explicit overview target', () => {
+  const target = (path) => ({
+    id: path,
+    type: 'iframe',
+    hostname: 'smart-catalog.profitbase.ru',
+    url: { origin: 'https://smart-catalog.profitbase.ru', path, queryKeys: ['opaque'] },
+    webSocketDebuggerUrl: 'ws://127.0.0.1:9222/devtools/page/fixture',
+  });
+  const kayan = getProvider('kayan');
+  const mbc = getProvider('mbc');
+  const mbcProjectsTarget = target('/eco/catalog/projects/houses');
+  const mbcHouseTarget = target('/eco/catalog/house/164684/smallGrid');
+  const kayanHouseTarget = target('/eco/catalog/house/154273/smallGrid');
+  assert.equal(targetMatchesProvider(mbc, mbcProjectsTarget), false);
+  assert.equal(targetMatchesProvider(mbc, mbcProjectsTarget, mbcProjectsTarget.id), true);
+  assert.equal(targetMatchesProvider(mbc, mbcHouseTarget), true);
+  assert.equal(targetMatchesProvider(mbc, kayanHouseTarget), false);
+  assert.equal(targetMatchesProvider(kayan, kayanHouseTarget), true);
+  assert.equal(targetMatchesProvider(kayan, mbcProjectsTarget), false);
+  assert.equal(targetMatchesProvider(kayan, mbcHouseTarget), false);
+  const anotherMbcHouse = target('/eco/catalog/house/122368/smallGrid');
+  assert.throws(() => selectProviderTarget(mbc, [mbcHouseTarget, anotherMbcHouse]), /ambiguous account selection/);
+  assert.equal(selectProviderTarget(mbc, [mbcProjectsTarget, kayanHouseTarget], mbcProjectsTarget.id), mbcProjectsTarget);
+});
+
+test('MBC browser capture reloads the project screen, visits every owned house, and never reads credentials', async () => {
+  const combinedHouseIds = new Set();
+  for (const providerId of ['mbc', 'mbc-sarbon']) {
+    const provider = getProvider(providerId);
+    const fake = fakeMbcBrowser(provider);
+    const capture = await captureFromAuthorizedTab(provider, {
+      cdpEndpoint: 'http://127.0.0.1:9222',
+      timeoutMs: 5,
+      connectTarget: fake.connectTarget,
+    });
+    const houseIds = provider.navigationPaths.map((path) => Number(path.match(/\/house\/(\d+)\//)?.[1]));
+    houseIds.forEach((houseId) => combinedHouseIds.add(houseId));
+    assert.deepEqual(fake.state.navigationPaths, ['/eco/catalog/projects/houses', ...provider.navigationPaths]);
+    const expectedNavigationExpressions = ['/eco/catalog/projects/houses', ...provider.navigationPaths]
+      .map((path) => `location.pathname === ${JSON.stringify(path)} ? location.reload() : location.pathname = ${JSON.stringify(path)}`);
+    const observedNavigationExpressions = fake.state.calls
+      .filter(({ method }) => method === 'Runtime.evaluate')
+      .map(({ params }) => params.expression);
+    assert.deepEqual(observedNavigationExpressions, expectedNavigationExpressions);
+    assert.ok(observedNavigationExpressions.every((expression) => !/cookie|localStorage|sessionStorage|indexedDB/i.test(expression)));
+    assert.deepEqual(capture.errors, []);
+    assert.deepEqual(capture.blocked, []);
+    assert.equal(capture.records.length, 3 + houseIds.length);
+    assert.deepEqual(
+      Object.fromEntries(['projects', 'houses', 'customStatuses'].map((endpoint) => [endpoint, capture.records.filter((record) => record.scope?.endpoint === endpoint).length])),
+      { projects: 1, houses: 1, customStatuses: 1 },
+    );
+    const properties = capture.records.filter((record) => record.scope?.endpoint === 'properties');
+    assert.deepEqual(properties.map((record) => record.scope), provider.projectDefinitions.flatMap((project) => project.profitbaseHouses.map((house) => ({
+      endpoint: 'properties',
+      projectSlug: project.slug,
+      projectId: project.id,
+      profitbaseProjectId: project.profitbaseProjectId,
+      houseId: house.id,
+      queueSourceValue: house.queueSourceValue,
+      offset: 0,
+    }))));
+    assert.deepEqual(
+      capture.records.filter((record) => ['projects', 'houses', 'customStatuses'].includes(record.scope?.endpoint)).map((record) => [record.scope.endpoint, record.url.path]),
+      [['projects', '/api/v4/json/projects'], ['houses', '/api/v4/json/house'], ['customStatuses', '/api/v4/json/custom-status/list']],
+    );
+    assert.ok(properties.every((record) => record.method === 'GET'
+      && record.url.path === '/api/v4/json/property'
+      && !record.url.queryKeys.includes('offset')));
+    assert.ok(fake.state.emittedUrls.filter((url) => url.includes('/property?')).every((url) => !new URL(url).searchParams.has('offset')));
+    assert.equal(fake.state.closed, true);
+    assert.ok(fake.state.calls.some(({ method }) => method === 'Fetch.disable'));
+    const continued = fake.state.calls.filter(({ method }) => method === 'Fetch.continueRequest');
+    assert.ok(continued.length >= capture.records.length);
+    assert.ok(continued.every(({ params }) => Object.keys(params).length === 1 && typeof params.requestId === 'string'));
+    assert.equal(fake.state.calls.some(({ method }) => /Cookies|Storage|DOMStorage|Headers|getRequestPostData|setExtraHTTPHeaders/i.test(method)), false);
+  }
+  assert.equal(combinedHouseIds.size, 10, 'the two isolated MBC runs cover exactly the ten reviewed residential houses');
+});
+
+test('MBC browser capture fails closed when a required dictionary or house response is missing', async () => {
+  const provider = getProvider('mbc-sarbon');
+  const missingDictionary = fakeMbcBrowser(provider, { omitSingleton: 'customStatuses' });
+  const dictionaryCapture = await captureFromAuthorizedTab(provider, {
+    cdpEndpoint: 'http://127.0.0.1:9222', timeoutMs: 1, connectTarget: missingDictionary.connectTarget,
+  });
+  assert.deepEqual(dictionaryCapture.errors, ['MBC customStatuses response was not observed']);
+
+  const missingHouse = fakeMbcBrowser(provider, { omitHouseId: 164684 });
+  const houseCapture = await captureFromAuthorizedTab(provider, {
+    cdpEndpoint: 'http://127.0.0.1:9222', timeoutMs: 1, connectTarget: missingHouse.connectTarget,
+  });
+  assert.deepEqual(houseCapture.errors, [
+    'MBC house 164684 response was not observed',
+    'MBC captured 0/1 required houses',
+  ]);
+
+  const incompleteHouse = fakeMbcBrowser(provider, { incompleteHouseId: 164684 });
+  const incompleteCapture = await captureFromAuthorizedTab(provider, {
+    cdpEndpoint: 'http://127.0.0.1:9222', timeoutMs: 1, connectTarget: incompleteHouse.connectTarget,
+  });
+  assert.deepEqual(incompleteCapture.errors, [
+    'MBC house 164684 property response is not a complete unpaginated result',
+    'MBC house 164684 response was not observed',
+    'MBC captured 0/1 required houses',
+  ]);
 });
 
 test('Uysot POST exception is exact, bounded, and preserves the required order shape', () => {
@@ -180,6 +375,9 @@ test('provider allowlist rejects unexpected Kayan query keys', () => {
   assert.ok(matchAllowedUrl(provider, 'https://pb21432.profitbase.ru/api/v4/json/property?houseId=154813&returnFilteredCount=true&showQueueCount=true'));
   assert.equal(matchAllowedUrl(provider, 'https://pb21432.profitbase.ru/api/v4/json/property?houseId=154813&apiKey=secret'), null);
   assert.equal(matchAllowedUrl(provider, 'https://pb21432.profitbase.ru/api/v4/json/property-delete?houseId=154813'), null);
+  const mbc = getProvider('mbc');
+  assert.ok(matchAllowedUrl(mbc, 'https://pb12218.profitbase.ru/api/v4/json/property?houseId=122368&returnFilteredCount=true&showQueueCount=false'));
+  assert.equal(matchAllowedUrl(mbc, 'https://pb12218.profitbase.ru/api/v4/json/property?houseId=122368&offset=1000&returnFilteredCount=true&showQueueCount=false'), null);
 });
 
 test('redaction removes personal/capability fields and secret scan is repeatable', () => {
@@ -415,51 +613,185 @@ function mbcGroups() {
   });
 }
 
+const mbcProfitbaseFixtureStatuses = Object.freeze([
+  { id: 101, baseStatus: 'AVAILABLE' },
+  { id: 102, baseStatus: 'BOOKED' },
+  { id: 103, baseStatus: 'SOLD' },
+  { id: 104, baseStatus: 'UNAVAILABLE' },
+  { id: 105, baseStatus: 'EXECUTION' },
+  { id: 106, baseStatus: 'UNKNOWN' },
+]);
+
+function mbcProfitbaseProperty(project, house, index, { purpose = 'residential', lifecycle = null } = {}) {
+  const selected = lifecycle
+    ? mbcProfitbaseFixtureStatuses.find((status) => status.baseStatus === lifecycle)
+    : mbcProfitbaseFixtureStatuses[index - 1] ?? mbcProfitbaseFixtureStatuses.find((status) => status.baseStatus === 'SOLD');
+  const baseStatus = selected?.baseStatus ?? 'SOLD';
+  const customStatusId = selected?.id ?? 103;
+  return {
+    id: house.id * 10_000 + index,
+    house_id: house.id,
+    projectId: project.profitbaseProjectId,
+    status: baseStatus,
+    customStatusId,
+    typePurpose: purpose,
+    propertyType: purpose === 'residential'
+      ? (project.slug === 'soy-boyi' && house.id === 136755 && index <= 15 ? 'duplex' : ['regnum-plaza', 'c1'].includes(project.slug) && index === 2 ? 'penthouse' : 'property')
+      : 'office',
+    number: String(index),
+    floor: 2,
+    rooms_amount: (project.slug === 'soy-boyi' && house.id === 136755 && index <= 15)
+      || (project.slug === 'saadiyat' && house.id === 149400 && index <= 4) ? 0 : 2,
+    area: { area_total: 50 + (index % 7) },
+    sectionName: 'S1',
+  };
+}
+
+const mbcReviewedHouseLifecycle = Object.freeze({
+  122368: Object.freeze({ AVAILABLE: 4, BOOKED: 0, SOLD: 341 }),
+  122371: Object.freeze({ AVAILABLE: 6, BOOKED: 3, SOLD: 407 }),
+  122139: Object.freeze({ AVAILABLE: 42, BOOKED: 21, SOLD: 181 }),
+  122296: Object.freeze({ AVAILABLE: 0, BOOKED: 3, SOLD: 355 }),
+  122346: Object.freeze({ AVAILABLE: 33, BOOKED: 4, SOLD: 209 }),
+  136755: Object.freeze({ AVAILABLE: 102, BOOKED: 1, SOLD: 244 }),
+  161781: Object.freeze({ AVAILABLE: 75, BOOKED: 5, SOLD: 35 }),
+  132970: Object.freeze({ AVAILABLE: 39, BOOKED: 10, SOLD: 217 }),
+  149400: Object.freeze({ AVAILABLE: 114, BOOKED: 10, SOLD: 129 }),
+  164684: Object.freeze({ AVAILABLE: 8, BOOKED: 78, SOLD: 111 }),
+});
+
+function mbcReviewedProfitbaseFixture() {
+  const projectDefinitions = [...mbcProjects, ...mbcSarbonProjects];
+  const projects = projectDefinitions.map((project) => ({ id: project.profitbaseProjectId, title: project.profitbaseProjectTitle }));
+  const houses = projectDefinitions.flatMap((project) => [
+    ...project.profitbaseHouses.map((house) => ({
+      id: house.id, projectId: project.profitbaseProjectId, projectName: project.profitbaseProjectTitle,
+      title: house.title, isArchive: false,
+    })),
+    ...project.excludedProfitbaseHouseIds.map((id) => ({
+      id, projectId: project.profitbaseProjectId, projectName: project.profitbaseProjectTitle,
+      title: 'Reviewed non-residential house', isArchive: false,
+    })),
+  ]);
+  const templates = {};
+  const groups = projectDefinitions.map((project) => ({
+    project,
+    houses: project.profitbaseHouses.map((house) => {
+      const rows = [];
+      let index = 0;
+      for (const lifecycle of ['AVAILABLE', 'BOOKED', 'SOLD']) {
+        for (let count = 0; count < mbcReviewedHouseLifecycle[house.id][lifecycle]; count += 1) {
+          rows.push(mbcProfitbaseProperty(project, house, ++index, { lifecycle }));
+        }
+      }
+      const row = rows.find((property) => property.status === 'AVAILABLE');
+      if (!templates[project.slug] && row) {
+        templates[project.slug] = { units: [{
+          id: `legacy-${row.id}`, crmId: String(row.id), number: row.number,
+          rooms: row.rooms_amount, area: row.area.area_total, floor: row.floor,
+          phase: house.queueSourceValue, section: row.sectionName,
+          plan: `/${project.slug}/plans/reviewed.webp`,
+        }] };
+      }
+      return {
+        houseId: house.id,
+        pages: [{ status: 'success', data: { properties: rows, filteredCount: rows.length } }],
+      };
+    }),
+  }));
+  return {
+    input: {
+      projects,
+      houses: { success: true, data: houses },
+      customStatuses: { success: true, data: { customStatuses: mbcProfitbaseFixtureStatuses } },
+      groups,
+    },
+    templates,
+    projectDefinitions,
+  };
+}
+
+function mbcProfitbaseProjectProperties(project) {
+  let remaining = project.minimumResidentialUnits;
+  return project.profitbaseHouses.map((house, houseIndex) => {
+    const housesLeft = project.profitbaseHouses.length - houseIndex;
+    const count = houseIndex === project.profitbaseHouses.length - 1 ? remaining : Math.floor(remaining / housesLeft);
+    remaining -= count;
+    const properties = Array.from({ length: count }, (_, index) => mbcProfitbaseProperty(project, house, index + 1));
+    properties.push(mbcProfitbaseProperty(project, house, count + 1, { purpose: 'commercial', lifecycle: 'AVAILABLE' }));
+    return { house, properties };
+  });
+}
+
 function mbcCaptureFixture(projects = mbcProjects, provider = 'mbc') {
   const capturedAt = '2026-09-15T12:00:00.000Z';
-  const records = projects.flatMap((project) => {
-    const row = mbcRow(project, 7_000 + project.id, 900_000 + project.id);
-    return [
-      { propertyType: 'residential', data: [row] },
-      { propertyType: 'commercial', data: [] },
-    ].map(({ propertyType, data }) => makeBodyRecord({
-      id: `mbc-${project.slug}-${propertyType}-plans-1`,
-      method: 'POST',
-      url: 'https://mbc.uz/api/plans',
+  const api = 'https://pb12218.profitbase.ru/api/v4/json';
+  const houses = projects.flatMap((project) => [
+    ...project.profitbaseHouses.map((house) => ({
+      id: house.id, projectId: project.profitbaseProjectId, projectName: project.profitbaseProjectTitle,
+      title: house.title, isArchive: false,
+    })),
+    ...project.excludedProfitbaseHouseIds.map((id) => ({
+      id, projectId: project.profitbaseProjectId, projectName: project.profitbaseProjectTitle,
+      title: 'Excluded non-residential house', isArchive: false,
+    })),
+  ]);
+  const singletonRecords = [
+    { id: 'projects', path: '/projects', scope: { endpoint: 'projects' }, value: projects.map((project) => ({ id: project.profitbaseProjectId, title: project.profitbaseProjectTitle })) },
+    { id: 'houses', path: '/house', scope: { endpoint: 'houses' }, value: { success: true, data: houses } },
+    { id: 'custom-statuses', path: '/custom-status/list?lang=ru', scope: { endpoint: 'customStatuses' }, value: { success: true, data: { customStatuses: mbcProfitbaseFixtureStatuses } } },
+  ].map((entry) => makeBodyRecord({
+    id: `mbc-profitbase-${entry.id}`,
+    method: 'GET',
+    url: `${api}${entry.path}`,
+    status: 200,
+    mimeType: 'application/json',
+    text: JSON.stringify(entry.value),
+    capturedAt,
+    scope: entry.scope,
+  }));
+  const propertyRecords = projects.flatMap((project) => mbcProfitbaseProjectProperties(project).map(({ house, properties }) => makeBodyRecord({
+      id: `mbc-profitbase-${project.slug}-${house.id}`,
+      method: 'GET',
+      url: `${api}/property?houseId=${house.id}&returnFilteredCount=true&showQueueCount=false`,
       status: 200,
       mimeType: 'application/json',
-      text: JSON.stringify({ plans: { total: data.length, current_page: 1, last_page: 1, data } }),
+      text: JSON.stringify({ status: 'success', data: { properties, filteredCount: properties.length } }),
       capturedAt,
-      scope: { projectSlug: project.slug, projectId: project.id, propertyType, endpoint: 'plans', page: 1 },
-    }));
-  });
+      scope: {
+        endpoint: 'properties', projectSlug: project.slug, projectId: project.id,
+        profitbaseProjectId: project.profitbaseProjectId, houseId: house.id,
+        queueSourceValue: house.queueSourceValue, offset: 0,
+      },
+    })));
   return {
     schemaVersion: 1,
     provider,
     capturedAt,
     target: null,
-    safety: { publicReadOnlyTransport: true, credentialsUsed: false },
+    safety: { cdpLoopbackOnly: true, requestHeadersRead: false, browserStorageRead: false, cookiesRead: false, unsafeMethodsBlocked: true },
     blocked: [],
     errors: [],
-    records,
+    records: [...singletonRecords, ...propertyRecords],
   };
 }
 
 async function writeMbcTemplateFixtures(root, projects = [...mbcProjects, ...mbcSarbonProjects]) {
   await mkdir(root, { recursive: true });
   for (const project of projects) {
-    const row = mbcRow(project, 7_000 + project.id, 900_000 + project.id);
+    const house = project.profitbaseHouses[0];
+    const row = mbcProfitbaseProperty(project, house, 1);
     const template = {
       projectSlug: project.slug,
       units: [{
-        id: String(row.id),
-        crmId: String(row.crm_id),
+        id: `legacy-${row.id}`,
+        crmId: String(row.id),
         number: row.number,
-        rooms: row.rooms,
-        area: row.square,
+        rooms: row.rooms_amount,
+        area: row.area.area_total,
         floor: row.floor,
-        phase: row.queue,
-        section: row.section,
+        phase: house.queueSourceValue,
+        section: row.sectionName,
         plan: `/${project.slug}/plans/fixture.webp`,
       }],
     };
@@ -478,7 +810,15 @@ test('MBC CLI keeps the established four-project transaction separate from SARBO
   assert.equal(mbcOutput.write, false);
   assert.deepEqual(mbcOutput.artifacts, mbcProjects.map((project) => `${project.slug}-catalog.json`));
   assert.deepEqual(Object.keys(mbcOutput.audit), mbcProjects.map((project) => project.slug));
-  assert.ok(Object.values(mbcOutput.audit).every((audit) => audit.complete && audit.observedRecords === 1));
+  assert.ok(mbcProjects.every((project) => {
+    const audit = mbcOutput.audit[project.slug];
+    return audit.complete
+      && audit.observedRecords === project.minimumResidentialUnits
+      && audit.statusCounts.available > 0
+      && audit.statusCounts.reserved > 0
+      && audit.statusCounts.sold > 0
+      && audit.statusCounts.unavailable > 0;
+  }));
 
   const partial = await atomicRunDirectory(
     join(root, 'partial-captures'),
@@ -487,7 +827,7 @@ test('MBC CLI keeps the established four-project transaction separate from SARBO
   );
   assert.throws(
     () => execFileSync(process.execPath, [cli, 'dry-run', '--provider', 'mbc', '--input', partial, '--template', templates], { encoding: 'utf8' }),
-    (error) => /no complete saadiyat category pages/.test(String(error?.stderr)),
+    (error) => /0\/1 complete saadiyat house 132970 property responses/.test(String(error?.stderr)),
     'the established MBC provider must remain atomic across its four projects',
   );
 
@@ -505,12 +845,64 @@ test('MBC CLI keeps the established four-project transaction separate from SARBO
   );
   assert.throws(
     () => execFileSync(process.execPath, [cli, 'dry-run', '--provider', 'mbc-sarbon', '--input', emptySarbonCapture, '--template', templates], { encoding: 'utf8' }),
-    (error) => /no complete sarbon category pages/.test(String(error?.stderr)),
+    (error) => /0\/1 complete sarbon house 164684 property responses/.test(String(error?.stderr)),
     'a broken SARBON candidate must fail without becoming part of the four-project MBC run',
   );
 });
 
-test('MBC capture honors a bounded Retry-After response and resumes the same exact request', async (t) => {
+test('MBC Profitbase normalizer preserves the reviewed 2,787-unit lifecycle universe', () => {
+  const fixture = mbcReviewedProfitbaseFixture();
+  const result = normalizeMbcProfitbaseCapture(
+    fixture.input,
+    '2026-09-15T12:00:00.000Z',
+    fixture.templates,
+    fixture.projectDefinitions,
+  );
+  const artifacts = result.artifacts.map(({ artifact }) => artifact);
+  const units = artifacts.flatMap((artifact) => artifact.units);
+  assert.equal(units.length, 2_787);
+  assert.equal(units.filter((unit) => unit.status === 'available').length, 423);
+  assert.equal(units.filter((unit) => unit.status === 'reserved').length, 135);
+  assert.equal(units.filter((unit) => unit.status === 'sold').length, 2_229);
+  assert.equal(units.filter((unit) => unit.status === 'unavailable').length, 0);
+  assert.equal(units.filter((unit) => unit.rooms === 0).length, 19);
+  assert.equal(units.filter((unit) => unit.rawPropertyType === 'duplex' && unit.rooms === 0).length, 15);
+  assert.equal(units.some((unit) => unit.rawPropertyType === 'penthouse'), true);
+  assert.ok(units.every((unit) => unit.propertyType === 'apartment'
+    && unit.publicPrice === false
+    && unit.priceVisibility === 'request-only'
+    && unit.price === undefined
+    && unit.pricePerM2 === undefined));
+  assert.equal(artifacts.reduce((sum, artifact) => sum + artifact.sourceCount, 0), 2_787);
+  assert.equal(artifacts.reduce((sum, artifact) => sum + artifact.soldResidentialTotal, 0), 2_229);
+  assert.ok(artifacts.every((artifact) => artifact.completeness.saleDatePolicy.includes('baseline SOLD')));
+
+  const variants = structuredClone(fixture.input);
+  const soldRows = variants.groups[0].houses[0].pages[0].data.properties.filter((row) => row.status === 'SOLD').slice(0, 3);
+  for (const [row, baseStatus] of soldRows.map((row, index) => [row, ['EXECUTION', 'UNAVAILABLE', 'UNKNOWN'][index]])) {
+    row.status = baseStatus;
+    row.customStatusId = mbcProfitbaseFixtureStatuses.find((status) => status.baseStatus === baseStatus).id;
+  }
+  const variantUnits = normalizeMbcProfitbaseCapture(
+    variants,
+    '2026-09-15T12:00:00.000Z',
+    fixture.templates,
+    fixture.projectDefinitions,
+  ).artifacts.flatMap(({ artifact }) => artifact.units);
+  assert.equal(variantUnits.filter((unit) => unit.status === 'reserved').length, 136);
+  assert.equal(variantUnits.filter((unit) => unit.status === 'unavailable').length, 2);
+  assert.equal(variantUnits.filter((unit) => unit.status === 'sold').length, 2_226);
+
+  const mismatch = structuredClone(fixture.input);
+  const mismatchRow = mismatch.groups[0].houses[0].pages[0].data.properties[0];
+  mismatchRow.customStatusId = mbcProfitbaseFixtureStatuses.find((status) => status.baseStatus === 'SOLD').id;
+  assert.throws(
+    () => normalizeMbcProfitbaseCapture(mismatch, undefined, fixture.templates, fixture.projectDefinitions),
+    /status\/customStatusId mismatch/,
+  );
+});
+
+test('legacy MBC public helper honors a bounded Retry-After response and resumes the same exact request', async (t) => {
   assert.equal(directSourceInternals.retryAfterMilliseconds(new Response('', { status: 429, headers: { 'retry-after': '0' } })), 0);
   assert.equal(directSourceInternals.retryAfterMilliseconds(new Response('', { status: 429, headers: { 'retry-after': '9999' } })), 65_000);
   const originalFetch = globalThis.fetch;
@@ -539,7 +931,7 @@ test('MBC capture honors a bounded Retry-After response and resumes the same exa
   assert.equal(capture.records.length, mbcProjects.length * 2);
 });
 
-test('MBC capture posts exact residential and commercial evidence requests for every owned project', async (t) => {
+test('legacy MBC public helper posts exact residential and commercial evidence requests for every owned project', async (t) => {
   const originalFetch = globalThis.fetch;
   t.after(() => { globalThis.fetch = originalFetch; });
   const requests = [];
@@ -767,7 +1159,7 @@ test('MBC normalization fails closed on missing pages, duplicates, wrong type, o
   const unmatchedTemplates = Object.fromEntries(mbcProjects.map((project) => [project.slug, { units: [{
     id: 'not-current', crmId: 'not-current', number: 'not-current', rooms: 9, area: 999, floor: 99, phase: '9', section: '9', plan: `/${project.slug}/plans/stale.webp`,
   }] }]));
-  assert.throws(() => normalizeMbcProjects(mbcGroups(), undefined, unmatchedTemplates), /could not match any local plan/);
+  assert.throws(() => normalizeMbcProjects(mbcGroups(), undefined, unmatchedTemplates), /could not match any current available unit to its local plan template/);
 
   assert.throws(() => normalizeMbcProjects(mbcGroups().slice(0, -1)), /requires 4 project groups/);
 });

@@ -11,8 +11,8 @@ pagination, identity, or count uncertainty makes the command exit non-zero.
 | --- | --- | --- | --- |
 | `kayan` | Mirador, Ofiyat | Authorized Profitbase OOPIF, exact `GET https://pb21432.profitbase.ru/api/v4/json/property`; allowed query keys are `houseId`, `returnFilteredCount`, `showQueueCount`; house IDs `154813`, `153505`, `153506`, `154273` | Mirador 209; Ofiyat apartments/parking 585; every response satisfied `properties.length === filteredCount` |
 | `uysot` | Avalon Residence | Authorized showroom; exact read-only `POST https://service.app.uysot.uz/v1/smart-catalog/table`, body keys `page,size,orders,houseId`, forced to page 1/size 500/house 1074 | 268 unique units, declared 268, one page, buildings A/B1/B2 |
-| `mbc` | Regnum Plaza, C1, Soy Bo‘yi, Saadiyat | Public read-only `POST https://mbc.uz/api/plans`; each project uses the exact URL-encoded keys `project={1\|2\|3\|18}&type={residential\|commercial}&page=N` | Every project/category must provide all declared pages; published rows must be `AVAILABLE residential` with unique public and CRM IDs; all four established artifacts publish atomically |
-| `mbc-sarbon` | SARBON | The same public read-only MBC endpoint and exact body contract, restricted to `project=21&type={residential\|commercial}&page=N` | A complete SARBON-only candidate; failure or an empty feed cannot block the established four-project MBC transaction |
+| `mbc` | Regnum Plaza, C1, Soy Bo‘yi, Saadiyat | Authorized MBC Profitbase OOPIF; exact `GET` responses from tenant host `pb12218.profitbase.ru` for `/api/v4/json/projects`, `/house`, `/custom-status/list?lang=ru`, and one complete unpaginated `/property?houseId=…&returnFilteredCount=true&showQueueCount=false` response for each of 9 allowlisted residential houses | `typePurpose=residential` yields the complete explicit lifecycle: Regnum 761 (A10/B3/S748), C1 244 (A42/B21/S181), Soy Bo‘yi 1,066 (A210/B13/S843), Saadiyat 519 (A153/B20/S346). The four artifacts publish atomically. |
+| `mbc-sarbon` | SARBON | The same authorized MBC tenant and exact GET contract, isolated to house `164684` | 197 residential units (A8/B78/S111). A SARBON failure cannot block the established four-project MBC transaction. |
 | `sun` | SUN | Public `GET /estate/embedjs/`, `GET /estate/request/get_request_url/`, then read-only `POST https://api.macroserver.uz/estate/catalog/` action `objects_list` | Pages 0–10 contain 336 overlapping rows and exactly 306 stable unique IDs: 51 available, 41 reserved, 214 sold |
 | `nrg-bi` | 4U, Bayterak, Botanika Saroyi, Flagman, Jomiy, Maftun Makon, Meros, Sado, Voha, Yangibaxt, Zamon | Public read-only `POST https://apigw.bi.group/sales-picker/microfe-v3/realEstateList`, one exact `{blockId}` `/blockMatrix` request for every trusted block, and paginated `/placementList` enrichment; 4U additionally uses exact anonymous `/placement` detail lookups and exact `GET` requests to its unit-bound `s3.bi.group/crm-clients-e1csales/layouts/` assets. Project and apartment-type UUIDs are allowlisted and every request/response is bounded | The matrix publishes authoritative apartment `FREE`, `BOOKED`, and `SOLD` facts keyed by `placementUUID`; every `FREE` identity must exist exactly once in `placementList` with `isSale===true`. Matrix-first snapshots are retried three times, including transient pagination duplicates. A bounded active-listing lag (at most 1% rounded up, capped at 25 rows) is audited and ignored only when an `isSale===true` list identity is explicitly `BOOKED`/`SOLD` in the matrix; missing `FREE`, unknown identities, and larger drift fail closed. Current reviewed coverage is 6,994 apartments: 1,882 free, 7 booked, and 5,105 sold. No sale timestamp exists upstream, so baseline sold rows contribute to all-time known-sold totals but never fabricate a historical monthly sale. |
 
@@ -30,18 +30,29 @@ public BI sales-picker source.
   opaque body and response are never read, logged, rewritten, or persisted.
   Interactive checkpoints are never solved by the collector and require the
   operator to complete them in the existing browser session.
-- Kayan and Uysot reuse server-side persistent Chrome profiles. No collector
+- Kayan, MBC, and Uysot reuse server-side persistent Chrome profiles. No collector
   calls cookie, request-header, Storage, localStorage, or sessionStorage APIs.
 - Every browser request is checked against an exact host/path/method/query-key
   allowlist. Mutating methods are blocked. Uysot has one exact read-only POST
   exception whose request is constrained to house 1074.
-- MBC, SUN, and NRG use fixed read-only query bodies and no credentials. The
-  `mbc` run owns Regnum Plaza, C1, Soy Bo‘yi, and Saadiyat together; an invalid
-  row or incomplete pagination prevents all four established artifacts from
-  being published. `mbc-sarbon` reuses the exact guarded MBC transport and
-  normalizer but owns only SARBON, isolating both transactions. HTTP 429 retries
-  honor the source's bounded `Retry-After` window without accepting a partial
-  candidate.
+- MBC attaches to the existing authorized browser but reads only allowlisted
+  GET response bodies. Automatic CDP selection requires one of the ten reviewed
+  MBC house paths; the tenant-agnostic project overview is accepted only with an
+  explicit target ID for the first bootstrap. The collector then visits the
+  project overview before every house, retains the opaque iframe query entirely
+  inside the browser, and never reads or persists its values. `mbc` owns Regnum
+  Plaza, C1, Soy Bo‘yi, and Saadiyat together; `mbc-sarbon` owns only SARBON.
+- The two MBC wrappers take the same exclusive browser lock before navigating
+  that shared iframe. Overlapping five-minute timer runs therefore serialize
+  instead of mixing responses from the main and SARBON transactions.
+- MBC accepts only rows whose `typePurpose` is exactly `residential`; this keeps
+  residential penthouses and duplexes while excluding parking, storage, and
+  commercial stock. `customStatusId -> baseStatus` must agree exactly with the
+  row's status. The accepted lifecycle values are `AVAILABLE`, `BOOKED`, `SOLD`,
+  `UNAVAILABLE`, `EXECUTION`, and `UNKNOWN`; disappearance is never interpreted
+  as a sale. A malformed status, changed project/house universe, incomplete
+  house response, duplicate identity, or count below the reviewed safety floor
+  rejects the entire provider candidate.
 - NRG `blockMatrix.placementUIStatus` is the only lifecycle authority:
   `FREE/isSale=true`, `BOOKED/isSale=false`, and `SOLD/isSale=false` are the
   three accepted pairs. `placementList` is used only to enrich current rows;
@@ -57,10 +68,11 @@ public BI sales-picker source.
   The backend also rejects subtraction from the previously accepted
   `matrixBlockIds`, preventing a partial matrix from deactivating baseline
   sold units even when its total count drop is small.
-- `mbc-sarbon` uses the coordinator's current positive floor at
-  `minimumRecords: 1`. A legitimate zero-AVAILABLE sold-out feed therefore
-  fails only this isolated provider and preserves its last-known-good catalogue;
-  authoritative zero support needs a separately reviewed coordinator contract.
+- Profitbase has no historical sale timestamp. An apartment first received as
+  `SOLD` is therefore an all-time known-sold fact only; it does not fabricate a
+  monthly sale. A future accepted transition into explicit `SOLD` is recorded by
+  the backend's forward-only monthly ledger. Because the capture contains the
+  full lifecycle, a sold-out project remains a non-empty authoritative universe.
 - 4U publishes a plan URL only when both the 3,000px-or-larger suffixless PNG
   original and its 1,600px JPEG card preview pass exact identity, origin, MIME,
   dimensions, byte-size, and body-hash checks. The `.png` suffix on list
@@ -73,11 +85,10 @@ public BI sales-picker source.
   URLs still match `placementList`. Consequently a normal five-minute run does
   no detail or image requests; only new, changed, or previously invalid units
   repeat their one detail request and four asset downloads.
-- MBC's public response `id` is retained only as provenance because it changes
-  when the listing set changes. Stable unit matching uses `crm_id`, but raw CRM
-  IDs are never embedded in public `sourceKey` values. Existing template keys
-  are retained by CRM ID (or Regnum's exact unambiguous public-fact tuple); a
-  previously unseen row gets a deterministic, project-namespaced SHA-256 key.
+- Profitbase property `id` is the stable MBC CRM identity, but raw CRM IDs are
+  never embedded in public `sourceKey` values. Existing template keys are
+  retained by CRM ID; a previously unseen row gets a deterministic,
+  project-namespaced SHA-256 key.
   Templates that predate explicit keys retain the backend importer's historical
   opaque key so an upgrade does not break saved lead/unit references.
 - SUN's short-lived signed catalogue URL exists only in memory. It is never
@@ -98,8 +109,8 @@ Uysot Chrome must be started with `--enable-unsafe-swiftshader`; this is also
 declared in `providers.mjs`. Both CDP listeners must remain loopback-only:
 
 ```text
-main/Kayan: 127.0.0.1:9222
-Uysot:      127.0.0.1:9223
+main/Kayan/MBC: 127.0.0.1:9222
+Uysot:          127.0.0.1:9223
 ```
 
 ## Commands
@@ -116,8 +127,8 @@ A non-publishing live capture writes atomic evidence, completeness metadata,
 and a candidate artifact under a new run directory:
 
 ```sh
-node src/cli.mjs capture --provider mbc --output /tmp/residence-captures
-node src/cli.mjs capture --provider mbc-sarbon --output /tmp/residence-captures
+node src/cli.mjs capture --provider mbc --cdp http://127.0.0.1:9222 --output /tmp/residence-captures
+node src/cli.mjs capture --provider mbc-sarbon --cdp http://127.0.0.1:9222 --output /tmp/residence-captures
 node src/cli.mjs capture --provider sun --output /tmp/residence-captures
 node src/cli.mjs capture --provider nrg-bi --output /tmp/residence-captures
 node src/cli.mjs capture --provider kayan --cdp http://127.0.0.1:9222 --output /tmp/residence-captures
@@ -168,8 +179,9 @@ network request. If the seed is absent, corrupt, oversized, or mismatched, the
 collector safely performs the full first audit instead of trusting it.
 
 Optional environment variables are `LIVE_SYNC_CAPTURE_DIR`,
-`LIVE_SYNC_CDP_KAYAN_URL`, and `LIVE_SYNC_CDP_UYSOT_URL`. MBC, SUN, and NRG do
-not need CDP.
+`LIVE_SYNC_CDP_KAYAN_URL`, `LIVE_SYNC_CDP_MBC_URL`,
+`LIVE_SYNC_MBC_LOCK_FILE`, and
+`LIVE_SYNC_CDP_UYSOT_URL`. SUN and NRG do not need CDP.
 
 Kayan, SUN, and all five MBC projects deliberately require their public
 artwork-enrichment templates; the collector fails before capture if one is

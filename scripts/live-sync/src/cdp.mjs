@@ -103,19 +103,41 @@ export async function listTargets(cdpEndpoint) {
   });
 }
 
-export async function connectProviderTarget(provider, cdpEndpoint, explicitTargetId = null) {
-  const targets = await listTargets(cdpEndpoint);
-  const candidates = targets.filter((target) => {
-    if (!target.webSocketDebuggerUrl || (explicitTargetId && target.id !== explicitTargetId)) return false;
-    return provider.pageHosts.includes(target.hostname);
-  });
+export function targetMatchesProvider(provider, target, explicitTargetId = null) {
+  if (!target.webSocketDebuggerUrl || (explicitTargetId && target.id !== explicitTargetId)) return false;
+  if (!['page', 'iframe'].includes(target.type)) return false;
+  if (!provider.pageHosts.includes(target.hostname)) return false;
+  const path = target.url?.path ?? '';
+  const hasTargetRules = (provider.targetPaths?.length ?? 0) > 0 || (provider.targetHouseIds?.length ?? 0) > 0;
+  if (!hasTargetRules) return true;
+  // A projects overview path does not identify a Profitbase tenant. It is
+  // eligible only when an operator supplied this exact CDP target ID. Normal
+  // unattended selection starts from an allowlisted tenant-specific house.
+  if (provider.targetPaths?.includes(path)) return explicitTargetId === target.id;
+  const houseId = Number(path.match(/^\/eco\/catalog\/house\/(\d+)(?:\/|$)/)?.[1]);
+  return Number.isSafeInteger(houseId) && provider.targetHouseIds?.includes(houseId);
+}
+
+export function selectProviderTarget(provider, targets, explicitTargetId = null) {
+  const candidates = targets.filter((target) => targetMatchesProvider(provider, target, explicitTargetId));
   if (candidates.length === 0) {
     const visible = targets.filter((target) => target.type === 'page').map((target) => target.hostname ?? '(invalid URL)');
     throw new Error(`${provider.id}: no matching authorized tab on CDP endpoint; page hosts: ${[...new Set(visible)].join(', ') || '(none)'}`);
   }
   // Prefer the exact application page over an iframe or service worker.
   candidates.sort((left, right) => Number(right.type === 'page') - Number(left.type === 'page'));
-  const target = candidates[0];
+  const preferredType = candidates[0].type;
+  const preferred = candidates.filter((candidate) => candidate.type === preferredType);
+  if (preferred.length > 1 && !explicitTargetId) {
+    throw new Error(`${provider.id}: multiple matching authorized catalogue targets; refusing an ambiguous account selection`);
+  }
+  const target = preferred[0];
+  return target;
+}
+
+export async function connectProviderTarget(provider, cdpEndpoint, explicitTargetId = null) {
+  const targets = await listTargets(cdpEndpoint);
+  const target = selectProviderTarget(provider, targets, explicitTargetId);
   const debuggerUrl = new URL(target.webSocketDebuggerUrl);
   const cdpBase = assertLoopbackCdp(cdpEndpoint);
   debuggerUrl.hostname = cdpBase.hostname;

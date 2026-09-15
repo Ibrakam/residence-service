@@ -9,6 +9,26 @@ const safeMethods = new Set(['GET', 'HEAD', 'OPTIONS']);
 const uysotDocumentForbiddenCode = 'uysot_document_http_403';
 const uysotDocumentForbiddenMessage = 'app.uysot.uz top-level document returned HTTP 403 before SPA startup';
 
+function isMbcProvider(provider) {
+  return provider.id === 'mbc' || provider.id === 'mbc-sarbon';
+}
+
+function mbcHouseScope(provider, houseId) {
+  for (const project of provider.projectDefinitions ?? []) {
+    const house = project.profitbaseHouses?.find((candidate) => candidate.id === houseId);
+    if (house) return {
+      endpoint: 'properties',
+      projectSlug: project.slug,
+      projectId: project.id,
+      profitbaseProjectId: project.profitbaseProjectId,
+      houseId,
+      queueSourceValue: house.queueSourceValue,
+      offset: 0,
+    };
+  }
+  return null;
+}
+
 export function parseUysotReadOnlyBody(postData) {
   let body;
   try { body = JSON.parse(postData || ''); } catch { throw new Error('Uysot table request body is not JSON'); }
@@ -82,6 +102,7 @@ export async function captureFromAuthorizedTab(provider, {
   reload = true,
   connectTarget = connectProviderTarget,
 } = {}) {
+  const captureStartedAt = Date.now();
   const { client, target } = await connectTarget(provider, cdpEndpoint, targetId);
   const methods = new Map();
   const eligible = new Map();
@@ -93,8 +114,22 @@ export async function captureFromAuthorizedTab(provider, {
   const forbiddenDocumentFrameIds = new Set();
   let uysotTableRequestId = null;
   const kayanHouseIds = new Set();
+  const mbcRequiredHouseIds = new Set(
+    isMbcProvider(provider)
+      ? provider.projectDefinitions.flatMap((project) => project.profitbaseHouses.map((house) => house.id))
+      : [],
+  );
+  const mbcHouseIds = new Set();
+  const mbcSingletons = new Set();
+  const mbcPendingKeys = new Set();
+  const mbcCompletedKeys = new Set();
+  const mbcRequiredSingletons = new Set(['projects', 'houses', 'customStatuses']);
   let completionResolve;
   const completion = new Promise((resolve) => { completionResolve = resolve; });
+
+  const mbcCaptureComplete = () => isMbcProvider(provider)
+    && mbcHouseIds.size === mbcRequiredHouseIds.size
+    && [...mbcRequiredSingletons].every((endpoint) => mbcSingletons.has(endpoint));
 
   const failUysotDocumentForbidden = () => {
     if (failureCode) return;
@@ -132,7 +167,35 @@ export async function captureFromAuthorizedTab(provider, {
       if ([154813, 153505, 153506, 154273].includes(houseId)) scope = { houseId };
       else return;
     }
-    eligible.set(requestId, { method, url: response.url, status: response.status, mimeType: response.mimeType, scope });
+    let dedupeKey = null;
+    if (isMbcProvider(provider) && match.url.hostname === provider.profitbaseHost) {
+      if (match.url.pathname === '/api/v4/json/property') {
+        if (match.url.searchParams.get('returnFilteredCount') !== 'true'
+          || match.url.searchParams.get('showQueueCount') !== 'false'
+          || [...match.url.searchParams.keys()].length !== 3) return;
+        const houseId = Number(match.url.searchParams.get('houseId'));
+        scope = mbcHouseScope(provider, houseId);
+        if (!scope) return;
+        // The reviewed smart-catalog request returns the complete house in one
+        // response and does not carry an offset. A newly paginated contract is
+        // rejected until its page size/order semantics are separately audited.
+        scope.offset = 0;
+        dedupeKey = `properties:${houseId}`;
+      } else if (match.url.pathname === '/api/v4/json/projects') {
+        scope = { endpoint: 'projects' };
+        dedupeKey = 'projects';
+      } else if (match.url.pathname === '/api/v4/json/house') {
+        scope = { endpoint: 'houses' };
+        dedupeKey = 'houses';
+      } else if (match.url.pathname === '/api/v4/json/custom-status/list') {
+        if (match.url.searchParams.get('lang') !== 'ru' || [...match.url.searchParams.keys()].length !== 1) return;
+        scope = { endpoint: 'customStatuses' };
+        dedupeKey = 'customStatuses';
+      } else return;
+      if (mbcPendingKeys.has(dedupeKey) || mbcCompletedKeys.has(dedupeKey)) return;
+      mbcPendingKeys.add(dedupeKey);
+    }
+    eligible.set(requestId, { method, url: response.url, status: response.status, mimeType: response.mimeType, scope, dedupeKey });
   });
   const stopFinished = client.on('Network.loadingFinished', async ({ requestId }) => {
     const response = eligible.get(requestId);
@@ -147,13 +210,33 @@ export async function captureFromAuthorizedTab(provider, {
         capturedAt: new Date().toISOString(),
       });
       records.push(record);
+      if (response.dedupeKey) mbcCompletedKeys.add(response.dedupeKey);
       if (provider.id === 'uysot' && response.method === 'POST' && new URL(response.url).pathname === '/v1/smart-catalog/table') completionResolve();
       if (provider.id === 'kayan' && response.scope?.houseId) {
         kayanHouseIds.add(response.scope.houseId);
         if (kayanHouseIds.size === 4) completionResolve();
       }
+      if (isMbcProvider(provider)) {
+        if (response.scope?.endpoint === 'properties') {
+          const properties = record.value?.data?.properties;
+          const filteredCount = Number(record.value?.data?.filteredCount);
+          if (String(record.value?.status ?? '').toLowerCase() !== 'success'
+            || !Array.isArray(properties)
+            || !Number.isSafeInteger(filteredCount)
+            || filteredCount < 0
+            || properties.length !== filteredCount) {
+            errors.push(`MBC house ${response.scope.houseId} property response is not a complete unpaginated result`);
+          } else {
+            mbcHouseIds.add(response.scope.houseId);
+          }
+        }
+        else if (mbcRequiredSingletons.has(response.scope?.endpoint)) mbcSingletons.add(response.scope.endpoint);
+        if (mbcCaptureComplete()) completionResolve();
+      }
     } catch (error) {
       errors.push(error instanceof Error ? error.message : String(error));
+    } finally {
+      if (response.dedupeKey) mbcPendingKeys.delete(response.dedupeKey);
     }
   });
   const stopPaused = client.on('Fetch.requestPaused', async ({ requestId, request, networkId }) => {
@@ -197,8 +280,44 @@ export async function captureFromAuthorizedTab(provider, {
         while (!kayanHouseIds.has(expectedHouseId) && Date.now() < deadline) await delay(100);
         if (!kayanHouseIds.has(expectedHouseId)) errors.push(`KAYAN house ${expectedHouseId} response was not observed`);
       }
+    } else if (isMbcProvider(provider)) {
+      if (!reload) throw new Error(`${provider.id}: complete Profitbase capture requires the initial projects reload`);
+      const projectsPath = provider.targetPaths?.[0];
+      if (!projectsPath) throw new Error(`${provider.id}: Profitbase projects target path is not configured`);
+      // Start from the MBC project/house screen. It is the only reviewed view
+      // that emits the projects, complete house universe, and custom-status
+      // dictionaries. Assigning only pathname preserves the opaque tenant
+      // context inside the authorized OOPIF and never exposes query values.
+      await client.call('Runtime.evaluate', {
+        expression: `location.pathname === ${JSON.stringify(projectsPath)} ? location.reload() : location.pathname = ${JSON.stringify(projectsPath)}`,
+      });
+      const captureDeadline = captureStartedAt + timeoutMs;
+      const singletonDeadline = Math.min(captureDeadline, Date.now() + 20_000);
+      while (![...mbcRequiredSingletons].every((endpoint) => mbcSingletons.has(endpoint)) && Date.now() < singletonDeadline) await delay(100);
+      for (const path of provider.navigationPaths) {
+        const expectedHouseId = Number(path.match(/\/house\/(\d+)\//)?.[1]);
+        if (!mbcHouseIds.has(expectedHouseId)) {
+          // Only pathname is assigned, so the authorized iframe retains its
+          // opaque account context without exposing it to the collector.
+          await client.call('Runtime.evaluate', {
+            expression: `location.pathname === ${JSON.stringify(path)} ? location.reload() : location.pathname = ${JSON.stringify(path)}`,
+          });
+        }
+        const deadline = Math.min(captureDeadline, Date.now() + 20_000);
+        while (!mbcHouseIds.has(expectedHouseId) && Date.now() < deadline) await delay(100);
+        if (!mbcHouseIds.has(expectedHouseId)) errors.push(`MBC house ${expectedHouseId} response was not observed`);
+      }
     } else if (reload) await client.call('Page.reload', { ignoreCache: true });
-    await Promise.race([completion, delay(timeoutMs)]);
+    // Every MBC house is visited synchronously above. Avoid creating a losing
+    // timeout promise after the complete response set has already arrived: the
+    // timer would otherwise keep the short-lived collector process alive until
+    // the full capture timeout despite having a valid candidate ready.
+    if (!isMbcProvider(provider) || !mbcCaptureComplete()) {
+      const completionWaitMs = isMbcProvider(provider)
+        ? Math.max(0, captureStartedAt + timeoutMs - Date.now())
+        : timeoutMs;
+      await Promise.race([completion, delay(completionWaitMs)]);
+    }
     const hasUysotTable = () => records.some((record) => record.method === 'POST' && record.url?.origin === 'https://service.app.uysot.uz' && record.url?.path === '/v1/smart-catalog/table');
     // A cold Uysot SPA occasionally finishes bootstrapping without issuing its
     // showroom request. One bounded reload makes the scheduled collector
@@ -221,6 +340,10 @@ export async function captureFromAuthorizedTab(provider, {
 
   if (provider.id === 'uysot' && !failureCode && !uysotTableRequestId) errors.push('Uysot table request was not observed');
   if (provider.id === 'kayan' && kayanHouseIds.size !== 4) errors.push(`KAYAN captured ${kayanHouseIds.size}/4 required houses`);
+  if (isMbcProvider(provider)) {
+    if (mbcHouseIds.size !== mbcRequiredHouseIds.size) errors.push(`MBC captured ${mbcHouseIds.size}/${mbcRequiredHouseIds.size} required houses`);
+    for (const endpoint of mbcRequiredSingletons) if (!mbcSingletons.has(endpoint)) errors.push(`MBC ${endpoint} response was not observed`);
+  }
   return {
     schemaVersion: 1,
     provider: provider.id,

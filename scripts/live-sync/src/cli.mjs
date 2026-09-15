@@ -12,6 +12,7 @@ import {
   loadLegacyProviderInput,
   normalizeKayanSnapshots,
   normalizeKayanPropertyResponses,
+  normalizeMbcProfitbaseCapture,
   normalizeMbcProjects,
   normalizeNrgBiCapture,
   normalizeRegnumPages,
@@ -156,7 +157,7 @@ function normalize(providerId, input, capturedAt, template, legacy = false) {
       const result = normalizeRegnumPages(input, capturedAt, template?.['regnum-plaza'] ?? null);
       return { artifacts: [{ filename: 'regnum-plaza-catalog.json', artifact: result.artifact }], audit: { 'regnum-plaza': result.audit } };
     }
-    return normalizeMbcProjects(input, capturedAt, template, getProvider(providerId).projectDefinitions);
+    return normalizeMbcProfitbaseCapture(input, capturedAt, template, getProvider(providerId).projectDefinitions);
   }
   if (providerId === 'sun') return normalizeSunPages(input, capturedAt, template);
   if (providerId === 'kayan') return legacy ? normalizeKayanSnapshots(input, capturedAt, template) : normalizeKayanPropertyResponses(input, capturedAt, template);
@@ -172,29 +173,48 @@ function inputFromCapture(providerId, capture) {
   }
   if (isMbcProvider(providerId)) {
     const provider = getProvider(providerId);
-    const records = capture.records
-      .filter((item) => item.url?.origin === 'https://mbc.uz' && item.url?.path === '/api/plans' && item.scope?.endpoint === 'plans');
-    const expected = new Map(provider.projectDefinitions.map((project) => [project.slug, project]));
-    for (const record of records) {
-      const project = expected.get(record.scope?.projectSlug);
-      if (!project || Number(record.scope?.projectId) !== project.id || !['residential', 'commercial'].includes(record.scope?.propertyType)) {
-        throw new Error('MBC capture contains a plans response outside the exact project/property scope');
+    const singleton = (endpoint) => {
+      const records = capture.records.filter((item) => item.method === 'GET'
+        && item.url?.origin === `https://${provider.profitbaseHost}`
+        && item.scope?.endpoint === endpoint);
+      if (records.length !== 1) throw new Error(`MBC Profitbase capture has ${records.length}/1 ${endpoint} responses`);
+      return records[0].value;
+    };
+    const propertyRecords = capture.records.filter((item) => item.method === 'GET'
+      && item.url?.origin === `https://${provider.profitbaseHost}`
+      && item.url?.path === '/api/v4/json/property'
+      && item.scope?.endpoint === 'properties');
+    const expectedProjects = new Map(provider.projectDefinitions.map((project) => [project.slug, project]));
+    for (const record of propertyRecords) {
+      const project = expectedProjects.get(record.scope?.projectSlug);
+      const house = project?.profitbaseHouses.find((candidate) => candidate.id === Number(record.scope?.houseId));
+      if (!project || !house
+        || Number(record.scope?.projectId) !== project.id
+        || Number(record.scope?.profitbaseProjectId) !== project.profitbaseProjectId
+        || String(record.scope?.queueSourceValue) !== house.queueSourceValue) {
+        throw new Error('MBC Profitbase capture contains a property response outside the exact project/house scope');
       }
     }
-    const groups = provider.projectDefinitions.map((project) => {
-      const pagesFor = (propertyType) => records
-        .filter((item) => item.scope.projectSlug === project.slug && item.scope.propertyType === propertyType)
-        .sort((left, right) => Number(left.scope.page) - Number(right.scope.page))
-        .map((item, index) => {
-          if (Number(item.scope.page) !== index + 1) throw new Error(`MBC ${project.slug} ${propertyType} pagination scope is not contiguous`);
-          return item.value;
-        });
-      const residentialPages = pagesFor('residential');
-      const commercialPages = pagesFor('commercial');
-      if (!residentialPages.length || !commercialPages.length) throw new Error(`MBC capture has no complete ${project.slug} category pages`);
-      return { project, residentialPages, commercialPages };
-    });
-    return groups;
+    const groups = provider.projectDefinitions.map((project) => ({
+      project,
+      houses: project.profitbaseHouses.map((house) => {
+        const records = propertyRecords
+          .filter((item) => item.scope.projectSlug === project.slug && Number(item.scope.houseId) === house.id)
+          .sort((left, right) => Number(left.scope.offset) - Number(right.scope.offset));
+        if (records.length !== 1 || Number(records[0].scope.offset) !== 0) {
+          throw new Error(`MBC Profitbase capture has ${records.length}/1 complete ${project.slug} house ${house.id} property responses`);
+        }
+        return { houseId: house.id, pages: records.map((item) => item.value) };
+      }),
+    }));
+    const expectedPropertyRecords = groups.reduce((sum, group) => sum + group.houses.reduce((count, house) => count + house.pages.length, 0), 0);
+    if (propertyRecords.length !== expectedPropertyRecords) throw new Error('MBC Profitbase capture contains duplicate or unexpected property responses');
+    return {
+      projects: singleton('projects'),
+      houses: singleton('houses'),
+      customStatuses: singleton('customStatuses'),
+      groups,
+    };
   }
   if (providerId === 'sun') {
     const pages = capture.records

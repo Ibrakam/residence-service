@@ -31,12 +31,19 @@ export const nrgBiProjects = Object.freeze([
 export const nrgBiApartmentPropertyTypeUUID = '5990a172-812a-4fee-b4f5-c860cca824d7';
 
 // Authoritative queue-card metadata observed in the MBC Partners CRM on
-// 2026-09-15. The public plans feed exposes only the raw queue value, so its
-// label/order must be joined with this reviewed metadata and never inferred
-// from qN. Any unregistered source value makes normalization fail closed.
+// 2026-09-15. Profitbase houses are joined to this reviewed display metadata;
+// label/order is never inferred from qN. Any unregistered house or source value
+// makes normalization fail closed.
 export const mbcProjects = Object.freeze([
   Object.freeze({
     id: 1, slug: 'regnum-plaza', name: 'REGNUM PLAZA', sourceLanding: 'https://mbc.uz/project/regnum-plaza', templateFile: 'regnum-plaza-client.json',
+    profitbaseProjectId: 42406, profitbaseProjectTitle: 'Regnum Plaza',
+    minimumResidentialUnits: 700,
+    profitbaseHouses: Object.freeze([
+      Object.freeze({ id: 122368, title: 'I очередь', queueSourceValue: '1' }),
+      Object.freeze({ id: 122371, title: 'II очередь', queueSourceValue: '3' }),
+    ]),
+    excludedProfitbaseHouseIds: Object.freeze([123808, 124007]),
     // The CRM calls its second displayed queue `3`. Keeping the source value
     // separate from display order prevents q3 from being presented as III.
     queues: Object.freeze([
@@ -46,15 +53,30 @@ export const mbcProjects = Object.freeze([
   }),
   Object.freeze({
     id: 2, slug: 'c1', name: 'C1', sourceLanding: 'https://mbc.uz/ru/project/c1', templateFile: 'c1-catalog.json',
+    profitbaseProjectId: 48843, profitbaseProjectTitle: 'C1',
+    minimumResidentialUnits: 220,
+    profitbaseHouses: Object.freeze([
+      Object.freeze({ id: 122139, title: 'С1', queueSourceValue: '1' }),
+    ]),
+    excludedProfitbaseHouseIds: Object.freeze([157227]),
     queues: Object.freeze([
       Object.freeze({ sourceValue: '1', queueKey: 'q1', queueLabel: 'I очередь', queueDisplayCode: 'I', queueOrder: 1 }),
     ]),
   }),
   Object.freeze({
     id: 3, slug: 'soy-boyi', name: 'Soy Bo\u2018yi', sourceLanding: 'https://mbc.uz/ru/project/soy-boyi', templateFile: 'soy-boyi-catalog.json',
+    profitbaseProjectId: 47304, profitbaseProjectTitle: 'Soy Bo`yi',
+    minimumResidentialUnits: 950,
+    profitbaseHouses: Object.freeze([
+      Object.freeze({ id: 122296, title: 'I очередь', queueSourceValue: '1' }),
+      Object.freeze({ id: 122346, title: 'II очередь', queueSourceValue: '2' }),
+      Object.freeze({ id: 136755, title: 'III очередь', queueSourceValue: '3' }),
+      Object.freeze({ id: 161781, title: 'IV очередь', queueSourceValue: '4' }),
+    ]),
+    excludedProfitbaseHouseIds: Object.freeze([127506, 150620]),
     // The complete CRM project card set contains four queues. Queue I currently
-    // has only commercial stock; it remains project metadata but never becomes
-    // an apartment merely to make the residential catalogue non-empty.
+    // has no AVAILABLE apartments but its booked/sold residential lifecycle is
+    // retained; it is never inferred from the public AVAILABLE listing.
     queues: Object.freeze([
       Object.freeze({ sourceValue: '1', queueKey: 'q1', queueLabel: 'I очередь', queueDisplayCode: 'I', queueOrder: 1 }),
       Object.freeze({ sourceValue: '2', queueKey: 'q2', queueLabel: 'II очередь', queueDisplayCode: 'II', queueOrder: 2 }),
@@ -64,6 +86,13 @@ export const mbcProjects = Object.freeze([
   }),
   Object.freeze({
     id: 18, slug: 'saadiyat', name: 'SAADIYAT', sourceLanding: 'https://mbc.uz/ru/project/saadiyat', templateFile: 'saadiyat-catalog.json',
+    profitbaseProjectId: 51441, profitbaseProjectTitle: 'Saadiyat',
+    minimumResidentialUnits: 460,
+    profitbaseHouses: Object.freeze([
+      Object.freeze({ id: 132970, title: 'I очередь', queueSourceValue: '1' }),
+      Object.freeze({ id: 149400, title: 'II очередь', queueSourceValue: '2' }),
+    ]),
+    excludedProfitbaseHouseIds: Object.freeze([158529]),
     queueReferenceObservedAt: '2026-09-15T11:27:41+05:00',
     queues: Object.freeze([
       Object.freeze({ sourceValue: '1', queueKey: 'q1', queueLabel: 'I очередь', queueDisplayCode: 'I', queueOrder: 1, referenceResidentialCount: 42 }),
@@ -73,16 +102,26 @@ export const mbcProjects = Object.freeze([
 ]);
 
 // SARBON deliberately has its own provider transaction. Its lifecycle is much
-// newer than the established four-project MBC set, so a schema change, outage,
-// or empty AVAILABLE feed cannot block refreshes for those existing projects.
+// newer than the established four-project MBC set, so a schema change or outage
+// cannot block refreshes for those existing projects.
 export const mbcSarbonProjects = Object.freeze([
   Object.freeze({
     id: 21, slug: 'sarbon', name: 'SARBON', sourceLanding: 'https://mbc.uz/ru/project/sarbon', templateFile: 'sarbon-catalog.json',
+    profitbaseProjectId: 57946, profitbaseProjectTitle: 'Sarbon',
+    minimumResidentialUnits: 175,
+    profitbaseHouses: Object.freeze([
+      Object.freeze({ id: 164684, title: 'I очередь', queueSourceValue: '1' }),
+    ]),
+    excludedProfitbaseHouseIds: Object.freeze([]),
     queues: Object.freeze([
       Object.freeze({ sourceValue: '1', queueKey: 'q1', queueLabel: 'I очередь', queueDisplayCode: 'I', queueOrder: 1 }),
     ]),
   }),
 ]);
+
+const mbcProfitbaseTargetHouseIds = Object.freeze(
+  [...mbcProjects, ...mbcSarbonProjects].flatMap((project) => project.profitbaseHouses.map((house) => house.id)),
+);
 
 /**
  * Provider definitions are intentionally data-only. A provider marked `discovery`
@@ -153,6 +192,7 @@ export const providers = Object.freeze({
       '/eco/catalog/house/153506/smallGrid',
       '/eco/catalog/house/154273/smallGrid',
     ]),
+    targetHouseIds: Object.freeze([154813, 153505, 153506, 154273]),
     requiredProbeIds: Object.freeze([]),
     outputFiles: Object.freeze(['kayan-catalog.json']),
   }),
@@ -163,15 +203,23 @@ export const providers = Object.freeze({
     projects: Object.freeze(mbcProjects.map((project) => project.slug)),
     projectDefinitions: mbcProjects,
     maturity: 'normalize-ready',
-    captureMode: 'public-read-post',
-    profileHint: null,
-    pageHosts: Object.freeze([]),
-    startUrl: 'https://mbc.uz/project/regnum-plaza',
+    captureMode: 'authorized-browser-get',
+    profileHint: '/home/residence-crm-browser/crm-profile',
+    pageHosts: Object.freeze(['smart-catalog.profitbase.ru']),
+    startUrl: 'https://partners.mbc.uz/cabinet/applications',
     launchFlags: Object.freeze([]),
-    allowedMethods: Object.freeze(['POST']),
+    profitbaseTenantId: 12218,
+    profitbaseHost: 'pb12218.profitbase.ru',
+    allowedMethods: Object.freeze(['GET']),
     allowedResponses: Object.freeze([
-      https('mbc.uz', ['/api/plans']),
+      https('pb12218.profitbase.ru', ['/api/v4/json/projects'], []),
+      https('pb12218.profitbase.ru', ['/api/v4/json/house'], []),
+      https('pb12218.profitbase.ru', ['/api/v4/json/property'], ['houseId', 'returnFilteredCount', 'showQueueCount']),
+      https('pb12218.profitbase.ru', ['/api/v4/json/custom-status/list'], ['lang']),
     ]),
+    targetPaths: Object.freeze(['/eco/catalog/projects/houses']),
+    targetHouseIds: mbcProfitbaseTargetHouseIds,
+    navigationPaths: Object.freeze(mbcProjects.flatMap((project) => project.profitbaseHouses.map((house) => `/eco/catalog/house/${house.id}/smallGrid`))),
     probes: Object.freeze([]),
     requiredProbeIds: Object.freeze([]),
     outputFiles: Object.freeze(mbcProjects.map((project) => `${project.slug}-catalog.json`)),
@@ -183,15 +231,23 @@ export const providers = Object.freeze({
     projects: Object.freeze(mbcSarbonProjects.map((project) => project.slug)),
     projectDefinitions: mbcSarbonProjects,
     maturity: 'normalize-ready',
-    captureMode: 'public-read-post',
-    profileHint: null,
-    pageHosts: Object.freeze([]),
-    startUrl: 'https://mbc.uz/ru/project/sarbon',
+    captureMode: 'authorized-browser-get',
+    profileHint: '/home/residence-crm-browser/crm-profile',
+    pageHosts: Object.freeze(['smart-catalog.profitbase.ru']),
+    startUrl: 'https://partners.mbc.uz/cabinet/applications',
     launchFlags: Object.freeze([]),
-    allowedMethods: Object.freeze(['POST']),
+    profitbaseTenantId: 12218,
+    profitbaseHost: 'pb12218.profitbase.ru',
+    allowedMethods: Object.freeze(['GET']),
     allowedResponses: Object.freeze([
-      https('mbc.uz', ['/api/plans']),
+      https('pb12218.profitbase.ru', ['/api/v4/json/projects'], []),
+      https('pb12218.profitbase.ru', ['/api/v4/json/house'], []),
+      https('pb12218.profitbase.ru', ['/api/v4/json/property'], ['houseId', 'returnFilteredCount', 'showQueueCount']),
+      https('pb12218.profitbase.ru', ['/api/v4/json/custom-status/list'], ['lang']),
     ]),
+    targetPaths: Object.freeze(['/eco/catalog/projects/houses']),
+    targetHouseIds: mbcProfitbaseTargetHouseIds,
+    navigationPaths: Object.freeze(mbcSarbonProjects.flatMap((project) => project.profitbaseHouses.map((house) => `/eco/catalog/house/${house.id}/smallGrid`))),
     probes: Object.freeze([]),
     requiredProbeIds: Object.freeze([]),
     outputFiles: Object.freeze(mbcSarbonProjects.map((project) => `${project.slug}-catalog.json`)),

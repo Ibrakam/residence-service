@@ -22,10 +22,10 @@
       "freshnessWindow": "30m",
       "maximumRecordDropPercent": 25,
       "projects": {
-        "c1": {"minimumRecords": 30},
-        "regnum-plaza": {"minimumRecords": 8},
-        "saadiyat": {"minimumRecords": 120},
-        "soy-boyi": {"minimumRecords": 150}
+        "c1": {"minimumRecords": 220},
+        "regnum-plaza": {"minimumRecords": 700},
+        "saadiyat": {"minimumRecords": 460},
+        "soy-boyi": {"minimumRecords": 950}
       }
     },
     {
@@ -36,7 +36,7 @@
       "freshnessWindow": "30m",
       "maximumRecordDropPercent": 25,
       "projects": {
-        "sarbon": {"minimumRecords": 1}
+        "sarbon": {"minimumRecords": 175}
       }
     },
     {

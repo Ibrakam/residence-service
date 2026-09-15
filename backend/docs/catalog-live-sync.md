@@ -36,12 +36,12 @@ conservative safety floors. Review those floors against the first complete CRM
 capture before installing it. Lowering a floor or increasing the allowed drop
 is an explicit operator decision, not an automatic recovery action.
 
-`mbc-sarbon` intentionally starts with `minimumRecords: 1`. The current
-coordinator and MBC normalizer reject zero-record project candidates, so a
-legitimate fully sold-out SARBON feed remains last-known-good and reports a
-failed/stale isolated provider instead of deactivating every unit. Supporting an
-authoritative zero requires a separately reviewed zero-universe contract; do
-not weaken the shared completeness guard ad hoc.
+MBC coordinator floors now cover the full residential lifecycle rather than the
+old AVAILABLE-only public feed: Regnum Plaza 700, C1 220, Soy Bo‘yi 950,
+Saadiyat 460, and SARBON 175. The browser normalizer enforces the same floors
+before the coordinator sees a candidate. These values remain deliberately below
+the reviewed 2026-09-15 live totals, so normal inventory movement is accepted
+while a partial house snapshot cannot pass.
 
 ## Capture wrapper contract
 
@@ -68,15 +68,35 @@ Files ending in `*-client.json` are intentionally treated as partial and are
 rejected by live synchronization.
 
 For Kayan, one invocation must output both `mirador` and `ofiyat`; they commit
-together. The established `mbc` invocation outputs Regnum Plaza, C1, Soy Bo‘yi,
-and Saadiyat from exact `type=residential` and `type=commercial` requests; those
-four projects remain one atomic candidate. SARBON uses the separate
-`mbc-sarbon` invocation against the same read-only endpoint and normalizer. Its
-candidate contains only SARBON, so a new-project outage, schema drift, or empty
-feed cannot freeze refreshes for the four established MBC projects.
-MBC `crm_id` remains private source provenance: the public `sourceKey` retains
-an existing template identity when available, otherwise it is a deterministic
-project-namespaced SHA-256 value that does not contain the raw CRM identifier.
+together. MBC attaches to the already-authorized smart-catalog OOPIF on the same
+loopback CDP listener and reads only exact GET responses from Profitbase tenant
+host `pb12218.profitbase.ru`. The collector first visits the project overview to
+capture projects, the complete house universe, and custom statuses, then visits
+each allowlisted house. The normal unattended target selector accepts only one
+of the ten reviewed MBC house paths; because the overview path does not identify
+a tenant, it requires an explicit `--target-id` for a one-off first bootstrap.
+After a successful run, the iframe remains on an allowlisted MBC house path.
+
+The established `mbc` invocation outputs Regnum Plaza, C1, Soy Bo‘yi, and
+Saadiyat as one atomic candidate from nine houses. `mbc-sarbon` uses the same
+read-only browser contract but owns only SARBON house 164684, so its outage or
+schema drift cannot freeze the four established projects. Both wrappers share
+an exclusive browser lock, preventing their independent timers from navigating
+the same authorized iframe concurrently. Only
+`typePurpose=residential` rows are apartments; this intentionally retains
+residential penthouses and duplexes while excluding parking, storage, and
+commercial stock. The Profitbase property ID is stable CRM provenance: the
+public `sourceKey` retains an existing template identity when available,
+otherwise it is a deterministic project-namespaced SHA-256 value that does not
+contain the raw ID.
+
+Every property `customStatusId` must resolve to the same explicit `baseStatus`
+carried by the property. `AVAILABLE`, `BOOKED`, `SOLD`, `UNAVAILABLE`,
+`EXECUTION`, and `UNKNOWN` are retained as raw lifecycle evidence and normalized
+to the backend's four status buckets. A missing row is never interpreted as a
+sale. Profitbase provides no historical sale timestamp, so a baseline SOLD row
+adds only an immutable all-time known-sold fact; only a later accepted explicit
+transition into SOLD enters the forward monthly sales ledger.
 Production ownership is Kayan → Mirador/Ofiyat, MBC → Regnum Plaza/C1/Soy
 Bo‘yi/Saadiyat, MBC SARBON → SARBON, Uysot → Avalon Residence, Human2Human → SUN, and NRG/BI → 4U, Bayterak,
 Botanika Saroyi, Flagman, Jomiy, Maftun Makon, Meros, Sad'O, Voha, Yangi Baxt,

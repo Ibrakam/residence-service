@@ -295,14 +295,25 @@ function mbcQueueReconciliation(queueDefinitions, residentialRows, commercialRow
   };
 }
 
-function normalizeMbcProject(group, capturedAt, template) {
+const mbcProfitbaseBaseStatuses = new Set(['AVAILABLE', 'BOOKED', 'SOLD', 'UNAVAILABLE', 'EXECUTION', 'UNKNOWN']);
+
+function mbcProfitbaseLifecycle(value, label) {
+  const rawStatus = numberText(value, label).toUpperCase();
+  assert(mbcProfitbaseBaseStatuses.has(rawStatus), `${label} is unsupported`);
+  if (rawStatus === 'AVAILABLE') return { rawStatus, normalizedStatus: 'available' };
+  if (rawStatus === 'BOOKED' || rawStatus === 'EXECUTION') return { rawStatus, normalizedStatus: 'reserved' };
+  if (rawStatus === 'SOLD') return { rawStatus, normalizedStatus: 'sold' };
+  return { rawStatus, normalizedStatus: 'unavailable' };
+}
+
+function normalizeMbcProject(group, capturedAt, template, { fullLifecycle = false } = {}) {
   const project = group?.project;
   assert(record(project), 'MBC project metadata is missing');
   assert(Number.isSafeInteger(project.id) && project.id > 0, 'MBC project id is invalid');
   const slug = numberText(project.slug, 'MBC project slug');
-  const pages = group?.residentialPages ?? group?.pages;
   const queueDefinitions = mbcQueueDefinitions(project);
-  const rows = mbcRowsFromPages(pages, slug, 'residential');
+  const pages = group?.residentialPages ?? group?.pages;
+  const rows = Array.isArray(group?.residentialRows) ? group.residentialRows : mbcRowsFromPages(pages, slug, 'residential');
   const commercialRows = group?.commercialPages ? mbcRowsFromPages(group.commercialPages, slug, 'commercial', true) : [];
   for (const [index, row] of commercialRows.entries()) {
     assert(record(row), `MBC ${slug} commercial row ${index + 1} is invalid`);
@@ -317,39 +328,42 @@ function normalizeMbcProject(group, capturedAt, template) {
   const sourceKeyIdentities = new Set();
   const units = rows.map((row, index) => {
     assert(record(row), `MBC ${slug} row ${index + 1} is invalid`);
-    const id = numberText(row.id, `MBC ${slug} row ${index + 1}.id`);
-    const crmId = numberText(row.crm_id, `MBC ${slug} row ${index + 1}.crm_id`);
-    assert(!publicIdentities.has(id), `MBC ${slug} duplicate id ${id}`);
+    const crmId = numberText(row.crm_id ?? row.id, `MBC ${slug} row ${index + 1}.crm_id`);
+    const publicId = row.public_id === null || row.crm_id === undefined
+      ? null
+      : numberText(row.public_id ?? row.id, `MBC ${slug} row ${index + 1}.id`);
+    if (publicId !== null) assert(!publicIdentities.has(publicId), `MBC ${slug} duplicate id ${publicId}`);
     assert(!crmIdentities.has(crmId), `MBC ${slug} duplicate CRM id ${crmId}`);
-    publicIdentities.add(id);
+    if (publicId !== null) publicIdentities.add(publicId);
     crmIdentities.add(crmId);
     const area = positive(row.square);
     const floor = integer(row.floor);
     const rooms = integer(row.rooms);
-    assert(area !== null && floor !== null && rooms !== null, `MBC ${slug} row ${id} dimensions are invalid`);
-    assert(String(row.project_slug) === slug, `MBC ${slug} row ${id} has unexpected project`);
-    assert(String(row.type) === 'residential', `MBC ${slug} row ${id} is not residential`);
-    assert(String(row.status).toUpperCase() === 'AVAILABLE', `MBC ${slug} row ${id} is not available`);
-    assert(Number(row.is_price) === 0, `MBC ${slug} row ${id} public-price policy changed`);
-    const normalizedStatus = status(row.status);
-    assert(normalizedStatus === 'available', `MBC ${slug} row ${id} has unexpected status`);
-    const queueSource = mbcPhasePart(row.queue, `MBC ${slug} row ${id}.queue`);
+    assert(area !== null && floor !== null && rooms !== null, `MBC ${slug} row ${crmId} dimensions are invalid`);
+    assert(String(row.project_slug) === slug, `MBC ${slug} row ${crmId} has unexpected project`);
+    assert(String(row.type) === 'residential', `MBC ${slug} row ${crmId} is not residential`);
+    const lifecycle = fullLifecycle
+      ? mbcProfitbaseLifecycle(row.status, `MBC ${slug} row ${crmId}.status`)
+      : { rawStatus: numberText(row.status, `MBC ${slug} row ${crmId}.status`).toUpperCase(), normalizedStatus: status(row.status) };
+    if (!fullLifecycle) assert(lifecycle.rawStatus === 'AVAILABLE' && lifecycle.normalizedStatus === 'available', `MBC ${slug} row ${crmId} is not available`);
+    assert(Number(row.is_price) === 0, `MBC ${slug} row ${crmId} public-price policy changed`);
+    const queueSource = mbcPhasePart(row.queue, `MBC ${slug} row ${crmId}.queue`);
     const queue = queueDefinitions.bySourceValue.get(queueSource.text);
-    assert(queue, `MBC ${slug} row ${id} references unknown CRM queue ${queueSource.text}`);
-    const section = mbcPhasePart(row.section, `MBC ${slug} row ${id}.section`);
+    assert(queue, `MBC ${slug} row ${crmId} references unknown CRM queue ${queueSource.text}`);
+    const section = mbcPhasePart(row.section, `MBC ${slug} row ${crmId}.section`);
     const sectionName = integer(section.text) === null ? section.text : `S${section.text}`;
     const retained = retainedUnit(row, crmId);
     const planImageUrl = localPlanPath(retained, slug);
     const sourceKey = numberText(
       templateMbcSourceKey(slug, retained) || opaqueMbcSourceKey(slug, crmId),
-      `MBC ${slug} row ${id}.sourceKey`,
+      `MBC ${slug} row ${crmId}.sourceKey`,
     );
     assert(!sourceKeyIdentities.has(sourceKey), `MBC ${slug} duplicate sourceKey ${sourceKey}`);
     sourceKeyIdentities.add(sourceKey);
     return {
       id: crmId,
       sourceId: crmId,
-      publicId: id,
+      ...(publicId === null ? {} : { publicId }),
       sourceKey,
       projectSlug: slug,
       phaseSlug: `${queue.queueKey}-s${section.slug}`,
@@ -361,19 +375,19 @@ function normalizeMbcProject(group, capturedAt, template) {
       queueDisplayCode: queue.queueDisplayCode,
       queueOrder: queue.queueOrder,
       sourceOrder: index,
-      number: numberText(row.number, `MBC ${slug} row ${id}.number`),
+      number: numberText(row.number, `MBC ${slug} row ${crmId}.number`),
       rooms,
       area,
       floor,
       queue: queueSource.value,
       section: section.value,
       entrance: section.text,
-      completion: String(row.end ?? ''),
-      status: normalizedStatus,
-      rawStatus: String(row.status),
+      completion: String(retained.completion ?? row.end ?? ''),
+      status: lifecycle.normalizedStatus,
+      rawStatus: lifecycle.rawStatus,
       propertyType: 'apartment',
-      rawPropertyType: 'residential',
-      isSale: true,
+      rawPropertyType: String(row.raw_property_type ?? 'residential'),
+      isSale: lifecycle.normalizedStatus === 'available',
       publicPrice: false,
       displayPriceKey: 'priceOnRequest',
       priceVisibility: 'request-only',
@@ -382,7 +396,8 @@ function normalizeMbcProject(group, capturedAt, template) {
     };
   });
   const retainedPlanCount = units.filter((unit) => unit.planImageUrl).length;
-  if (template) assert(retainedPlanCount > 0, `MBC ${slug} could not match any local plan from its enrichment template`);
+  const availableUnits = units.filter((unit) => unit.status === 'available');
+  if (template && availableUnits.length > 0) assert(availableUnits.some((unit) => unit.planImageUrl), `MBC ${slug} could not match any current available unit to its local plan template`);
   const audit = completeness({
     expected: rows.length,
     units,
@@ -391,8 +406,15 @@ function normalizeMbcProject(group, capturedAt, template) {
       uniquePublicIds: publicIdentities.size, uniqueCrmIds: crmIdentities.size,
       uniqueSourceKeys: sourceKeyIdentities.size, retainedPlanCount, projectId: project.id,
       propertyType: 'residential', excludedCommercial: commercialRows.length,
-      queueCounts: { residential: mbcCategoryQueueCounts(rows), commercial: mbcCategoryQueueCounts(commercialRows) },
-      queueReconciliation: mbcQueueReconciliation(queueDefinitions, rows, commercialRows),
+      excludedNonResidential: integer(group?.excludedNonResidential) ?? 0,
+      queueCounts: { residential: mbcCategoryQueueCounts(availableUnits), commercial: mbcCategoryQueueCounts(commercialRows) },
+      lifecycleQueueCounts: Object.fromEntries(queueDefinitions.queues.map((queue) => [queue.queueKey, statusCounts(units.filter((unit) => unit.queueKey === queue.queueKey))])),
+      queueReconciliation: mbcQueueReconciliation(queueDefinitions, availableUnits, commercialRows),
+      lifecycleStatusValues: fullLifecycle ? [...mbcProfitbaseBaseStatuses] : ['AVAILABLE'],
+      availabilityPolicy: fullLifecycle
+        ? 'authenticated Profitbase property inventory; customStatusId/baseStatus is authoritative and disappearance is never a sale'
+        : 'public MBC plans feed publishes AVAILABLE residential inventory only',
+      saleDatePolicy: fullLifecycle ? 'Profitbase exposes no sale timestamp; baseline SOLD contributes only to all-time known-sold totals' : null,
     },
   });
   assert(audit.complete, `MBC ${slug} completeness checks failed`);
@@ -406,10 +428,13 @@ function normalizeMbcProject(group, capturedAt, template) {
       capturedAt,
       officialTotalAtCapture: rows.length,
       sourceCount: rows.length,
-      availableResidentialTotal: rows.length,
+      availableResidentialTotal: availableUnits.length,
+      reservedResidentialTotal: units.filter((unit) => unit.status === 'reserved').length,
+      soldResidentialTotal: units.filter((unit) => unit.status === 'sold').length,
+      unavailableResidentialTotal: units.filter((unit) => unit.status === 'unavailable').length,
       excludedCommercial: commercialRows.length,
       publicPrice: false,
-      source: 'https://mbc.uz/api/plans',
+      source: fullLifecycle ? 'https://pb12218.profitbase.ru/api/v4/json/property' : 'https://mbc.uz/api/plans',
       sourceLanding: project.sourceLanding,
       queues: queueDefinitions.queues,
       completeness: audit,
@@ -417,6 +442,146 @@ function normalizeMbcProject(group, capturedAt, template) {
     },
     audit,
   };
+}
+
+function mbcProfitbaseDataArray(root, label) {
+  const value = Array.isArray(root) ? root : root?.data;
+  assert(Array.isArray(value), `${label} is not an array`);
+  return value;
+}
+
+function mbcProfitbaseStatuses(root) {
+  assert(root?.success === true && record(root?.data) && Array.isArray(root.data.customStatuses), 'MBC Profitbase custom status response is invalid');
+  const statuses = new Map();
+  for (const [index, row] of root.data.customStatuses.entries()) {
+    assert(record(row), `MBC Profitbase custom status ${index + 1} is invalid`);
+    const id = integer(row.id);
+    assert(id !== null && id > 0 && !statuses.has(id), `MBC Profitbase custom status ${index + 1} has an invalid or duplicate id`);
+    const lifecycle = mbcProfitbaseLifecycle(row.baseStatus, `MBC Profitbase custom status ${id}.baseStatus`);
+    statuses.set(id, lifecycle.rawStatus);
+  }
+  return statuses;
+}
+
+function mbcProfitbaseHouseRows(houseInput, project, houseDefinition, customStatuses) {
+  assert(Array.isArray(houseInput?.pages) && houseInput.pages.length > 0, `MBC ${project.slug} house ${houseDefinition.id} has no property pages`);
+  const properties = [];
+  let declaredTotal = null;
+  for (const [index, root] of houseInput.pages.entries()) {
+    assert(String(root?.status ?? '').toLowerCase() === 'success' && record(root?.data) && Array.isArray(root.data.properties), `MBC ${project.slug} house ${houseDefinition.id} page ${index + 1} is invalid`);
+    const filteredCount = integer(root.data.filteredCount);
+    assert(filteredCount !== null && filteredCount >= 0, `MBC ${project.slug} house ${houseDefinition.id} page ${index + 1} filteredCount is invalid`);
+    declaredTotal ??= filteredCount;
+    assert(filteredCount === declaredTotal, `MBC ${project.slug} house ${houseDefinition.id} filteredCount changed during normalization`);
+    properties.push(...root.data.properties);
+  }
+  assert(properties.length === declaredTotal, `MBC ${project.slug} house ${houseDefinition.id} normalized ${properties.length} of ${declaredTotal} properties`);
+  const identities = new Set();
+  let excludedNonResidential = 0;
+  const residentialRows = [];
+  for (const [index, property] of properties.entries()) {
+    assert(record(property), `MBC ${project.slug} house ${houseDefinition.id} property ${index + 1} is invalid`);
+    const id = integer(property.id);
+    assert(id !== null && id > 0 && !identities.has(id), `MBC ${project.slug} house ${houseDefinition.id} property has an invalid or duplicate id`);
+    identities.add(id);
+    assert(integer(property.house_id) === houseDefinition.id, `MBC ${project.slug} property ${id} belongs to another house`);
+    assert(integer(property.projectId) === project.profitbaseProjectId, `MBC ${project.slug} property ${id} belongs to another project`);
+    const purpose = numberText(property.typePurpose, `MBC ${project.slug} property ${id}.typePurpose`);
+    const customStatusId = integer(property.customStatusId);
+    const authoritativeBaseStatus = customStatuses.get(customStatusId);
+    assert(authoritativeBaseStatus, `MBC ${project.slug} property ${id} references unknown custom status`);
+    const observedBaseStatus = numberText(property.status, `MBC ${project.slug} property ${id}.status`).toUpperCase();
+    assert(observedBaseStatus === authoritativeBaseStatus, `MBC ${project.slug} property ${id} status/customStatusId mismatch`);
+    if (purpose !== 'residential') {
+      excludedNonResidential += 1;
+      continue;
+    }
+    const area = positive(property.area?.area_total);
+    const floor = integer(property.floor);
+    const rooms = integer(property.rooms_amount);
+    assert(area !== null && floor !== null && floor > 0 && rooms !== null && rooms >= 0, `MBC ${project.slug} property ${id} dimensions are invalid`);
+    residentialRows.push({
+      id,
+      crm_id: id,
+      public_id: null,
+      square: area,
+      rooms,
+      floor,
+      number: numberText(property.number, `MBC ${project.slug} property ${id}.number`),
+      project_slug: project.slug,
+      type: 'residential',
+      raw_property_type: numberText(property.propertyType, `MBC ${project.slug} property ${id}.propertyType`),
+      status: authoritativeBaseStatus,
+      is_price: 0,
+      queue: houseDefinition.queueSourceValue,
+      section: numberText(property.sectionName, `MBC ${project.slug} property ${id}.sectionName`),
+      end: '',
+    });
+  }
+  return { residentialRows, excludedNonResidential };
+}
+
+export function normalizeMbcProfitbaseCapture(input, capturedAt = new Date().toISOString(), templates = {}, projectDefinitions = mbcProjects) {
+  assert(record(input), 'MBC Profitbase capture is invalid');
+  assert(Array.isArray(projectDefinitions) && projectDefinitions.length > 0, 'MBC Profitbase provider has no project definitions');
+  const customStatuses = mbcProfitbaseStatuses(input.customStatuses);
+  const projects = mbcProfitbaseDataArray(input.projects, 'MBC Profitbase projects');
+  assert(input.houses?.success === true, 'MBC Profitbase house response is invalid');
+  const houses = mbcProfitbaseDataArray(input.houses, 'MBC Profitbase houses');
+  assert(Array.isArray(input.groups), 'MBC Profitbase project groups are invalid');
+  const groupsBySlug = new Map();
+  for (const group of input.groups) {
+    const slug = numberText(group?.project?.slug, 'MBC Profitbase project group slug');
+    assert(!groupsBySlug.has(slug), `MBC Profitbase capture duplicates project group ${slug}`);
+    groupsBySlug.set(slug, group);
+  }
+  const projectIds = new Set();
+  const globalPropertyIds = new Set();
+  const normalizedGroups = [];
+  for (const project of projectDefinitions) {
+    const sourceProjects = projects.filter((candidate) => integer(candidate?.id) === project.profitbaseProjectId);
+    const sourceProject = sourceProjects[0];
+    assert(sourceProjects.length === 1 && String(sourceProject?.title ?? '').trim() === project.profitbaseProjectTitle, `MBC ${project.slug} Profitbase project identity changed`);
+    assert(!projectIds.has(project.profitbaseProjectId), `MBC duplicate Profitbase project ${project.profitbaseProjectId}`);
+    projectIds.add(project.profitbaseProjectId);
+    const sourceHouses = houses.filter((house) => integer(house?.projectId) === project.profitbaseProjectId && house?.isArchive !== true);
+    const allowedHouseIds = new Set([...project.profitbaseHouses.map((house) => house.id), ...project.excludedProfitbaseHouseIds]);
+    assert(sourceHouses.length === allowedHouseIds.size && sourceHouses.every((house) => allowedHouseIds.has(integer(house.id))), `MBC ${project.slug} Profitbase house universe changed`);
+    const capturedGroup = groupsBySlug.get(project.slug);
+    assert(capturedGroup && Number(capturedGroup.project?.id) === project.id, `MBC Profitbase capture is missing project ${project.slug}`);
+    assert(Array.isArray(capturedGroup.houses), `MBC ${project.slug} captured houses are invalid`);
+    const capturedHouses = new Map();
+    for (const house of capturedGroup.houses) {
+      const houseId = integer(house?.houseId);
+      assert(houseId !== null && !capturedHouses.has(houseId), `MBC ${project.slug} capture has an invalid or duplicate house`);
+      capturedHouses.set(houseId, house);
+    }
+    const residentialRows = [];
+    let excludedNonResidential = 0;
+    for (const definition of project.profitbaseHouses) {
+      const sourceHouse = sourceHouses.find((house) => integer(house?.id) === definition.id);
+      assert(sourceHouse && String(sourceHouse.title ?? '').trim() === definition.title, `MBC ${project.slug} house ${definition.id} identity changed`);
+      const normalized = mbcProfitbaseHouseRows(capturedHouses.get(definition.id), project, definition, customStatuses);
+      for (const row of normalized.residentialRows) {
+        assert(!globalPropertyIds.has(row.id), `MBC Profitbase duplicates property ${row.id} across houses`);
+        globalPropertyIds.add(row.id);
+      }
+      residentialRows.push(...normalized.residentialRows);
+      excludedNonResidential += normalized.excludedNonResidential;
+    }
+    assert(capturedHouses.size === project.profitbaseHouses.length, `MBC ${project.slug} capture contains an unexpected house`);
+    assert(residentialRows.length >= project.minimumResidentialUnits, `MBC ${project.slug} residential count ${residentialRows.length} is below safety floor ${project.minimumResidentialUnits}`);
+    normalizedGroups.push({ project, residentialRows, excludedNonResidential });
+  }
+  assert(groupsBySlug.size === projectDefinitions.length, 'MBC Profitbase capture contains an unexpected project group');
+  const artifacts = [];
+  const audit = {};
+  for (const group of normalizedGroups) {
+    const result = normalizeMbcProject(group, capturedAt, templates?.[group.project.slug] ?? null, { fullLifecycle: true });
+    artifacts.push({ filename: `${group.project.slug}-catalog.json`, artifact: result.artifact });
+    audit[group.project.slug] = result.audit;
+  }
+  return { artifacts, audit };
 }
 
 export function normalizeMbcProjects(groups, capturedAt = new Date().toISOString(), templates = {}, projectDefinitions = mbcProjects) {

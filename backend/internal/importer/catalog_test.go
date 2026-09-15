@@ -149,7 +149,7 @@ func TestReadyWorkspaceCatalogCounts(t *testing.T) {
 		t.Skipf("workspace catalog fixtures are not available: %v", err)
 	}
 	want := map[string]int{
-		"4u": 33, "avalon-residence": 268, "bayterak": 140, "botanika-saroyi": 224,
+		"4u": 176, "avalon-residence": 268, "bayterak": 140, "botanika-saroyi": 224,
 		"c1": 42, "flagman": 8, "jomiy": 121, "mirador": 199, "ofiyat": 585,
 		"maftun-makon": 204, "meros": 256, "regnum-plaza": 12, "sado": 338,
 		"saadiyat": 159, "soy-boyi": 209, "sun": 51, "voha": 104, "yangibaxt": 265, "zamon": 104,
@@ -169,8 +169,8 @@ func TestReadyWorkspaceCatalogCounts(t *testing.T) {
 	}
 	for _, item := range audit.Items {
 		if item.ProjectSlug == "4u" {
-			if item.Complete || item.OfficialCount == nil || *item.OfficialCount != 183 {
-				t.Fatalf("4U must remain an explicitly partial 33/183 snapshot: %#v", item)
+			if !item.Complete || item.OfficialCount == nil || *item.OfficialCount != 176 {
+				t.Fatalf("4U must remain a complete verified 176/176 catalogue: %#v", item)
 			}
 		}
 		if item.ProjectSlug == "sun" {
@@ -179,7 +179,7 @@ func TestReadyWorkspaceCatalogCounts(t *testing.T) {
 			}
 		}
 	}
-	if audit.Files != 18 || audit.Projects != 19 || audit.Records != 3322 || audit.CompleteRecords != 3238 || audit.PartialRecords != 84 {
+	if audit.Files != 18 || audit.Projects != 19 || audit.Records != 3465 || audit.CompleteRecords != 3414 || audit.PartialRecords != 51 {
 		t.Fatalf("unexpected workspace totals: %#v", audit)
 	}
 	if audit.FloorSchemeArtifacts != 2 || audit.FloorSchemes != 34 || audit.FloorSchemeHotspots != 209 {

@@ -98,6 +98,11 @@ func TestExplicitSoldTransitionProducesIdempotentMonthlySale(t *testing.T) {
 
 	// A unit first observed as sold is a baseline state, not a fabricated sale.
 	baselineSoldID := upsert("apartment-baseline-sold", "apartment", "sold", soldAt)
+	// Lifetime sold facts must not disappear if a provider later removes a
+	// previously confirmed sold apartment from its active catalogue.
+	if _, err := pool.Exec(ctx, `UPDATE units SET is_active=false WHERE id=$1`, baselineSoldID); err != nil {
+		t.Fatal(err)
+	}
 	// A replay accepted after migration but carrying a pre-cutover source time
 	// is outside the trustworthy reporting window.
 	replayedID := upsert("apartment-replayed", "apartment", "available", trackingStartedAt.Add(-2*time.Hour))

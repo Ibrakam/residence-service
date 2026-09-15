@@ -415,21 +415,8 @@ func (s *Store) MonthlyUnitSales(ctx context.Context, filter domain.MonthlyUnitS
 	}
 	rows.Close()
 	allTimeRows, err := tx.Query(ctx, `
-		WITH known_sold_units AS (
-			SELECT unit.id, phase.project_id
-			FROM units AS unit
-			JOIN phases AS phase ON phase.id = unit.phase_id
-			WHERE unit.property_type = 'apartment'
-			  AND unit.is_active
-			  AND unit.status = 'sold'
-			UNION
-			SELECT event.unit_id, event.project_id
-			FROM unit_sale_events AS event
-			JOIN units AS unit ON unit.id = event.unit_id
-			WHERE unit.property_type = 'apartment'
-		)
 		SELECT project.slug, project.name, 'apartment'::text, count(*)::bigint
-		FROM known_sold_units AS sold
+		FROM unit_sold_facts AS sold
 		JOIN projects AS project ON project.id = sold.project_id
 		WHERE ($1 = '' OR project.slug = $1)
 		GROUP BY project.id, project.slug, project.name

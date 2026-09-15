@@ -4,18 +4,32 @@ import { useEffect, useMemo, useState } from 'react';
 
 export type LiveCatalogStatus = 'available' | 'reserved' | 'sold' | 'unavailable';
 
+export type LiveCatalogQueue = {
+  queueKey: string;
+  queueLabel: string;
+  queueDisplayCode?: string;
+  queueOrder: number;
+  totalUnits: number;
+  availableUnits: number;
+};
+
 export type LiveCatalogProject = {
   slug: string;
   name: string;
   totalUnits: number;
   availableUnits: number;
   updatedAt?: string;
+  queues?: LiveCatalogQueue[];
   phases?: Array<{
     slug: string;
     name: string;
     floorsTotal: number;
     totalUnits: number;
     availableUnits: number;
+    queueKey?: string;
+    queueLabel?: string;
+    queueDisplayCode?: string;
+    queueOrder?: number;
   }>;
 };
 
@@ -25,6 +39,10 @@ export type LiveCatalogUnit = {
   projectSlug: string;
   phaseSlug: string;
   phaseName: string;
+  queueKey?: string;
+  queueLabel?: string;
+  queueDisplayCode?: string;
+  queueOrder?: number;
   propertyType: string;
   rawPropertyType: string;
   status: LiveCatalogStatus;
@@ -90,7 +108,7 @@ const catalogAPI = configuredAPI || `${appBasePath}/residence-api`;
 const refreshIntervalMs = 60_000;
 const requestTimeoutMs = 15_000;
 const cachedPayloadMaxAgeMs = 7 * 24 * 60 * 60 * 1_000;
-const cacheVersion = 1;
+const cacheVersion = 2;
 const availableOnlyCatalogues = new Set([
   '4u',
   'c1',
@@ -117,9 +135,49 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
+function isLiveQueue(value: unknown): value is LiveCatalogQueue {
+  return isRecord(value)
+    && typeof value.queueKey === 'string'
+    && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value.queueKey)
+    && typeof value.queueLabel === 'string'
+    && value.queueLabel.trim().length > 0
+    && (value.queueDisplayCode === undefined || (typeof value.queueDisplayCode === 'string' && value.queueDisplayCode.trim().length > 0))
+    && Number.isInteger(value.queueOrder)
+    && Number(value.queueOrder) > 0
+    && Number.isInteger(value.totalUnits)
+    && Number(value.totalUnits) >= 0
+    && Number.isInteger(value.availableUnits)
+    && Number(value.availableUnits) >= 0
+    && Number(value.availableUnits) <= Number(value.totalUnits);
+}
+
+function hasValidQueueSet(value: unknown) {
+  if (value === undefined) return true; // Backward compatible during the additive API rollout.
+  if (!Array.isArray(value) || !value.every(isLiveQueue)) return false;
+  const keys = new Set(value.map((queue) => queue.queueKey));
+  const orders = new Set(value.map((queue) => queue.queueOrder));
+  return keys.size === value.length && orders.size === value.length;
+}
+
+export function liveCatalogQueueOptions(project?: Pick<LiveCatalogProject, 'queues'> | null): LiveCatalogQueue[] {
+  if (!project || !hasValidQueueSet(project.queues)) return [];
+  const queues = [...(project.queues ?? [])].sort((left, right) => left.queueOrder - right.queueOrder);
+  return queues.length >= 2 ? queues : [];
+}
+
 function isLiveUnit(value: unknown, projectSlug: string): value is LiveCatalogUnit {
   if (!isRecord(value)) return false;
-  return value.projectSlug === projectSlug
+  const queueFieldsValid = value.queueKey === undefined
+    ? value.queueLabel === undefined && value.queueDisplayCode === undefined && value.queueOrder === undefined
+    : typeof value.queueKey === 'string'
+      && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value.queueKey)
+      && typeof value.queueLabel === 'string'
+      && value.queueLabel.trim().length > 0
+      && (value.queueDisplayCode === undefined || (typeof value.queueDisplayCode === 'string' && value.queueDisplayCode.trim().length > 0))
+      && Number.isInteger(value.queueOrder)
+      && Number(value.queueOrder) > 0;
+  return queueFieldsValid
+    && value.projectSlug === projectSlug
     && typeof value.sourceKey === 'string'
     && typeof value.number === 'string'
     && typeof value.floor === 'number'
@@ -136,10 +194,21 @@ function isLiveUnit(value: unknown, projectSlug: string): value is LiveCatalogUn
 
 function isLivePayload(value: unknown, projectSlug: string): value is LivePayload {
   if (!isRecord(value) || !isRecord(value.project) || !Array.isArray(value.units)) return false;
-  if (value.project.slug !== projectSlug || typeof value.project.totalUnits !== 'number') return false;
+  if (!isLiveProject(value.project, projectSlug)) return false;
   if (typeof value.refreshedAt !== 'string' || !Number.isFinite(Date.parse(value.refreshedAt))) return false;
-  return value.units.length === value.project.totalUnits
-    && value.units.every((unit) => isLiveUnit(unit, projectSlug));
+  if (value.units.length !== value.project.totalUnits || !value.units.every((unit) => isLiveUnit(unit, projectSlug))) return false;
+
+  const queues = value.project.queues;
+  if (queues === undefined) return value.units.every((unit) => !isRecord(unit) || unit.queueKey === undefined);
+  const queuesByKey = new Map(queues.map((queue) => [queue.queueKey, queue]));
+  return value.units.every((unit) => {
+    if (!isRecord(unit) || unit.queueKey === undefined) return true;
+    const queue = queuesByKey.get(String(unit.queueKey));
+    return Boolean(queue)
+      && unit.queueLabel === queue?.queueLabel
+      && unit.queueDisplayCode === queue?.queueDisplayCode
+      && unit.queueOrder === queue?.queueOrder;
+  });
 }
 
 function isLiveProject(value: unknown, projectSlug: string): value is LiveCatalogProject {
@@ -152,7 +221,8 @@ function isLiveProject(value: unknown, projectSlug: string): value is LiveCatalo
     && typeof value.availableUnits === 'number'
     && Number.isInteger(value.availableUnits)
     && value.availableUnits >= 0
-    && value.availableUnits <= value.totalUnits;
+    && value.availableUnits <= value.totalUnits
+    && hasValidQueueSet(value.queues);
 }
 
 function readCachedProject(projectSlug: string): LiveProjectPayload | null {
@@ -441,6 +511,12 @@ function adaptUnit(
   assignIfPresent(result, 'unitKey', live.sourceKey);
   assignIfPresent(result, 'phaseSlug', live.phaseSlug);
   assignIfPresent(result, 'phaseName', live.phaseName);
+  if (live.queueKey) {
+    result.queueKey = live.queueKey;
+    result.queueLabel = live.queueLabel ?? '';
+    result.queueDisplayCode = live.queueDisplayCode ?? '';
+    result.queueOrder = live.queueOrder ?? 0;
+  }
   assignIfPresent(result, 'propertyType', live.propertyType);
   assignIfPresent(result, 'rawPropertyType', live.rawPropertyType);
   assignIfPresent(result, 'rawStatus', live.rawStatus);
@@ -479,17 +555,15 @@ function adaptUnit(
   assignIfPresent(result, 'sourceOrder', index);
 
   const phaseName = live.phaseName || live.phaseSlug;
-  const queue = Number(live.phaseSlug.match(/q(\d+)/i)?.[1] ?? live.phaseName.match(/q(\d+)/i)?.[1]);
-  const displayPhase = mbcCatalogues.has(projectSlug) && Number.isFinite(queue)
-    ? String(queue)
-    : phaseName;
-  assignIfPresent(result, 'phase', displayPhase);
+  // Queue presentation comes only from explicit queue* fields. Existing
+  // embedded phase/queue values are retained for backward-compatible layouts;
+  // they are never parsed into a new CRM queue identity here.
+  if (!matched && !mbcCatalogues.has(projectSlug)) assignIfPresent(result, 'phase', live.phaseSlug);
   assignIfPresent(result, 'building', phaseName);
   assignIfPresent(result, 'buildingDisplay', phaseName);
   assignIfPresent(result, 'buildingId', live.phaseSlug);
   assignIfPresent(result, 'block', phaseName);
   assignIfPresent(result, 'blockName', phaseName);
-  if (Number.isFinite(queue)) assignIfPresent(result, 'queue', queue);
 
   const planPath = publicPlanPath(live.planImageUrl);
   if (planPath) assignPlan(result, planPath);

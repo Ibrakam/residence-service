@@ -92,6 +92,10 @@ paths:
       - name: phase
         in: query
         schema: { type: string }
+      - name: queue
+        in: query
+        description: Стабильный queueKey из project.queues; одна очередь может включать несколько phase/section.
+        schema: { type: string }
       - name: status
         in: query
         schema: { $ref: '#/components/schemas/UnitStatus' }
@@ -137,6 +141,10 @@ paths:
       - name: phase
         in: query
         schema: { type: string }
+      - name: queue
+        in: query
+        description: Стабильный queueKey из project.queues.
+        schema: { type: string }
     get:
       tags: [Catalog]
       operationId: listLayouts
@@ -157,6 +165,10 @@ paths:
       - $ref: '#/components/parameters/ProjectSlug'
       - name: phase
         in: query
+        schema: { type: string }
+      - name: queue
+        in: query
+        description: Стабильный queueKey из project.queues.
         schema: { type: string }
     get:
       tags: [Catalog]
@@ -312,11 +324,25 @@ components:
       allOf:
         - $ref: '#/components/schemas/ProjectSummary'
         - type: object
-          required: [phases]
+          required: [phases, queues]
           properties:
             phases:
               type: array
               items: { $ref: '#/components/schemas/Phase' }
+            queues:
+              type: array
+              description: CRM-owned queue metadata. Empty when the source has no explicit queue concept.
+              items: { $ref: '#/components/schemas/ProjectQueue' }
+    ProjectQueue:
+      type: object
+      required: [queueKey, queueLabel, queueOrder, totalUnits, availableUnits]
+      properties:
+        queueKey: { type: string, description: Стабильный ключ реальной CRM-очереди; не выводится из phase/building/block. }
+        queueLabel: { type: string, description: Авторитетная подпись очереди из source metadata. }
+        queueDisplayCode: { type: string, description: Короткий код для компактного UI, например I или II. }
+        queueOrder: { type: integer, minimum: 1, description: Порядок карточек в CRM; не вычисляется из queueKey. }
+        totalUnits: { type: integer, format: int64 }
+        availableUnits: { type: integer, format: int64 }
     Phase:
       type: object
       required: [id, slug, name, sourceId, propertyType, sortOrder, floorsTotal, totalUnits, availableUnits]
@@ -324,7 +350,7 @@ components:
         id: { type: integer, format: int64 }
         slug: { type: string }
         name: { type: string }
-        sourceId: { type: string, description: Публичный ключ очереди; raw source ID не раскрывается. }
+        sourceId: { type: string, description: Публичный ключ фазы/секции; raw source ID не раскрывается. }
         propertyType: { type: string }
         sortOrder: { type: integer }
         address: { type: string }
@@ -333,6 +359,10 @@ components:
         totalUnits: { type: integer, format: int64 }
         availableUnits: { type: integer, format: int64 }
         updatedAt: { type: string, format: date-time }
+        queueKey: { type: string }
+        queueLabel: { type: string }
+        queueDisplayCode: { type: string }
+        queueOrder: { type: integer, minimum: 1 }
     UnitStatus:
       type: string
       enum: [available, reserved, sold, unavailable]
@@ -345,6 +375,10 @@ components:
         projectSlug: { type: string }
         phaseSlug: { type: string }
         phaseName: { type: string }
+        queueKey: { type: string }
+        queueLabel: { type: string }
+        queueDisplayCode: { type: string }
+        queueOrder: { type: integer, minimum: 1 }
         propertyType: { type: string }
         rawPropertyType: { type: string }
         status: { $ref: '#/components/schemas/UnitStatus' }

@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -192,6 +193,84 @@ func TestMBCProjectsUseMuradBuildingsOwnership(t *testing.T) {
 		if developerSlug != "murad-buildings" || developerName != "Murad Buildings" {
 			t.Errorf("%s ownership=(%q, %q), want Murad Buildings", slug, developerSlug, developerName)
 		}
+	}
+}
+
+func TestCatalogQueueContractIsExplicitAndPhaseIndependent(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "regnum-plaza-catalog.json")
+	body := `{
+  "project": "REGNUM PLAZA",
+  "projectSlug": "regnum-plaza",
+  "capturedAt": "2026-09-15T08:00:00Z",
+  "queues": [
+    {"sourceId":"1","queueKey":"q1","queueLabel":"I очередь","queueDisplayCode":"I","queueOrder":1},
+    {"sourceId":"3","queueKey":"q3","queueLabel":"II очередь","queueDisplayCode":"II","queueOrder":2}
+  ],
+  "units": [{
+    "id":"crm-1","sourceKey":"stable-1","number":"17","rooms":2,"area":51.4,"floor":8,
+    "status":"available","propertyType":"apartment","phaseSlug":"q3-s11","phaseName":"Q3/S11",
+    "queueKey":"q3","queueLabel":"II очередь","queueDisplayCode":"II","queueOrder":2
+  }]
+}`
+	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	bundle, err := LoadCatalogFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	project := bundle.Projects[0]
+	if !project.QueueMetadataPresent || len(project.Queues) != 2 {
+		t.Fatalf("queue metadata was not preserved: %#v", project.Queues)
+	}
+	if got := project.Queues[1]; got.Key != "q3" || got.Label != "II очередь" || got.SortOrder != 2 {
+		t.Fatalf("raw q3 was incorrectly converted to an ordinal label: %#v", got)
+	}
+	if len(project.Phases) != 1 || project.Phases[0].QueueKey != "q3" || project.Units[0].QueueKey != "q3" {
+		t.Fatalf("queue linkage was inferred from phase text instead of the explicit key: phase=%#v unit=%#v", project.Phases, project.Units[0])
+	}
+}
+
+func TestCatalogQueueMetadataFailsClosedBeforeImport(t *testing.T) {
+	base := `{
+  "project":"Test","projectSlug":"test","capturedAt":"2026-09-15T08:00:00Z",
+  "queues":[{"sourceId":"3","queueKey":"q3","queueLabel":"II очередь","queueOrder":2}],
+  "units":[{"id":"1","number":"1","area":40,"floor":2,"status":"available","phaseSlug":"q3-s1","phaseName":"Q3/S1","queueKey":"q3","queueLabel":%q}]
+}`
+	for _, label := range []string{"III очередь"} {
+		path := filepath.Join(t.TempDir(), "test-catalog.json")
+		if err := os.WriteFile(path, []byte(fmt.Sprintf(base, label)), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := LoadCatalogFile(path); err == nil {
+			t.Fatalf("inconsistent queue label %q was accepted", label)
+		}
+	}
+}
+
+func TestCatalogWithoutQueueMetadataKeepsLegacyMode(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "legacy-catalog.json")
+	body := `{"project":"Legacy","projectSlug":"legacy","capturedAt":"2026-09-15T08:00:00Z","units":[{"id":"1","number":"1","area":40,"floor":2,"status":"available","phaseSlug":"main"}]}`
+	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	bundle, err := LoadCatalogFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bundle.Projects[0].QueueMetadataPresent {
+		t.Fatal("an absent queues field was treated as an authoritative empty replacement")
+	}
+}
+
+func TestNullQueueMetadataDoesNotClearLastKnownGood(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "invalid-catalog.json")
+	body := `{"project":"Invalid","projectSlug":"invalid","capturedAt":"2026-09-15T08:00:00Z","queues":null,"units":[{"id":"1","number":"1","area":40,"floor":2,"status":"available","phaseSlug":"main"}]}`
+	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := LoadCatalogFile(path); err == nil {
+		t.Fatal("present null queue metadata was accepted as an authoritative empty replacement")
 	}
 }
 

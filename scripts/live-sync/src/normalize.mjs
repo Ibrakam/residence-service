@@ -197,32 +197,119 @@ function mbcTemplateLookup(template) {
   return (row, crmId) => byCrmId.get(crmId) ?? bySignature.get(mbcUnitSignature(row)) ?? {};
 }
 
+function mbcQueueDefinitions(project) {
+  assert(Array.isArray(project?.queues) && project.queues.length > 0, `MBC ${project?.slug ?? '(unknown)'} queue metadata is missing`);
+  const bySourceValue = new Map();
+  const keys = new Set();
+  const orders = new Set();
+  for (const definition of project.queues) {
+    assert(record(definition), `MBC ${project.slug} queue metadata row is invalid`);
+    const sourceValue = numberText(definition.sourceValue, `MBC ${project.slug} queue sourceValue`);
+    const queueKey = numberText(definition.queueKey, `MBC ${project.slug} queueKey`);
+    const queueLabel = numberText(definition.queueLabel, `MBC ${project.slug} queueLabel`);
+    const queueDisplayCode = numberText(definition.queueDisplayCode, `MBC ${project.slug} queueDisplayCode`);
+    const queueOrder = integer(definition.queueOrder);
+    assert(/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(queueKey), `MBC ${project.slug} queueKey ${queueKey} is invalid`);
+    assert(queueOrder !== null && queueOrder > 0, `MBC ${project.slug} queue ${queueKey} order is invalid`);
+    assert(!bySourceValue.has(sourceValue), `MBC ${project.slug} duplicate queue sourceValue ${sourceValue}`);
+    assert(!keys.has(queueKey), `MBC ${project.slug} duplicate queueKey ${queueKey}`);
+    assert(!orders.has(queueOrder), `MBC ${project.slug} duplicate queueOrder ${queueOrder}`);
+    const referenceResidentialCount = project.queueReferenceObservedAt === undefined
+      ? null
+      : integer(definition.referenceResidentialCount);
+    if (project.queueReferenceObservedAt !== undefined) {
+      assert(Number.isFinite(Date.parse(project.queueReferenceObservedAt)), `MBC ${project.slug} queue reference timestamp is invalid`);
+      assert(referenceResidentialCount !== null && referenceResidentialCount >= 0, `MBC ${project.slug} queue ${queueKey} reference count is invalid`);
+    }
+    const normalized = { sourceId: sourceValue, queueKey, queueLabel, queueDisplayCode, queueOrder, referenceResidentialCount };
+    bySourceValue.set(sourceValue, normalized);
+    keys.add(queueKey);
+    orders.add(queueOrder);
+  }
+  const definitions = [...bySourceValue.values()].sort((left, right) => left.queueOrder - right.queueOrder);
+  return {
+    bySourceValue,
+    queues: definitions.map(({ referenceResidentialCount: _reference, ...queue }) => queue),
+    definitions,
+    referenceObservedAt: project.queueReferenceObservedAt ?? null,
+  };
+}
+
+function mbcRowsFromPages(pages, slug, propertyType, allowEmpty = false) {
+  assert(Array.isArray(pages) && pages.length > 0, `MBC ${slug} ${propertyType} capture has no pages`);
+  const rows = [];
+  let declaredTotal = null;
+  let declaredLastPage = null;
+  for (const [index, root] of pages.entries()) {
+    assert(record(root?.plans) && Array.isArray(root.plans.data), `MBC ${slug} ${propertyType} page ${index + 1} is invalid`);
+    const total = integer(root.plans.total);
+    const currentPage = integer(root.plans.current_page);
+    const lastPage = integer(root.plans.last_page);
+    assert(total !== null && (allowEmpty ? total >= 0 : total > 0), `MBC ${slug} ${propertyType} page ${index + 1} total is invalid`);
+    assert(currentPage === index + 1, `MBC ${slug} ${propertyType} page ${index + 1} current_page mismatch`);
+    assert(lastPage !== null && lastPage > 0, `MBC ${slug} ${propertyType} page ${index + 1} last_page is invalid`);
+    if (declaredTotal === null) declaredTotal = total;
+    if (declaredLastPage === null) declaredLastPage = lastPage;
+    assert(total === declaredTotal, `MBC ${slug} ${propertyType} total changed during capture`);
+    assert(lastPage === declaredLastPage, `MBC ${slug} ${propertyType} last_page changed during capture`);
+    rows.push(...root.plans.data);
+  }
+  assert(pages.length === declaredLastPage, `MBC ${slug} ${propertyType} captured ${pages.length} of ${declaredLastPage} pages`);
+  assert(rows.length === declaredTotal, `MBC ${slug} ${propertyType} captured ${rows.length} of ${declaredTotal} rows`);
+  return rows;
+}
+
+function mbcCategoryQueueCounts(rows) {
+  const counts = {};
+  for (const row of rows) {
+    const key = String(row?.queue ?? '').trim() || 'unassigned';
+    counts[key] = (counts[key] ?? 0) + 1;
+  }
+  return Object.fromEntries(Object.entries(counts).sort(([left], [right]) => left.localeCompare(right, undefined, { numeric: true })));
+}
+
+function mbcQueueReconciliation(queueDefinitions, residentialRows, commercialRows) {
+  const residential = mbcCategoryQueueCounts(residentialRows);
+  const commercial = mbcCategoryQueueCounts(commercialRows);
+  return {
+    referenceCardObservedAt: queueDefinitions.referenceObservedAt,
+    queues: queueDefinitions.definitions.map((queue) => {
+      const feedResidentialCount = residential[queue.sourceId] ?? 0;
+      return {
+        queueKey: queue.queueKey,
+        queueLabel: queue.queueLabel,
+        sourceValue: queue.sourceId,
+        feedResidentialCount,
+        feedCommercialCount: commercial[queue.sourceId] ?? 0,
+        ...(queue.referenceResidentialCount === null ? {} : {
+          referenceCardResidentialCount: queue.referenceResidentialCount,
+          residentialDelta: feedResidentialCount - queue.referenceResidentialCount,
+        }),
+      };
+    }),
+    unassignedFeed: {
+      residential: residential.unassigned ?? 0,
+      commercial: commercial.unassigned ?? 0,
+    },
+  };
+}
+
 function normalizeMbcProject(group, capturedAt, template) {
   const project = group?.project;
   assert(record(project), 'MBC project metadata is missing');
   assert(Number.isSafeInteger(project.id) && project.id > 0, 'MBC project id is invalid');
   const slug = numberText(project.slug, 'MBC project slug');
-  const pages = group?.pages;
-  assert(Array.isArray(pages) && pages.length > 0, `MBC ${slug} capture has no pages`);
-  const rows = [];
-  let declaredTotal = null;
-  let declaredLastPage = null;
-  for (const [index, root] of pages.entries()) {
-    assert(record(root?.plans) && Array.isArray(root.plans.data), `MBC ${slug} page ${index + 1} is invalid`);
-    const total = integer(root.plans.total);
-    const currentPage = integer(root.plans.current_page);
-    const lastPage = integer(root.plans.last_page);
-    assert(total !== null && total > 0, `MBC ${slug} page ${index + 1} total is invalid`);
-    assert(currentPage === index + 1, `MBC ${slug} page ${index + 1} current_page mismatch`);
-    assert(lastPage !== null && lastPage > 0, `MBC ${slug} page ${index + 1} last_page is invalid`);
-    if (declaredTotal === null) declaredTotal = total;
-    if (declaredLastPage === null) declaredLastPage = lastPage;
-    assert(total === declaredTotal, `MBC ${slug} total changed during capture`);
-    assert(lastPage === declaredLastPage, `MBC ${slug} last_page changed during capture`);
-    rows.push(...root.plans.data);
+  const pages = group?.residentialPages ?? group?.pages;
+  const queueDefinitions = mbcQueueDefinitions(project);
+  const rows = mbcRowsFromPages(pages, slug, 'residential');
+  const commercialRows = group?.commercialPages ? mbcRowsFromPages(group.commercialPages, slug, 'commercial', true) : [];
+  for (const [index, row] of commercialRows.entries()) {
+    assert(record(row), `MBC ${slug} commercial row ${index + 1} is invalid`);
+    assert(String(row.type) === 'commercial', `MBC ${slug} excluded row ${row.id ?? index + 1} is not commercial`);
+    assert(String(row.status).toUpperCase() === 'AVAILABLE', `MBC ${slug} excluded commercial row ${row.id ?? index + 1} is not available`);
+    const sourceValue = String(row.queue ?? '').trim();
+    if (sourceValue) assert(queueDefinitions.bySourceValue.has(sourceValue), `MBC ${slug} commercial row ${row.id ?? index + 1} references unknown CRM queue ${sourceValue}`);
   }
-  assert(pages.length === declaredLastPage, `MBC ${slug} captured ${pages.length} of ${declaredLastPage} pages`);
-  assert(rows.length === declaredTotal, `MBC ${slug} captured ${rows.length} of ${declaredTotal} rows`);
   const retainedUnit = mbcTemplateLookup(template);
   const publicIdentities = new Set();
   const crmIdentities = new Set();
@@ -245,7 +332,9 @@ function normalizeMbcProject(group, capturedAt, template) {
     assert(Number(row.is_price) === 0, `MBC ${slug} row ${id} public-price policy changed`);
     const normalizedStatus = status(row.status);
     assert(normalizedStatus === 'available', `MBC ${slug} row ${id} has unexpected status`);
-    const queue = mbcPhasePart(row.queue, `MBC ${slug} row ${id}.queue`);
+    const queueSource = mbcPhasePart(row.queue, `MBC ${slug} row ${id}.queue`);
+    const queue = queueDefinitions.bySourceValue.get(queueSource.text);
+    assert(queue, `MBC ${slug} row ${id} references unknown CRM queue ${queueSource.text}`);
     const section = mbcPhasePart(row.section, `MBC ${slug} row ${id}.section`);
     const sectionName = integer(section.text) === null ? section.text : `S${section.text}`;
     const retained = retainedUnit(row, crmId);
@@ -262,14 +351,20 @@ function normalizeMbcProject(group, capturedAt, template) {
       publicId: id,
       sourceKey,
       projectSlug: slug,
-      phaseSlug: `q${queue.slug}-s${section.slug}`,
-      phaseName: `Q${queue.text}/${sectionName}`,
+      phaseSlug: `${queue.queueKey}-s${section.slug}`,
+      // A phase here is the physical section. Queue presentation is carried
+      // only by the explicit queue* fields and never folded into its name.
+      phaseName: sectionName,
+      queueKey: queue.queueKey,
+      queueLabel: queue.queueLabel,
+      queueDisplayCode: queue.queueDisplayCode,
+      queueOrder: queue.queueOrder,
       sourceOrder: index,
       number: numberText(row.number, `MBC ${slug} row ${id}.number`),
       rooms,
       area,
       floor,
-      queue: queue.value,
+      queue: queueSource.value,
       section: section.value,
       entrance: section.text,
       completion: String(row.end ?? ''),
@@ -288,10 +383,16 @@ function normalizeMbcProject(group, capturedAt, template) {
   const retainedPlanCount = units.filter((unit) => unit.planImageUrl).length;
   if (template) assert(retainedPlanCount > 0, `MBC ${slug} could not match any local plan from its enrichment template`);
   const audit = completeness({
-    expected: declaredTotal,
+    expected: rows.length,
     units,
     identities: crmIdentities,
-    extra: { uniquePublicIds: publicIdentities.size, uniqueCrmIds: crmIdentities.size, uniqueSourceKeys: sourceKeyIdentities.size, retainedPlanCount, projectId: project.id, propertyType: 'residential' },
+    extra: {
+      uniquePublicIds: publicIdentities.size, uniqueCrmIds: crmIdentities.size,
+      uniqueSourceKeys: sourceKeyIdentities.size, retainedPlanCount, projectId: project.id,
+      propertyType: 'residential', excludedCommercial: commercialRows.length,
+      queueCounts: { residential: mbcCategoryQueueCounts(rows), commercial: mbcCategoryQueueCounts(commercialRows) },
+      queueReconciliation: mbcQueueReconciliation(queueDefinitions, rows, commercialRows),
+    },
   });
   assert(audit.complete, `MBC ${slug} completeness checks failed`);
   return {
@@ -302,12 +403,14 @@ function normalizeMbcProject(group, capturedAt, template) {
       projectId: project.id,
       developerSlug: 'murad-buildings',
       capturedAt,
-      officialTotalAtCapture: declaredTotal,
-      sourceCount: declaredTotal,
-      availableResidentialTotal: declaredTotal,
+      officialTotalAtCapture: rows.length,
+      sourceCount: rows.length,
+      availableResidentialTotal: rows.length,
+      excludedCommercial: commercialRows.length,
       publicPrice: false,
       source: 'https://mbc.uz/api/plans',
       sourceLanding: project.sourceLanding,
+      queues: queueDefinitions.queues,
       completeness: audit,
       units,
     },
@@ -328,7 +431,12 @@ export function normalizeMbcProjects(groups, capturedAt = new Date().toISOString
     assert(!seen.has(slug), `MBC duplicate project group ${slug}`);
     assert(Number(group.project.id) === project.id, `MBC ${slug} project id mismatch`);
     seen.add(slug);
-    const result = normalizeMbcProject({ project, pages: group.pages }, capturedAt, templates?.[slug] ?? null);
+    const result = normalizeMbcProject({
+      project,
+      pages: group.pages,
+      residentialPages: group.residentialPages,
+      commercialPages: group.commercialPages,
+    }, capturedAt, templates?.[slug] ?? null);
     artifacts.push({ filename: `${slug}-catalog.json`, artifact: result.artifact });
     audits[slug] = result.audit;
   }
@@ -338,7 +446,7 @@ export function normalizeMbcProjects(groups, capturedAt = new Date().toISOString
 
 // Compatibility helper for reviewing historical Regnum-only captures.
 export function normalizeRegnumPages(pages, capturedAt = new Date().toISOString(), template = null) {
-  return normalizeMbcProject({ project: mbcProjects.find((project) => project.slug === 'regnum-plaza'), pages }, capturedAt, template);
+  return normalizeMbcProject({ project: mbcProjects.find((project) => project.slug === 'regnum-plaza'), residentialPages: pages }, capturedAt, template);
 }
 
 function nrgStatus(row) {
@@ -575,6 +683,22 @@ function kayanPropertyType(value) {
   return /парк/i.test(value) ? 'parking' : 'apartment';
 }
 
+const kayanProjectQueues = Object.freeze({
+  ofiyat: Object.freeze([
+    Object.freeze({ sourceId: 'phase-1', queueKey: 'phase-1', queueLabel: 'I очередь', queueDisplayCode: 'I', queueOrder: 1 }),
+    Object.freeze({ sourceId: 'phase-2', queueKey: 'phase-2', queueLabel: 'II очередь', queueDisplayCode: 'II', queueOrder: 2 }),
+  ]),
+});
+
+function kayanQueue(projectSlug, phaseSlug, propertyType) {
+  if (propertyType !== 'apartment') return null;
+  const definitions = kayanProjectQueues[projectSlug];
+  if (!definitions) return null;
+  const queue = definitions.find((candidate) => candidate.sourceId === phaseSlug) ?? null;
+  assert(queue, `KAYAN ${projectSlug} residential phase ${phaseSlug} has no authoritative queue metadata`);
+  return queue;
+}
+
 export function normalizeKayanSnapshots(snapshots, capturedAt = new Date().toISOString(), template = null) {
   assert(Array.isArray(snapshots) && snapshots.length > 0, 'KAYAN capture has no house snapshots');
   const retainedProjects = new Map((template?.projects ?? []).map((item) => [item?.project?.slug, item]));
@@ -585,6 +709,7 @@ export function normalizeKayanSnapshots(snapshots, capturedAt = new Date().toISO
     const project = byProject.get(slug) ?? { phases: [], units: [], layouts: [], identities: new Set(), captured: [] };
     const phaseSlug = numberText(source.house.phaseSlug, `${slug} phase slug`);
     const propertyType = kayanPropertyType(source.house.propertyType);
+    const queue = kayanQueue(slug, phaseSlug, propertyType);
     project.phases.push({
       id: source.house.sourceId,
       sourceId: source.house.sourceId,
@@ -593,6 +718,7 @@ export function normalizeKayanSnapshots(snapshots, capturedAt = new Date().toISO
       propertyType,
       sortOrder: project.phases.length + 1,
       imageUrl: source.house.card?.image ?? '',
+      ...(queue ?? {}),
     });
     for (const row of source.records) {
       const number = numberText(row.number, `${slug}/${phaseSlug} unit number`);
@@ -611,6 +737,7 @@ export function normalizeKayanSnapshots(snapshots, capturedAt = new Date().toISO
         projectSlug: slug,
         phaseSlug,
         phaseName: source.house.phaseName,
+        ...(queue ?? {}),
         propertyType,
         rawPropertyType: row.propertyType,
         status: normalizedStatus,
@@ -653,6 +780,7 @@ export function normalizeKayanSnapshots(snapshots, capturedAt = new Date().toISO
         availableUnits: value.units.filter((unit) => unit.status === 'available').length,
         updatedAt: projectCapturedAt,
         phases: value.phases,
+        queues: kayanProjectQueues[slug] ?? [],
       },
       sourceCount: value.units.length,
       completeness: audit,
@@ -694,6 +822,7 @@ export function normalizeKayanPropertyResponses(responses, capturedAt = new Date
   const grouped = new Map();
   for (const [houseId, rows] of responseByHouse) {
     const house = kayanHouses[houseId];
+    const queue = kayanQueue(house.projectSlug, house.phaseSlug, house.propertyType);
     const retainedProject = retainedProjects.get(house.projectSlug);
     const retainedUnits = new Map((retainedProject?.units ?? []).map((unit) => [unit.sourceKey, unit]));
     const project = grouped.get(house.projectSlug) ?? { phases: [], units: [], identities: new Set(), expected: 0 };
@@ -705,6 +834,7 @@ export function normalizeKayanPropertyResponses(responses, capturedAt = new Date
       propertyType: house.propertyType,
       sortOrder: project.phases.length + 1,
       imageUrl: retainedProject?.project?.phases?.find((phase) => phase.slug === house.phaseSlug)?.imageUrl ?? '',
+      ...(queue ?? {}),
     });
     for (const [index, row] of rows.entries()) {
       assert(record(row), `KAYAN house ${houseId} row ${index + 1} is invalid`);
@@ -737,6 +867,7 @@ export function normalizeKayanPropertyResponses(responses, capturedAt = new Date
         projectSlug: house.projectSlug,
         phaseSlug: house.phaseSlug,
         phaseName: house.phaseName,
+        ...(queue ?? {}),
         propertyType: house.propertyType,
         rawPropertyType: String(row.propertyType || house.propertyType),
         status: normalizedStatus,
@@ -773,6 +904,7 @@ export function normalizeKayanPropertyResponses(responses, capturedAt = new Date
         availableUnits: value.units.filter((unit) => unit.status === 'available').length,
         updatedAt: capturedAt,
         phases: value.phases,
+        queues: kayanProjectQueues[slug] ?? [],
       },
       sourceCount: value.expected,
       completeness: audit,

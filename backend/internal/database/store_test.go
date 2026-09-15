@@ -36,12 +36,12 @@ type unitCompletionFixtureRow struct {
 }
 
 func (row unitCompletionFixtureRow) Scan(dest ...any) error {
-	if len(dest) != 22 {
-		return fmt.Errorf("unit fixture scan destinations=%d, want 22", len(dest))
+	if len(dest) != 26 {
+		return fmt.Errorf("unit fixture scan destinations=%d, want 26", len(dest))
 	}
-	completion, ok := dest[18].(*sql.NullString)
+	completion, ok := dest[22].(*sql.NullString)
 	if !ok {
-		return fmt.Errorf("unit fixture completion destination is %T", dest[18])
+		return fmt.Errorf("unit fixture completion destination is %T", dest[22])
 	}
 	*completion = row.completion
 	return nil

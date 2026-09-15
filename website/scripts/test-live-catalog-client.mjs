@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { catalogLeadIdentity, mergeLiveCatalogUnits, parseCatalogDate } from '../app/live-catalog.ts';
+import { catalogLeadIdentity, liveCatalogQueueOptions, mergeLiveCatalogUnits, parseCatalogDate } from '../app/live-catalog.ts';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const source = await readFile(new URL('../app/live-catalog.ts', import.meta.url), 'utf8');
@@ -14,6 +14,18 @@ assert.match(source, /catalog response is partial/);
 assert.match(source, /catalog response spans multiple import generations/);
 assert.match(source, /localStorage/);
 assert.doesNotMatch(source, /Math\.max\(Date\.now\(\)/, 'source freshness must not be replaced by browser fetch time');
+assert.doesNotMatch(source, /phaseSlug\.match|phaseName\.match/, 'queue identity must not be parsed from phase labels');
+
+const queueOptions = liveCatalogQueueOptions({ queues: [
+  { queueKey: 'q3', queueLabel: 'II очередь', queueDisplayCode: 'II', queueOrder: 2, totalUnits: 6, availableUnits: 6 },
+  { queueKey: 'q1', queueLabel: 'I очередь', queueDisplayCode: 'I', queueOrder: 1, totalUnits: 4, availableUnits: 4 },
+] });
+assert.deepEqual(queueOptions.map(({ queueKey, queueLabel }) => ({ queueKey, queueLabel })), [
+  { queueKey: 'q1', queueLabel: 'I очередь' },
+  { queueKey: 'q3', queueLabel: 'II очередь' },
+], 'queue options use authoritative labels and explicit ordering, not raw q-number ordinals');
+assert.deepEqual(liveCatalogQueueOptions({ queues: [queueOptions[0]] }), [], 'projects with only one CRM queue do not need a queue selector');
+assert.deepEqual(liveCatalogQueueOptions({ queues: [queueOptions[0], { ...queueOptions[1], queueOrder: 1 }] }), [], 'invalid queue metadata fails closed');
 
 const integrations = new Map([
   ['avalon-residence', ['app/page.tsx', "useLiveCatalogUnits('avalon-residence'"]],
@@ -177,14 +189,22 @@ const mbcSaadiyat = {
   ...live[0],
   projectSlug: 'saadiyat',
   phaseSlug: 'q2-sa5',
-  phaseName: 'Q2/A5',
+  phaseName: 'A5',
   entrance: 'A5',
   status: 'available',
   completion: '2029',
+  queueKey: 'q2',
+  queueLabel: 'II очередь',
+  queueDisplayCode: 'II',
+  queueOrder: 2,
 };
 const [adaptedMbc] = mergeLiveCatalogUnits('saadiyat', mbcTemplate, [mbcSaadiyat]);
-assert.equal(adaptedMbc.phase, '2', 'MBC phase filters must display the queue, not repeat the section');
+assert.equal(adaptedMbc.phase, '', 'an unmatched MBC unit never exposes a raw qN phase as queue presentation');
 assert.equal(adaptedMbc.section, 'A5');
+assert.equal(adaptedMbc.queueKey, 'q2');
+assert.equal(adaptedMbc.queueLabel, 'II очередь');
+assert.equal(adaptedMbc.queueDisplayCode, 'II');
+assert.equal(adaptedMbc.queueOrder, 2);
 assert.equal(adaptedMbc.completionYear, '2029', 'Saadiyat must display the live MBC completion instead of its embedded year');
 
 const [adaptedC1] = mergeLiveCatalogUnits('c1', mbcTemplate, [{ ...mbcSaadiyat, projectSlug: 'c1' }]);

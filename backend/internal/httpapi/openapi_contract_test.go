@@ -93,3 +93,27 @@ func TestCatalogProviderStatusRouteAndOpenAPIContract(t *testing.T) {
 		}
 	}
 }
+
+func TestProjectQueueOpenAPIContract(t *testing.T) {
+	body, err := os.ReadFile(filepath.Join("..", "..", "openapi", "openapi.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	document := string(body)
+	for _, required := range []string{
+		"ProjectQueue:",
+		"queueKey:",
+		"queueLabel:",
+		"queueDisplayCode:",
+		"queueOrder:",
+		"CRM-owned queue metadata",
+		"не выводится из phase/building/block",
+	} {
+		if !strings.Contains(document, required) {
+			t.Errorf("OpenAPI explicit queue contract is missing %q", required)
+		}
+	}
+	if count := strings.Count(document, "      - name: queue\n"); count != 3 {
+		t.Errorf("queue query parameter count=%d, want units/layouts/availability", count)
+	}
+}

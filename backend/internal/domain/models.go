@@ -19,48 +19,68 @@ type ProjectSummary struct {
 }
 
 type PhaseSummary struct {
-	ID             int64      `json:"id"`
-	Slug           string     `json:"slug"`
-	Name           string     `json:"name"`
-	SourceID       string     `json:"sourceId"`
-	PropertyType   string     `json:"propertyType"`
-	SortOrder      int        `json:"sortOrder"`
-	Address        string     `json:"address,omitempty"`
-	ImageURL       string     `json:"imageUrl,omitempty"`
-	FloorsTotal    int        `json:"floorsTotal"`
-	TotalUnits     int64      `json:"totalUnits"`
-	AvailableUnits int64      `json:"availableUnits"`
-	UpdatedAt      *time.Time `json:"updatedAt,omitempty"`
+	ID               int64      `json:"id"`
+	Slug             string     `json:"slug"`
+	Name             string     `json:"name"`
+	SourceID         string     `json:"sourceId"`
+	PropertyType     string     `json:"propertyType"`
+	SortOrder        int        `json:"sortOrder"`
+	Address          string     `json:"address,omitempty"`
+	ImageURL         string     `json:"imageUrl,omitempty"`
+	FloorsTotal      int        `json:"floorsTotal"`
+	TotalUnits       int64      `json:"totalUnits"`
+	AvailableUnits   int64      `json:"availableUnits"`
+	UpdatedAt        *time.Time `json:"updatedAt,omitempty"`
+	QueueKey         string     `json:"queueKey,omitempty"`
+	QueueLabel       string     `json:"queueLabel,omitempty"`
+	QueueDisplayCode string     `json:"queueDisplayCode,omitempty"`
+	QueueOrder       int        `json:"queueOrder,omitempty"`
 }
 
 type Project struct {
 	ProjectSummary
 	Phases []PhaseSummary `json:"phases"`
+	Queues []QueueSummary `json:"queues"`
+}
+
+// QueueSummary is CRM-owned project metadata. A queue may contain several
+// phases/sections, so it must never be inferred from a phase or building name.
+type QueueSummary struct {
+	QueueKey         string `json:"queueKey"`
+	QueueLabel       string `json:"queueLabel"`
+	QueueDisplayCode string `json:"queueDisplayCode,omitempty"`
+	QueueOrder       int    `json:"queueOrder"`
+	TotalUnits       int64  `json:"totalUnits"`
+	AvailableUnits   int64  `json:"availableUnits"`
 }
 
 type Unit struct {
-	ID              int64     `json:"id"`
-	SourceKey       string    `json:"sourceKey"`
-	ProjectSlug     string    `json:"projectSlug"`
-	PhaseSlug       string    `json:"phaseSlug"`
-	PhaseName       string    `json:"phaseName"`
-	PropertyType    string    `json:"propertyType"`
-	RawPropertyType string    `json:"rawPropertyType"`
-	Status          string    `json:"status"`
-	RawStatus       string    `json:"rawStatus"`
-	Number          string    `json:"number"`
-	Entrance        string    `json:"entrance,omitempty"`
-	Floor           int       `json:"floor"`
-	Area            float64   `json:"area"`
-	Rooms           *int      `json:"rooms,omitempty"`
-	Price           *int64    `json:"price,omitempty"`
-	PricePerM2      *float64  `json:"pricePerM2,omitempty"`
-	Currency        string    `json:"currency"`
-	PlanImageURL    string    `json:"planImageUrl,omitempty"`
-	Completion      *string   `json:"completion,omitempty"`
-	IsActive        bool      `json:"isActive"`
-	SourceUpdatedAt time.Time `json:"sourceUpdatedAt"`
-	UpdatedAt       time.Time `json:"updatedAt"`
+	ID               int64     `json:"id"`
+	SourceKey        string    `json:"sourceKey"`
+	ProjectSlug      string    `json:"projectSlug"`
+	PhaseSlug        string    `json:"phaseSlug"`
+	PhaseName        string    `json:"phaseName"`
+	QueueKey         string    `json:"queueKey,omitempty"`
+	QueueLabel       string    `json:"queueLabel,omitempty"`
+	QueueDisplayCode string    `json:"queueDisplayCode,omitempty"`
+	QueueOrder       int       `json:"queueOrder,omitempty"`
+	PropertyType     string    `json:"propertyType"`
+	RawPropertyType  string    `json:"rawPropertyType"`
+	Status           string    `json:"status"`
+	RawStatus        string    `json:"rawStatus"`
+	Number           string    `json:"number"`
+	Entrance         string    `json:"entrance,omitempty"`
+	Floor            int       `json:"floor"`
+	Area             float64   `json:"area"`
+	Rooms            *int      `json:"rooms,omitempty"`
+	Price            *int64    `json:"price,omitempty"`
+	PricePerM2       *float64  `json:"pricePerM2,omitempty"`
+	Currency         string    `json:"currency"`
+	PlanImageURL     string    `json:"planImageUrl,omitempty"`
+	Completion       *string   `json:"completion,omitempty"`
+	IsActive         bool      `json:"isActive"`
+	SourceUpdatedAt  time.Time `json:"sourceUpdatedAt"`
+	UpdatedAt        time.Time `json:"updatedAt"`
 }
 
 type Layout struct {
@@ -80,6 +100,7 @@ type Layout struct {
 type UnitFilter struct {
 	ProjectSlug  string
 	PhaseSlug    string
+	QueueKey     string
 	Status       string
 	PropertyType string
 	Rooms        *int

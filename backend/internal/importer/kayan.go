@@ -92,25 +92,29 @@ type NormalizedSnapshot struct {
 }
 
 type NormalizedUnit struct {
-	SourceID        string
-	PhaseSlug       string
-	SourceKey       string
-	PropertyType    string
-	RawPropertyType string
-	Status          string
-	RawStatus       string
-	Number          string
-	Entrance        string
-	Floor           int
-	HouseName       string
-	ProjectName     string
-	Area            float64
-	Rooms           *int
-	Price           *int64
-	PricePerM2      *float64
-	Currency        string
-	PlanImageURL    string
-	SourcePayload   json.RawMessage
+	SourceID         string
+	PhaseSlug        string
+	QueueKey         string
+	QueueLabel       string
+	QueueDisplayCode string
+	QueueOrder       int
+	SourceKey        string
+	PropertyType     string
+	RawPropertyType  string
+	Status           string
+	RawStatus        string
+	Number           string
+	Entrance         string
+	Floor            int
+	HouseName        string
+	ProjectName      string
+	Area             float64
+	Rooms            *int
+	Price            *int64
+	PricePerM2       *float64
+	Currency         string
+	PlanImageURL     string
+	SourcePayload    json.RawMessage
 }
 
 type NormalizedLayout struct {
@@ -384,19 +388,27 @@ func ImportDirectory(ctx context.Context, pool *pgxpool.Pool, dir string) (Impor
 			}
 			projectIDs[snapshot.House.ProjectSlug] = projectID
 		}
+		var queueID *int64
+		if queue := legacyKayanQueue(snapshot.House); queue != nil {
+			value, err := upsertCatalogQueue(ctx, tx, projectID, *queue, snapshot.Snapshot.CapturedAt)
+			if err != nil {
+				return failRun(ctx, pool, result, fmt.Errorf("upsert project queue %s/%s: %w", snapshot.House.ProjectSlug, queue.Key, err))
+			}
+			queueID = &value
+		}
 
 		var phaseID int64
 		if err := tx.QueryRow(ctx, `
-            INSERT INTO phases(project_id,source_id,slug,name,property_type,sort_order,address,image_url,floors_total,source_updated_at)
-            VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-            ON CONFLICT(project_id,slug) DO UPDATE SET
-              source_id=EXCLUDED.source_id, name=EXCLUDED.name, property_type=EXCLUDED.property_type,
-              sort_order=EXCLUDED.sort_order,
-              address=EXCLUDED.address, image_url=EXCLUDED.image_url, floors_total=EXCLUDED.floors_total,
-              source_updated_at=EXCLUDED.source_updated_at, updated_at=now()
-            RETURNING id`, projectID, snapshot.House.SourceID, snapshot.House.PhaseSlug,
+			INSERT INTO phases(project_id,source_id,slug,name,property_type,sort_order,address,image_url,floors_total,source_updated_at,queue_id)
+			VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+			ON CONFLICT(project_id,slug) DO UPDATE SET
+			  source_id=EXCLUDED.source_id, name=EXCLUDED.name, property_type=EXCLUDED.property_type,
+			  sort_order=EXCLUDED.sort_order,
+			  address=EXCLUDED.address, image_url=EXCLUDED.image_url, floors_total=EXCLUDED.floors_total,
+			  source_updated_at=EXCLUDED.source_updated_at, queue_id=EXCLUDED.queue_id, updated_at=now()
+			RETURNING id`, projectID, snapshot.House.SourceID, snapshot.House.PhaseSlug,
 			snapshot.House.PhaseName, snapshot.House.PropertyType, phaseSortOrder(snapshot.House.PhaseSlug), snapshot.Address,
-			snapshot.ImageURL, snapshot.Floors, snapshot.Snapshot.CapturedAt).Scan(&phaseID); err != nil {
+			snapshot.ImageURL, snapshot.Floors, snapshot.Snapshot.CapturedAt, queueID).Scan(&phaseID); err != nil {
 			return failRun(ctx, pool, result, fmt.Errorf("upsert phase %s: %w", snapshot.House.PhaseSlug, err))
 		}
 
@@ -457,6 +469,22 @@ func phaseSortOrder(slug string) int {
 	default:
 		return 50
 	}
+}
+
+func legacyKayanQueue(house SnapshotHouse) *CatalogQueue {
+	if house.ProjectSlug != "ofiyat" || house.PropertyType != "apartment" {
+		return nil
+	}
+	queue := CatalogQueue{SourceID: house.PhaseSlug, Key: house.PhaseSlug, SourcePayload: json.RawMessage(`{}`)}
+	switch house.PhaseSlug {
+	case "phase-1":
+		queue.Label, queue.DisplayCode, queue.SortOrder = "I очередь", "I", 1
+	case "phase-2":
+		queue.Label, queue.DisplayCode, queue.SortOrder = "II очередь", "II", 2
+	default:
+		return nil
+	}
+	return &queue
 }
 
 const upsertUnitSQL = `

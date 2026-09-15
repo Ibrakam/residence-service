@@ -78,9 +78,10 @@ go run ./cmd/api
 
 ```http
 GET /v1/projects/ofiyat/units?phase=phase-2&status=available&rooms=3&limit=50
+GET /v1/projects/saadiyat/units?queue=q2&status=available&limit=50
 ```
 
-Фильтры каталога: `phase`, `status`, `propertyType`, `rooms`, `floorFrom`, `floorTo`, `priceFrom`, `priceTo`, `limit`, `offset`. Максимальный `limit` — 500. Полный контракт находится в [`openapi/openapi.yaml`](./openapi/openapi.yaml).
+Фильтры каталога: `phase`, `queue`, `status`, `propertyType`, `rooms`, `floorFrom`, `floorTo`, `priceFrom`, `priceTo`, `limit`, `offset`. В `queue` передаётся стабильный `queueKey` из `GET /v1/projects/{slug}`. Максимальный `limit` — 500. Полный контракт находится в [`openapi/openapi.yaml`](./openapi/openapi.yaml).
 
 Нормализованные статусы: `available`, `reserved`, `sold`, `unavailable`. Исходное значение всегда хранится в `rawStatus` и полном `source_payload`, поэтому workflow-статусы не теряются.
 

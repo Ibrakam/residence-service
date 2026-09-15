@@ -160,7 +160,8 @@ func (s *Server) listUnits(w http.ResponseWriter, r *http.Request) {
 
 	filter := domain.UnitFilter{
 		ProjectSlug: r.PathValue("slug"), PhaseSlug: query.Get("phase"),
-		Status: query.Get("status"), PropertyType: query.Get("propertyType"),
+		QueueKey: query.Get("queue"),
+		Status:   query.Get("status"), PropertyType: query.Get("propertyType"),
 		Limit: limit, Offset: offset,
 	}
 	if filter.Rooms, err = parseOptionalInt(query.Get("rooms")); err != nil {
@@ -211,7 +212,7 @@ func (s *Server) getUnit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) listLayouts(w http.ResponseWriter, r *http.Request) {
-	items, err := s.store.ListLayouts(r.Context(), r.PathValue("slug"), r.URL.Query().Get("phase"))
+	items, err := s.store.ListLayouts(r.Context(), r.PathValue("slug"), r.URL.Query().Get("phase"), r.URL.Query().Get("queue"))
 	if err != nil {
 		s.internalError(w, "list layouts", err)
 		return
@@ -220,7 +221,7 @@ func (s *Server) listLayouts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) availability(w http.ResponseWriter, r *http.Request) {
-	items, err := s.store.Availability(r.Context(), r.PathValue("slug"), r.URL.Query().Get("phase"))
+	items, err := s.store.Availability(r.Context(), r.PathValue("slug"), r.URL.Query().Get("phase"), r.URL.Query().Get("queue"))
 	if err != nil {
 		s.internalError(w, "get availability", err)
 		return

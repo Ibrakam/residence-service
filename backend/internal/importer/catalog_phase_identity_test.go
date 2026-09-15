@@ -61,7 +61,7 @@ func TestCatalogPhaseUpsertReconcilesSourceIDAndPreservesRow(t *testing.T) {
 	}
 	phaseID, err := upsertCatalogPhase(ctx, tx, projectID, CatalogPhase{
 		SourceID: "42", Slug: "block-42", Name: "Live", PropertyType: "apartment",
-	}, time.Now().UTC())
+	}, time.Now().UTC(), nil, false)
 	if err != nil {
 		_ = tx.Rollback(ctx)
 		t.Fatal(err)
@@ -148,7 +148,7 @@ func TestCatalogPhaseUpsertRejectsAmbiguousIdentity(t *testing.T) {
 	}
 	_, err = upsertCatalogPhase(ctx, tx, projectID, CatalogPhase{
 		SourceID: "source-a", Slug: "target", Name: "Ambiguous", PropertyType: "apartment",
-	}, time.Now().UTC())
+	}, time.Now().UTC(), nil, false)
 	_ = tx.Rollback(ctx)
 	if err == nil {
 		t.Fatal("ambiguous source ID and slug were accepted")

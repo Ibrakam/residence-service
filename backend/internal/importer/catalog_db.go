@@ -171,13 +171,39 @@ func ImportPreparedCatalog(ctx context.Context, pool *pgxpool.Pool, prepared Pre
 				}
 			}
 
+			queueIDs := make(map[string]int64, len(project.Queues))
+			for _, queue := range project.Queues {
+				queueID, err := upsertCatalogQueue(ctx, tx, projectID, queue, project.CapturedAt)
+				if err != nil {
+					return failCatalogRun(ctx, pool, result, fmt.Errorf("upsert queue %s/%s: %w", project.Slug, queue.Key, err))
+				}
+				queueIDs[queue.Key] = queueID
+			}
+
 			phaseIDs := make(map[string]int64, len(project.Phases))
 			for _, phase := range project.Phases {
-				phaseID, err := upsertCatalogPhase(ctx, tx, projectID, phase, project.CapturedAt)
+				var queueID *int64
+				if phase.QueueKey != "" {
+					value, ok := queueIDs[phase.QueueKey]
+					if !ok {
+						return failCatalogRun(ctx, pool, result, fmt.Errorf("phase %s/%s references unknown queue %s", project.Slug, phase.Slug, phase.QueueKey))
+					}
+					queueID = &value
+				}
+				phaseID, err := upsertCatalogPhase(ctx, tx, projectID, phase, project.CapturedAt, queueID, project.QueueMetadataPresent)
 				if err != nil {
 					return failCatalogRun(ctx, pool, result, fmt.Errorf("upsert phase %s/%s: %w", project.Slug, phase.Slug, err))
 				}
 				phaseIDs[phase.Slug] = phaseID
+			}
+			if project.QueueMetadataPresent {
+				queueKeys := make([]string, 0, len(project.Queues))
+				for _, queue := range project.Queues {
+					queueKeys = append(queueKeys, queue.Key)
+				}
+				if _, err := tx.Exec(ctx, `DELETE FROM project_queues WHERE project_id=$1 AND NOT (queue_key=ANY($2::text[]))`, projectID, queueKeys); err != nil {
+					return failCatalogRun(ctx, pool, result, fmt.Errorf("reconcile queues for %s: %w", project.Slug, err))
+				}
 			}
 
 			for _, unit := range project.Units {
@@ -271,7 +297,57 @@ func ImportPreparedCatalog(ctx context.Context, pool *pgxpool.Pool, prepared Pre
 // providers may use a different slug for the same source ID. Updating the
 // existing row preserves unit/layout foreign keys and avoids conflicting with
 // the independent (project_id, source_id) and (project_id, slug) constraints.
-func upsertCatalogPhase(ctx context.Context, tx pgx.Tx, projectID int64, phase CatalogPhase, capturedAt time.Time) (int64, error) {
+func upsertCatalogQueue(ctx context.Context, tx pgx.Tx, projectID int64, queue CatalogQueue, capturedAt time.Time) (int64, error) {
+	rows, err := tx.Query(ctx, `
+		SELECT id
+		FROM project_queues
+		WHERE project_id=$1 AND (source_id=$2 OR queue_key=$3)
+		ORDER BY id
+		FOR UPDATE`, projectID, queue.SourceID, queue.Key)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+	var ids []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return 0, err
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+	if len(ids) > 1 {
+		return 0, fmt.Errorf("source ID %q and key %q resolve to different queue rows", queue.SourceID, queue.Key)
+	}
+	if len(ids) == 1 {
+		var id int64
+		if err := tx.QueryRow(ctx, `
+			UPDATE project_queues SET
+				source_id=$2,queue_key=$3,queue_label=$4,display_code=$5,sort_order=$6,
+				source_payload=$7::jsonb,source_updated_at=$8,updated_at=now()
+			WHERE id=$1
+			RETURNING id`, ids[0], queue.SourceID, queue.Key, queue.Label, queue.DisplayCode,
+			queue.SortOrder, jsonText(queue.SourcePayload), capturedAt).Scan(&id); err != nil {
+			return 0, err
+		}
+		return id, nil
+	}
+	var id int64
+	if err := tx.QueryRow(ctx, `
+		INSERT INTO project_queues(
+			project_id,source_id,queue_key,queue_label,display_code,sort_order,source_payload,source_updated_at
+		) VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8)
+		RETURNING id`, projectID, queue.SourceID, queue.Key, queue.Label, queue.DisplayCode,
+		queue.SortOrder, jsonText(queue.SourcePayload), capturedAt).Scan(&id); err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
+func upsertCatalogPhase(ctx context.Context, tx pgx.Tx, projectID int64, phase CatalogPhase, capturedAt time.Time, queueID *int64, queueMetadataPresent bool) (int64, error) {
 	rows, err := tx.Query(ctx, `
 		SELECT id
 		FROM phases
@@ -303,11 +379,12 @@ func upsertCatalogPhase(ctx context.Context, tx pgx.Tx, projectID int64, phase C
 		if err := tx.QueryRow(ctx, `
 			UPDATE phases SET
 				source_id=$2,slug=$3,name=$4,property_type=$5,sort_order=$6,address=$7,image_url=$8,
-				floors_total=$9,source_updated_at=$10,source_url=$11,source_payload=$12::jsonb,updated_at=now()
+				floors_total=$9,source_updated_at=$10,source_url=$11,source_payload=$12::jsonb,
+				queue_id=CASE WHEN $13 THEN $14 ELSE queue_id END,updated_at=now()
 			WHERE id=$1
 			RETURNING id`, phaseIDs[0], phase.SourceID, phase.Slug, phase.Name, phase.PropertyType,
 			phase.SortOrder, phase.Address, phase.ImageURL, phase.FloorsTotal, capturedAt,
-			phase.SourceURL, jsonText(phase.SourcePayload)).Scan(&phaseID); err != nil {
+			phase.SourceURL, jsonText(phase.SourcePayload), queueMetadataPresent, queueID).Scan(&phaseID); err != nil {
 			return 0, err
 		}
 		return phaseID, nil
@@ -317,11 +394,11 @@ func upsertCatalogPhase(ctx context.Context, tx pgx.Tx, projectID int64, phase C
 	if err := tx.QueryRow(ctx, `
 		INSERT INTO phases(
 			project_id,source_id,slug,name,property_type,sort_order,address,image_url,
-			floors_total,source_updated_at,source_url,source_payload
-		) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb)
+			floors_total,source_updated_at,source_url,source_payload,queue_id
+		) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,$13)
 		RETURNING id`, projectID, phase.SourceID, phase.Slug, phase.Name, phase.PropertyType,
 		phase.SortOrder, phase.Address, phase.ImageURL, phase.FloorsTotal, capturedAt,
-		phase.SourceURL, jsonText(phase.SourcePayload)).Scan(&phaseID); err != nil {
+		phase.SourceURL, jsonText(phase.SourcePayload), queueID).Scan(&phaseID); err != nil {
 		return 0, err
 	}
 	return phaseID, nil

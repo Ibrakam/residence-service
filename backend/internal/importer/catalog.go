@@ -28,20 +28,31 @@ type CatalogBundle struct {
 }
 
 type CatalogProject struct {
-	DeveloperSlug  string
-	DeveloperName  string
-	Slug           string
-	Name           string
-	SourceID       string
-	SourceURL      string
-	SourcePayload  json.RawMessage
-	CapturedAt     time.Time
-	Complete       bool
-	OfficialCount  *int
-	Phases         []CatalogPhase
-	Units          []NormalizedUnit
-	Layouts        []NormalizedLayout
-	DuplicateUnits int
+	DeveloperSlug        string
+	DeveloperName        string
+	Slug                 string
+	Name                 string
+	SourceID             string
+	SourceURL            string
+	SourcePayload        json.RawMessage
+	CapturedAt           time.Time
+	Complete             bool
+	OfficialCount        *int
+	QueueMetadataPresent bool
+	Queues               []CatalogQueue
+	Phases               []CatalogPhase
+	Units                []NormalizedUnit
+	Layouts              []NormalizedLayout
+	DuplicateUnits       int
+}
+
+type CatalogQueue struct {
+	SourceID      string
+	Key           string
+	Label         string
+	DisplayCode   string
+	SortOrder     int
+	SourcePayload json.RawMessage
 }
 
 type CatalogPhase struct {
@@ -55,6 +66,7 @@ type CatalogPhase struct {
 	FloorsTotal   int
 	SourceURL     string
 	SourcePayload json.RawMessage
+	QueueKey      string
 }
 
 type CatalogAudit struct {
@@ -79,6 +91,7 @@ type CatalogAuditProject struct {
 	Records       int    `json:"records"`
 	OfficialCount *int   `json:"officialCount,omitempty"`
 	Complete      bool   `json:"complete"`
+	Queues        int    `json:"queues"`
 	Phases        int    `json:"phases"`
 	Layouts       int    `json:"layouts"`
 }
@@ -89,33 +102,37 @@ type CatalogAuditProject struct {
 // the same response changed.
 func CatalogProjectContentChecksum(project CatalogProject) (string, error) {
 	projection := struct {
-		DeveloperSlug  string
-		DeveloperName  string
-		Slug           string
-		Name           string
-		SourceID       string
-		SourceURL      string
-		SourcePayload  json.RawMessage
-		Complete       bool
-		OfficialCount  *int
-		Phases         []CatalogPhase
-		Units          []NormalizedUnit
-		Layouts        []NormalizedLayout
-		DuplicateUnits int
+		DeveloperSlug        string
+		DeveloperName        string
+		Slug                 string
+		Name                 string
+		SourceID             string
+		SourceURL            string
+		SourcePayload        json.RawMessage
+		Complete             bool
+		OfficialCount        *int
+		QueueMetadataPresent bool
+		Queues               []CatalogQueue
+		Phases               []CatalogPhase
+		Units                []NormalizedUnit
+		Layouts              []NormalizedLayout
+		DuplicateUnits       int
 	}{
-		DeveloperSlug:  project.DeveloperSlug,
-		DeveloperName:  project.DeveloperName,
-		Slug:           project.Slug,
-		Name:           project.Name,
-		SourceID:       project.SourceID,
-		SourceURL:      project.SourceURL,
-		SourcePayload:  project.SourcePayload,
-		Complete:       project.Complete,
-		OfficialCount:  project.OfficialCount,
-		Phases:         project.Phases,
-		Units:          project.Units,
-		Layouts:        project.Layouts,
-		DuplicateUnits: project.DuplicateUnits,
+		DeveloperSlug:        project.DeveloperSlug,
+		DeveloperName:        project.DeveloperName,
+		Slug:                 project.Slug,
+		Name:                 project.Name,
+		SourceID:             project.SourceID,
+		SourceURL:            project.SourceURL,
+		SourcePayload:        project.SourcePayload,
+		Complete:             project.Complete,
+		OfficialCount:        project.OfficialCount,
+		QueueMetadataPresent: project.QueueMetadataPresent,
+		Queues:               project.Queues,
+		Phases:               project.Phases,
+		Units:                project.Units,
+		Layouts:              project.Layouts,
+		DuplicateUnits:       project.DuplicateUnits,
 	}
 	body, err := json.Marshal(projection)
 	if err != nil {
@@ -246,7 +263,7 @@ func AuditCatalogDirectory(dir string) (CatalogAudit, error) {
 			audit.Items = append(audit.Items, CatalogAuditProject{
 				File: filepath.Base(bundle.Path), ProjectSlug: project.Slug, ProjectName: project.Name,
 				Schema: bundle.SchemaName, Records: records, OfficialCount: project.OfficialCount,
-				Complete: project.Complete, Phases: len(project.Phases), Layouts: len(project.Layouts),
+				Complete: project.Complete, Queues: len(project.Queues), Phases: len(project.Phases), Layouts: len(project.Layouts),
 			})
 		}
 	}
@@ -292,6 +309,14 @@ func normalizeCatalogProject(filename string, root, node map[string]json.RawMess
 	if project.SourceID == "" {
 		project.SourceID = firstString(projectMeta, "realEstateUUID", "sourceId", "id")
 	}
+	project.Queues, project.QueueMetadataPresent, err = catalogQueueDefinitions(node, projectMeta)
+	if err != nil {
+		return CatalogProject{}, err
+	}
+	queueByKey := make(map[string]CatalogQueue, len(project.Queues))
+	for _, queue := range project.Queues {
+		queueByKey[queue.Key] = queue
+	}
 
 	var unitRows []json.RawMessage
 	if err := json.Unmarshal(node["units"], &unitRows); err != nil {
@@ -315,6 +340,11 @@ func normalizeCatalogProject(filename string, root, node map[string]json.RawMess
 			return CatalogProject{}, fmt.Errorf("unit %d: %w", index+1, err)
 		}
 		phase := catalogPhase(values, phaseDefinitions, source)
+		if phase.QueueKey != "" {
+			if _, ok := queueByKey[phase.QueueKey]; !ok {
+				return CatalogProject{}, fmt.Errorf("unit %d phase %s references unknown queue %s", index+1, phase.Slug, phase.QueueKey)
+			}
+		}
 		phaseKey := phase.SourceID
 		if phaseKey == "" {
 			phaseKey = phase.Slug
@@ -332,6 +362,21 @@ func normalizeCatalogProject(filename string, root, node map[string]json.RawMess
 		unit, err := normalizeCatalogUnit(project.Slug, storedPhase.Slug, rawUnit, values)
 		if err != nil {
 			return CatalogProject{}, fmt.Errorf("unit %d: %w", index+1, err)
+		}
+		if unit.QueueKey != storedPhase.QueueKey {
+			return CatalogProject{}, fmt.Errorf("unit %d queue %q does not match phase %s queue %q", index+1, unit.QueueKey, storedPhase.Slug, storedPhase.QueueKey)
+		}
+		if unit.QueueKey != "" {
+			queue := queueByKey[unit.QueueKey]
+			if unit.QueueLabel != "" && unit.QueueLabel != queue.Label {
+				return CatalogProject{}, fmt.Errorf("unit %d queue label does not match project queue %s", index+1, unit.QueueKey)
+			}
+			if unit.QueueDisplayCode != "" && unit.QueueDisplayCode != queue.DisplayCode {
+				return CatalogProject{}, fmt.Errorf("unit %d queue display code does not match project queue %s", index+1, unit.QueueKey)
+			}
+			if unit.QueueOrder != 0 && unit.QueueOrder != queue.SortOrder {
+				return CatalogProject{}, fmt.Errorf("unit %d queue order does not match project queue %s", index+1, unit.QueueKey)
+			}
 		}
 		if existing, duplicate := seenUnits[unit.SourceKey]; duplicate {
 			if existing == string(unit.SourcePayload) {
@@ -406,6 +451,8 @@ func normalizeCatalogUnit(projectSlug, phaseSlug string, raw json.RawMessage, va
 	}
 	unit := NormalizedUnit{
 		SourceID: sourceID, PhaseSlug: phaseSlug, SourceKey: sourceKey, PropertyType: propertyType,
+		QueueKey: firstString(values, "queueKey"), QueueLabel: firstString(values, "queueLabel"),
+		QueueDisplayCode: firstString(values, "queueDisplayCode", "displayCode"), QueueOrder: firstInt(values, "queueOrder"),
 		RawPropertyType: firstString(values, "rawPropertyType", "propertyType"),
 		Status:          status, RawStatus: rawStatus, Number: number,
 		Entrance: firstString(values, "entrance", "section"), Floor: floor,
@@ -461,7 +508,7 @@ func catalogPhase(unit map[string]json.RawMessage, definitions map[string]Catalo
 	}
 	return CatalogPhase{
 		SourceID: sourceID, Slug: slug, Name: name, PropertyType: "apartment",
-		SourceURL: sourceURL, SourcePayload: json.RawMessage(`{}`),
+		SourceURL: sourceURL, SourcePayload: json.RawMessage(`{}`), QueueKey: firstString(unit, "queueKey"),
 	}
 }
 
@@ -483,6 +530,7 @@ func phaseDefinitions(project map[string]json.RawMessage) map[string]CatalogPhas
 			SortOrder: firstInt(row, "sortOrder"), Address: firstString(row, "address"),
 			ImageURL: firstString(row, "imageUrl"), FloorsTotal: firstInt(row, "floorsTotal"),
 			SourcePayload: payload,
+			QueueKey:      firstString(row, "queueKey"),
 		}
 		if phase.SourceID == "" {
 			phase.SourceID = slug
@@ -496,6 +544,85 @@ func phaseDefinitions(project map[string]json.RawMessage) map[string]CatalogPhas
 		result[slug] = phase
 	}
 	return result
+}
+
+func catalogQueueDefinitions(node, project map[string]json.RawMessage) ([]CatalogQueue, bool, error) {
+	raw, present := node["queues"]
+	if !present {
+		raw, present = project["queues"]
+	}
+	if !present {
+		return nil, false, nil
+	}
+	if len(raw) == 0 || string(raw) == "null" {
+		return nil, true, errors.New("queues must be an array when present")
+	}
+	var rows []map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &rows); err != nil {
+		return nil, true, fmt.Errorf("decode queues: %w", err)
+	}
+	result := make([]CatalogQueue, 0, len(rows))
+	keys := make(map[string]struct{}, len(rows))
+	sourceIDs := make(map[string]struct{}, len(rows))
+	orders := make(map[int]struct{}, len(rows))
+	for index, row := range rows {
+		key := firstString(row, "queueKey", "key")
+		label := firstString(row, "queueLabel", "label")
+		sourceID := firstString(row, "sourceId", "sourceValue")
+		order := firstInt(row, "queueOrder", "sortOrder", "order")
+		if sourceID == "" {
+			sourceID = key
+		}
+		if !validQueueKey(key) {
+			return nil, true, fmt.Errorf("queue %d has invalid queueKey %q", index+1, key)
+		}
+		if label == "" || sourceID == "" || order <= 0 {
+			return nil, true, fmt.Errorf("queue %d requires sourceId, queueLabel, and positive queueOrder", index+1)
+		}
+		if _, duplicate := keys[key]; duplicate {
+			return nil, true, fmt.Errorf("duplicate queueKey %q", key)
+		}
+		if _, duplicate := sourceIDs[sourceID]; duplicate {
+			return nil, true, fmt.Errorf("duplicate queue sourceId %q", sourceID)
+		}
+		if _, duplicate := orders[order]; duplicate {
+			return nil, true, fmt.Errorf("duplicate queueOrder %d", order)
+		}
+		payload, _ := json.Marshal(row)
+		result = append(result, CatalogQueue{
+			SourceID: sourceID, Key: key, Label: label,
+			DisplayCode: firstString(row, "queueDisplayCode", "displayCode"),
+			SortOrder:   order, SourcePayload: payload,
+		})
+		keys[key] = struct{}{}
+		sourceIDs[sourceID] = struct{}{}
+		orders[order] = struct{}{}
+	}
+	sort.Slice(result, func(i, j int) bool { return result[i].SortOrder < result[j].SortOrder })
+	return result, true, nil
+}
+
+func validQueueKey(value string) bool {
+	if value == "" || value != strings.ToLower(value) || strings.HasPrefix(value, "-") || strings.HasSuffix(value, "-") {
+		return false
+	}
+	previousDash := false
+	for _, char := range value {
+		if char == '-' {
+			if previousDash {
+				return false
+			}
+			previousDash = true
+			continue
+		}
+		if char < 'a' || char > 'z' {
+			if char < '0' || char > '9' {
+				return false
+			}
+		}
+		previousDash = false
+	}
+	return true
 }
 
 func catalogLayouts(node map[string]json.RawMessage) []NormalizedLayout {

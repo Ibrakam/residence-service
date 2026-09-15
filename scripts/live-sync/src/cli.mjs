@@ -170,20 +170,22 @@ function inputFromCapture(providerId, capture) {
     const expected = new Map(provider.projectDefinitions.map((project) => [project.slug, project]));
     for (const record of records) {
       const project = expected.get(record.scope?.projectSlug);
-      if (!project || Number(record.scope?.projectId) !== project.id || record.scope?.propertyType !== 'residential') {
-        throw new Error('MBC capture contains a plans response outside the exact residential project scope');
+      if (!project || Number(record.scope?.projectId) !== project.id || !['residential', 'commercial'].includes(record.scope?.propertyType)) {
+        throw new Error('MBC capture contains a plans response outside the exact project/property scope');
       }
     }
     return provider.projectDefinitions.map((project) => {
-      const pages = records
-        .filter((item) => item.scope.projectSlug === project.slug)
+      const pagesFor = (propertyType) => records
+        .filter((item) => item.scope.projectSlug === project.slug && item.scope.propertyType === propertyType)
         .sort((left, right) => Number(left.scope.page) - Number(right.scope.page))
         .map((item, index) => {
-          if (Number(item.scope.page) !== index + 1) throw new Error(`MBC ${project.slug} pagination scope is not contiguous`);
+          if (Number(item.scope.page) !== index + 1) throw new Error(`MBC ${project.slug} ${propertyType} pagination scope is not contiguous`);
           return item.value;
         });
-      if (!pages.length) throw new Error(`MBC capture has no complete ${project.slug} plans pages`);
-      return { project, pages };
+      const residentialPages = pagesFor('residential');
+      const commercialPages = pagesFor('commercial');
+      if (!residentialPages.length || !commercialPages.length) throw new Error(`MBC capture has no complete ${project.slug} category pages`);
+      return { project, residentialPages, commercialPages };
     });
   }
   if (providerId === 'sun') {

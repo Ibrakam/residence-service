@@ -28,11 +28,46 @@ export const nrgBiProjects = Object.freeze([
   Object.freeze({ slug: 'zamon', name: 'Zamon', realEstateUUID: '58e48f7d-dd1c-11ed-a82c-001dd8b726aa' }),
 ]);
 
+// Authoritative queue-card metadata observed in the MBC Partners CRM on
+// 2026-09-15. The public plans feed exposes only the raw queue value, so its
+// label/order must be joined with this reviewed metadata and never inferred
+// from qN. Any unregistered source value makes normalization fail closed.
 export const mbcProjects = Object.freeze([
-  Object.freeze({ id: 1, slug: 'regnum-plaza', name: 'REGNUM PLAZA', sourceLanding: 'https://mbc.uz/project/regnum-plaza', templateFile: 'regnum-plaza-client.json' }),
-  Object.freeze({ id: 2, slug: 'c1', name: 'C1', sourceLanding: 'https://mbc.uz/ru/project/c1', templateFile: 'c1-catalog.json' }),
-  Object.freeze({ id: 3, slug: 'soy-boyi', name: 'Soy Bo\u2018yi', sourceLanding: 'https://mbc.uz/ru/project/soy-boyi', templateFile: 'soy-boyi-catalog.json' }),
-  Object.freeze({ id: 18, slug: 'saadiyat', name: 'SAADIYAT', sourceLanding: 'https://mbc.uz/ru/project/saadiyat', templateFile: 'saadiyat-catalog.json' }),
+  Object.freeze({
+    id: 1, slug: 'regnum-plaza', name: 'REGNUM PLAZA', sourceLanding: 'https://mbc.uz/project/regnum-plaza', templateFile: 'regnum-plaza-client.json',
+    // The CRM calls its second displayed queue `3`. Keeping the source value
+    // separate from display order prevents q3 from being presented as III.
+    queues: Object.freeze([
+      Object.freeze({ sourceValue: '1', queueKey: 'q1', queueLabel: 'I очередь', queueDisplayCode: 'I', queueOrder: 1 }),
+      Object.freeze({ sourceValue: '3', queueKey: 'q3', queueLabel: 'II очередь', queueDisplayCode: 'II', queueOrder: 2 }),
+    ]),
+  }),
+  Object.freeze({
+    id: 2, slug: 'c1', name: 'C1', sourceLanding: 'https://mbc.uz/ru/project/c1', templateFile: 'c1-catalog.json',
+    queues: Object.freeze([
+      Object.freeze({ sourceValue: '1', queueKey: 'q1', queueLabel: 'I очередь', queueDisplayCode: 'I', queueOrder: 1 }),
+    ]),
+  }),
+  Object.freeze({
+    id: 3, slug: 'soy-boyi', name: 'Soy Bo\u2018yi', sourceLanding: 'https://mbc.uz/ru/project/soy-boyi', templateFile: 'soy-boyi-catalog.json',
+    // The complete CRM project card set contains four queues. Queue I currently
+    // has only commercial stock; it remains project metadata but never becomes
+    // an apartment merely to make the residential catalogue non-empty.
+    queues: Object.freeze([
+      Object.freeze({ sourceValue: '1', queueKey: 'q1', queueLabel: 'I очередь', queueDisplayCode: 'I', queueOrder: 1 }),
+      Object.freeze({ sourceValue: '2', queueKey: 'q2', queueLabel: 'II очередь', queueDisplayCode: 'II', queueOrder: 2 }),
+      Object.freeze({ sourceValue: '3', queueKey: 'q3', queueLabel: 'III очередь', queueDisplayCode: 'III', queueOrder: 3 }),
+      Object.freeze({ sourceValue: '4', queueKey: 'q4', queueLabel: 'IV очередь', queueDisplayCode: 'IV', queueOrder: 4 }),
+    ]),
+  }),
+  Object.freeze({
+    id: 18, slug: 'saadiyat', name: 'SAADIYAT', sourceLanding: 'https://mbc.uz/ru/project/saadiyat', templateFile: 'saadiyat-catalog.json',
+    queueReferenceObservedAt: '2026-09-15T11:27:41+05:00',
+    queues: Object.freeze([
+      Object.freeze({ sourceValue: '1', queueKey: 'q1', queueLabel: 'I очередь', queueDisplayCode: 'I', queueOrder: 1, referenceResidentialCount: 42 }),
+      Object.freeze({ sourceValue: '2', queueKey: 'q2', queueLabel: 'II очередь', queueDisplayCode: 'II', queueOrder: 2, referenceResidentialCount: 115 }),
+    ]),
+  }),
 ]);
 
 /**

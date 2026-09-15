@@ -125,12 +125,14 @@ func (s *Store) GetProject(ctx context.Context, slug string) (domain.Project, er
 		       ph.address, ph.image_url, ph.floors_total,
 		       count(u.id) FILTER (WHERE u.is_active),
 		       count(u.id) FILTER (WHERE u.is_active AND u.status='available'),
-               max(u.source_updated_at)
+		       max(u.source_updated_at),
+		       COALESCE(q.queue_key,''),COALESCE(q.queue_label,''),COALESCE(q.display_code,''),COALESCE(q.sort_order,0)
         FROM phases ph
         JOIN projects p ON p.id=ph.project_id
+		LEFT JOIN project_queues q ON q.id=ph.queue_id
 		LEFT JOIN units u ON u.phase_id=ph.id
 		WHERE p.slug=$1
-		GROUP BY ph.id
+		GROUP BY ph.id,q.id
 		HAVING count(u.id) FILTER (WHERE u.is_active) > 0
 		ORDER BY ph.sort_order, ph.id`, slug)
 	if err != nil {
@@ -145,12 +147,41 @@ func (s *Store) GetProject(ctx context.Context, slug string) (domain.Project, er
 			&phase.SortOrder,
 			&phase.Address, &phase.ImageURL, &phase.FloorsTotal,
 			&phase.TotalUnits, &phase.AvailableUnits, &phase.UpdatedAt,
+			&phase.QueueKey, &phase.QueueLabel, &phase.QueueDisplayCode, &phase.QueueOrder,
 		); err != nil {
 			return domain.Project{}, err
 		}
 		project.Phases = append(project.Phases, phase)
 	}
-	return project, rows.Err()
+	if err := rows.Err(); err != nil {
+		return domain.Project{}, err
+	}
+	rows.Close()
+
+	queueRows, err := s.pool.Query(ctx, `
+		SELECT q.queue_key,q.queue_label,q.display_code,q.sort_order,
+		       count(u.id) FILTER (WHERE u.is_active),
+		       count(u.id) FILTER (WHERE u.is_active AND u.status='available')
+		FROM project_queues q
+		JOIN projects p ON p.id=q.project_id
+		LEFT JOIN phases ph ON ph.queue_id=q.id
+		LEFT JOIN units u ON u.phase_id=ph.id
+		WHERE p.slug=$1
+		GROUP BY q.id
+		ORDER BY q.sort_order,q.id`, slug)
+	if err != nil {
+		return domain.Project{}, err
+	}
+	defer queueRows.Close()
+	project.Queues = make([]domain.QueueSummary, 0)
+	for queueRows.Next() {
+		var queue domain.QueueSummary
+		if err := queueRows.Scan(&queue.QueueKey, &queue.QueueLabel, &queue.QueueDisplayCode, &queue.QueueOrder, &queue.TotalUnits, &queue.AvailableUnits); err != nil {
+			return domain.Project{}, err
+		}
+		project.Queues = append(project.Queues, queue)
+	}
+	return project, queueRows.Err()
 }
 
 func (s *Store) ListUnits(ctx context.Context, filter domain.UnitFilter) (domain.UnitPage, error) {
@@ -170,33 +201,36 @@ func (s *Store) ListUnits(ctx context.Context, filter domain.UnitFilter) (domain
 	if filter.PriceTo != nil {
 		priceTo = *filter.PriceTo
 	}
-	args := []any{filter.ProjectSlug, filter.PhaseSlug, filter.Status, filter.PropertyType, rooms, floorFrom, floorTo, priceFrom, priceTo}
+	args := []any{filter.ProjectSlug, filter.PhaseSlug, filter.QueueKey, filter.Status, filter.PropertyType, rooms, floorFrom, floorTo, priceFrom, priceTo}
 	where := `
         FROM units u
         JOIN phases ph ON ph.id=u.phase_id
         JOIN projects p ON p.id=ph.project_id
+		LEFT JOIN project_queues q ON q.id=ph.queue_id
         WHERE p.slug=$1 AND u.is_active
           AND ($2='' OR ph.slug=$2)
-          AND ($3='' OR u.status=$3)
-          AND ($4='' OR u.property_type=$4)
-          AND ($5::integer IS NULL OR u.rooms=$5)
-          AND ($6::integer IS NULL OR u.floor >= $6)
-          AND ($7::integer IS NULL OR u.floor <= $7)
-          AND ($8::bigint IS NULL OR u.price >= $8)
-          AND ($9::bigint IS NULL OR u.price <= $9)`
+		  AND ($3='' OR q.queue_key=$3)
+          AND ($4='' OR u.status=$4)
+          AND ($5='' OR u.property_type=$5)
+          AND ($6::integer IS NULL OR u.rooms=$6)
+          AND ($7::integer IS NULL OR u.floor >= $7)
+          AND ($8::integer IS NULL OR u.floor <= $8)
+          AND ($9::bigint IS NULL OR u.price >= $9)
+          AND ($10::bigint IS NULL OR u.price <= $10)`
 
 	var total int64
 	if err := s.pool.QueryRow(ctx, "SELECT count(*) "+where, args...).Scan(&total); err != nil {
 		return domain.UnitPage{}, err
 	}
 	query := `SELECT u.id, u.source_key, p.slug, ph.slug, ph.name,
+		            COALESCE(q.queue_key,''),COALESCE(q.queue_label,''),COALESCE(q.display_code,''),COALESCE(q.sort_order,0),
                     u.property_type, u.raw_property_type, u.status, u.raw_status,
                     u.number, u.entrance, u.floor, u.area::float8, u.rooms,
                     u.price, u.price_per_m2::float8, u.currency, u.plan_image_url,
                     ` + unitCompletionSelect + `,
                     u.is_active, u.source_updated_at, u.updated_at ` + where + `
-              ORDER BY ph.id, u.entrance, u.floor, u.number
-              LIMIT $10 OFFSET $11`
+		      ORDER BY COALESCE(q.sort_order,2147483647),ph.id,u.entrance,u.floor,u.number
+		      LIMIT $11 OFFSET $12`
 	rows, err := s.pool.Query(ctx, query, append(args, filter.Limit, filter.Offset)...)
 	if err != nil {
 		return domain.UnitPage{}, err
@@ -215,7 +249,8 @@ func (s *Store) ListUnits(ctx context.Context, filter domain.UnitFilter) (domain
 
 func (s *Store) GetUnit(ctx context.Context, id int64) (domain.Unit, error) {
 	row := s.pool.QueryRow(ctx, `
-        SELECT u.id, u.source_key, p.slug, ph.slug, ph.name,
+		SELECT u.id, u.source_key, p.slug, ph.slug, ph.name,
+		       COALESCE(q.queue_key,''),COALESCE(q.queue_label,''),COALESCE(q.display_code,''),COALESCE(q.sort_order,0),
                u.property_type, u.raw_property_type, u.status, u.raw_status,
                u.number, u.entrance, u.floor, u.area::float8, u.rooms,
                u.price, u.price_per_m2::float8, u.currency, u.plan_image_url,
@@ -224,6 +259,7 @@ func (s *Store) GetUnit(ctx context.Context, id int64) (domain.Unit, error) {
         FROM units u
         JOIN phases ph ON ph.id=u.phase_id
         JOIN projects p ON p.id=ph.project_id
+		LEFT JOIN project_queues q ON q.id=ph.queue_id
         WHERE u.id=$1 AND u.is_active`, id)
 	item, err := scanUnit(row)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -244,6 +280,7 @@ func scanUnit(row rowScanner) (domain.Unit, error) {
 	var completion sql.NullString
 	err := row.Scan(
 		&item.ID, &item.SourceKey, &item.ProjectSlug, &item.PhaseSlug, &item.PhaseName,
+		&item.QueueKey, &item.QueueLabel, &item.QueueDisplayCode, &item.QueueOrder,
 		&item.PropertyType, &item.RawPropertyType, &item.Status, &item.RawStatus,
 		&item.Number, &item.Entrance, &item.Floor, &item.Area, &rooms,
 		&price, &pricePerM2, &item.Currency, &item.PlanImageURL, &completion,
@@ -271,16 +308,18 @@ func scanUnit(row rowScanner) (domain.Unit, error) {
 	return item, nil
 }
 
-func (s *Store) ListLayouts(ctx context.Context, projectSlug, phaseSlug string) ([]domain.Layout, error) {
+func (s *Store) ListLayouts(ctx context.Context, projectSlug, phaseSlug, queueKey string) ([]domain.Layout, error) {
 	rows, err := s.pool.Query(ctx, `
         SELECT l.id, concat('layout-',l.id), p.slug, ph.slug, l.rooms, l.available_count,
                l.title, l.address, l.price_text, l.image_url, l.thumbnail_url
         FROM layouts l
 		JOIN phases ph ON ph.id=l.phase_id
 		JOIN projects p ON p.id=ph.project_id
+		LEFT JOIN project_queues q ON q.id=ph.queue_id
 		WHERE p.slug=$1 AND ($2='' OR ph.slug=$2)
+		  AND ($3='' OR q.queue_key=$3)
 		  AND EXISTS(SELECT 1 FROM units u WHERE u.phase_id=ph.id AND u.is_active)
-		ORDER BY ph.id, l.rooms NULLS LAST, l.id`, projectSlug, phaseSlug)
+		ORDER BY ph.id, l.rooms NULLS LAST, l.id`, projectSlug, phaseSlug, queueKey)
 	if err != nil {
 		return nil, err
 	}
@@ -301,15 +340,16 @@ func (s *Store) ListLayouts(ctx context.Context, projectSlug, phaseSlug string) 
 	return items, rows.Err()
 }
 
-func (s *Store) Availability(ctx context.Context, projectSlug, phaseSlug string) ([]domain.Availability, error) {
+func (s *Store) Availability(ctx context.Context, projectSlug, phaseSlug, queueKey string) ([]domain.Availability, error) {
 	rows, err := s.pool.Query(ctx, `
         SELECT u.status, count(*)
         FROM units u
         JOIN phases ph ON ph.id=u.phase_id
         JOIN projects p ON p.id=ph.project_id
-        WHERE p.slug=$1 AND u.is_active AND ($2='' OR ph.slug=$2)
+		LEFT JOIN project_queues q ON q.id=ph.queue_id
+		WHERE p.slug=$1 AND u.is_active AND ($2='' OR ph.slug=$2) AND ($3='' OR q.queue_key=$3)
         GROUP BY u.status
-        ORDER BY u.status`, projectSlug, phaseSlug)
+		ORDER BY u.status`, projectSlug, phaseSlug, queueKey)
 	if err != nil {
 		return nil, err
 	}

@@ -11,7 +11,7 @@ import { classifyRequest, parseUysotReadOnlyBody } from '../src/capture.mjs';
 import { captureFromDirectSource, directSourceInternals } from '../src/direct.mjs';
 import { loadTemplate } from '../src/cli.mjs';
 import { opaqueMbcSourceKey, templateMbcSourceKey } from '../src/mbc-identity.mjs';
-import { normalizeMbcProjects, normalizeNrgBiCapture, normalizeRegnumPages, normalizeSunPages, normalizeUysotTable } from '../src/normalize.mjs';
+import { normalizeKayanPropertyResponses, normalizeMbcProjects, normalizeNrgBiCapture, normalizeRegnumPages, normalizeSunPages, normalizeUysotTable } from '../src/normalize.mjs';
 import { getProvider, mbcProjects } from '../src/providers.mjs';
 import { containsObviousSecret, sanitizeValue } from '../src/redact.mjs';
 
@@ -172,7 +172,7 @@ function mbcGroups() {
   });
 }
 
-test('MBC capture posts an exact residential request for every owned project', async (t) => {
+test('MBC capture posts exact residential and commercial evidence requests for every owned project', async (t) => {
   const originalFetch = globalThis.fetch;
   t.after(() => { globalThis.fetch = originalFetch; });
   const requests = [];
@@ -188,9 +188,13 @@ test('MBC capture posts an exact residential request for every owned project', a
   };
   const capture = await captureFromDirectSource(getProvider('mbc'));
   assert.deepEqual(capture.errors, []);
-  assert.deepEqual(requests.map((request) => request.body), mbcProjects.map((project) => ({ project: String(project.id), type: 'residential', page: '1' })));
+  assert.deepEqual(requests.map((request) => request.body), mbcProjects.flatMap((project) => [
+    { project: String(project.id), type: 'residential', page: '1' },
+    { project: String(project.id), type: 'commercial', page: '1' },
+  ]));
   assert.ok(requests.every((request) => request.url === 'https://mbc.uz/api/plans' && request.method === 'POST'));
-  assert.deepEqual(capture.records.map((record) => record.scope.projectSlug), mbcProjects.map((project) => project.slug));
+  assert.deepEqual(capture.records.map((record) => record.scope.projectSlug), mbcProjects.flatMap((project) => [project.slug, project.slug]));
+  assert.deepEqual(capture.records.map((record) => record.scope.propertyType), mbcProjects.flatMap(() => ['residential', 'commercial']));
 });
 
 test('MBC normalization publishes four complete owned artifacts and retains local plans', () => {
@@ -241,8 +245,81 @@ test('MBC normalization publishes four complete owned artifacts and retains loca
   assert.equal(unmatchedRegnum.sourceKey, opaqueMbcSourceKey('regnum-plaza', unmatchedRegnum.sourceId));
   assert.ok(!unmatchedRegnum.sourceKey.includes(unmatchedRegnum.sourceId));
   assert.equal(result.artifacts.find((entry) => entry.artifact.projectSlug === 'regnum-plaza').artifact.units[0].phaseSlug, 'q1-s2');
+  assert.equal(result.artifacts.find((entry) => entry.artifact.projectSlug === 'regnum-plaza').artifact.units[0].queueLabel, 'I очередь');
   assert.equal(result.artifacts.find((entry) => entry.artifact.projectSlug === 'saadiyat').artifact.units[0].phaseSlug, 'q2-sa2');
-  assert.equal(result.artifacts.find((entry) => entry.artifact.projectSlug === 'saadiyat').artifact.units[0].phaseName, 'Q2/A2');
+  assert.equal(result.artifacts.find((entry) => entry.artifact.projectSlug === 'saadiyat').artifact.units[0].phaseName, 'A2');
+  assert.deepEqual(
+    result.artifacts.find((entry) => entry.artifact.projectSlug === 'soy-boyi').artifact.queues.map(({ queueKey, queueLabel, queueOrder }) => ({ queueKey, queueLabel, queueOrder })),
+    [
+      { queueKey: 'q1', queueLabel: 'I очередь', queueOrder: 1 },
+      { queueKey: 'q2', queueLabel: 'II очередь', queueOrder: 2 },
+      { queueKey: 'q3', queueLabel: 'III очередь', queueOrder: 3 },
+      { queueKey: 'q4', queueLabel: 'IV очередь', queueOrder: 4 },
+    ],
+    'queue I remains explicit CRM metadata even when the residential rows currently begin at raw q2',
+  );
+});
+
+test('MBC queue labels use authoritative card order instead of raw q-number ordinals', () => {
+  const regnum = mbcProjects.find((project) => project.slug === 'regnum-plaza');
+  const rows = [mbcRow(regnum, 1), { ...mbcRow(regnum, 2), queue: '3' }];
+  const result = normalizeRegnumPages([{ plans: { total: 2, current_page: 1, last_page: 1, data: rows } }]);
+  assert.deepEqual(result.artifact.units.map(({ queueKey, queueLabel, queueOrder }) => ({ queueKey, queueLabel, queueOrder })), [
+    { queueKey: 'q1', queueLabel: 'I очередь', queueOrder: 1 },
+    { queueKey: 'q3', queueLabel: 'II очередь', queueOrder: 2 },
+  ]);
+});
+
+test('Soy queue I metadata survives while commercial inventory remains excluded', () => {
+  const soy = mbcProjects.find((project) => project.slug === 'soy-boyi');
+  const residential = [
+    ...Array.from({ length: 32 }, (_, index) => ({ ...mbcRow(soy, 1000 + index), queue: '2' })),
+    ...Array.from({ length: 102 }, (_, index) => ({ ...mbcRow(soy, 2000 + index), queue: '3' })),
+    ...Array.from({ length: 75 }, (_, index) => ({ ...mbcRow(soy, 3000 + index), queue: '4' })),
+  ];
+  const commercial = [
+    { ...mbcRow(soy, 4001), type: 'commercial', queue: '1', rooms: 0 },
+    { ...mbcRow(soy, 4002), type: 'commercial', queue: '1', rooms: 0 },
+    ...Array.from({ length: 3 }, (_, index) => ({ ...mbcRow(soy, 4100 + index), type: 'commercial', queue: '4', rooms: 0 })),
+  ];
+  const groups = mbcGroups().map((group) => group.project.slug === soy.slug ? {
+    project: soy,
+    residentialPages: [{ plans: { total: residential.length, current_page: 1, last_page: 1, data: residential } }],
+    commercialPages: [{ plans: { total: commercial.length, current_page: 1, last_page: 1, data: commercial } }],
+  } : group);
+  const result = normalizeMbcProjects(groups);
+  const artifact = result.artifacts.find((entry) => entry.artifact.projectSlug === soy.slug).artifact;
+  assert.equal(artifact.units.length, 209);
+  assert.equal(artifact.units.some((unit) => unit.propertyType !== 'apartment'), false);
+  assert.deepEqual(artifact.completeness.queueCounts, {
+    residential: { 2: 32, 3: 102, 4: 75 },
+    commercial: { 1: 2, 4: 3 },
+  });
+  assert.equal(artifact.queues[0].queueKey, 'q1');
+  assert.equal(artifact.queues[0].queueLabel, 'I очередь');
+  assert.equal(artifact.excludedCommercial, 5);
+});
+
+test('Saadiyat audit exposes a changed live queue count instead of masking the CRM-card delta', () => {
+  const saadiyat = mbcProjects.find((project) => project.slug === 'saadiyat');
+  const residential = [
+    ...Array.from({ length: 41 }, (_, index) => ({ ...mbcRow(saadiyat, 5000 + index), queue: '1' })),
+    ...Array.from({ length: 115 }, (_, index) => ({ ...mbcRow(saadiyat, 6000 + index), queue: '2' })),
+  ];
+  const groups = mbcGroups().map((group) => group.project.slug === saadiyat.slug ? {
+    project: saadiyat,
+    residentialPages: [{ plans: { total: residential.length, current_page: 1, last_page: 1, data: residential } }],
+    commercialPages: [{ plans: { total: 0, current_page: 1, last_page: 1, data: [] } }],
+  } : group);
+  const result = normalizeMbcProjects(groups);
+  const reconciliation = result.audit['saadiyat'].queueReconciliation;
+  assert.equal(reconciliation.referenceCardObservedAt, '2026-09-15T11:27:41+05:00');
+  assert.deepEqual(reconciliation.queues.map(({ queueKey, feedResidentialCount, referenceCardResidentialCount, residentialDelta }) => ({
+    queueKey, feedResidentialCount, referenceCardResidentialCount, residentialDelta,
+  })), [
+    { queueKey: 'q1', feedResidentialCount: 41, referenceCardResidentialCount: 42, residentialDelta: -1 },
+    { queueKey: 'q2', feedResidentialCount: 115, referenceCardResidentialCount: 115, residentialDelta: 0 },
+  ]);
 });
 
 test('MBC normalization fails closed on missing pages, duplicates, wrong type, or an incomplete project set', () => {
@@ -272,6 +349,44 @@ test('MBC normalization fails closed on missing pages, duplicates, wrong type, o
   assert.throws(() => normalizeMbcProjects(mbcGroups(), undefined, unmatchedTemplates), /could not match any local plan/);
 
   assert.throws(() => normalizeMbcProjects(mbcGroups().slice(0, 3)), /requires 4 project groups/);
+});
+
+test('KAYAN maps only Ofiyat residential phases to queues and keeps parking independent', () => {
+  const houses = [
+    { id: 154813, number: 'M-1', floor: 1, rooms: 2, propertyType: 'apartment' },
+    { id: 153505, number: 'O1-1', floor: 2, rooms: 2, propertyType: 'apartment' },
+    { id: 153506, number: 'O2-1', floor: 3, rooms: 3, propertyType: 'apartment' },
+    { id: 154273, number: 'P-1', floor: -1, rooms: null, propertyType: 'parking' },
+  ];
+  const responses = houses.map((house, index) => ({
+    status: 'success',
+    data: {
+      filteredCount: 1,
+      properties: [{
+        id: 50_000 + index,
+        house_id: house.id,
+        floor: house.floor,
+        rooms_amount: house.rooms,
+        number: house.number,
+        sectionName: '1',
+        area: { area_total: 50 + index },
+        status: 'AVAILABLE',
+        price: { value: 500_000_000 + index, pricePerMeter: 10_000_000 },
+        propertyType: house.propertyType,
+      }],
+    },
+  }));
+  const result = normalizeKayanPropertyResponses(responses, '2026-09-15T07:00:00.000Z');
+  const mirador = result.artifact.projects.find((item) => item.project.slug === 'mirador');
+  const ofiyat = result.artifact.projects.find((item) => item.project.slug === 'ofiyat');
+  assert.deepEqual(mirador.project.queues, []);
+  assert.deepEqual(ofiyat.project.queues.map(({ queueKey, queueLabel, queueOrder }) => ({ queueKey, queueLabel, queueOrder })), [
+    { queueKey: 'phase-1', queueLabel: 'I очередь', queueOrder: 1 },
+    { queueKey: 'phase-2', queueLabel: 'II очередь', queueOrder: 2 },
+  ]);
+  assert.equal(ofiyat.units.find((unit) => unit.phaseSlug === 'phase-1').queueLabel, 'I очередь');
+  assert.equal(ofiyat.units.find((unit) => unit.phaseSlug === 'phase-2').queueLabel, 'II очередь');
+  assert.equal(ofiyat.units.find((unit) => unit.phaseSlug === 'parking').queueKey, undefined);
 });
 
 function sunRow(id, number) {

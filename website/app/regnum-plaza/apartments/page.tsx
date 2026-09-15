@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import catalog from '@/data/regnum-plaza-client.json';
 import { publicClientPayload } from '@/app/public-client-payload';
+import { regnumQueueLabel } from '../regnum-queues';
 import { RegnumCatalog } from './regnum-catalog';
 import './regnum-catalog.css';
 import '../regnum-shared.css';
@@ -14,9 +15,9 @@ const sitePath = (path: string) => `${appBasePath}${path}`;
 const absoluteUrl = (path: string) => `${publicOrigin}${sitePath(path)}`;
 
 const copy = {
-  ru: { title: 'Квартиры Regnum Plaza — актуальный каталог', description: 'Предложения Regnum Plaza обновляются автоматически. Публичная цена предоставляется по запросу.', list: 'Regnum Plaza — текущие квартиры', home: 'Главная', apartments: 'Квартиры', unit: (rooms: number, number: string) => `${rooms}-комнатная квартира №${number}`, queue: (value: number) => `${value}-я очередь`, queueName: 'Очередь', sectionName: 'Секция', completionName: 'Срок', completion: (value: string) => `${value} год`, statusName: 'Статус', available: 'Доступна', price: 'Публичная цена', priceValue: 'По запросу' },
-  uz: { title: 'Regnum Plaza xonadonlari — yangilanadigan katalog', description: 'Regnum Plaza takliflari avtomatik yangilanadi. Ommaviy narx so‘rov bo‘yicha beriladi.', list: 'Regnum Plaza — joriy xonadonlar', home: 'Bosh sahifa', apartments: 'Xonadonlar', unit: (rooms: number, number: string) => `№${number}, ${rooms} xonali xonadon`, queue: (value: number) => `${value}-bosqich`, queueName: 'Bosqich', sectionName: 'Seksiya', completionName: 'Muddat', completion: (value: string) => `${value}-yil`, statusName: 'Holat', available: 'Mavjud', price: 'Ommaviy narx', priceValue: 'So‘rov bo‘yicha' },
-  en: { title: 'Regnum Plaza apartments — live catalogue', description: 'Regnum Plaza listings update automatically. Public pricing is available on request.', list: 'Regnum Plaza — current apartments', home: 'Home', apartments: 'Apartments', unit: (rooms: number, number: string) => `${rooms}-room apartment no. ${number}`, queue: (value: number) => `Phase ${value}`, queueName: 'Phase', sectionName: 'Section', completionName: 'Completion', completion: (value: string) => value, statusName: 'Status', available: 'Available', price: 'Public price', priceValue: 'Price on request' },
+  ru: { title: 'Квартиры Regnum Plaza — актуальный каталог', description: 'Предложения Regnum Plaza обновляются автоматически. Публичная цена предоставляется по запросу.', list: 'Regnum Plaza — текущие квартиры', home: 'Главная', apartments: 'Квартиры', unit: (rooms: number, number: string) => `${rooms}-комнатная квартира №${number}`, queueName: 'Очередь', sectionName: 'Секция', completionName: 'Срок', completion: (value: string) => `${value} год`, statusName: 'Статус', available: 'Доступна', price: 'Публичная цена', priceValue: 'По запросу' },
+  uz: { title: 'Regnum Plaza xonadonlari — yangilanadigan katalog', description: 'Regnum Plaza takliflari avtomatik yangilanadi. Ommaviy narx so‘rov bo‘yicha beriladi.', list: 'Regnum Plaza — joriy xonadonlar', home: 'Bosh sahifa', apartments: 'Xonadonlar', unit: (rooms: number, number: string) => `№${number}, ${rooms} xonali xonadon`, queueName: 'Bosqich', sectionName: 'Seksiya', completionName: 'Muddat', completion: (value: string) => `${value}-yil`, statusName: 'Holat', available: 'Mavjud', price: 'Ommaviy narx', priceValue: 'So‘rov bo‘yicha' },
+  en: { title: 'Regnum Plaza apartments — live catalogue', description: 'Regnum Plaza listings update automatically. Public pricing is available on request.', list: 'Regnum Plaza — current apartments', home: 'Home', apartments: 'Apartments', unit: (rooms: number, number: string) => `${rooms}-room apartment no. ${number}`, queueName: 'Phase', sectionName: 'Section', completionName: 'Completion', completion: (value: string) => value, statusName: 'Status', available: 'Available', price: 'Public price', priceValue: 'Price on request' },
 } as const;
 
 function languageOf(value?: string): Language { return value === 'uz' || value === 'en' ? value : 'ru'; }
@@ -55,7 +56,7 @@ export default async function Page({ searchParams }: PageProps) {
         floorSize: { '@type': 'QuantitativeValue', value: unit.area, unitCode: 'MTK' }, numberOfRooms: unit.rooms, floorLevel: unit.floor,
         containedInPlace: { '@id': `${projectUrl}#project` },
         additionalProperty: [
-          [current.queueName, current.queue(unit.queue)], [current.sectionName, String(unit.section)], [current.completionName, current.completion(unit.completion)], [current.statusName, current.available], [current.price, current.priceValue],
+          [current.queueName, regnumQueueLabel(unit, language)], [current.sectionName, String(unit.section)], [current.completionName, current.completion(unit.completion)], [current.statusName, current.available], [current.price, current.priceValue],
         ].map(([name, value]) => ({ '@type': 'PropertyValue', name, value })),
       },
     })),

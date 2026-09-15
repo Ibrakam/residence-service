@@ -11,8 +11,9 @@ import {
   useState,
 } from 'react';
 import { LeadModal } from '@/app/lead-modal';
-import { catalogLeadIdentity, useLiveCatalogUnits } from '@/app/live-catalog';
+import { catalogLeadIdentity, liveCatalogQueueOptions, useLiveCatalogUnits } from '@/app/live-catalog';
 import { regnumLeadContext, regnumLeadSubmitUrl, rememberRegnumUnit, type RegnumUnit } from './regnum-lead';
+import { regnumQueueLabel } from './regnum-queues';
 import { lockRegnumBody, type RegnumLanguage as Language } from './regnum-ui';
 
 type MediaType = 'real-first-phase' | 'documentary-opening' | 'cgi-full-project' | 'archival-cgi-concept' | 'official-plan';
@@ -220,7 +221,8 @@ function Lightbox({ state, language, onClose, onChange }: { state: LightboxState
 }
 
 export function RegnumPlazaPage({ initialLanguage, previewUnits }: { initialLanguage: Language; previewUnits: RegnumUnit[] }) {
-  const { data: liveUnits } = useLiveCatalogUnits('regnum-plaza', previewUnits);
+  const { data: liveUnits, project } = useLiveCatalogUnits('regnum-plaza', previewUnits);
+  const queueOptions = liveCatalogQueueOptions(project);
   const [language, setLanguage] = useLanguage(initialLanguage);
   const [menuOpen, setMenuOpen] = useState(false);
   const [lightbox, setLightbox] = useState<LightboxState | null>(null);
@@ -362,7 +364,7 @@ export function RegnumPlazaPage({ initialLanguage, previewUnits }: { initialLang
         <div className="rp-apartments-preview__grid">{livePreviewUnits.map((unit) => <article key={unit.id} data-reveal>
           <div className="rp-preview-plan">{unit.planPublicPath ? <img src={asset(unit.planPublicPath)} width={unit.planWidth!} height={unit.planHeight!} loading="lazy" alt={`${mediaLabels['official-plan'][language]} · ${t.number}${unit.number}`} /> : <div><i /><span>{t.missingPlan}</span></div>}</div>
           <header><span>{t.number}{unit.number}</span><strong>{unit.rooms} {t.rooms}</strong></header>
-          <dl><div><dt>{unit.area.toLocaleString(language === 'ru' ? 'ru-RU' : language === 'uz' ? 'uz-UZ' : 'en-US')} м²</dt><dd>{unit.floor} {t.floor}</dd></div><div><dt>{unit.completion}</dt><dd>{unit.queue} {t.queue} · {unit.section} {t.section}</dd></div></dl>
+          <dl><div><dt>{unit.area.toLocaleString(language === 'ru' ? 'ru-RU' : language === 'uz' ? 'uz-UZ' : 'en-US')} м²</dt><dd>{unit.floor} {t.floor}</dd></div><div><dt>{unit.completion}</dt><dd>{regnumQueueLabel(unit, language, queueOptions)} · {unit.section} {t.section}</dd></div></dl>
           <p>{t.price}</p><button type="button" data-lead-trigger onClick={(event) => openLead('landing:catalog-preview', unit, event.currentTarget)}>{t.askUnit}<span>↗</span></button>
         </article>)}</div>
         <a className="rp-apartments-preview__cta" href={withLanguage('/regnum-plaza/apartments', language)}>{t.allApartments}<span>↗</span></a>
@@ -379,7 +381,7 @@ export function RegnumPlazaPage({ initialLanguage, previewUnits }: { initialLang
     {lightbox ? <Lightbox state={lightbox} language={language} onClose={closeLightbox} onChange={changeLightbox} /> : null}
     {lead ? <LeadModal
       open={Boolean(lead)} language={language} context={regnumLeadContext(lead?.surface ?? 'landing:unknown', language, lead?.unit)}
-      brandName="MURAD BUILDINGS" projectName="REGNUM PLAZA" tagline={t.formTagline} facts={t.formFacts}
+      brandName="MURAD BUILDINGS" projectName="REGNUM PLAZA" tagline={t.formTagline} facts={lead?.unit ? [regnumQueueLabel(lead.unit, language, queueOptions), ...t.formFacts.slice(1)] : t.formFacts}
       submitUrl={regnumLeadSubmitUrl()} projectSlug="regnum-plaza" {...catalogLeadIdentity(lead?.unit)}
       privacyUrl={`${appBasePath}/privacy?project=regnum-plaza&lang=${language}&from=landing`} requireConsent returnFocusTo={lead.opener} onClose={closeLead}
     /> : null}

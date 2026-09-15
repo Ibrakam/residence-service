@@ -1,8 +1,12 @@
 import type catalog from '@/data/regnum-plaza-client.json';
 import { rememberLiveCatalogUnit } from '@/app/lead-modal';
 import { type RegnumLanguage } from './regnum-ui';
+import { type RegnumQueueUnit } from './regnum-queues';
 
-export type RegnumUnit = (typeof catalog.units)[number];
+type EmbeddedRegnumUnit = (typeof catalog.units)[number];
+export type RegnumUnit = Omit<EmbeddedRegnumUnit, 'id'> & RegnumQueueUnit & {
+  id: string | number;
+};
 
 export function regnumLeadSubmitUrl() {
   const configured = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
@@ -16,7 +20,7 @@ export function regnumLeadContext(surface: string, language: RegnumLanguage, uni
   const fields: Array<[string, string]> = [
     ['projectSlug', 'regnum-plaza'], ['lang', language], ['surface', surface],
   ];
-  if (unit) fields.push(['unitId', unit.id]);
+  if (unit) fields.push(['unitId', String(unit.id)]);
   return fields.map(([key, value]) => `${key}=${value}`).join(';');
 }
 

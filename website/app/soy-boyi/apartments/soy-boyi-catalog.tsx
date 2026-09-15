@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   type KeyboardEvent as ReactKeyboardEvent,
   useEffect,
@@ -16,6 +16,11 @@ import {
 } from "@/app/live-catalog";
 import { soyBoyiLeadSubmitUrl } from "../soy-boyi-lead";
 import { type SoyLanguage, useSoyDocumentLanguage } from "../soy-boyi-language";
+import {
+  soyQueueKey,
+  soyQueueLabel,
+  soyQueueOptions,
+} from "./soy-boyi-queues.mjs";
 
 type Unit = {
   id: string;
@@ -28,6 +33,13 @@ type Unit = {
   floor: number;
   section: string;
   phase: string;
+  phaseSlug?: string;
+  phaseName?: string;
+  queue?: number | string;
+  queueKey?: string;
+  queueLabel?: string;
+  queueDisplayCode?: string;
+  queueOrder?: number;
   completion: string | null;
   status: "AVAILABLE";
   priceVisibility: "request-only";
@@ -52,6 +64,14 @@ type Snapshot = {
     area: { min: number; max: number };
   };
   units: Unit[];
+};
+type QueueMetadata = {
+  queueKey: string;
+  queueLabel: string;
+  queueDisplayCode: string;
+  queueOrder: number;
+  totalUnits: number;
+  availableUnits: number;
 };
 type Mode = "cards" | "chess";
 type Sort =
@@ -113,6 +133,10 @@ const copy = {
     area: "Площадь, м²",
     section: "Секция",
     phase: "Очередь",
+    queueTitle: "Выберите очередь",
+    queueHint: "Очереди строительства по данным CRM",
+    queueAvailable: "квартир доступно",
+    queueUnavailable: "Сейчас нет доступных квартир",
     completion: "Срок",
     all: "Все",
     from: "от",
@@ -182,6 +206,10 @@ const copy = {
     area: "Maydon, m²",
     section: "Seksiya",
     phase: "Navbat",
+    queueTitle: "Navbatni tanlang",
+    queueHint: "CRM ma’lumotlaridagi qurilish navbatlari",
+    queueAvailable: "xonadon mavjud",
+    queueUnavailable: "Hozir mavjud xonadon yo‘q",
     completion: "Muddat",
     all: "Barchasi",
     from: "dan",
@@ -251,6 +279,10 @@ const copy = {
     area: "Area, m²",
     section: "Section",
     phase: "Phase",
+    queueTitle: "Choose a queue",
+    queueHint: "Construction queues from the CRM",
+    queueAvailable: "apartments available",
+    queueUnavailable: "No apartments currently available",
     completion: "Completion",
     all: "All",
     from: "from",
@@ -406,6 +438,7 @@ function Modal({
                   src={asset(unit.plan)}
                   alt={`${t.planTitle} · №${unit.number}`}
                   fill
+                  unoptimized
                   sizes="min(90vw, 900px)"
                 />
               ) : (
@@ -490,7 +523,7 @@ function UnitDetail({
         </div>
         <div>
           <dt>{t.phase}</dt>
-          <dd>{unit.phase}</dd>
+          <dd>{soyQueueLabel(unit, language)}</dd>
         </div>
         <div>
           <dt>{t.completion}</dt>
@@ -612,10 +645,17 @@ export function SoyBoyiCatalog({
   snapshot: Snapshot;
   initialLanguage: SoyLanguage;
 }) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const language = languageOf(searchParams.get("lang"), initialLanguage);
   const t = copy[language];
-  const { data: snapshot } = useLiveCatalogSnapshot("soy-boyi", embeddedSnapshot);
+  const liveCatalog = useLiveCatalogSnapshot("soy-boyi", embeddedSnapshot);
+  const snapshot = liveCatalog.data;
+  const projectQueues = (
+    liveCatalog.project as
+      | (typeof liveCatalog.project & { queues?: QueueMetadata[] })
+      | undefined
+  )?.queues;
   useSoyDocumentLanguage(language);
   const [mode, setMode] = useState<Mode>("cards");
   const [sort, setSort] = useState<Sort>("source");
@@ -625,13 +665,22 @@ export function SoyBoyiCatalog({
   const [areaFrom, setAreaFrom] = useState("");
   const [areaTo, setAreaTo] = useState("");
   const [section, setSection] = useState("all");
-  const [phase, setPhase] = useState("all");
   const [completion, setCompletion] = useState("all");
   const [visible, setVisible] = useState(12);
   const [selected, setSelected] = useState<Unit | null>(null);
   const [modal, setModal] = useState<ModalState | null>(null);
   const [lead, setLead] = useState<LeadState | null>(null);
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const queues = useMemo(
+    () => soyQueueOptions(snapshot.units, projectQueues),
+    [projectQueues, snapshot.units],
+  );
+  const requestedQueue = soyQueueKey({ queueKey: searchParams.get("queue") });
+  const queue = queues.some(
+    (option) => option.key === requestedQueue && option.count > 0,
+  )
+    ? requestedQueue
+    : "all";
   const href = (
     path: string,
     nextLanguage = language,
@@ -655,7 +704,7 @@ export function SoyBoyiCatalog({
             (!areaFrom || unit.area >= Number(areaFrom)) &&
             (!areaTo || unit.area <= Number(areaTo)) &&
             (section === "all" || unit.section === section) &&
-            (phase === "all" || unit.phase === phase) &&
+            (queue === "all" || soyQueueKey(unit) === queue) &&
             (completion === "all" ||
               (completion === "unknown"
                 ? unit.completion == null
@@ -686,7 +735,7 @@ export function SoyBoyiCatalog({
       areaFrom,
       areaTo,
       section,
-      phase,
+      queue,
       completion,
       sort,
     ],
@@ -713,11 +762,33 @@ export function SoyBoyiCatalog({
     setAreaFrom("");
     setAreaTo("");
     setSection("all");
-    setPhase("all");
+    chooseQueue("all");
     setCompletion("all");
     setVisible(12);
     setSelected(null);
   };
+  const chooseQueue = (value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value === "all") params.delete("queue");
+    else params.set("queue", value);
+    const query = params.toString();
+    router.replace(
+      `${asset("/soy-boyi/apartments")}${query ? `?${query}` : ""}`,
+      { scroll: false },
+    );
+    setVisible(12);
+    setSelected(null);
+  };
+  useEffect(() => {
+    if (!requestedQueue || requestedQueue === queue) return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("queue");
+    const query = params.toString();
+    router.replace(
+      `${asset("/soy-boyi/apartments")}${query ? `?${query}` : ""}`,
+      { scroll: false },
+    );
+  }, [queue, requestedQueue, router, searchParams]);
   const openModal = (
     kind: "detail" | "plan",
     unit: Unit,
@@ -803,7 +874,7 @@ export function SoyBoyiCatalog({
                 {t.missing}
               </span>
               <span>
-                <strong>{snapshot.filters.phases.length}</strong>
+                <strong>{queues.length}</strong>
                 {t.commercial}
               </span>
             </div>
@@ -815,6 +886,45 @@ export function SoyBoyiCatalog({
                 timeZone: "Asia/Tashkent",
               }).format(new Date(snapshot.serverDate))}
             </p>
+          </section>
+          <section className="sbc-queues" aria-labelledby="sbc-queue-title">
+            <header>
+              <p>{t.queueHint}</p>
+              <h2 id="sbc-queue-title">{t.queueTitle}</h2>
+            </header>
+            <div role="group" aria-labelledby="sbc-queue-title">
+              <button
+                type="button"
+                className={queue === "all" ? "is-active" : ""}
+                aria-pressed={queue === "all"}
+                onClick={() => chooseQueue("all")}
+              >
+                <span>{t.all}</span>
+                <small>
+                  <strong>{snapshot.units.length}</strong> {t.queueAvailable}
+                </small>
+              </button>
+              {queues.map((option) => {
+                const disabled = option.count === 0;
+                return (
+                  <button
+                    type="button"
+                    key={option.key}
+                    className={queue === option.key ? "is-active" : ""}
+                    aria-pressed={queue === option.key}
+                    disabled={disabled}
+                    title={disabled ? t.queueUnavailable : undefined}
+                    onClick={() => chooseQueue(option.key)}
+                  >
+                    <span>{soyQueueLabel(option, language)}</span>
+                    <small>
+                      <strong>{option.count}</strong>{" "}
+                      {disabled ? t.queueUnavailable : t.queueAvailable}
+                    </small>
+                  </button>
+                );
+              })}
+            </div>
           </section>
           <section className="sbc-toolbar">
             <div className="sbc-modes" role="tablist" aria-label={t.modeLabel}>
@@ -935,7 +1045,6 @@ export function SoyBoyiCatalog({
               {(
                 [
                   [t.section, section, setSection, snapshot.filters.sections],
-                  [t.phase, phase, setPhase, snapshot.filters.phases],
                 ] as const
               ).map(([label, value, setter, options]) => (
                 <label key={label}>
@@ -1019,7 +1128,7 @@ export function SoyBoyiCatalog({
                           onClick={(event) =>
                             openModal("detail", unit, event.currentTarget)
                           }
-                          aria-label={`${t.openDetails}: ${t.room(unit.rooms)}, ${formatArea(language, unit.area)} m², ${t.unit} №${unit.number}, ${t.floor} ${unit.floor}, ${t.section} ${unit.section}, ${t.phase} ${unit.phase}, ${t.price}: ${t.request}`}
+                          aria-label={`${t.openDetails}: ${t.room(unit.rooms)}, ${formatArea(language, unit.area)} m², ${t.unit} №${unit.number}, ${t.floor} ${unit.floor}, ${t.section} ${unit.section}, ${t.phase} ${soyQueueLabel(unit, language)}, ${t.price}: ${t.request}`}
                         >
                           <div className="sbc-card__plan">
                             {unit.plan ? (
@@ -1027,6 +1136,7 @@ export function SoyBoyiCatalog({
                                 src={asset(unit.plan)}
                                 alt={`${t.planTitle} · №${unit.number}`}
                                 fill
+                                unoptimized
                                 loading="lazy"
                                 sizes="(max-width: 760px) 92vw, (max-width: 1200px) 42vw, 28vw"
                               />
@@ -1052,7 +1162,9 @@ export function SoyBoyiCatalog({
                             </div>
                             <div>
                               <dt>{t.phase}</dt>
-                              <dd>{unit.phase}</dd>
+                              <dd>
+                                {soyQueueLabel(unit, language)}
+                              </dd>
                             </div>
                           </dl>
                           <strong>{t.request}</strong>
@@ -1205,7 +1317,7 @@ export function SoyBoyiCatalog({
         <LeadModal
           open
           language={language}
-          context={`projectSlug=soy-boyi;surface=catalog:${lead.surface};lang=${language};${lead.unit ? `${leadIdentity.unitKey ? `unitKey=${leadIdentity.unitKey};` : ""}number=${lead.unit.number};rooms=${lead.unit.rooms};area=${lead.unit.area};floor=${lead.unit.floor};section=${lead.unit.section};phase=${lead.unit.phase};completion=${lead.unit.completion ?? "unspecified"};price=request-only` : "unit=general"}`}
+          context={`projectSlug=soy-boyi;surface=catalog:${lead.surface};lang=${language};${lead.unit ? `${leadIdentity.unitKey ? `unitKey=${leadIdentity.unitKey};` : ""}number=${lead.unit.number};rooms=${lead.unit.rooms};area=${lead.unit.area};floor=${lead.unit.floor};section=${lead.unit.section};queueKey=${soyQueueKey(lead.unit)};queueLabel=${soyQueueLabel(lead.unit, language)};completion=${lead.unit.completion ?? "unspecified"};price=request-only` : "unit=general"}`}
           brandName="TENCORP"
           projectName="SOY BO‘YI"
           tagline={

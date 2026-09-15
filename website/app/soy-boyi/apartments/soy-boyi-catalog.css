@@ -121,6 +121,78 @@
   border-block: 1px solid #d8dedb;
   padding: 0 max(24px, calc((100vw - 1480px) / 2));
 }
+.sbc-queues {
+  width: min(1480px, calc(100% - 48px));
+  margin: 2.5rem auto 0;
+  display: grid;
+  grid-template-columns: minmax(210px, 0.7fr) minmax(0, 3fr);
+  gap: 24px;
+  align-items: end;
+}
+.sbc-queues header p {
+  margin: 0 0 0.45rem;
+  color: #637a77;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.sbc-queues header h2 {
+  margin: 0;
+  color: var(--deep);
+  font-family: var(--font-display), Georgia, serif;
+  font-size: clamp(2rem, 3vw, 3rem);
+  font-weight: 400;
+  line-height: 1;
+}
+.sbc-queues > div {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(145px, 1fr));
+  gap: 8px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding: 3px;
+  scrollbar-color: var(--river) #e8ece9;
+}
+.sbc-queues button {
+  min-height: 86px;
+  padding: 0.9rem 1rem;
+  display: grid;
+  gap: 0.55rem;
+  align-content: center;
+  border: 1px solid #b9c5c0;
+  background: #fff;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.sbc-queues button > span {
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.45rem;
+  line-height: 1;
+}
+.sbc-queues button small {
+  color: #637a77;
+  font-size: 0.68rem;
+  line-height: 1.25;
+}
+.sbc-queues button small strong {
+  color: var(--river);
+  font-size: 0.9rem;
+}
+.sbc-queues button.is-active {
+  border-color: var(--deep);
+  background: var(--deep);
+  color: #fff;
+}
+.sbc-queues button.is-active small,
+.sbc-queues button.is-active small strong {
+  color: var(--sand);
+}
+.sbc-queues button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  background: #ecece6;
+}
 .sbc-modes {
   display: flex;
 }
@@ -717,6 +789,14 @@
   .sbc-intro {
     padding-inline: 18px;
   }
+  .sbc-queues {
+    width: calc(100% - 36px);
+    grid-template-columns: 1fr;
+    margin-top: 1.5rem;
+  }
+  .sbc-queues > div {
+    grid-template-columns: repeat(5, minmax(155px, 1fr));
+  }
   .sbc-toolbar {
     padding: 0 18px;
     position: relative;
@@ -803,6 +883,9 @@
     padding: 0 0.9rem;
   }
   .sbc-workspace {
+    width: calc(100% - 24px);
+  }
+  .sbc-queues {
     width: calc(100% - 24px);
   }
   .sbc-filters {

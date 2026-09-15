@@ -6,6 +6,12 @@ import {
   soyBoyiPublicPreview,
   soyBoyiPublicSnapshot,
 } from "../data/soy-boyi-public.mjs";
+import {
+  soyBoyiOfficialQueues,
+  soyQueueKey,
+  soyQueueLabel,
+  soyQueueOptions,
+} from "../app/soy-boyi/apartments/soy-boyi-queues.mjs";
 
 const root = process.cwd();
 const fail = (message) => {
@@ -56,6 +62,76 @@ const [
 const snapshot = JSON.parse(catalogText);
 const media = JSON.parse(mediaText);
 const planManifest = JSON.parse(planManifestText);
+
+const queueOptions = soyQueueOptions(snapshot.units);
+if (
+  JSON.stringify(soyBoyiOfficialQueues.map((queue) => queue.queueKey)) !==
+    JSON.stringify(["q1", "q2", "q3", "q4"]) ||
+  JSON.stringify(queueOptions.map(({ key, count }) => ({ key, count }))) !==
+    JSON.stringify([
+      { key: "q1", count: 0 },
+      { key: "q2", count: 32 },
+      { key: "q3", count: 102 },
+      { key: "q4", count: 75 },
+    ])
+)
+  fail("Soy Bo‘yi queue metadata/counts no longer match the CRM contract.");
+if (
+  soyQueueKey({ phaseSlug: "q3-s11" }) !== "q3" ||
+  soyQueueKey({ phase: "4" }) !== "q4" ||
+  soyQueueLabel({ phaseSlug: "q2-s8" }, "ru") !== "II очередь" ||
+  soyQueueLabel("q2", "ru") !== "II очередь" ||
+  soyQueueLabel("q4", "uz") !== "IV navbat" ||
+  soyQueueLabel("q1", "en") !== "Queue I"
+)
+  fail("Soy Bo‘yi stable queue keys or localized CRM labels changed.");
+const contractQueues = soyQueueOptions(snapshot.units, [
+  {
+    queueKey: "q2",
+    queueLabel: "II очередь",
+    queueDisplayCode: "II",
+    queueOrder: 2,
+    totalUnits: 32,
+    availableUnits: 32,
+  },
+]);
+const contractQueue = contractQueues.find((queue) => queue.key === "q2");
+if (
+  contractQueue?.order !== 2 ||
+  contractQueue?.count !== 32 ||
+  soyQueueLabel(contractQueue, "ru") !== "II очередь" ||
+  soyQueueLabel(contractQueue, "uz") !== "II navbat" ||
+  soyQueueLabel(contractQueue, "en") !== "Queue II"
+)
+  fail("Soy Bo‘yi queue selector no longer consumes the project queue contract.");
+const stableQueueKey = "mbc:soy-boyi:second-queue";
+const stableOptions = soyQueueOptions(
+  [
+    {
+      queueKey: stableQueueKey,
+      queueLabel: "II очередь",
+      queueDisplayCode: "II",
+      queueOrder: 2,
+    },
+  ],
+  [
+    {
+      queueKey: stableQueueKey,
+      queueLabel: "II очередь",
+      queueDisplayCode: "II",
+      queueOrder: 2,
+      totalUnits: 1,
+      availableUnits: 1,
+    },
+  ],
+);
+if (
+  stableOptions.length !== 1 ||
+  stableOptions[0]?.key !== stableQueueKey ||
+  stableOptions[0]?.count !== 1 ||
+  soyQueueKey({ queueKey: stableQueueKey }) !== stableQueueKey
+)
+  fail("Soy Bo‘yi queue filtering must preserve opaque stable CRM keys.");
 
 if (snapshot.availableResidentialTotal !== 209 || snapshot.units.length !== 209)
   fail("Expected the stable 209-unit residential snapshot.");
@@ -196,6 +272,17 @@ if (
   planManifest.counts.missingPlans !== 2
 )
   fail("Deploy-safe plan manifest counts changed.");
+const localPlanImages =
+  catalogue.match(
+    /<Image[\s\S]{0,160}src=\{asset\(unit\.plan\)\}[\s\S]{0,500}\/>/g,
+  ) ?? [];
+if (
+  localPlanImages.length !== 2 ||
+  localPlanImages.some((image) => !/\bunoptimized\b/.test(image))
+)
+  fail(
+    "Soy floor plans must bypass the shared /_next/image optimizer and load their validated local files directly.",
+  );
 if (
   planManifest.snapshot.sha256 !== hash(catalogText) ||
   planManifest.snapshot.bytes !== Buffer.byteLength(catalogText)
@@ -395,6 +482,22 @@ if (
   !/URLSearchParams\(searchParams\.toString\(\)\)/.test(catalogue)
 )
   fail("Internal links do not preserve tracking parameters.");
+if (
+  !catalogue.includes('className="sbc-queues"') ||
+  !catalogue.includes('role="group" aria-labelledby="sbc-queue-title"') ||
+  !catalogue.includes("soyQueueKey(unit) === queue") ||
+  !catalogue.includes('params.set("queue", value)') ||
+  !catalogue.includes('params.delete("queue")') ||
+  !catalogue.includes("router.replace(") ||
+  !catalogue.includes("liveCatalog.project") ||
+  !catalogue.includes("projectQueues") ||
+  !catalogue.includes("disabled={disabled}") ||
+  /<dd>\{unit\.phase\}<\/dd>/.test(catalogue) ||
+  /\$\{t\.phase\} \$\{unit\.phase\}/.test(catalogue)
+)
+  fail(
+    "Soy queue selector must use stable keys, localized labels, URL state and disable empty queues.",
+  );
 if (
   !/projectSlug="soy-boyi"/.test(landing) ||
   !/projectSlug="soy-boyi"/.test(catalogue) ||

@@ -40,8 +40,8 @@ export const mbcProjects = Object.freeze([
     profitbaseProjectId: 42406, profitbaseProjectTitle: 'Regnum Plaza',
     minimumResidentialUnits: 700,
     profitbaseHouses: Object.freeze([
-      Object.freeze({ id: 122368, title: 'I очередь', queueSourceValue: '1' }),
-      Object.freeze({ id: 122371, title: 'II очередь', queueSourceValue: '3' }),
+      Object.freeze({ id: 122368, title: 'I очередь', queueSourceValue: '1', minimumResidentialUnits: 310 }),
+      Object.freeze({ id: 122371, title: 'II очередь', queueSourceValue: '3', minimumResidentialUnits: 370 }),
     ]),
     excludedProfitbaseHouseIds: Object.freeze([123808, 124007]),
     // The CRM calls its second displayed queue `3`. Keeping the source value
@@ -56,7 +56,7 @@ export const mbcProjects = Object.freeze([
     profitbaseProjectId: 48843, profitbaseProjectTitle: 'C1',
     minimumResidentialUnits: 220,
     profitbaseHouses: Object.freeze([
-      Object.freeze({ id: 122139, title: 'С1', queueSourceValue: '1' }),
+      Object.freeze({ id: 122139, title: 'С1', queueSourceValue: '1', minimumResidentialUnits: 220 }),
     ]),
     excludedProfitbaseHouseIds: Object.freeze([157227]),
     queues: Object.freeze([
@@ -68,10 +68,10 @@ export const mbcProjects = Object.freeze([
     profitbaseProjectId: 47304, profitbaseProjectTitle: 'Soy Bo`yi',
     minimumResidentialUnits: 950,
     profitbaseHouses: Object.freeze([
-      Object.freeze({ id: 122296, title: 'I очередь', queueSourceValue: '1' }),
-      Object.freeze({ id: 122346, title: 'II очередь', queueSourceValue: '2' }),
-      Object.freeze({ id: 136755, title: 'III очередь', queueSourceValue: '3' }),
-      Object.freeze({ id: 161781, title: 'IV очередь', queueSourceValue: '4' }),
+      Object.freeze({ id: 122296, title: 'I очередь', queueSourceValue: '1', minimumResidentialUnits: 320 }),
+      Object.freeze({ id: 122346, title: 'II очередь', queueSourceValue: '2', minimumResidentialUnits: 220 }),
+      Object.freeze({ id: 136755, title: 'III очередь', queueSourceValue: '3', minimumResidentialUnits: 310 }),
+      Object.freeze({ id: 161781, title: 'IV очередь', queueSourceValue: '4', minimumResidentialUnits: 100 }),
     ]),
     excludedProfitbaseHouseIds: Object.freeze([127506, 150620]),
     // The complete CRM project card set contains four queues. Queue I currently
@@ -89,8 +89,8 @@ export const mbcProjects = Object.freeze([
     profitbaseProjectId: 51441, profitbaseProjectTitle: 'Saadiyat',
     minimumResidentialUnits: 460,
     profitbaseHouses: Object.freeze([
-      Object.freeze({ id: 132970, title: 'I очередь', queueSourceValue: '1' }),
-      Object.freeze({ id: 149400, title: 'II очередь', queueSourceValue: '2' }),
+      Object.freeze({ id: 132970, title: 'I очередь', queueSourceValue: '1', minimumResidentialUnits: 240 }),
+      Object.freeze({ id: 149400, title: 'II очередь', queueSourceValue: '2', minimumResidentialUnits: 225 }),
     ]),
     excludedProfitbaseHouseIds: Object.freeze([158529]),
     queueReferenceObservedAt: '2026-09-15T11:27:41+05:00',
@@ -110,7 +110,7 @@ export const mbcSarbonProjects = Object.freeze([
     profitbaseProjectId: 57946, profitbaseProjectTitle: 'Sarbon',
     minimumResidentialUnits: 175,
     profitbaseHouses: Object.freeze([
-      Object.freeze({ id: 164684, title: 'I очередь', queueSourceValue: '1' }),
+      Object.freeze({ id: 164684, title: 'I очередь', queueSourceValue: '1', minimumResidentialUnits: 175 }),
     ]),
     excludedProfitbaseHouseIds: Object.freeze([]),
     queues: Object.freeze([
@@ -219,6 +219,14 @@ export const providers = Object.freeze({
     ]),
     targetPaths: Object.freeze(['/eco/catalog/projects/houses']),
     targetHouseIds: mbcProfitbaseTargetHouseIds,
+    browserBootstrap: Object.freeze({
+      origin: 'https://partners.mbc.uz',
+      path: '/cabinet/applications',
+      targetOrigin: 'https://smart-catalog.profitbase.ru',
+      targetPath: '/eco/catalog/projects/houses',
+      controlText: 'Витрина объектов',
+      timeoutMs: 20_000,
+    }),
     navigationPaths: Object.freeze(mbcProjects.flatMap((project) => project.profitbaseHouses.map((house) => `/eco/catalog/house/${house.id}/smallGrid`))),
     probes: Object.freeze([]),
     requiredProbeIds: Object.freeze([]),
@@ -247,6 +255,14 @@ export const providers = Object.freeze({
     ]),
     targetPaths: Object.freeze(['/eco/catalog/projects/houses']),
     targetHouseIds: mbcProfitbaseTargetHouseIds,
+    browserBootstrap: Object.freeze({
+      origin: 'https://partners.mbc.uz',
+      path: '/cabinet/applications',
+      targetOrigin: 'https://smart-catalog.profitbase.ru',
+      targetPath: '/eco/catalog/projects/houses',
+      controlText: 'Витрина объектов',
+      timeoutMs: 20_000,
+    }),
     navigationPaths: Object.freeze(mbcSarbonProjects.flatMap((project) => project.profitbaseHouses.map((house) => `/eco/catalog/house/${house.id}/smallGrid`))),
     probes: Object.freeze([]),
     requiredProbeIds: Object.freeze([]),

@@ -270,6 +270,10 @@ export async function captureFromAuthorizedTab(provider, {
     await client.call('Network.enable', { maxTotalBufferSize: 64 * 1024 * 1024, maxResourceBufferSize: 32 * 1024 * 1024 });
     await client.call('Page.enable');
     await client.call('Fetch.enable', { patterns: [{ urlPattern: '*', requestStage: 'Request' }] });
+    // A freshly bootstrapped MBC OOPIF arrives paused at target creation. Its
+    // JavaScript is resumed only now, after this capture's Fetch guard and
+    // response listeners are installed, leaving no unguarded child-target gap.
+    await client.resumeIfWaitingForDebugger?.();
     if (provider.id === 'kayan') {
       for (const path of provider.navigationPaths) {
         const expectedHouseId = Number(path.match(/\/house\/(\d+)\//)?.[1]);

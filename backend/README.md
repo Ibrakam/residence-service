@@ -150,9 +150,7 @@ Backend не содержит внешнего CRM sink и сам ничего �
 
 - Mirador: 51 unit-level plan строго сверен по number/area/rooms/floor с видимым official DOM; для оставшихся 148 нет доказанной exact-связи. Отдельно импортируются 44 официальных Mirador layouts; они не выдаются за поэтажные схемы. Ofiyat unit-level mapping не менялся. Цена отсутствует у 617 неактуальных/несвободных записей.
 - Avalon Residence: у 60 занятых/проданных объектов нет цены; unit-level plan отсутствует во всех 268 JSON rows (floor-layout конфигурация живёт отдельно от snapshot).
-- Regnum Plaza: все 12 public rows имеют «цена по запросу», поэтому numeric price остаётся `null`; у 2 rows нет официального public plan.
-- C1, Saadiyat и SARBON: все 42, 159 и 20 typed residential rows имеют локальные официальные планы; numeric price источником не опубликован.
-- Soy Bo‘yi: локальный официальный план есть у 207 из 209 typed residential rows; numeric price источником не опубликован.
+- MBC/Profitbase: полный reviewed lifecycle на `2026-09-15T19:01Z` содержит 2 784 residential rows — 413 available, 139 booked и 2 232 sold. Numeric price намеренно не публикуется: для всех статусов действует «цена по запросу». Локальные планы сохраняются по стабильному CRM ID там, где exact-связь уже доказана; отсутствие плана у исторической/несвободной квартиры не заменяется догадкой.
 - Maftun Makon: у 3 из 204 rows нет подтверждённой планировки.
 - Meros: 1 numeric price отсутствует; Sad'O: 3 numeric prices отсутствуют.
 

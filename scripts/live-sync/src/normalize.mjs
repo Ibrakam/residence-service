@@ -518,6 +518,10 @@ function mbcProfitbaseHouseRows(houseInput, project, houseDefinition, customStat
       end: '',
     });
   }
+  assert(
+    residentialRows.length >= houseDefinition.minimumResidentialUnits,
+    `MBC ${project.slug} house ${houseDefinition.id} residential count ${residentialRows.length} is below safety floor ${houseDefinition.minimumResidentialUnits}`,
+  );
   return { residentialRows, excludedNonResidential };
 }
 

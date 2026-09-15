@@ -41,7 +41,9 @@ old AVAILABLE-only public feed: Regnum Plaza 700, C1 220, Soy Bo‘yi 950,
 Saadiyat 460, and SARBON 175. The browser normalizer enforces the same floors
 before the coordinator sees a candidate. These values remain deliberately below
 the reviewed 2026-09-15 live totals, so normal inventory movement is accepted
-while a partial house snapshot cannot pass.
+while a partial house snapshot cannot pass. The browser normalizer additionally
+enforces a positive reviewed floor for each of the ten residential houses,
+preventing one missing queue from being masked by the rest of its project.
 
 ## Capture wrapper contract
 
@@ -73,9 +75,17 @@ loopback CDP listener and reads only exact GET responses from Profitbase tenant
 host `pb12218.profitbase.ru`. The collector first visits the project overview to
 capture projects, the complete house universe, and custom statuses, then visits
 each allowlisted house. The normal unattended target selector accepts only one
-of the ten reviewed MBC house paths; because the overview path does not identify
-a tenant, it requires an explicit `--target-id` for a one-off first bootstrap.
-After a successful run, the iframe remains on an allowlisted MBC house path.
+of the ten reviewed MBC house paths. After a browser restart, the unit also opens
+the exact authorized MBC applications page; if the catalogue iframe is absent,
+the collector clicks its single `Витрина объектов` button and waits for the
+new iframe. Chrome creates that OOPIF with an empty target URL, so the paused
+child is matched by asking the outer DOM only for a boolean exact tag/origin/path
+proof; the iframe URL and its opaque query never leave the browser. Request
+interception is armed before the click and before the child resumes. Storage,
+cookies, and headers are never read. Because an unrelated
+overview path does not identify a tenant, it remains selectable only by an
+explicit target ID outside this guarded bootstrap. After a successful run, the
+iframe remains on an allowlisted MBC house path.
 
 The established `mbc` invocation outputs Regnum Plaza, C1, Soy Bo‘yi, and
 Saadiyat as one atomic candidate from nine houses. `mbc-sarbon` uses the same
@@ -154,7 +164,20 @@ automatically.
    `/usr/local/bin/residence-catalog-sync`.
 2. Create an unprivileged `residence-catalog-sync` account. Create
    `/var/lib/residence-catalog-sync` mode `0700`, owned by that account.
-3. Install reviewed capture wrappers under `/opt/residence-live-sync` and
+3. Install reviewed capture wrappers under `/opt/residence-live-sync`. On a
+   fresh host, install the complete tracked browser stack from
+   `scripts/live-sync/deploy/systemd/`: `residence-live-display.service`,
+   `residence-live-openbox.service`, `residence-live-browser-main.service`,
+   `residence-live-vnc.service`, and `residence-live-novnc.service`. On an
+   already provisioned Kayan host, replace at least the updated
+   `residence-live-browser-main.service`. Run `systemctl daemon-reload` and
+   restart that browser unit during a planned maintenance window. The unit opens both the Kayan agent and the exact
+   `https://partners.mbc.uz/cabinet/applications` page on every fresh browser
+   start. Use the private VNC endpoint once to sign in to both accounts in the
+   dedicated `residence-crm-browser` profile; never place those credentials in
+   the sync configuration. Before enabling MBC timers, confirm that the MBC
+   account page exposes exactly one `Витрина объектов` control and that opening
+   it produces an allowlisted smart-catalog iframe. Then
    create `/var/lib/residence-live-sync/captures` mode `0700`; grant the service
    account access only to these paths and the loopback browser debugging ports.
    Before enabling the NRG timer, install the verified

@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { assertLoopbackCdp, matchAllowedUrl, safeUrlMetadata } from '../src/allowlist.mjs';
 import { atomicRunDirectory, atomicWriteFile, pruneRunDirectories } from '../src/atomic.mjs';
 import { captureFiles, captureFromAuthorizedTab, classifyRequest, makeBodyRecord, parseUysotReadOnlyBody } from '../src/capture.mjs';
-import { selectProviderTarget, targetMatchesProvider } from '../src/cdp.mjs';
+import { browserBootstrapExpression, browserFrameProofFunction, classifyBootstrapRequest, connectProviderTarget, selectProviderTarget, targetMatchesProvider } from '../src/cdp.mjs';
 import { captureFromDirectSource, directSourceInternals } from '../src/direct.mjs';
 import { loadTemplate } from '../src/cli.mjs';
 import { opaqueMbcSourceKey, templateMbcSourceKey } from '../src/mbc-identity.mjs';
@@ -61,6 +61,7 @@ function fakeMbcBrowser(provider, { omitSingleton = null, omitHouseId = null, in
   const state = {
     calls: [],
     closed: false,
+    resumedAfterGuard: false,
     emittedUrls: [],
     navigationPaths: [],
     responseSequence: 0,
@@ -125,6 +126,10 @@ function fakeMbcBrowser(provider, { omitSingleton = null, omitHouseId = null, in
       }
       return {};
     },
+    async resumeIfWaitingForDebugger() {
+      state.calls.push({ method: 'Runtime.runIfWaitingForDebugger', params: {} });
+      state.resumedAfterGuard = state.calls.some(({ method }) => method === 'Fetch.enable');
+    },
     close() { state.closed = true; },
   };
 
@@ -151,6 +156,14 @@ test('CLI executes when the installed package is reached through a release symli
   assert.ok(Array.isArray(rows) && rows.some((row) => row.id === 'mbc'));
 });
 
+test('MBC wrappers always share the capture-root browser lock', async () => {
+  for (const name of ['capture-mbc', 'capture-mbc-sarbon']) {
+    const wrapper = await readFile(fileURLToPath(new URL(`../bin/${name}`, import.meta.url)), 'utf8');
+    assert.match(wrapper, /^LOCK_FILE=\$CAPTURE_DIR\/\.mbc-browser\.lock$/m);
+    assert.doesNotMatch(wrapper, /LIVE_SYNC_MBC_LOCK_FILE/);
+  }
+});
+
 test('CDP is loopback-only and safe URL metadata drops values', () => {
   assert.equal(assertLoopbackCdp('http://127.0.0.1:9222').port, '9222');
   assert.throws(() => assertLoopbackCdp('http://46.62.227.229:9222'), /loopback/);
@@ -175,6 +188,10 @@ test('Profitbase target selection requires a tenant-specific house or an explici
   assert.equal(targetMatchesProvider(mbc, mbcProjectsTarget), false);
   assert.equal(targetMatchesProvider(mbc, mbcProjectsTarget, mbcProjectsTarget.id), true);
   assert.equal(targetMatchesProvider(mbc, mbcHouseTarget), true);
+  assert.equal(targetMatchesProvider(mbc, {
+    ...mbcHouseTarget,
+    url: { ...mbcHouseTarget.url, origin: 'http://smart-catalog.profitbase.ru' },
+  }), false);
   assert.equal(targetMatchesProvider(mbc, kayanHouseTarget), false);
   assert.equal(targetMatchesProvider(kayan, kayanHouseTarget), true);
   assert.equal(targetMatchesProvider(kayan, mbcProjectsTarget), false);
@@ -182,6 +199,149 @@ test('Profitbase target selection requires a tenant-specific house or an explici
   const anotherMbcHouse = target('/eco/catalog/house/122368/smallGrid');
   assert.throws(() => selectProviderTarget(mbc, [mbcHouseTarget, anotherMbcHouse]), /ambiguous account selection/);
   assert.equal(selectProviderTarget(mbc, [mbcProjectsTarget, kayanHouseTarget], mbcProjectsTarget.id), mbcProjectsTarget);
+  assert.deepEqual(mbc.browserBootstrap, {
+    origin: 'https://partners.mbc.uz',
+    path: '/cabinet/applications',
+    targetOrigin: 'https://smart-catalog.profitbase.ru',
+    targetPath: '/eco/catalog/projects/houses',
+    controlText: 'Витрина объектов',
+    timeoutMs: 20_000,
+  });
+  const expression = browserBootstrapExpression(mbc.browserBootstrap.controlText);
+  assert.match(expression, /querySelectorAll\('button'\)/);
+  assert.match(expression, /\.click\(\)/);
+  assert.doesNotMatch(expression, /cookie|localStorage|sessionStorage|Storage|token|header/i);
+  const frameProof = browserFrameProofFunction();
+  assert.match(frameProof, /tagName === 'IFRAME'/);
+  assert.match(frameProof, /candidate\.origin === expectedOrigin/);
+  assert.match(frameProof, /candidate\.pathname === expectedPath/);
+  assert.doesNotMatch(frameProof, /cookie|localStorage|sessionStorage|Storage|token|header/i);
+  assert.equal(classifyBootstrapRequest({ method: 'GET' }), 'continue');
+  assert.equal(classifyBootstrapRequest({ method: 'HEAD' }), 'continue');
+  assert.equal(classifyBootstrapRequest({ method: 'OPTIONS' }), 'continue');
+  assert.equal(classifyBootstrapRequest({ method: 'POST' }), 'block');
+  assert.equal(classifyBootstrapRequest({ method: 'PATCH' }), 'block');
+});
+
+test('MBC bootstrap pauses and guards the OOPIF before capture takes over', async (t) => {
+  const previousFetch = globalThis.fetch;
+  const previousWebSocket = globalThis.WebSocket;
+  const calls = [];
+  let emittedChildProbe = false;
+
+  class FakeWebSocket extends EventTarget {
+    constructor() {
+      super();
+      queueMicrotask(() => this.dispatchEvent(new Event('open')));
+    }
+
+    send(raw) {
+      const request = JSON.parse(String(raw));
+      calls.push(request);
+      const respond = (result = {}) => queueMicrotask(() => this.dispatchEvent(new MessageEvent('message', {
+        data: JSON.stringify({ id: request.id, result, ...(request.sessionId ? { sessionId: request.sessionId } : {}) }),
+      })));
+      if (request.method === 'Runtime.evaluate' && !request.sessionId) {
+        respond({ result: { value: true } });
+        queueMicrotask(() => {
+          this.dispatchEvent(new MessageEvent('message', { data: JSON.stringify({
+            method: 'Fetch.requestPaused',
+            params: { requestId: 'outer-post', request: { method: 'POST', url: 'https://partners.mbc.uz/telemetry' } },
+          }) }));
+          this.dispatchEvent(new MessageEvent('message', { data: JSON.stringify({
+            method: 'Target.attachedToTarget',
+            params: {
+              sessionId: 'mbc-child-session',
+              waitingForDebugger: true,
+              targetInfo: {
+                targetId: 'mbc-child-target',
+                type: 'iframe',
+                url: '',
+              },
+            },
+          }) }));
+        });
+        return;
+      }
+      if (request.method === 'Fetch.enable' && request.sessionId === 'mbc-child-session' && !emittedChildProbe) {
+        emittedChildProbe = true;
+        respond();
+        queueMicrotask(() => this.dispatchEvent(new MessageEvent('message', { data: JSON.stringify({
+          method: 'Fetch.requestPaused',
+          sessionId: 'mbc-child-session',
+          params: { requestId: 'child-post', request: { method: 'POST', url: 'https://pb12218.profitbase.ru/api/v4/json/site-widget/opened' } },
+        }) })));
+        return;
+      }
+      if (request.method === 'DOM.getFrameOwner') {
+        assert.deepEqual(request.params, { frameId: 'mbc-child-target' });
+        respond({ backendNodeId: 41 });
+        return;
+      }
+      if (request.method === 'DOM.resolveNode') {
+        assert.deepEqual(request.params, { backendNodeId: 41 });
+        respond({ object: { objectId: 'iframe-owner' } });
+        return;
+      }
+      if (request.method === 'Runtime.callFunctionOn') {
+        assert.equal(request.params.objectId, 'iframe-owner');
+        assert.deepEqual(request.params.arguments, [
+          { value: 'https://smart-catalog.profitbase.ru' },
+          { value: '/eco/catalog/projects/houses' },
+        ]);
+        respond({ result: { value: true } });
+        return;
+      }
+      respond();
+    }
+
+    close() {
+      this.dispatchEvent(new Event('close'));
+    }
+  }
+
+  globalThis.fetch = async (input) => {
+    const url = new URL(String(input));
+    assert.equal(url.hostname, '127.0.0.1');
+    assert.equal(url.pathname, '/json/list');
+    return new Response(JSON.stringify([{
+      id: 'mbc-outer',
+      type: 'page',
+      url: 'https://partners.mbc.uz/cabinet/applications',
+      webSocketDebuggerUrl: 'ws://127.0.0.1:9222/devtools/page/mbc-outer',
+    }]), { status: 200, headers: { 'content-type': 'application/json' } });
+  };
+  globalThis.WebSocket = FakeWebSocket;
+  t.after(() => {
+    globalThis.fetch = previousFetch;
+    globalThis.WebSocket = previousWebSocket;
+  });
+
+  const connection = await connectProviderTarget(getProvider('mbc'), 'http://127.0.0.1:9222');
+  assert.deepEqual(connection.target.url, {
+    origin: 'https://smart-catalog.profitbase.ru',
+    path: '/eco/catalog/projects/houses',
+    queryKeys: [],
+  });
+  const methodIndex = (method, sessionId = undefined) => calls.findIndex((call) => (
+    call.method === method && call.sessionId === sessionId
+  ));
+  assert.ok(methodIndex('Fetch.enable') < methodIndex('Target.setAutoAttach'));
+  assert.ok(methodIndex('Target.setAutoAttach') < methodIndex('Runtime.evaluate'));
+  assert.ok(methodIndex('Runtime.evaluate') < methodIndex('Fetch.enable', 'mbc-child-session'));
+  assert.ok(methodIndex('Fetch.enable', 'mbc-child-session') < methodIndex('DOM.getFrameOwner'));
+  assert.ok(methodIndex('DOM.getFrameOwner') < methodIndex('Runtime.callFunctionOn'));
+  assert.ok(methodIndex('Fetch.enable', 'mbc-child-session') < methodIndex('Fetch.disable', 'mbc-child-session'));
+  assert.equal(methodIndex('Runtime.runIfWaitingForDebugger', 'mbc-child-session'), -1);
+  assert.deepEqual(
+    calls.filter((call) => call.method === 'Fetch.failRequest').map((call) => [call.sessionId ?? null, call.params.requestId]).sort(),
+    [[null, 'outer-post'], ['mbc-child-session', 'child-post']],
+  );
+
+  await connection.client.call('Fetch.enable', { patterns: [{ urlPattern: '*', requestStage: 'Request' }] });
+  await connection.client.resumeIfWaitingForDebugger();
+  assert.ok(methodIndex('Fetch.enable', 'mbc-child-session') < methodIndex('Runtime.runIfWaitingForDebugger', 'mbc-child-session'));
+  connection.client.close();
 });
 
 test('MBC browser capture reloads the project screen, visits every owned house, and never reads credentials', async () => {
@@ -230,6 +390,7 @@ test('MBC browser capture reloads the project screen, visits every owned house, 
       && !record.url.queryKeys.includes('offset')));
     assert.ok(fake.state.emittedUrls.filter((url) => url.includes('/property?')).every((url) => !new URL(url).searchParams.has('offset')));
     assert.equal(fake.state.closed, true);
+    assert.equal(fake.state.resumedAfterGuard, true);
     assert.ok(fake.state.calls.some(({ method }) => method === 'Fetch.disable'));
     const continued = fake.state.calls.filter(({ method }) => method === 'Fetch.continueRequest');
     assert.ok(continued.length >= capture.records.length);
@@ -652,12 +813,12 @@ const mbcReviewedHouseLifecycle = Object.freeze({
   122371: Object.freeze({ AVAILABLE: 6, BOOKED: 3, SOLD: 407 }),
   122139: Object.freeze({ AVAILABLE: 42, BOOKED: 21, SOLD: 181 }),
   122296: Object.freeze({ AVAILABLE: 0, BOOKED: 3, SOLD: 355 }),
-  122346: Object.freeze({ AVAILABLE: 33, BOOKED: 4, SOLD: 209 }),
+  122346: Object.freeze({ AVAILABLE: 31, BOOKED: 6, SOLD: 209 }),
   136755: Object.freeze({ AVAILABLE: 102, BOOKED: 1, SOLD: 244 }),
-  161781: Object.freeze({ AVAILABLE: 75, BOOKED: 5, SOLD: 35 }),
-  132970: Object.freeze({ AVAILABLE: 39, BOOKED: 10, SOLD: 217 }),
-  149400: Object.freeze({ AVAILABLE: 114, BOOKED: 10, SOLD: 129 }),
-  164684: Object.freeze({ AVAILABLE: 8, BOOKED: 78, SOLD: 111 }),
+  161781: Object.freeze({ AVAILABLE: 74, BOOKED: 6, SOLD: 35 }),
+  132970: Object.freeze({ AVAILABLE: 35, BOOKED: 14, SOLD: 217 }),
+  149400: Object.freeze({ AVAILABLE: 111, BOOKED: 10, SOLD: 129 }),
+  164684: Object.freeze({ AVAILABLE: 8, BOOKED: 75, SOLD: 114 }),
 });
 
 function mbcReviewedProfitbaseFixture() {
@@ -712,11 +873,15 @@ function mbcReviewedProfitbaseFixture() {
 }
 
 function mbcProfitbaseProjectProperties(project) {
-  let remaining = project.minimumResidentialUnits;
+  const configuredFloor = project.profitbaseHouses.reduce(
+    (total, house) => total + house.minimumResidentialUnits,
+    0,
+  );
+  let remaining = Math.max(0, project.minimumResidentialUnits - configuredFloor);
   return project.profitbaseHouses.map((house, houseIndex) => {
-    const housesLeft = project.profitbaseHouses.length - houseIndex;
-    const count = houseIndex === project.profitbaseHouses.length - 1 ? remaining : Math.floor(remaining / housesLeft);
-    remaining -= count;
+    const extra = houseIndex === 0 ? remaining : 0;
+    const count = house.minimumResidentialUnits + extra;
+    remaining -= extra;
     const properties = Array.from({ length: count }, (_, index) => mbcProfitbaseProperty(project, house, index + 1));
     properties.push(mbcProfitbaseProperty(project, house, count + 1, { purpose: 'commercial', lifecycle: 'AVAILABLE' }));
     return { house, properties };
@@ -813,7 +978,7 @@ test('MBC CLI keeps the established four-project transaction separate from SARBO
   assert.ok(mbcProjects.every((project) => {
     const audit = mbcOutput.audit[project.slug];
     return audit.complete
-      && audit.observedRecords === project.minimumResidentialUnits
+      && audit.observedRecords >= project.minimumResidentialUnits
       && audit.statusCounts.available > 0
       && audit.statusCounts.reserved > 0
       && audit.statusCounts.sold > 0
@@ -850,7 +1015,7 @@ test('MBC CLI keeps the established four-project transaction separate from SARBO
   );
 });
 
-test('MBC Profitbase normalizer preserves the reviewed 2,787-unit lifecycle universe', () => {
+test('MBC Profitbase normalizer preserves the reviewed 2,784-unit lifecycle universe', () => {
   const fixture = mbcReviewedProfitbaseFixture();
   const result = normalizeMbcProfitbaseCapture(
     fixture.input,
@@ -860,10 +1025,10 @@ test('MBC Profitbase normalizer preserves the reviewed 2,787-unit lifecycle univ
   );
   const artifacts = result.artifacts.map(({ artifact }) => artifact);
   const units = artifacts.flatMap((artifact) => artifact.units);
-  assert.equal(units.length, 2_787);
-  assert.equal(units.filter((unit) => unit.status === 'available').length, 423);
-  assert.equal(units.filter((unit) => unit.status === 'reserved').length, 135);
-  assert.equal(units.filter((unit) => unit.status === 'sold').length, 2_229);
+  assert.equal(units.length, 2_784);
+  assert.equal(units.filter((unit) => unit.status === 'available').length, 413);
+  assert.equal(units.filter((unit) => unit.status === 'reserved').length, 139);
+  assert.equal(units.filter((unit) => unit.status === 'sold').length, 2_232);
   assert.equal(units.filter((unit) => unit.status === 'unavailable').length, 0);
   assert.equal(units.filter((unit) => unit.rooms === 0).length, 19);
   assert.equal(units.filter((unit) => unit.rawPropertyType === 'duplex' && unit.rooms === 0).length, 15);
@@ -873,9 +1038,26 @@ test('MBC Profitbase normalizer preserves the reviewed 2,787-unit lifecycle univ
     && unit.priceVisibility === 'request-only'
     && unit.price === undefined
     && unit.pricePerM2 === undefined));
-  assert.equal(artifacts.reduce((sum, artifact) => sum + artifact.sourceCount, 0), 2_787);
-  assert.equal(artifacts.reduce((sum, artifact) => sum + artifact.soldResidentialTotal, 0), 2_229);
+  assert.equal(artifacts.reduce((sum, artifact) => sum + artifact.sourceCount, 0), 2_784);
+  assert.equal(artifacts.reduce((sum, artifact) => sum + artifact.soldResidentialTotal, 0), 2_232);
   assert.ok(artifacts.every((artifact) => artifact.completeness.saleDatePolicy.includes('baseline SOLD')));
+
+  const missingSoyQueue = structuredClone(fixture.input);
+  const fourthSoyHouse = missingSoyQueue.groups
+    .find((group) => group.project.slug === 'soy-boyi')
+    .houses.find((house) => house.houseId === 161781);
+  fourthSoyHouse.pages[0].data.properties = [];
+  fourthSoyHouse.pages[0].data.filteredCount = 0;
+  assert.throws(
+    () => normalizeMbcProfitbaseCapture(
+      missingSoyQueue,
+      undefined,
+      fixture.templates,
+      fixture.projectDefinitions,
+    ),
+    /house 161781 residential count 0 is below safety floor 100/,
+    'a complete-looking empty house response must not be hidden by the project-wide floor',
+  );
 
   const variants = structuredClone(fixture.input);
   const soldRows = variants.groups[0].houses[0].pages[0].data.properties.filter((row) => row.status === 'SOLD').slice(0, 3);
@@ -889,9 +1071,9 @@ test('MBC Profitbase normalizer preserves the reviewed 2,787-unit lifecycle univ
     fixture.templates,
     fixture.projectDefinitions,
   ).artifacts.flatMap(({ artifact }) => artifact.units);
-  assert.equal(variantUnits.filter((unit) => unit.status === 'reserved').length, 136);
+  assert.equal(variantUnits.filter((unit) => unit.status === 'reserved').length, 140);
   assert.equal(variantUnits.filter((unit) => unit.status === 'unavailable').length, 2);
-  assert.equal(variantUnits.filter((unit) => unit.status === 'sold').length, 2_226);
+  assert.equal(variantUnits.filter((unit) => unit.status === 'sold').length, 2_229);
 
   const mismatch = structuredClone(fixture.input);
   const mismatchRow = mismatch.groups[0].houses[0].pages[0].data.properties[0];

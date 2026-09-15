@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { realpathSync } from 'node:fs';
-import { readFile } from 'node:fs/promises';
+import { lstat, readFile } from 'node:fs/promises';
 import { basename, dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { atomicRunDirectory, atomicWriteFile, jsonBody } from './atomic.mjs';
@@ -218,7 +218,18 @@ function inputFromCapture(providerId, capture) {
         });
       const realEstateRecords = capture.records.filter((item) => item.scope?.projectSlug === project.slug && item.scope?.endpoint === 'realEstateList');
       if (realEstateRecords.length !== 1) throw new Error(`NRG ${project.slug} has ${realEstateRecords.length} realEstateList responses`);
-      return { project, apartmentPropertyTypeUUID: provider.apartmentPropertyTypeUUID, pages, realEstate: realEstateRecords[0].value };
+      let planAssets;
+      if (project.slug === '4u') {
+        const auditRecords = capture.records.filter((item) => item.method === 'DERIVED'
+          && item.url?.origin === 'https://s3.bi.group'
+          && item.url?.path === '/crm-clients-e1csales/layouts/'
+          && item.scope?.projectSlug === '4u'
+          && item.scope?.endpoint === 'planAssetAudit'
+          && item.scope?.derived === true);
+        if (auditRecords.length !== 1) throw new Error(`NRG 4u has ${auditRecords.length}/1 plan asset audit records`);
+        planAssets = auditRecords[0].value;
+      }
+      return { project, apartmentPropertyTypeUUID: provider.apartmentPropertyTypeUUID, pages, realEstate: realEstateRecords[0].value, ...(planAssets ? { planAssets } : {}) };
     });
   }
   throw new Error(`${providerId}: current authenticated response contract is still discovery-only`);
@@ -241,8 +252,47 @@ function isDirectProvider(provider) {
   return ['public-read-post', 'signed-public-read-post'].includes(provider.captureMode);
 }
 
+function nrgPlanCachePath(root) {
+  return resolve(root, 'nrg-bi', 'plan-assets-cache.json');
+}
+
+async function loadNrgPlanAssetCache(root) {
+  if (!root) return null;
+  const path = nrgPlanCachePath(root);
+  try {
+    const metadata = await lstat(path);
+    if (!metadata.isFile() || metadata.isSymbolicLink() || metadata.size <= 0 || metadata.size > 8 * 1024 * 1024) return null;
+    return JSON.parse(await readFile(path, 'utf8'));
+  } catch {
+    // Missing, corrupt, oversized, or special caches fail closed to a fresh
+    // source audit; they never prevent current catalogue collection.
+    return null;
+  }
+}
+
+function planAssetAuditFromCapture(capture) {
+  const records = capture.records.filter((item) => item.method === 'DERIVED'
+    && item.url?.origin === 'https://s3.bi.group'
+    && item.url?.path === '/crm-clients-e1csales/layouts/'
+    && item.scope?.projectSlug === '4u'
+    && item.scope?.endpoint === 'planAssetAudit'
+    && item.scope?.derived === true);
+  return records.length === 1 ? records[0].value : null;
+}
+
+async function persistNrgPlanAssetCache(providerId, root, capture) {
+  if (providerId !== 'nrg-bi' || !root) return;
+  const audit = planAssetAuditFromCapture(capture);
+  if (!audit) throw new Error('NRG 4u plan asset audit is unavailable for cache persistence');
+  await atomicWriteFile(nrgPlanCachePath(root), jsonBody(audit));
+}
+
 async function captureProvider(provider, options) {
-  if (isDirectProvider(provider)) return captureFromDirectSource(provider);
+  if (isDirectProvider(provider)) {
+    const captureRoot = options['capture-output'] ?? options.output;
+    const planAssetCache = provider.id === 'nrg-bi' ? await loadNrgPlanAssetCache(captureRoot) : null;
+    return captureFromDirectSource(provider, { planAssetCache });
+  }
   if (!options.cdp) throw new Error(`${provider.id}: browser capture requires --cdp`);
   return captureFromAuthorizedTab(provider, {
     cdpEndpoint: options.cdp,
@@ -280,6 +330,7 @@ async function captureCommand(options) {
   if (normalized && capture.errors.length === 0) files.push(['success.json', jsonBody({ provider: providerId, complete: true })]);
   // Regenerate index after normalization errors were appended.
   const finalFiles = [...captureFiles(capture), ...files.filter(([path]) => path.startsWith('artifacts/') || path === 'completeness.json' || path === 'success.json')];
+  if (normalized && capture.errors.length === 0) await persistNrgPlanAssetCache(providerId, options.output, capture);
   const destination = await atomicRunDirectory(options.output, providerId, finalFiles);
   process.stdout.write(jsonBody({ provider: providerId, destination, responseBodies: capture.records.length, blockedRequests: capture.blocked.length, errors: capture.errors, normalized: Boolean(normalized), audit: normalized?.audit ?? null }));
   if ((!normalized || capture.errors.length) && provider.maturity !== 'discovery') process.exitCode = 2;
@@ -300,6 +351,7 @@ async function collectCommand(options) {
   } catch (error) {
     capture.errors.push(error instanceof Error ? error.message : String(error));
   }
+  if (result && capture.errors.length === 0) await persistNrgPlanAssetCache(providerId, options['capture-output'], capture);
   const evidenceFiles = captureFiles(capture);
   if (result) {
     evidenceFiles.push(['completeness.json', jsonBody(result.audit)]);

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFile, readdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { opaqueMbcSourceKey, templateMbcSourceKey } from './mbc-identity.mjs';
+import { expectedNrgOriginalUrl, expectedNrgPlanUrl, nrgPlanAssetGeometryValid, nrgPlanVariants } from './nrg-plan-assets.mjs';
 import { mbcProjects } from './providers.mjs';
 
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
@@ -458,6 +459,89 @@ function nrgStatus(row) {
   return 'unavailable';
 }
 
+function normalize4uPlanAudit(value, rows) {
+  assert(record(value) && value.schemaVersion === 1 && value.projectSlug === '4u', 'NRG 4u plan asset audit metadata is invalid');
+  const activeRows = rows.filter((row) => row?.isSale === true);
+  assert(Array.isArray(value.units), 'NRG 4u plan asset audit has no units array');
+  assert(value.activeUnitCount === activeRows.length && value.auditedUnitCount === activeRows.length && value.units.length === activeRows.length, 'NRG 4u plan asset audit coverage is incomplete');
+  const activeById = new Map(activeRows.map((row) => [String(row.uuid), row]));
+  const selectedById = new Map();
+  const seen = new Set();
+  let verifiedOriginals = 0;
+  let invalidOriginals = 0;
+  let publishablePlans = 0;
+  const hashes = new Map();
+  const verifiedVariants = new Map(nrgPlanVariants.map((variant) => [variant, 0]));
+
+  for (const unit of value.units) {
+    assert(record(unit), 'NRG 4u plan asset audit unit is invalid');
+    const id = numberText(unit.unitId, 'NRG 4u plan asset audit unitId');
+    assert(!seen.has(id), `NRG 4u plan asset audit duplicates unit ${id}`);
+    seen.add(id);
+    const row = activeById.get(id);
+    assert(record(row), `NRG 4u plan asset audit contains inactive or unknown unit ${id}`);
+    assert(String(unit.blockId) === String(row.blockId) && String(unit.number) === String(row.name), `NRG 4u plan asset audit identity mismatch for ${id}`);
+    assert(record(unit.original), `NRG 4u original plan asset is missing for ${id}`);
+    assert(Array.isArray(unit.variants) && unit.variants.length === nrgPlanVariants.length, `NRG 4u plan asset variants are incomplete for ${id}`);
+    const variants = new Map();
+    for (const asset of unit.variants) {
+      assert(record(asset) && nrgPlanVariants.includes(asset.variant) && !variants.has(asset.variant), `NRG 4u plan asset variant is invalid for ${id}`);
+      assert(typeof asset.ok === 'boolean', `NRG 4u plan asset result is invalid for ${id}/${asset.variant}`);
+      variants.set(asset.variant, asset);
+      if (asset.ok === true) {
+        assert(asset.url === expectedNrgPlanUrl(row, asset.variant), `NRG 4u verified plan URL mismatch for ${id}/${asset.variant}`);
+        assert(asset.status === 200 && asset.declaredMimeType === 'image/jpeg' && asset.mimeType === 'image/jpeg', `NRG 4u verified plan response is invalid for ${id}/${asset.variant}`);
+        assert(nrgPlanAssetGeometryValid(asset.variant, asset), `NRG 4u verified plan dimensions are invalid for ${id}/${asset.variant}`);
+        assert(typeof asset.sha256 === 'string' && /^[a-f0-9]{64}$/.test(asset.sha256), `NRG 4u verified plan hash is invalid for ${id}/${asset.variant}`);
+        verifiedVariants.set(asset.variant, verifiedVariants.get(asset.variant) + 1);
+      }
+    }
+    assert(nrgPlanVariants.every((variant) => variants.has(variant)), `NRG 4u plan asset variant set changed for ${id}`);
+    const original = unit.original;
+    assert(typeof original.ok === 'boolean', `NRG 4u original plan result is invalid for ${id}`);
+    if (original.ok === true) {
+      const expected = expectedNrgOriginalUrl(row);
+      assert(original.variant === 'original' && original.url === expected, `NRG 4u verified original URL mismatch for ${id}`);
+      assert(original.status === 200 && ['application/octet-stream', 'image/png'].includes(original.declaredMimeType) && original.mimeType === 'image/png', `NRG 4u verified original MIME is invalid for ${id}`);
+      assert(nrgPlanAssetGeometryValid('original', original), `NRG 4u verified original dimensions are invalid for ${id}`);
+      assert(typeof original.sha256 === 'string' && /^[a-f0-9]{64}$/.test(original.sha256), `NRG 4u verified original hash is invalid for ${id}`);
+      hashes.set(original.sha256, [...(hashes.get(original.sha256) ?? []), id]);
+      verifiedOriginals += 1;
+    } else {
+      invalidOriginals += 1;
+    }
+    const expectedSelected = original.ok === true && variants.get(1600)?.ok === true ? expectedNrgOriginalUrl(row) : null;
+    assert(unit.selectedOriginalUrl === expectedSelected, `NRG 4u selected plan pair mismatch for ${id}`);
+    if (expectedSelected) {
+      selectedById.set(id, expectedSelected);
+      publishablePlans += 1;
+    }
+  }
+  assert(seen.size === activeRows.length, 'NRG 4u plan asset audit is missing an active unit');
+  assert(value.verifiedOriginals === verifiedOriginals && value.missingOriginals === invalidOriginals, 'NRG 4u plan asset audit summary does not match its units');
+  assert(value.publishablePlans === publishablePlans, 'NRG 4u publishable plan summary does not match its units');
+  assert(record(value.variants), 'NRG 4u plan variant summary is missing');
+  for (const variant of nrgPlanVariants) {
+    const summary = value.variants[String(variant)];
+    const valid = verifiedVariants.get(variant);
+    assert(record(summary) && summary.attempted === activeRows.length && summary.valid === valid && summary.invalid === activeRows.length - valid, `NRG 4u ${variant}px summary does not match its units`);
+  }
+  const originalSummary = value.variants.original;
+  assert(record(originalSummary) && originalSummary.attempted === activeRows.length && originalSummary.valid === verifiedOriginals && originalSummary.invalid === invalidOriginals, 'NRG 4u original summary does not match its units');
+  return {
+    selectedById,
+    summary: {
+      auditedActiveUnits: seen.size,
+      verifiedOriginals,
+      missingOriginals: invalidOriginals,
+      publishablePlans,
+      duplicateOriginalGroups: [...hashes.values()].filter((ids) => ids.length > 1).length,
+      selectionPolicy: 'validated suffixless detail original plus validated 1600px card preview',
+      lastKnownGoodPolicy: 'invalid current original or preview is omitted so the importer retains an existing non-empty URL',
+    },
+  };
+}
+
 /** Normalize the public BI sales-picker responses used by the eleven NRG projects. */
 export function normalizeNrgBiCapture(groups, capturedAt = new Date().toISOString()) {
   assert(Array.isArray(groups) && groups.length === 11, `NRG capture requires 11 project groups, received ${groups?.length ?? 0}`);
@@ -484,6 +568,7 @@ export function normalizeNrgBiCapture(groups, capturedAt = new Date().toISOStrin
     assert(Array.isArray(estate.propertyTypes) && estate.propertyTypes.some((item) => item?.uuid === group.apartmentPropertyTypeUUID), `NRG ${slug} has no apartment property type`);
     const mixedPlacementCount = integer(estate.placementCount);
     assert(mixedPlacementCount === null || mixedPlacementCount >= rows.length, `NRG ${slug} apartment rows exceed realEstateList mixed placementCount`);
+    const planAudit = slug === '4u' ? normalize4uPlanAudit(group.planAssets, rows) : null;
 
     const identities = new Set();
     const units = rows.map((row, index) => {
@@ -501,8 +586,13 @@ export function normalizeNrgBiCapture(groups, capturedAt = new Date().toISOStrin
       const blockId = numberText(row.blockId, `NRG ${slug} row ${id}.blockId`);
       const blockName = numberText(row.blockName, `NRG ${slug} row ${id}.blockName`);
       const normalizedStatus = nrgStatus(row);
-      const price = normalizedStatus === 'available' ? optionalPositive(row.totalPriceWithDiscount) ?? optionalPositive(row.totalPrice) : null;
-      const pricePerM2 = normalizedStatus === 'available' ? optionalPositive(row.priceBySquare) ?? (price ? price / area : null) : null;
+      const campaignPrice = slug === '4u'
+        ? optionalPositive(row?.discount?.stock?.data?.find((item) => optionalPositive(item?.priceWithDiscount))?.priceWithDiscount)
+        : null;
+      const price = normalizedStatus === 'available' ? campaignPrice ?? optionalPositive(row.totalPriceWithDiscount) ?? optionalPositive(row.totalPrice) : null;
+      const pricePerM2 = normalizedStatus === 'available' ? (campaignPrice ? campaignPrice / area : optionalPositive(row.priceBySquare) ?? (price ? price / area : null)) : null;
+      const planImageUrl = planAudit?.selectedById.get(id)
+        ?? (slug !== '4u' && typeof row.photoURL1600 === 'string' && row.photoURL1600.startsWith('https://') ? row.photoURL1600 : null);
       return {
         id,
         sourceId: id,
@@ -527,7 +617,7 @@ export function normalizeNrgBiCapture(groups, capturedAt = new Date().toISOStrin
         price,
         pricePerM2,
         currency: 'UZS',
-        ...(typeof row.photoURL1600 === 'string' && row.photoURL1600.startsWith('https://') ? { planImageUrl: row.photoURL1600 } : {}),
+        ...(planImageUrl ? { planImageUrl } : {}),
       };
     });
     const audit = completeness({
@@ -540,6 +630,7 @@ export function normalizeNrgBiCapture(groups, capturedAt = new Date().toISOStrin
         terminalEmptyPage: true,
         realEstateListMixedPlacementCount: mixedPlacementCount,
         availabilityPolicy: 'isSale===true',
+        ...(planAudit ? { planAssets: planAudit.summary } : {}),
       },
     });
     assert(audit.complete, `NRG ${slug} completeness checks failed`);

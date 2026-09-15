@@ -11,6 +11,7 @@ import { captureFromAuthorizedTab, classifyRequest, parseUysotReadOnlyBody } fro
 import { captureFromDirectSource, directSourceInternals } from '../src/direct.mjs';
 import { loadTemplate } from '../src/cli.mjs';
 import { opaqueMbcSourceKey, templateMbcSourceKey } from '../src/mbc-identity.mjs';
+import { auditNrgPlanAssets, expectedNrgOriginalUrl, expectedNrgPlanUrl, fetchNrgPlanDetails, imageMetadata, refreshNrgPlanAssets, validateNrgOriginalUrl, validateNrgPlanUrl } from '../src/nrg-plan-assets.mjs';
 import { normalizeKayanPropertyResponses, normalizeMbcProjects, normalizeNrgBiCapture, normalizeRegnumPages, normalizeSunPages, normalizeUysotTable } from '../src/normalize.mjs';
 import { getProvider, mbcProjects } from '../src/providers.mjs';
 import { containsObviousSecret, sanitizeValue } from '../src/redact.mjs';
@@ -531,25 +532,250 @@ test('SUN normalization accepts intentional page overlap but rejects conflicts',
 
 test('NRG normalization covers all eleven project adapters and requires an empty terminal page', () => {
   const provider = getProvider('nrg-bi');
-  const groups = provider.projectDefinitions.map((project, index) => ({
-    project,
-    apartmentPropertyTypeUUID: provider.apartmentPropertyTypeUUID,
-    pages: [
-      { placements: [{
-        uuid: `unit-${index}`, realEstateUUID: project.realEstateUUID, roomCount: 1, name: '1', square: 40,
-        floor: 2, entrance: 1, priceBySquare: 10, maxFloor: 10, blockName: 'Block 1', blockId: `block-${index}`,
-        totalPrice: 400, totalPriceWithDiscount: 400, placementStatusName: 'Снятие резерва', isSale: true,
-        propertyType: { uuid: provider.apartmentPropertyTypeUUID, name: 'Квартира' },
-      }] },
-      { placements: [] },
-    ],
-    realEstate: { realEstates: [{ uuid: project.realEstateUUID, placementCount: 1, propertyTypes: [{ uuid: provider.apartmentPropertyTypeUUID, name: 'Квартира' }] }] },
-  }));
+  const groups = provider.projectDefinitions.map((project, index) => {
+    const unit = {
+      uuid: `00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+      realEstateUUID: project.realEstateUUID, roomCount: 1, name: '1', square: 40,
+      floor: 2, entrance: 1, priceBySquare: 10, maxFloor: 10, blockName: 'Block 1',
+      blockId: `10000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+      totalPrice: 400, totalPriceWithDiscount: 400, placementStatusName: 'Снятие резерва', isSale: true,
+      propertyType: { uuid: provider.apartmentPropertyTypeUUID, name: 'Квартира' },
+    };
+    for (const variant of [1600, 400, 200]) unit[`photoURL${variant}`] = expectedNrgPlanUrl(unit, variant);
+    if (project.slug === '4u') unit.discount = { stock: { data: [{ priceWithDiscount: 360 }] } };
+    const planAssets = project.slug === '4u' ? {
+      schemaVersion: 1, projectSlug: '4u', activeUnitCount: 1, auditedUnitCount: 1, verifiedOriginals: 1, missingOriginals: 0, publishablePlans: 1,
+      variants: { original: { attempted: 1, valid: 1, invalid: 0 }, 1600: { attempted: 1, valid: 1, invalid: 0 }, 400: { attempted: 1, valid: 1, invalid: 0 }, 200: { attempted: 1, valid: 1, invalid: 0 } },
+      units: [{
+        unitId: unit.uuid, blockId: unit.blockId, number: unit.name, selectedOriginalUrl: expectedNrgOriginalUrl(unit),
+        original: { variant: 'original', url: expectedNrgOriginalUrl(unit), status: 200, ok: true, declaredMimeType: 'application/octet-stream', mimeType: 'image/png', bytes: 300_000, width: 3510, height: 2482, sha256: 'b'.repeat(64) },
+        variants: [1600, 400, 200].map((variant) => ({ variant, url: unit[`photoURL${variant}`], status: 200, ok: true, declaredMimeType: 'image/jpeg', mimeType: 'image/jpeg', bytes: variant === 1600 ? 100_000 : variant === 400 ? 10_000 : 5_000, width: variant, height: Math.round(variant * 0.707), sha256: String(variant).padStart(64, 'a').slice(-64) })),
+      }],
+    } : null;
+    return {
+      project,
+      apartmentPropertyTypeUUID: provider.apartmentPropertyTypeUUID,
+      pages: [{ placements: [unit] }, { placements: [] }],
+      realEstate: { realEstates: [{ uuid: project.realEstateUUID, placementCount: 1, propertyTypes: [{ uuid: provider.apartmentPropertyTypeUUID, name: 'Квартира' }] }] },
+      ...(planAssets ? { planAssets } : {}),
+    };
+  });
   const result = normalizeNrgBiCapture(groups);
   assert.equal(result.artifacts.length, 11);
   assert.ok(Object.values(result.audit).every((audit) => audit.complete));
+  const fourU = result.artifacts.find((item) => item.filename === '4u-catalog.json').artifact.units[0];
+  assert.equal(fourU.planImageUrl, expectedNrgOriginalUrl(groups[0].pages[0].placements[0]));
+  assert.equal(fourU.price, 360, '4U publishes the official active campaign price');
+  assert.equal(fourU.pricePerM2, 9, '4U per-m² price follows the selected campaign total');
+  const invalidAudit = structuredClone(groups);
+  invalidAudit[0].planAssets.units[0].original.width = 400;
+  assert.throws(() => normalizeNrgBiCapture(invalidAudit), /dimensions are invalid/);
+  const missingCurrentPreview = structuredClone(groups);
+  missingCurrentPreview[0].planAssets.units[0].variants[0] = { variant: 1600, url: groups[0].pages[0].placements[0].photoURL1600, status: 503, ok: false, error: 'HTTP 503' };
+  missingCurrentPreview[0].planAssets.units[0].selectedOriginalUrl = null;
+  missingCurrentPreview[0].planAssets.publishablePlans = 0;
+  missingCurrentPreview[0].planAssets.variants[1600] = { attempted: 1, valid: 0, invalid: 1 };
+  const lkgCandidate = normalizeNrgBiCapture(missingCurrentPreview).artifacts.find((item) => item.filename === '4u-catalog.json').artifact.units[0];
+  assert.equal(lkgCandidate.planImageUrl, undefined, 'an invalid new preview must omit the URL so the database keeps its last-known-good plan');
   groups[0].pages.pop();
   assert.throws(() => normalizeNrgBiCapture(groups), /pagination evidence/);
+});
+
+function testJpeg(width, height, discriminator = 0) {
+  const header = Buffer.from([
+    0xff, 0xd8, 0xff, 0xc0, 0x00, 0x11, 0x08,
+    (height >>> 8) & 0xff, height & 0xff,
+    (width >>> 8) & 0xff, width & 0xff,
+    0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x00, 0x03, 0x11, discriminator & 0xff,
+  ]);
+  return Buffer.concat([header, Buffer.alloc(Math.max(2_000, width * 30), discriminator & 0xff), Buffer.from([0xff, 0xd9])]);
+}
+
+function testPng(width, height, payloadBytes = 100_000) {
+  const chunk = (type, data) => {
+    const header = Buffer.alloc(8);
+    header.writeUInt32BE(data.length, 0);
+    header.write(type, 4, 4, 'ascii');
+    return Buffer.concat([header, data, Buffer.alloc(4)]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(width, 0);
+  ihdr.writeUInt32BE(height, 4);
+  ihdr.set([8, 6, 0, 0, 0], 8);
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk('IHDR', ihdr),
+    chunk('IDAT', Buffer.alloc(payloadBytes)),
+    chunk('IEND', Buffer.alloc(0)),
+  ]);
+}
+
+function testNrgPlanRow(index = 1) {
+  const row = {
+    uuid: `20000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
+    blockId: `30000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
+    name: String(index),
+    isSale: true,
+  };
+  for (const variant of [1600, 400, 200]) row[`photoURL${variant}`] = expectedNrgPlanUrl(row, variant);
+  return row;
+}
+
+test('NRG 4U plan URL and MIME checks bind an original to the exact source identity', () => {
+  const row = testNrgPlanRow();
+  assert.equal(validateNrgPlanUrl(row, 1600, row.photoURL1600), row.photoURL1600);
+  assert.equal(validateNrgOriginalUrl(row, expectedNrgOriginalUrl(row)), expectedNrgOriginalUrl(row));
+  assert.throws(() => validateNrgPlanUrl(row, 1600, `${row.photoURL1600}?token=not-allowed`), /not bound/);
+  assert.throws(() => validateNrgPlanUrl({ ...row, uuid: testNrgPlanRow(2).uuid }, 1600, row.photoURL1600), /not bound/);
+  assert.deepEqual(imageMetadata(testJpeg(1600, 1131)), { mimeType: 'image/jpeg', width: 1600, height: 1131 });
+  assert.deepEqual(imageMetadata(testPng(3510, 2482)), { mimeType: 'image/png', width: 3510, height: 2482 });
+});
+
+test('NRG 4U detail lookup is an anonymous exact-identity POST', async () => {
+  const rows = [testNrgPlanRow(1), testNrgPlanRow(2)].map((row) => ({
+    ...row,
+    realEstateUUID: 'c8945ad5-c737-42a6-a5c6-aa00375d3717',
+    propertyType: { uuid: '5990a172-812a-4fee-b4f5-c860cca824d7' },
+  }));
+  const calls = [];
+  const details = await fetchNrgPlanDetails(rows, {
+    attempts: 1,
+    fetchImpl: async (url, options) => {
+      calls.push({ url, options });
+      const row = rows.find((item) => item.uuid === JSON.parse(options.body).placementUUID);
+      return new Response(JSON.stringify({
+        placementUUID: row.uuid,
+        realEstateUUID: row.realEstateUUID,
+        blockId: row.blockId,
+        placementName: row.name,
+        propertyType: row.propertyType,
+        photoURL1600: expectedNrgOriginalUrl(row),
+      }), { status: 200, headers: { 'content-type': 'application/json' } });
+    },
+  });
+  assert.equal(details.size, 2);
+  assert.ok(calls.every((call) => call.url === 'https://apigw.bi.group/sales-picker/microfe-v3/placement'
+    && call.options.method === 'POST' && call.options.credentials === 'omit' && call.options.redirect === 'error'));
+  assert.deepEqual([...details.values()].map((item) => item.url), rows.map(expectedNrgOriginalUrl));
+});
+
+test('NRG 4U plan audit selects only a valid detail original and reports duplicates', async () => {
+  const rows = [testNrgPlanRow(1), testNrgPlanRow(2)];
+  const originalSources = new Map(rows.map((row) => [row.uuid, { unitId: row.uuid, status: 200, url: expectedNrgOriginalUrl(row) }]));
+  const fetched = [];
+  const fetchImpl = async (url, options) => {
+    fetched.push({ url, options });
+    const variant = Number(url.match(/_(1600|400|200)\.png$/)?.[1]);
+    const original = !variant;
+    const body = original ? testPng(3510, 2482) : testJpeg(variant, Math.round(variant * 0.707));
+    return new Response(body, { status: 200, headers: { 'content-type': original ? 'application/octet-stream' : 'image/jpeg', 'content-length': String(body.length) } });
+  };
+  const { audit } = await auditNrgPlanAssets(rows, { fetchImpl, originalSources, attempts: 1, concurrency: 3 });
+  assert.equal(fetched.length, 8);
+  assert.ok(fetched.every((item) => item.options.credentials === 'omit' && item.options.redirect === 'error'));
+  assert.equal(audit.activeUnitCount, 2);
+  assert.equal(audit.verifiedOriginals, 2);
+  assert.equal(audit.missingOriginals, 0);
+  assert.equal(audit.publishablePlans, 2);
+  assert.equal(audit.units[0].selectedOriginalUrl, expectedNrgOriginalUrl(rows[0]));
+  assert.equal(audit.duplicateGroups.length, 4, 'identical official bytes are reported, not silently remapped');
+
+  const wrongDimensions = async (url) => {
+    const variant = Number(url.match(/_(1600|400|200)\.png$/)?.[1]);
+    const original = !variant;
+    const width = original ? 1600 : variant;
+    const body = original ? testPng(width, 1131) : testJpeg(width, Math.round(width * 0.707), variant);
+    return new Response(body, { status: 200, headers: { 'content-type': original ? 'application/octet-stream' : 'image/jpeg', 'content-length': String(body.length) } });
+  };
+  const failed = await auditNrgPlanAssets([rows[0]], { fetchImpl: wrongDimensions, originalSources, attempts: 1 });
+  assert.equal(failed.audit.verifiedOriginals, 0);
+  assert.equal(failed.audit.units[0].selectedOriginalUrl, null, 'a thumbnail must not replace a missing original');
+
+  const missingPreview = async (url) => {
+    const variant = Number(url.match(/_(1600|400|200)\.png$/)?.[1]);
+    if (variant === 1600) return new Response('', { status: 503 });
+    const original = !variant;
+    const body = original ? testPng(3510, 2482) : testJpeg(variant, Math.round(variant * 0.707), variant);
+    return new Response(body, { status: 200, headers: { 'content-type': original ? 'application/octet-stream' : 'image/jpeg', 'content-length': String(body.length) } });
+  };
+  const noPair = await auditNrgPlanAssets([rows[0]], { fetchImpl: missingPreview, originalSources, attempts: 1 });
+  assert.equal(noPair.audit.verifiedOriginals, 1);
+  assert.equal(noPair.audit.publishablePlans, 0);
+  assert.equal(noPair.audit.units[0].selectedOriginalUrl, null, 'an invalid card preview must preserve the prior complete plan pair');
+});
+
+test('NRG 4U plan audit rejects a MIME mismatch and does not fetch an unbound URL', async () => {
+  const row = testNrgPlanRow();
+  row.photoURL400 = 'https://example.invalid/foreign.png';
+  const originalSources = new Map([[row.uuid, { unitId: row.uuid, status: 200, url: expectedNrgOriginalUrl(row) }]]);
+  const fetched = [];
+  const fetchImpl = async (url) => {
+    fetched.push(url);
+    const variant = Number(url.match(/_(1600|400|200)\.png$/)?.[1]);
+    const original = !variant;
+    const body = original ? testPng(3510, 2482) : testJpeg(variant, Math.round(variant * 0.707), variant);
+    return new Response(body, { status: 200, headers: { 'content-type': original ? 'image/jpeg' : 'image/jpeg', 'content-length': String(body.length) } });
+  };
+  const { audit } = await auditNrgPlanAssets([row], { fetchImpl, originalSources, attempts: 1 });
+  assert.equal(fetched.length, 3);
+  assert.equal(audit.units[0].selectedOriginalUrl, null);
+  assert.match(audit.units[0].original.error, /MIME/);
+  assert.match(audit.units[0].variants.find((item) => item.variant === 400).error, /not bound/);
+});
+
+test('NRG 4U persistent audit avoids a repeated full asset download and refreshes only a changed identity', async () => {
+  const rows = [testNrgPlanRow(1), testNrgPlanRow(2)].map((row) => ({
+    ...row,
+    realEstateUUID: 'c8945ad5-c737-42a6-a5c6-aa00375d3717',
+    propertyType: { uuid: '5990a172-812a-4fee-b4f5-c860cca824d7' },
+  }));
+  const calls = [];
+  const fetchImpl = async (url, options) => {
+    calls.push({ url, method: options.method });
+    if (options.method === 'POST') {
+      const row = changedRows.find((item) => item.uuid === JSON.parse(options.body).placementUUID)
+        ?? rows.find((item) => item.uuid === JSON.parse(options.body).placementUUID);
+      return new Response(JSON.stringify({
+        placementUUID: row.uuid, realEstateUUID: row.realEstateUUID, blockId: row.blockId,
+        placementName: row.name, propertyType: row.propertyType, photoURL1600: expectedNrgOriginalUrl(row),
+      }), { status: 200, headers: { 'content-type': 'application/json' } });
+    }
+    const variant = Number(url.match(/_(1600|400|200)\.png$/)?.[1]);
+    const original = !variant;
+    const body = original ? testPng(3510, 2482) : testJpeg(variant, Math.round(variant * 0.707), variant);
+    return new Response(body, { status: 200, headers: { 'content-type': original ? 'application/octet-stream' : 'image/jpeg', 'content-length': String(body.length) } });
+  };
+  let changedRows = rows;
+  const first = await refreshNrgPlanAssets(rows, { fetchImpl, attempts: 1, capturedAt: '2026-09-15T08:00:00.000Z' });
+  assert.equal(calls.filter((item) => item.method === 'POST').length, 2);
+  assert.equal(calls.filter((item) => item.method === 'GET').length, 8);
+  assert.deepEqual(first.audit.refresh, {
+    cachePolicy: 'reuse a complete validated audit while its exact block/unit/number asset URLs are unchanged',
+    reusedUnits: 0, refreshedUnits: 2, detailRequests: 2, assetRequests: 8,
+    downloadedAssetBytes: first.audit.refresh.downloadedAssetBytes,
+  });
+  assert.ok(first.audit.refresh.downloadedAssetBytes > 200_000);
+
+  calls.length = 0;
+  const repeated = await refreshNrgPlanAssets(rows, { fetchImpl, attempts: 1, previousAudit: first.audit, capturedAt: '2026-09-15T08:05:00.000Z' });
+  assert.equal(calls.length, 0, 'an unchanged five-minute run must not repeat detail or image requests');
+  assert.equal(repeated.audit.refresh.reusedUnits, 2);
+  assert.equal(repeated.audit.refresh.refreshedUnits, 0);
+  assert.equal(repeated.audit.refresh.downloadedAssetBytes, 0);
+
+  const changedBlock = '40000000-0000-4000-8000-000000000001';
+  changedRows = rows.map((row, index) => {
+    if (index !== 0) return row;
+    const changed = { ...row, blockId: changedBlock };
+    for (const variant of [1600, 400, 200]) changed[`photoURL${variant}`] = expectedNrgPlanUrl(changed, variant);
+    return changed;
+  });
+  calls.length = 0;
+  const changed = await refreshNrgPlanAssets(changedRows, { fetchImpl, attempts: 1, previousAudit: repeated.audit, capturedAt: '2026-09-15T08:10:00.000Z' });
+  assert.equal(calls.filter((item) => item.method === 'POST').length, 1);
+  assert.equal(calls.filter((item) => item.method === 'GET').length, 4);
+  assert.equal(changed.audit.refresh.reusedUnits, 1);
+  assert.equal(changed.audit.refresh.refreshedUnits, 1);
 });
 
 test('atomic writes publish complete mode-0600 files', async () => {

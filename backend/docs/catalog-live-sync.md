@@ -75,6 +75,20 @@ discovery-only source until its authenticated identifiers and schema are mapped;
 its wrapper must fail closed and it is deliberately absent from the runnable
 configuration.
 
+For 4U, the NRG wrapper performs anonymous, read-only placement-detail lookups
+and validates the exact unit-bound S3 original plus its 1,600/400/200 variants.
+It sniffs image bytes instead of trusting the `.png` filename (the list
+variants currently contain JPEG), checks dimensions, size, and SHA-256, and
+persists only audit metadata and the suffixless original URL. The website uses
+the 1,600px derivative for cards and the original for the plan dialog. If a
+new original or card preview fails validation, normalization emits no new plan
+URL and the existing unit upsert retains `units.plan_image_url` as its
+last-known-good value. The collector atomically persists the sanitized audit in
+its private capture directory. Later runs reuse a row only while its complete
+validated record remains exactly bound to the same block/unit/number asset
+identity, so unchanged runs add zero plan-detail requests and zero image bytes;
+new, changed, or previously invalid rows alone are re-audited.
+
 ## Build and preflight (no deployment)
 
 From `backend/`:
@@ -113,6 +127,12 @@ automatically.
 3. Install reviewed capture wrappers under `/opt/residence-live-sync` and
    create `/var/lib/residence-live-sync/captures` mode `0700`; grant the service
    account access only to these paths and the loopback browser debugging ports.
+   Before enabling the NRG timer, install the verified
+   `website/data/4u-plan-audit.json` as mode-`0600`
+   `/var/lib/residence-live-sync/captures/nrg-bi/plan-assets-cache.json`, owned
+   by that service account. This avoids a 126+ MiB asset bootstrap during the
+   first scheduled run; `npm --prefix website run verify:4u` checks schema,
+   hashes, all 176 identities, and zero-request cache reuse.
 4. Install the reviewed JSON as `/etc/residence-catalog-sync/config.json` and a
    root-owned mode-`0600` `runtime.env` containing `DATABASE_URL`. Never put the
    database URL or CRM credentials in Git or shell command arguments. Keep at

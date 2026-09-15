@@ -12,3 +12,4 @@
 @media(prefers-reduced-motion:reduce){.fouru-catalog-site *{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
 .fouru-catalog-site .fouru-catalog-header__cta{color:white}
 .fouru-filter-panel>header button{min-width:74px;min-height:44px;padding:0 10px}
+.fouru-plan-unavailable{max-width:220px;padding:18px;color:#747d8b;font-size:10px;font-style:normal;font-weight:700;line-height:1.45;text-align:center}

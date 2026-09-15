@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "vinext dev",
-    "prebuild": "npm run verify:tencorp-contact && npm run verify:mirador-plans && npm run verify:ofiyat && npm run verify:saadiyat && npm run verify:c1 && npm run verify:soy-boyi",
+    "prebuild": "npm run verify:tencorp-contact && npm run verify:mirador-plans && npm run verify:ofiyat && npm run verify:saadiyat && npm run verify:c1 && npm run verify:soy-boyi && npm run verify:4u",
     "build": "vinext build && node scripts/prepare-standalone-runtime.mjs",
     "start": "vinext start",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
@@ -18,6 +18,8 @@
     "verify:soy-boyi": "node scripts/test-soy-boyi-contract.mjs",
     "audit:soy-boyi-capture": "node scripts/test-soy-boyi-contract.mjs --audit-capture",
     "build:bayterak-catalog": "node scripts/build-bayterak-catalog.mjs",
+    "build:4u-catalog": "node scripts/build-4u-catalog.mjs",
+    "verify:4u": "node scripts/verify-4u-catalog.mjs",
     "verify:bayterak": "node scripts/verify-bayterak-catalog.mjs",
     "build:zamon-catalog": "node scripts/build-zamon-catalog.mjs",
     "verify:zamon": "node scripts/verify-zamon-catalog.mjs",

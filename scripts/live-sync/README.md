@@ -13,7 +13,7 @@ pagination, identity, or count uncertainty makes the command exit non-zero.
 | `uysot` | Avalon Residence | Authorized showroom; exact read-only `POST https://service.app.uysot.uz/v1/smart-catalog/table`, body keys `page,size,orders,houseId`, forced to page 1/size 500/house 1074 | 268 unique units, declared 268, one page, buildings A/B1/B2 |
 | `mbc` | Regnum Plaza, C1, Soy Bo‘yi, Saadiyat | Public read-only `POST https://mbc.uz/api/plans`; each project uses the exact URL-encoded keys `project={1\|2\|3\|18}&type=residential&page=N` | Every project must provide all declared pages, only `AVAILABLE residential` rows, and unique public and CRM IDs; all four artifacts publish atomically |
 | `sun` | SUN | Public `GET /estate/embedjs/`, `GET /estate/request/get_request_url/`, then read-only `POST https://api.macroserver.uz/estate/catalog/` action `objects_list` | Pages 0–10 contain 336 overlapping rows and exactly 306 stable unique IDs: 51 available, 41 reserved, 214 sold |
-| `nrg-bi` | 4U, Bayterak, Botanika Saroyi, Flagman, Jomiy, Maftun Makon, Meros, Sado, Voha, Yangibaxt, Zamon | Public read-only `POST https://apigw.bi.group/sales-picker/microfe-v3/placementList` and `/realEstateList`; apartment type and project UUID are allowlisted; page size is capped at 300 and pagination must reach an empty page | Counts: 181, 132, 218, 22, 118, 201, 249, 331, 104, 262, 102. Each identity is unique and each real-estate cross-check contains the apartment property type |
+| `nrg-bi` | 4U, Bayterak, Botanika Saroyi, Flagman, Jomiy, Maftun Makon, Meros, Sado, Voha, Yangibaxt, Zamon | Public read-only `POST https://apigw.bi.group/sales-picker/microfe-v3/placementList` and `/realEstateList`; 4U additionally uses exact anonymous `/placement` detail lookups and exact `GET` requests to its unit-bound `s3.bi.group/crm-clients-e1csales/layouts/` assets. Apartment type and project UUID are allowlisted; page size is capped at 300 and pagination must reach an empty page | Current 4U apartment coverage is 176/176 active rows. Every 4U suffixless detail original and `_1600`/`_400`/`_200` variant is fetched, MIME-sniffed, dimension/byte checked, hashed, and bound to the same block/unit/number before publication. Other project counts remain capture-derived. |
 
 `alemica` is intentionally discovery-only. Its catalogue gateway routes are
 known, but no unambiguous Residence project-to-real-estate mapping has been
@@ -38,6 +38,18 @@ public BI sales-picker source.
   MBC run owns Regnum Plaza, C1, Soy Bo‘yi, and Saadiyat together; an invalid
   row or incomplete pagination in any one project prevents all four artifacts
   from being published.
+- 4U publishes a plan URL only when both the 3,000px-or-larger suffixless PNG
+  original and its 1,600px JPEG card preview pass exact identity, origin, MIME,
+  dimensions, byte-size, and body-hash checks. The `.png` suffix on list
+  variants is not trusted: current bytes are JPEG. Invalid current assets are
+  omitted so the importer's `COALESCE(NULLIF(...), plan_image_url)` keeps the
+  last-known-good URL. The raw image bodies are never stored in Git or capture
+  evidence. A mode-0600 audit cache at
+  `<LIVE_SYNC_CAPTURE_DIR>/nrg-bi/plan-assets-cache.json` reuses only complete
+  records whose exact block UUID, unit UUID, number, and four immutable asset
+  URLs still match `placementList`. Consequently a normal five-minute run does
+  no detail or image requests; only new, changed, or previously invalid units
+  repeat their one detail request and four asset downloads.
 - MBC's public response `id` is retained only as provenance because it changes
   when the listing set changes. Stable unit matching uses `crm_id`, but raw CRM
   IDs are never embedded in public `sourceKey` values. Existing template keys
@@ -106,6 +118,23 @@ CATALOG_OUTPUT_DIR=/run/residence-sync/catalogs bin/capture-nrg-bi
 CATALOG_OUTPUT_DIR=/run/residence-sync/catalogs bin/capture-kayan
 CATALOG_OUTPUT_DIR=/run/residence-sync/catalogs bin/capture-uysot
 ```
+
+Seed the first production 4U plan audit from the reviewed, sanitized snapshot
+before enabling the five-minute NRG timer. The owner must be the account that
+runs `capture-nrg-bi`; later successful runs replace this file atomically:
+
+```sh
+install -d -o residence-catalog-sync -g residence-catalog-sync -m 0700 \
+  /var/lib/residence-live-sync/captures/nrg-bi
+install -o residence-catalog-sync -g residence-catalog-sync -m 0600 \
+  website/data/4u-plan-audit.json \
+  /var/lib/residence-live-sync/captures/nrg-bi/plan-assets-cache.json
+```
+
+`npm --prefix website run verify:4u` proves that every cache row matches the
+committed catalogue and that a bootstrap refresh reuses all rows without a
+network request. If the seed is absent, corrupt, oversized, or mismatched, the
+collector safely performs the full first audit instead of trusting it.
 
 Optional environment variables are `LIVE_SYNC_CAPTURE_DIR`,
 `LIVE_SYNC_CDP_KAYAN_URL`, and `LIVE_SYNC_CDP_UYSOT_URL`. MBC, SUN, and NRG do

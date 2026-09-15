@@ -180,6 +180,30 @@ assert.deepEqual(unmatched.provenance, { api: '', sourceSha256: '' });
 
 const reserved4U = { ...live[0], projectSlug: '4u', status: 'reserved' };
 assert.equal(mergeLiveCatalogUnits('4u', embedded, [reserved4U]).length, 0, 'available-only UI must not label a reserved unit as available');
+const fourUnitId = '546458ee-a312-4073-be02-cecfde18623b';
+const fourBlockId = 'f61f45d8-6138-4161-abee-aed9e4d11a4e';
+const fourOriginal = `https://s3.bi.group/crm-clients-e1csales/layouts/${fourBlockId}/${fourUnitId}/10.png`;
+const fourTemplate = [{
+  ...embedded[0], id: 'legacy-4u-id', sourceKey: 'legacy-4u-key', number: '10', rooms: 1, floor: 3, area: 39.85, entrance: '1',
+  phase: '4U Tashkent 1 - 2', blockId: fourBlockId, planImageUrl: '', planOriginalUrl: '', planPreviewUrl: '', planThumbnailUrl: '', planSource: '',
+}];
+const fourLive = {
+  ...live[0], id: 3323, sourceKey: `nrg-bi:4u:${fourUnitId}`, projectSlug: '4u', phaseSlug: `block-${fourBlockId}`,
+  phaseName: '4U Tashkent 1 - 2', number: '10', rooms: 1, floor: 3, area: 39.85, entrance: '1', status: 'available', planImageUrl: fourOriginal,
+};
+const [adapted4U] = mergeLiveCatalogUnits('4u', fourTemplate, [fourLive]);
+assert.equal(adapted4U.planImageUrl, fourOriginal, '4U keeps the validated suffixless detail original');
+assert.equal(adapted4U.planOriginalUrl, fourOriginal, '4U lightbox receives the detail original');
+assert.equal(adapted4U.planPreviewUrl, fourOriginal.replace(/\.png$/, '_1600.png'), '4U cards receive the 1600px source variant');
+assert.equal(adapted4U.planThumbnailUrl, fourOriginal.replace(/\.png$/, '_200.png'));
+assert.equal(adapted4U.blockId, fourBlockId);
+
+const [unmatchedBad4U] = mergeLiveCatalogUnits('4u', fourTemplate, [{
+  ...fourLive, id: 3324, sourceKey: 'nrg-bi:4u:646458ee-a312-4073-be02-cecfde18623b', number: '11', planImageUrl: `${fourOriginal}?token=forbidden`,
+}]);
+assert.equal(unmatchedBad4U.planImageUrl, '', 'an unbound 4U remote URL must not reach a newly discovered unit');
+assert.equal(unmatchedBad4U.planOriginalUrl, '');
+assert.equal(unmatchedBad4U.planPreviewUrl, '');
 const soldSun = { ...live[0], projectSlug: 'sun', status: 'sold', price: undefined };
 assert.equal(mergeLiveCatalogUnits('sun', embedded, [soldSun]).length, 0, 'SUN must not expose sold or reserved rows as available at zero price');
 assert.equal(mergeLiveCatalogUnits('safe-project', embedded, live).length, 1, 'status-aware UI keeps non-available units');

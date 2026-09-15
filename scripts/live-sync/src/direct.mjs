@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import { makeBodyRecord } from './capture.mjs';
+import { refreshNrgPlanAssets } from './nrg-plan-assets.mjs';
 
 const MBC_ENDPOINT = 'https://mbc.uz/api/plans';
 const NRG_BASE = 'https://apigw.bi.group/sales-picker/microfe-v3';
@@ -77,6 +78,19 @@ function recordResponse(records, { id, canonicalUrl, scope, result }) {
     text: result.text,
     capturedAt: new Date().toISOString(),
     scope,
+  }));
+}
+
+function recordDerivedJson(records, { id, canonicalUrl, scope, value, capturedAt }) {
+  records.push(makeBodyRecord({
+    id,
+    method: 'DERIVED',
+    url: canonicalUrl,
+    status: 200,
+    mimeType: 'application/json',
+    text: JSON.stringify(value),
+    capturedAt,
+    scope: { ...scope, derived: true },
   }));
 }
 
@@ -166,9 +180,10 @@ async function nrgPost(endpoint, body, label) {
   });
 }
 
-async function captureNrgBi(provider, records) {
+async function captureNrgBi(provider, records, { planAssetCache = null } = {}) {
   for (const project of provider.projectDefinitions) {
     let sawEmptyPage = false;
+    const placements = [];
     for (let page = 1; page <= 50; page += 1) {
       const result = await nrgPost('placementList', nrgPlacementBody(provider, project, page), `NRG ${project.slug} placement page ${page}`);
       if (!Array.isArray(result.value?.placements)) throw new Error(`NRG ${project.slug} placementList has no placements array`);
@@ -182,6 +197,7 @@ async function captureNrgBi(provider, records) {
         sawEmptyPage = true;
         break;
       }
+      placements.push(...result.value.placements);
       if (result.value.placements.length > provider.pageSize) throw new Error(`NRG ${project.slug} exceeded requested page size`);
     }
     if (!sawEmptyPage) throw new Error(`NRG ${project.slug} pagination did not reach an empty page`);
@@ -193,6 +209,17 @@ async function captureNrgBi(provider, records) {
       scope: { projectSlug: project.slug, endpoint: 'realEstateList', page: 1 },
       result: estate,
     });
+    if (project.slug === '4u') {
+      const capturedAt = new Date().toISOString();
+      const { audit } = await refreshNrgPlanAssets(placements, { capturedAt, previousAudit: planAssetCache });
+      recordDerivedJson(records, {
+        id: 'nrg-bi-4u-plan-asset-audit',
+        canonicalUrl: 'https://s3.bi.group/crm-clients-e1csales/layouts/',
+        scope: { projectSlug: '4u', endpoint: 'planAssetAudit' },
+        value: audit,
+        capturedAt,
+      });
+    }
   }
 }
 
@@ -318,12 +345,12 @@ async function captureSun(records) {
  * credentials are never used. The SUN signed URL exists only as a local value
  * for the duration of one capture and only response bodies are persisted.
  */
-export async function captureFromDirectSource(provider) {
+export async function captureFromDirectSource(provider, options = {}) {
   const records = [];
   const errors = [];
   try {
     if (provider.id === 'mbc') await captureMbc(provider, records);
-    else if (provider.id === 'nrg-bi') await captureNrgBi(provider, records);
+    else if (provider.id === 'nrg-bi') await captureNrgBi(provider, records, options);
     else if (provider.id === 'sun') await captureSun(records);
     else throw new Error(`${provider.id}: no direct-source adapter`);
   } catch (error) {

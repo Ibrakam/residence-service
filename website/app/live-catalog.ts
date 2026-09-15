@@ -479,9 +479,25 @@ function assignPlan(result: Record<string, unknown>, planImageUrl: string) {
   }
 }
 
-function publicPlanPath(value: string | undefined) {
-  if (!value || !value.startsWith('/') || value.startsWith('//')) return '';
+function publicPlanPath(projectSlug: string, live: LiveCatalogUnit) {
+  const value = live.planImageUrl;
+  if (!value) return '';
+  if (value.startsWith('/') && !value.startsWith('//')) return value;
+  if (projectSlug !== '4u') return '';
+  const identity = /^nrg-bi:4u:([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i.exec(live.sourceKey)?.[1];
+  const blockId = /^block-([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i.exec(live.phaseSlug)?.[1];
+  if (!identity || !blockId) return '';
+  const expected = `https://s3.bi.group/crm-clients-e1csales/layouts/${blockId}/${identity}/${encodeURIComponent(live.number)}.png`;
+  if (value !== expected) return '';
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'https:' || url.hostname !== 's3.bi.group' || url.port || url.username || url.password || url.search || url.hash) return '';
+  } catch { return ''; }
   return value;
+}
+
+function nrgPlanVariant(originalUrl: string, width: 1600 | 200) {
+  return originalUrl.endsWith('.png') ? `${originalUrl.slice(0, -4)}_${width}.png` : '';
 }
 
 function adaptUnit(
@@ -564,9 +580,19 @@ function adaptUnit(
   assignIfPresent(result, 'buildingId', live.phaseSlug);
   assignIfPresent(result, 'block', phaseName);
   assignIfPresent(result, 'blockName', phaseName);
+  if (projectSlug === '4u') assignIfPresent(result, 'blockId', live.phaseSlug.replace(/^block-/, ''));
 
-  const planPath = publicPlanPath(live.planImageUrl);
-  if (planPath) assignPlan(result, planPath);
+  const planPath = publicPlanPath(projectSlug, live);
+  if (planPath && projectSlug === '4u') {
+    assignIfPresent(result, 'plan', planPath);
+    assignIfPresent(result, 'planUrl', planPath);
+    assignIfPresent(result, 'planImageUrl', planPath);
+    assignIfPresent(result, 'planOriginalUrl', planPath);
+    assignIfPresent(result, 'planSource', planPath);
+    assignIfPresent(result, 'sourcePlan', planPath);
+    assignIfPresent(result, 'planPreviewUrl', nrgPlanVariant(planPath, 1600));
+    assignIfPresent(result, 'planThumbnailUrl', nrgPlanVariant(planPath, 200));
+  } else if (planPath) assignPlan(result, planPath);
 
   return result;
 }

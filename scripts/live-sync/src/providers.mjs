@@ -200,6 +200,7 @@ export const providers = Object.freeze({
       https('apigw.bi.group', [
         '/sales-picker/microfe-v3/placementList',
         '/sales-picker/microfe-v3/realEstateList',
+        '/sales-picker/microfe-v3/placement',
       ]),
     ]),
     probes: Object.freeze([]),

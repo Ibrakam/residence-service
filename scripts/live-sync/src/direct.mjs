@@ -247,9 +247,13 @@ function nrgConsistencyAudit(matrixValues, placements, apartmentPropertyTypeUUID
   const listed = new Set();
   const listedFree = new Set();
   let missingListedFromMatrix = 0;
+  let duplicatePlacementListCount = 0;
   for (const [index, row] of placements.entries()) {
     const id = nrgUUID(row?.uuid, `${label} placementList row ${index + 1}.uuid`);
-    if (listed.has(id)) throw new Error(`${label} placementList duplicates apartment ${id}`);
+    if (listed.has(id)) {
+      duplicatePlacementListCount += 1;
+      continue;
+    }
     listed.add(id);
     if (row?.propertyType?.uuid !== apartmentPropertyTypeUUID || typeof row?.isSale !== 'boolean') {
       throw new Error(`${label} placementList apartment ${id} has invalid scope fields`);
@@ -266,9 +270,9 @@ function nrgConsistencyAudit(matrixValues, placements, apartmentPropertyTypeUUID
     freeMissingFromList += 1;
   }
   let staleListingCount = 0;
-  for (const id of listed) if (!matrixFree.has(id) && matrixById.has(id)) staleListingCount += 1;
+  for (const id of listedFree) if (!matrixFree.has(id) && matrixById.has(id)) staleListingCount += 1;
   const staleListingLimit = Math.min(25, Math.ceil(matrixById.size * 0.01));
-  const hardMismatch = freeMissingFromList > 0 || missingListedFromMatrix > 0;
+  const hardMismatch = freeMissingFromList > 0 || missingListedFromMatrix > 0 || duplicatePlacementListCount > 0;
   return {
     exact: !hardMismatch && staleListingCount === 0,
     acceptable: !hardMismatch && staleListingCount <= staleListingLimit,
@@ -276,6 +280,7 @@ function nrgConsistencyAudit(matrixValues, placements, apartmentPropertyTypeUUID
     placementListFreeCount: listedFree.size,
     freeMissingFromList,
     missingListedFromMatrix,
+    duplicatePlacementListCount,
     staleListingCount,
     staleListingLimit,
     matrixFreeIds: matrixFree,
@@ -311,7 +316,7 @@ async function nrgConsistentSnapshot(captureAttempt, {
     `NRG ${slug} inventory changed during ${attempts} bounded snapshot attempts `
     + `(matrix FREE ${lastAudit.matrixFreeCount}, placementList FREE ${lastAudit.placementListFreeCount}, `
     + `missing-list ${lastAudit.freeMissingFromList}, missing-matrix ${lastAudit.missingListedFromMatrix}, `
-    + `stale-listings ${lastAudit.staleListingCount}/${lastAudit.staleListingLimit})`,
+    + `duplicate-list ${lastAudit.duplicatePlacementListCount}, stale-active ${lastAudit.staleListingCount}/${lastAudit.staleListingLimit})`,
   );
 }
 

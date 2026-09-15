@@ -247,6 +247,20 @@ test('NRG bounded snapshots recover races, tolerate bounded stale listings, and 
   assert.equal(recovered.consistencyAttempt, 2);
   assert.equal(recovered.consistencyAudit.exact, true);
 
+  let duplicateCalls = 0;
+  const duplicateRecovered = await directSourceInternals.nrgConsistentSnapshot(async (attempt) => {
+    duplicateCalls += 1;
+    const row = matrixRow(6, 'FREE');
+    const currentListing = listing(row);
+    return {
+      matrixResponses: [{ result: { value: matrix(row) } }],
+      placements: attempt === 1 ? [currentListing, structuredClone(currentListing)] : [currentListing],
+    };
+  }, { slug: 'fixture', apartmentPropertyTypeUUID: apartment, attempts: 3, retryDelayMs: 0, wait: noWait });
+  assert.equal(duplicateCalls, 2);
+  assert.equal(duplicateRecovered.consistencyAttempt, 2);
+  assert.equal(duplicateRecovered.consistencyAudit.duplicatePlacementListCount, 0);
+
   let staleCalls = 0;
   const stale = await directSourceInternals.nrgConsistentSnapshot(async () => {
     staleCalls += 1;
@@ -259,6 +273,15 @@ test('NRG bounded snapshots recover races, tolerate bounded stale listings, and 
   assert.equal(stale.consistencyAudit.acceptable, true);
   assert.equal(stale.consistencyAudit.staleListingCount, 1);
   assert.equal(stale.matrixResponses[0].result.value.entrances[0].floors[0].placements[0].placementUIStatus, 'BOOKED', 'matrix lifecycle is never coerced');
+  const inactive = matrixRow(7, 'BOOKED');
+  const inactiveAudit = directSourceInternals.nrgConsistencyAudit(
+    [matrix(inactive)],
+    [listing(inactive, false)],
+    apartment,
+    'NRG fixture',
+  );
+  assert.equal(inactiveAudit.exact, true);
+  assert.equal(inactiveAudit.staleListingCount, 0, 'an inactive list row is not active-listing lag');
 
   let missingCalls = 0;
   await assert.rejects(() => directSourceInternals.nrgConsistentSnapshot(async () => {
@@ -899,6 +922,27 @@ test('NRG normalization covers all eleven project adapters and requires an empty
   assert.equal(staleUnit.rawStatus, 'BOOKED');
   assert.equal(staleUnit.price, null);
   assert.equal(staleResult.audit.bayterak.staleListingCount, 1);
+  const inactiveListing = structuredClone(groups);
+  const inactiveMatrix = inactiveListing[2].blockMatrices[0].entrances[0].floors[0].placements[1];
+  inactiveListing[2].pages[0].placements.push({
+    uuid: inactiveMatrix.placementUUID,
+    realEstateUUID: inactiveListing[2].project.realEstateUUID,
+    roomCount: inactiveMatrix.roomCount,
+    name: inactiveMatrix.placementName,
+    square: inactiveMatrix.square,
+    floor: inactiveMatrix.floor,
+    entrance: inactiveMatrix.entrance,
+    maxFloor: 10,
+    blockName: inactiveMatrix.blockName,
+    blockId: inactiveMatrix.blockUUID,
+    totalPrice: inactiveMatrix.totalPrice,
+    priceBySquare: inactiveMatrix.price,
+    isSale: false,
+    propertyType: { uuid: provider.apartmentPropertyTypeUUID, name: 'Квартира' },
+  });
+  inactiveListing[2].realEstate.realEstates[0].placementCount = 2;
+  const inactiveResult = normalizeNrgBiCapture(inactiveListing);
+  assert.equal(inactiveResult.audit['botanika-saroyi'].staleListingCount, 0);
   const missingFreeListing = structuredClone(groups);
   missingFreeListing[1].pages = [{ placements: [] }];
   assert.throws(() => normalizeNrgBiCapture(missingFreeListing), /FREE inventory is missing from placementList/);

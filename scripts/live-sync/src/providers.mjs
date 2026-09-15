@@ -247,6 +247,8 @@ export const providers = Object.freeze({
     maxBlocksPerProject: 100,
     maxMatrixPlacementsPerBlock: 5_000,
     maxMatrixPlacementsPerProject: 30_000,
+    consistencyAttempts: 3,
+    consistencyRetryDelayMs: 250,
   }),
 
   alemica: Object.freeze({

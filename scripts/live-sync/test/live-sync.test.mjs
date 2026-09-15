@@ -213,6 +213,8 @@ test('direct-source bodies use exact read-only scopes', () => {
   assert.equal(provider.maxBlocksPerProject, 100);
   assert.equal(provider.maxMatrixPlacementsPerBlock, 5_000);
   assert.equal(provider.maxMatrixPlacementsPerProject, 30_000);
+  assert.equal(provider.consistencyAttempts, 3);
+  assert.equal(provider.consistencyRetryDelayMs, 250);
   const boundedMatrix = { entrances: [{ floors: [{ placements: [{ placementUUID: 'x' }] }] }] };
   assert.equal(directSourceInternals.nrgMatrixPlacementCount(boundedMatrix, 'test matrix', 1), 1);
   assert.throws(() => directSourceInternals.nrgMatrixPlacementCount(boundedMatrix, 'test matrix', 0), /safety limit/);
@@ -220,6 +222,63 @@ test('direct-source bodies use exact read-only scopes', () => {
   assert.equal(sun.action, 'objects_list');
   assert.equal(sun.auth_token, null);
   assert.deepEqual(Object.keys(sun.data).sort(), ['activity', 'cabinetMode', 'category', 'complex_id', 'filters', 'page']);
+});
+
+test('NRG bounded snapshots recover races, tolerate bounded stale listings, and fail when matrix FREE is missing', async () => {
+  const provider = getProvider('nrg-bi');
+  const apartment = provider.apartmentPropertyTypeUUID;
+  const matrixRow = (index, placementUIStatus) => ({
+    placementUUID: `50000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
+    propertyTypeUUID: apartment,
+    placementUIStatus,
+    isSale: placementUIStatus === 'FREE',
+  });
+  const matrix = (...placements) => ({ entrances: [{ floors: [{ placements }] }] });
+  const listing = (row, isSale = true) => ({ uuid: row.placementUUID, propertyType: { uuid: apartment }, isSale });
+  const noWait = async () => {};
+
+  let recoveredCalls = 0;
+  const recovered = await directSourceInternals.nrgConsistentSnapshot(async (attempt) => {
+    recoveredCalls += 1;
+    const row = matrixRow(1, attempt === 1 ? 'BOOKED' : 'FREE');
+    return { matrixResponses: [{ result: { value: matrix(row) } }], placements: [listing(row)] };
+  }, { slug: 'fixture', apartmentPropertyTypeUUID: apartment, attempts: 3, retryDelayMs: 0, wait: noWait });
+  assert.equal(recoveredCalls, 2);
+  assert.equal(recovered.consistencyAttempt, 2);
+  assert.equal(recovered.consistencyAudit.exact, true);
+
+  let staleCalls = 0;
+  const stale = await directSourceInternals.nrgConsistentSnapshot(async () => {
+    staleCalls += 1;
+    const row = matrixRow(2, 'BOOKED');
+    return { matrixResponses: [{ result: { value: matrix(row) } }], placements: [listing(row)] };
+  }, { slug: 'fixture', apartmentPropertyTypeUUID: apartment, attempts: 3, retryDelayMs: 0, wait: noWait });
+  assert.equal(staleCalls, 3, 'a bounded stale listing is retried before it is accepted');
+  assert.equal(stale.consistencyAttempt, 3);
+  assert.equal(stale.consistencyAudit.exact, false);
+  assert.equal(stale.consistencyAudit.acceptable, true);
+  assert.equal(stale.consistencyAudit.staleListingCount, 1);
+  assert.equal(stale.matrixResponses[0].result.value.entrances[0].floors[0].placements[0].placementUIStatus, 'BOOKED', 'matrix lifecycle is never coerced');
+
+  let missingCalls = 0;
+  await assert.rejects(() => directSourceInternals.nrgConsistentSnapshot(async () => {
+    missingCalls += 1;
+    const row = matrixRow(3, 'FREE');
+    return { matrixResponses: [{ result: { value: matrix(row) } }], placements: [] };
+  }, { slug: 'fixture', apartmentPropertyTypeUUID: apartment, attempts: 3, retryDelayMs: 0, wait: noWait }), /inventory changed during 3 bounded snapshot attempts.*missing-list 1/);
+  assert.equal(missingCalls, 3);
+
+  const first = matrixRow(4, 'BOOKED');
+  const second = matrixRow(5, 'SOLD');
+  const overLimit = directSourceInternals.nrgConsistencyAudit(
+    [matrix(first, second)],
+    [listing(first), listing(second)],
+    apartment,
+    'NRG fixture',
+  );
+  assert.equal(overLimit.staleListingCount, 2);
+  assert.equal(overLimit.staleListingLimit, 1);
+  assert.equal(overLimit.acceptable, false);
 });
 
 test('NRG trusted block registry covers every configured project and only grows', () => {
@@ -830,10 +889,19 @@ test('NRG normalization covers all eleven project adapters and requires an empty
   const duplicateIdentity = structuredClone(groups);
   duplicateIdentity[0].blockMatrices[0].entrances[0].floors[0].placements[2].placementUUID = duplicateIdentity[0].blockMatrices[0].entrances[0].floors[0].placements[1].placementUUID;
   assert.throws(() => normalizeNrgBiCapture(duplicateIdentity), /duplicate matrix placement UUID/);
-  const freeMismatch = structuredClone(groups);
-  freeMismatch[0].blockMatrices[0].entrances[0].floors[0].placements[0].placementUIStatus = 'SOLD';
-  freeMismatch[0].blockMatrices[0].entrances[0].floors[0].placements[0].isSale = false;
-  assert.throws(() => normalizeNrgBiCapture(freeMismatch), /does not reconcile with blockMatrix/);
+  const staleListing = structuredClone(groups);
+  staleListing[1].blockMatrices[0].entrances[0].floors[0].placements[0].placementUIStatus = 'BOOKED';
+  staleListing[1].blockMatrices[0].entrances[0].floors[0].placements[0].isSale = false;
+  const staleResult = normalizeNrgBiCapture(staleListing);
+  const staleArtifact = staleResult.artifacts.find((item) => item.filename === 'bayterak-catalog.json').artifact;
+  const staleUnit = staleArtifact.units.find((unit) => unit.id === staleListing[1].pages[0].placements[0].uuid);
+  assert.equal(staleUnit.status, 'reserved');
+  assert.equal(staleUnit.rawStatus, 'BOOKED');
+  assert.equal(staleUnit.price, null);
+  assert.equal(staleResult.audit.bayterak.staleListingCount, 1);
+  const missingFreeListing = structuredClone(groups);
+  missingFreeListing[1].pages = [{ placements: [] }];
+  assert.throws(() => normalizeNrgBiCapture(missingFreeListing), /FREE inventory is missing from placementList/);
   const unknownLifecycle = structuredClone(groups);
   unknownLifecycle[0].blockMatrices[0].entrances[0].floors[0].placements[2].placementUIStatus = 'CONTRACT';
   assert.throws(() => normalizeNrgBiCapture(unknownLifecycle), /unknown placementUIStatus/);

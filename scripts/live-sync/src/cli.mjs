@@ -268,6 +268,12 @@ function inputFromCapture(providerId, capture) {
       expectedMatrixRecords += blocks.size;
       const projectMatrices = matrixRecords.filter((item) => item.scope.projectSlug === project.slug);
       if (projectMatrices.length !== blocks.size) throw new Error(`NRG ${project.slug} has ${projectMatrices.length}/${blocks.size} required blockMatrix responses`);
+      const snapshotAttempts = new Set([...projectMatrices, ...pageRecords].map((item) => Number(item.scope?.consistencyAttempt)));
+      if (snapshotAttempts.size !== 1) throw new Error(`NRG ${project.slug} capture mixes bounded consistency attempts`);
+      const [consistencyAttempt] = snapshotAttempts;
+      if (!Number.isSafeInteger(consistencyAttempt) || consistencyAttempt < 1 || consistencyAttempt > provider.consistencyAttempts) {
+        throw new Error(`NRG ${project.slug} capture has an invalid bounded consistency attempt`);
+      }
       const matrixByBlock = new Map();
       for (const record of projectMatrices) {
         const blockId = String(record.scope?.blockId ?? '').trim();
@@ -296,6 +302,7 @@ function inputFromCapture(providerId, capture) {
         realEstate: realEstateRecord.value,
         requiredBlocks: requiredProject.blocks,
         blockMatrices,
+        consistencyAttempt,
         ...(planAssets ? { planAssets } : {}),
       };
     });

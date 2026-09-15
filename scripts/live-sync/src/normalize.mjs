@@ -683,8 +683,9 @@ export function normalizeNrgBiCapture(groups, capturedAt = new Date().toISOStrin
       const matrixEntry = matrixApartmentById.get(id);
       assert(matrixEntry, `NRG ${slug} placementList UUID ${id} is missing from blockMatrix`);
       const placement = matrixEntry.placement;
-      const expectedMatrixStatus = row.isSale ? 'FREE' : 'BOOKED';
-      assert(placement.placementUIStatus === expectedMatrixStatus, `NRG ${slug} placementList UUID ${id} does not reconcile with blockMatrix ${placement.placementUIStatus}`);
+      if (placement.placementUIStatus === 'FREE') {
+        assert(row.isSale === true, `NRG ${slug} FREE placementList UUID ${id} is not marked for sale`);
+      }
       assert(nrgUuid(row.blockId, `NRG ${slug} row ${id}.blockId`) === placement.blockUUID, `NRG ${slug} row ${id} block identity mismatch`);
       assert(numberText(row.blockName, `NRG ${slug} row ${id}.blockName`) === placement.blockName, `NRG ${slug} row ${id} block name mismatch`);
       assert(numberText(row.name, `NRG ${slug} row ${id}.name`) === placement.placementName, `NRG ${slug} row ${id} number mismatch`);
@@ -692,9 +693,14 @@ export function normalizeNrgBiCapture(groups, capturedAt = new Date().toISOStrin
       assert(integer(row.roomCount) === integer(placement.roomCount) && positive(row.square) === positive(placement.square), `NRG ${slug} row ${id} dimensions do not reconcile with blockMatrix`);
     }
     const matrixFreeIds = new Set(matrixApartments.filter(({ placement }) => placement.placementUIStatus === 'FREE').map(({ placement }) => placement.placementUUID));
-    const listedFreeIds = new Set([...listedById].filter(([, row]) => row.isSale === true).map(([id]) => id));
-    assert(matrixFreeIds.size === listedFreeIds.size && [...matrixFreeIds].every((id) => listedFreeIds.has(id)), `NRG ${slug} FREE inventory does not reconcile exactly with placementList`);
-    const planAudit = slug === '4u' ? normalize4uPlanAudit(group.planAssets, rows) : null;
+    for (const id of matrixFreeIds) {
+      assert(listedById.get(id)?.isSale === true, `NRG ${slug} FREE inventory is missing from placementList`);
+    }
+    const staleListingCount = [...listedById.keys()].filter((id) => !matrixFreeIds.has(id)).length;
+    const staleListingLimit = Math.min(25, Math.ceil(matrixApartments.length * 0.01));
+    assert(staleListingCount <= staleListingLimit, `NRG ${slug} placementList has ${staleListingCount}/${staleListingLimit} bounded stale listings`);
+    const matrixFreeRows = [...matrixFreeIds].map((id) => listedById.get(id));
+    const planAudit = slug === '4u' ? normalize4uPlanAudit(group.planAssets, matrixFreeRows) : null;
 
     const identities = new Set();
     const maxFloorByBlock = new Map();
@@ -762,10 +768,13 @@ export function normalizeNrgBiCapture(groups, capturedAt = new Date().toISOStrin
         apartmentMatrixPlacementCount: matrixApartments.length,
         placementListCount: rows.length,
         freePlacementsReconciled: matrixFreeIds.size,
+        consistencyAttempt: Number.isSafeInteger(group.consistencyAttempt) ? group.consistencyAttempt : null,
+        staleListingCount,
+        staleListingLimit,
         lifecycleIdentityField: 'placementUUID',
         lifecycleStatusField: 'placementUIStatus',
         lifecycleStatusValues: ['FREE', 'BOOKED', 'SOLD'],
-        availabilityPolicy: 'blockMatrix FREE must equal placementList isSale===true',
+        availabilityPolicy: 'blockMatrix is authoritative; every FREE must exist in placementList with isSale===true; bounded BOOKED/SOLD listing lag is ignored',
         saleDatePolicy: 'blockMatrix has no sale timestamp; baseline SOLD contributes only to all-time known-sold totals',
         ...(planAudit ? { planAssets: planAudit.summary } : {}),
       },
@@ -782,7 +791,7 @@ export function normalizeNrgBiCapture(groups, capturedAt = new Date().toISOStrin
         sourceCount: matrixApartments.length,
         source: 'https://apigw.bi.group/sales-picker/microfe-v3/blockMatrix',
         availabilitySource: 'https://apigw.bi.group/sales-picker/microfe-v3/placementList',
-        availabilityPolicy: 'explicit blockMatrix.placementUIStatus; FREE set reconciled exactly with placementList.isSale===true',
+        availabilityPolicy: 'explicit blockMatrix.placementUIStatus; every FREE is reconciled with placementList.isSale===true; bounded BOOKED/SOLD listing lag is ignored',
         historicalSaleDates: null,
         matrixBlockIds,
         completeness: audit,

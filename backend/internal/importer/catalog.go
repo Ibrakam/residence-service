@@ -441,7 +441,14 @@ func normalizeCatalogUnit(projectSlug, phaseSlug string, raw json.RawMessage, va
 	}
 	rawStatus := firstString(values, "rawStatus", "statusOriginal", "sourceStatus", "status")
 	status := normalizeCatalogStatus(firstString(values, "status"), rawStatus, optionalBoolDefault(values, true, "isSale"))
-	propertyType := normalizePropertyType(firstString(values, "rawPropertyType", "propertyType"))
+	rawPropertyType := firstString(values, "rawPropertyType")
+	propertyType := normalizePropertyType(rawPropertyType)
+	if propertyType == "other" {
+		// Sanitized live artifacts carry the authoritative canonical type in
+		// propertyType. Some CRMs expose only a generic raw value such as
+		// "property", which must not turn parking into an apartment.
+		propertyType = normalizePropertyType(firstString(values, "propertyType"))
+	}
 	if propertyType == "other" {
 		propertyType = "apartment"
 	}

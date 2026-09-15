@@ -293,13 +293,13 @@ func normalizeStatus(value string) string {
 
 func normalizePropertyType(value string) string {
 	switch strings.ToLower(strings.TrimSpace(value)) {
-	case "квартира":
+	case "apartment", "квартира":
 		return "apartment"
-	case "машиноместо", "паркинг":
+	case "parking", "машиноместо", "паркинг":
 		return "parking"
-	case "коммерческое помещение", "коммерция", "офис":
+	case "commercial", "коммерческое помещение", "коммерция", "офис":
 		return "commercial"
-	case "кладовая", "кладовка":
+	case "storage", "кладовая", "кладовка":
 		return "storage"
 	default:
 		return "other"

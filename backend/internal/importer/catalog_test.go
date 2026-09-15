@@ -263,6 +263,29 @@ func TestCatalogWithoutQueueMetadataKeepsLegacyMode(t *testing.T) {
 	}
 }
 
+func TestCatalogCanonicalPropertyTypeOverridesGenericRawType(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "ofiyat-catalog.json")
+	body := `{
+  "project":"Ofiyat","projectSlug":"ofiyat","capturedAt":"2026-09-15T08:00:00Z",
+  "units":[{
+    "id":"parking-1","sourceKey":"154273:parking:p:-1:1","phaseSlug":"parking","phaseName":"Паркинг",
+    "propertyType":"parking","rawPropertyType":"property","status":"available","rawStatus":"AVAILABLE",
+    "number":"1","entrance":"P","floor":-1,"area":13.5,"price":100000000,"currency":"UZS"
+  }]
+}`
+	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	bundle, err := LoadCatalogFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unit := bundle.Projects[0].Units[0]
+	if unit.PropertyType != "parking" || unit.RawPropertyType != "property" {
+		t.Fatalf("generic CRM raw type overrode canonical parking type: %#v", unit)
+	}
+}
+
 func TestNullQueueMetadataDoesNotClearLastKnownGood(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "invalid-catalog.json")
 	body := `{"project":"Invalid","projectSlug":"invalid","capturedAt":"2026-09-15T08:00:00Z","queues":null,"units":[{"id":"1","number":"1","area":40,"floor":2,"status":"available","phaseSlug":"main"}]}`

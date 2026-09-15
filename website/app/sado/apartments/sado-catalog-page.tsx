@@ -20,19 +20,19 @@ const languages: Language[] = ['ru', 'uz', 'en'];
 const copy = {
   ru: {
     back: 'О проекте', title: 'Выберите пространство,', accent: 'которое услышит вас.', lead: 'Реальные предложения из официального каталога Sad’O — с точными планировками, этажами, площадями и ценами по актуальным данным.',
-    modes: { cards: 'Карточки', chess: 'Шахматка' }, modeLabel: 'Режим каталога', filters: 'Фильтры', queue: 'Очередь', allQueues: 'Все очереди', class: 'Класс', allClasses: 'Business и Comfort', business: 'Business', comfort: 'Comfort', rooms: 'Комнаты', area: 'Площадь, м²', areaFrom: 'От', areaTo: 'До', status: 'Статус', allActive: 'В продаже', priceRequestOnly: 'Цена по запросу', reset: 'Сбросить', result: 'предложений',
+    modes: { cards: 'Карточки', chess: 'Шахматка' }, modeLabel: 'Режим каталога', filters: 'Фильтры', block: 'Блок', allBlocks: 'Все блоки', class: 'Класс', allClasses: 'Business и Comfort', business: 'Business', comfort: 'Comfort', rooms: 'Комнаты', area: 'Площадь, м²', areaFrom: 'От', areaTo: 'До', status: 'Статус', allActive: 'В продаже', priceRequestOnly: 'Цена по запросу', reset: 'Сбросить', result: 'предложений',
     sort: 'Сортировка', sorts: { priceAsc: 'Сначала дешевле', priceDesc: 'Сначала дороже', areaAsc: 'Площадь по возрастанию', areaDesc: 'Площадь по убыванию', floorAsc: 'Сначала нижние этажи' }, snapshot: 'Актуальные данные', sourceNote: 'Официальный каталог показывает выставленные предложения. Проданные и снятые с публикации объекты в каталоге не входят.',
     active: 'В продаже', requestPrice: 'Цена по запросу', apartment: 'квартира', floor: 'этаж', entrance: 'подъезд', due: 'Срок', pricePer: 'за м²', openPlan: 'Увеличить планировку', choose: 'Выбрать', detail: 'Детали квартиры', consult: 'Получить консультацию', close: 'Закрыть', showMore: 'Показать ещё', noResults: 'По этим параметрам предложений нет.', tryReset: 'Сбросить фильтры', previous: 'Прокрутить влево', next: 'Прокрутить вправо', level: 'Этаж', units: 'Квартиры', selected: 'Выбранная квартира', promoSnapshot: 'Стоимость по актуальным данным', project: "Sad'O · Яшнабад", language: 'Язык',
   },
   uz: {
     back: 'Loyiha haqida', title: 'Sizni tinglaydigan', accent: 'makonni tanlang.', lead: 'Sad’O rasmiy katalogidagi haqiqiy takliflar — aniq rejalar, qavatlar, maydonlar va joriy narxlar bilan.',
-    modes: { cards: 'Kartalar', chess: 'Shaxmatka' }, modeLabel: 'Katalog ko‘rinishi', filters: 'Filtrlar', queue: 'Navbat', allQueues: 'Barcha navbatlar', class: 'Klass', allClasses: 'Business va Comfort', business: 'Business', comfort: 'Comfort', rooms: 'Xonalar', area: 'Maydon, m²', areaFrom: 'Dan', areaTo: 'Gacha', status: 'Holat', allActive: 'Sotuvda', priceRequestOnly: 'Narx so‘rov bo‘yicha', reset: 'Tozalash', result: 'ta taklif',
+    modes: { cards: 'Kartalar', chess: 'Shaxmatka' }, modeLabel: 'Katalog ko‘rinishi', filters: 'Filtrlar', block: 'Blok', allBlocks: 'Barcha bloklar', class: 'Klass', allClasses: 'Business va Comfort', business: 'Business', comfort: 'Comfort', rooms: 'Xonalar', area: 'Maydon, m²', areaFrom: 'Dan', areaTo: 'Gacha', status: 'Holat', allActive: 'Sotuvda', priceRequestOnly: 'Narx so‘rov bo‘yicha', reset: 'Tozalash', result: 'ta taklif',
     sort: 'Saralash', sorts: { priceAsc: 'Arzonidan boshlab', priceDesc: 'Qimmatidan boshlab', areaAsc: 'Maydon o‘sishi bo‘yicha', areaDesc: 'Maydon kamayishi bo‘yicha', floorAsc: 'Quyi qavatlar avval' }, snapshot: 'Yangilanadigan katalog', sourceNote: 'Rasmiy katalog faqat e’lon qilingan takliflarni ko‘rsatadi. Sotilgan va e’londan olingan obyektlar katalog ma’lumotlariga kirmaydi.',
     active: 'Sotuvda', requestPrice: 'Narx so‘rov bo‘yicha', apartment: 'xonadon', floor: 'qavat', entrance: 'kirish', due: 'Muddat', pricePer: 'm² uchun', openPlan: 'Rejani kattalashtirish', choose: 'Tanlash', detail: 'Xonadon tafsilotlari', consult: 'Maslahat olish', close: 'Yopish', showMore: 'Yana ko‘rsatish', noResults: 'Bu parametrlar bo‘yicha taklif yo‘q.', tryReset: 'Filtrlarni tozalash', previous: 'Chapga surish', next: 'O‘ngga surish', level: 'Qavat', units: 'Xonadonlar', selected: 'Tanlangan xonadon', promoSnapshot: 'Joriy narx', project: "Sad'O · Yashnobod", language: 'Til',
   },
   en: {
     back: 'About the project', title: 'Choose a space', accent: 'that listens to you.', lead: 'Real Sad’O listings from the official catalogue, with exact plans, floors, areas and prices at the latest update.',
-    modes: { cards: 'Cards', chess: 'Chess' }, modeLabel: 'Catalogue view', filters: 'Filters', queue: 'Phase', allQueues: 'All phases', class: 'Class', allClasses: 'Business and Comfort', business: 'Business', comfort: 'Comfort', rooms: 'Rooms', area: 'Area, m²', areaFrom: 'From', areaTo: 'To', status: 'Status', allActive: 'For sale', priceRequestOnly: 'Price on request', reset: 'Reset', result: 'listings',
+    modes: { cards: 'Cards', chess: 'Chess' }, modeLabel: 'Catalogue view', filters: 'Filters', block: 'Block', allBlocks: 'All blocks', class: 'Class', allClasses: 'Business and Comfort', business: 'Business', comfort: 'Comfort', rooms: 'Rooms', area: 'Area, m²', areaFrom: 'From', areaTo: 'To', status: 'Status', allActive: 'For sale', priceRequestOnly: 'Price on request', reset: 'Reset', result: 'listings',
     sort: 'Sort', sorts: { priceAsc: 'Lowest price first', priceDesc: 'Highest price first', areaAsc: 'Area ascending', areaDesc: 'Area descending', floorAsc: 'Lower floors first' }, snapshot: 'Live catalogue', sourceNote: 'The official catalogue shows published listings. Sold and withdrawn properties are not included in the live catalogue.',
     active: 'For sale', requestPrice: 'Price on request', apartment: 'apartment', floor: 'floor', entrance: 'entrance', due: 'Due', pricePer: 'per m²', openPlan: 'Enlarge plan', choose: 'Select', detail: 'Apartment details', consult: 'Request a consultation', close: 'Close', showMore: 'Show more', noResults: 'No listings match these parameters.', tryReset: 'Reset filters', previous: 'Scroll left', next: 'Scroll right', level: 'Floor', units: 'Apartments', selected: 'Selected apartment', promoSnapshot: 'Price at latest update', project: "Sad'O · Yashnabad", language: 'Language',
   },
@@ -85,7 +85,7 @@ export function SadoCatalogPage({ initialUnits, snapshotGeneratedAt, sourceCount
   const { data: units, refreshedAt, project } = useLiveCatalogUnits('sado', initialUnits);
   const [language, setLanguageState] = useState<Language>('ru');
   const [mode, setMode] = useState<Mode>('cards');
-  const [queue, setQueue] = useState('all');
+  const [block, setBlock] = useState('all');
   const [propertyClass, setPropertyClass] = useState('all');
   const [rooms, setRooms] = useState<number[]>([]);
   const [areaMin, setAreaMin] = useState('');
@@ -106,7 +106,7 @@ export function SadoCatalogPage({ initialUnits, snapshotGeneratedAt, sourceCount
 
   const filtered = useMemo(() => {
     const min = Number(areaMin) || 0; const max = Number(areaMax) || Infinity;
-    const result = units.filter((unit) => (queue === 'all' || unit.block === queue) && (propertyClass === 'all' || unit.class === propertyClass) && (!rooms.length || rooms.includes(unit.rooms)) && unit.area >= min && unit.area <= max && (status === 'available' || unit.price == null));
+    const result = units.filter((unit) => (block === 'all' || unit.block === block) && (propertyClass === 'all' || unit.class === propertyClass) && (!rooms.length || rooms.includes(unit.rooms)) && unit.area >= min && unit.area <= max && (status === 'available' || unit.price == null));
     return [...result].sort((a, b) => {
       if (sort === 'priceAsc') return (a.price ?? Infinity) - (b.price ?? Infinity);
       if (sort === 'priceDesc') return (b.price ?? -1) - (a.price ?? -1);
@@ -114,9 +114,9 @@ export function SadoCatalogPage({ initialUnits, snapshotGeneratedAt, sourceCount
       if (sort === 'areaDesc') return b.area - a.area;
       return a.floor - b.floor;
     });
-  }, [units, queue, propertyClass, rooms, areaMin, areaMax, status, sort]);
+  }, [units, block, propertyClass, rooms, areaMin, areaMax, status, sort]);
   const groups = useMemo(() => blocks.map((block) => filtered.filter((unit) => unit.block === block)).filter((units) => units.length), [blocks, filtered]);
-  const reset = () => { setQueue('all'); setPropertyClass('all'); setRooms([]); setAreaMin(''); setAreaMax(''); setStatus('available'); setVisibleCount(24); };
+  const reset = () => { setBlock('all'); setPropertyClass('all'); setRooms([]); setAreaMin(''); setAreaMax(''); setStatus('available'); setVisibleCount(24); };
   const setLanguage = (next: Language) => { setLanguageState(next); window.localStorage.setItem('sado-language', next); const url = new URL(window.location.href); url.searchParams.set('lang', next); window.history.replaceState({}, '', url); };
   const updatedLabel = new Intl.DateTimeFormat(language === 'ru' ? 'ru-RU' : language === 'uz' ? 'uz-UZ' : 'en-GB', { dateStyle: 'long', timeZone: 'Asia/Tashkent' }).format(new Date(refreshedAt ?? snapshotGeneratedAt));
 
@@ -127,7 +127,7 @@ export function SadoCatalogPage({ initialUnits, snapshotGeneratedAt, sourceCount
     <section className="sado-catalog-toolbar" aria-label={t.filters}>
       <div className="sado-mode-switch" role="radiogroup" aria-label={t.modeLabel}>{(['cards', 'chess'] as Mode[]).map((item) => <button key={item} data-testid={`mode-${item}`} type="button" role="radio" aria-checked={mode === item} className={mode === item ? 'is-active' : ''} onClick={() => setMode(item)}>{t.modes[item]}</button>)}</div>
       <div className="sado-catalog-filters">
-        <label><span>{t.queue}</span><select value={queue} onChange={(event) => { setQueue(event.target.value); setVisibleCount(24); }}><option value="all">{t.allQueues}</option>{blocks.map((block) => <option value={block} key={block}>{block}</option>)}</select></label>
+        <label><span>{t.block}</span><select value={block} onChange={(event) => { setBlock(event.target.value); setVisibleCount(24); }}><option value="all">{t.allBlocks}</option>{blocks.map((option) => <option value={option} key={option}>{option}</option>)}</select></label>
         <label><span>{t.class}</span><select value={propertyClass} onChange={(event) => setPropertyClass(event.target.value)}><option value="all">{t.allClasses}</option><option value="business">{t.business}</option><option value="comfort">{t.comfort}</option></select></label>
         <fieldset><legend>{t.rooms}</legend><div>{[1, 2, 3, 4].map((value) => <button type="button" key={value} className={rooms.includes(value) ? 'is-active' : ''} aria-pressed={rooms.includes(value)} onClick={() => setRooms((current) => current.includes(value) ? current.filter((room) => room !== value) : [...current, value])}>{value}</button>)}</div></fieldset>
         <fieldset className="sado-area-filter"><legend>{t.area}</legend><div><input value={areaMin} onChange={(event) => setAreaMin(event.target.value.replace(/[^\d.]/g, ''))} inputMode="decimal" placeholder={t.areaFrom} aria-label={t.areaFrom} /><input value={areaMax} onChange={(event) => setAreaMax(event.target.value.replace(/[^\d.]/g, ''))} inputMode="decimal" placeholder={t.areaTo} aria-label={t.areaTo} /></div></fieldset>

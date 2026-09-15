@@ -28,6 +28,8 @@ export const nrgBiProjects = Object.freeze([
   Object.freeze({ slug: 'zamon', name: 'Zamon', realEstateUUID: '58e48f7d-dd1c-11ed-a82c-001dd8b726aa' }),
 ]);
 
+export const nrgBiApartmentPropertyTypeUUID = '5990a172-812a-4fee-b4f5-c860cca824d7';
+
 // Authoritative queue-card metadata observed in the MBC Partners CRM on
 // 2026-09-15. The public plans feed exposes only the raw queue value, so its
 // label/order must be joined with this reviewed metadata and never inferred
@@ -232,6 +234,7 @@ export const providers = Object.freeze({
       https('apigw.bi.group', [
         '/sales-picker/microfe-v3/placementList',
         '/sales-picker/microfe-v3/realEstateList',
+        '/sales-picker/microfe-v3/blockMatrix',
         '/sales-picker/microfe-v3/placement',
       ]),
     ]),
@@ -239,8 +242,11 @@ export const providers = Object.freeze({
     requiredProbeIds: Object.freeze([]),
     outputFiles: Object.freeze(nrgBiProjects.map((project) => `${project.slug}-catalog.json`)),
     companyUUID: '5cba02b4-8abd-11ee-ab79-001dd8b7289a',
-    apartmentPropertyTypeUUID: '5990a172-812a-4fee-b4f5-c860cca824d7',
+    apartmentPropertyTypeUUID: nrgBiApartmentPropertyTypeUUID,
     pageSize: 300,
+    maxBlocksPerProject: 100,
+    maxMatrixPlacementsPerBlock: 5_000,
+    maxMatrixPlacementsPerProject: 30_000,
   }),
 
   alemica: Object.freeze({

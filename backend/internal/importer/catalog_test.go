@@ -332,6 +332,47 @@ func TestCatalogCanonicalPropertyTypeOverridesGenericRawType(t *testing.T) {
 	}
 }
 
+func TestNRGMatrixLifecycleCatalogPreservesExplicitSoldFacts(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "4u-catalog.json")
+	body := `{
+  "project":"4U","projectSlug":"4u","realEstateUUID":"c8945ad5-c737-42a6-a5c6-aa00375d3717",
+  "capturedAt":"2026-09-15T08:00:00Z","sourceCount":3,
+  "matrixBlockIds":["019abb11-523b-7b23-924c-199c472deebd"],
+  "units":[
+    {"id":"00000000-0000-4000-8000-000000000001","sourceKey":"nrg-bi:4u:00000000-0000-4000-8000-000000000001","number":"1","area":40,"floor":2,"status":"available","rawStatus":"FREE","isSale":true,"phaseSlug":"block-019abb11-523b-7b23-924c-199c472deebd"},
+    {"id":"00000000-0000-4000-8000-000000000002","sourceKey":"nrg-bi:4u:00000000-0000-4000-8000-000000000002","number":"2","area":41,"floor":2,"status":"reserved","rawStatus":"BOOKED","isSale":false,"phaseSlug":"block-019abb11-523b-7b23-924c-199c472deebd"},
+    {"id":"00000000-0000-4000-8000-000000000003","sourceKey":"nrg-bi:4u:00000000-0000-4000-8000-000000000003","number":"3","area":42,"floor":2,"status":"sold","rawStatus":"SOLD","isSale":false,"phaseSlug":"block-019abb11-523b-7b23-924c-199c472deebd"}
+  ]
+}`
+	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	bundle, err := LoadCatalogFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	project := bundle.Projects[0]
+	if len(project.MatrixBlockIDs) != 1 || project.MatrixBlockIDs[0] != "019abb11-523b-7b23-924c-199c472deebd" {
+		t.Fatalf("matrix block universe was not preserved: %#v", project.MatrixBlockIDs)
+	}
+	if len(project.Units) != 3 || project.Units[0].Status != "available" || project.Units[1].Status != "reserved" || project.Units[2].Status != "sold" {
+		t.Fatalf("explicit NRG lifecycle was not preserved: %#v", project.Units)
+	}
+	if project.Units[2].SourceID != "00000000-0000-4000-8000-000000000003" || project.Units[2].SourceKey != "nrg-bi:4u:00000000-0000-4000-8000-000000000003" {
+		t.Fatalf("sold placement UUID identity changed: %#v", project.Units[2])
+	}
+
+	invalid := strings.Replace(body,
+		`"matrixBlockIds":["019abb11-523b-7b23-924c-199c472deebd"]`,
+		`"matrixBlockIds":["019abb11-523b-7b23-924c-199c472deebd","019abb11-523b-7b23-924c-199c472deebd"]`, 1)
+	if err := os.WriteFile(path, []byte(invalid), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := LoadCatalogFile(path); err == nil {
+		t.Fatal("duplicate matrix block universe was accepted")
+	}
+}
+
 func TestNullQueueMetadataDoesNotClearLastKnownGood(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "invalid-catalog.json")
 	body := `{"project":"Invalid","projectSlug":"invalid","capturedAt":"2026-09-15T08:00:00Z","queues":null,"units":[{"id":"1","number":"1","area":40,"floor":2,"status":"available","phaseSlug":"main"}]}`

@@ -5,7 +5,7 @@ projects without changing any source CRM. They publish only full
 `*-catalog.json` files (plus `avalon-units.json`); an authentication, schema,
 pagination, identity, or count uncertainty makes the command exit non-zero.
 
-## Verified source contracts (2026-09-03)
+## Verified source contracts (2026-09-15)
 
 | Adapter | Projects | Read-only upstream contract | Verified result |
 | --- | --- | --- | --- |
@@ -14,7 +14,7 @@ pagination, identity, or count uncertainty makes the command exit non-zero.
 | `mbc` | Regnum Plaza, C1, Soy Bo‘yi, Saadiyat | Public read-only `POST https://mbc.uz/api/plans`; each project uses the exact URL-encoded keys `project={1\|2\|3\|18}&type={residential\|commercial}&page=N` | Every project/category must provide all declared pages; published rows must be `AVAILABLE residential` with unique public and CRM IDs; all four established artifacts publish atomically |
 | `mbc-sarbon` | SARBON | The same public read-only MBC endpoint and exact body contract, restricted to `project=21&type={residential\|commercial}&page=N` | A complete SARBON-only candidate; failure or an empty feed cannot block the established four-project MBC transaction |
 | `sun` | SUN | Public `GET /estate/embedjs/`, `GET /estate/request/get_request_url/`, then read-only `POST https://api.macroserver.uz/estate/catalog/` action `objects_list` | Pages 0–10 contain 336 overlapping rows and exactly 306 stable unique IDs: 51 available, 41 reserved, 214 sold |
-| `nrg-bi` | 4U, Bayterak, Botanika Saroyi, Flagman, Jomiy, Maftun Makon, Meros, Sado, Voha, Yangibaxt, Zamon | Public read-only `POST https://apigw.bi.group/sales-picker/microfe-v3/placementList` and `/realEstateList`; 4U additionally uses exact anonymous `/placement` detail lookups and exact `GET` requests to its unit-bound `s3.bi.group/crm-clients-e1csales/layouts/` assets. Apartment type and project UUID are allowlisted; page size is capped at 300 and pagination must reach an empty page | Current 4U apartment coverage is 176/176 active rows. Every 4U suffixless detail original and `_1600`/`_400`/`_200` variant is fetched, MIME-sniffed, dimension/byte checked, hashed, and bound to the same block/unit/number before publication. Other project counts remain capture-derived. |
+| `nrg-bi` | 4U, Bayterak, Botanika Saroyi, Flagman, Jomiy, Maftun Makon, Meros, Sado, Voha, Yangibaxt, Zamon | Public read-only `POST https://apigw.bi.group/sales-picker/microfe-v3/realEstateList`, one exact `{blockId}` `/blockMatrix` request for every trusted block, and paginated `/placementList` enrichment; 4U additionally uses exact anonymous `/placement` detail lookups and exact `GET` requests to its unit-bound `s3.bi.group/crm-clients-e1csales/layouts/` assets. Project and apartment-type UUIDs are allowlisted and every request/response is bounded | The matrix publishes explicit apartment `FREE`, `BOOKED`, and `SOLD` facts keyed by `placementUUID`; every `FREE` identity must reconcile exactly with `placementList.isSale===true`. Current reviewed coverage is 6,994 apartments: 1,883 free, 6 booked, and 5,105 sold. No sale timestamp exists upstream, so baseline sold rows contribute to all-time known-sold totals but never fabricate a historical monthly sale. |
 
 `alemica` is intentionally discovery-only. Its catalogue gateway routes are
 known, but no unambiguous Residence project-to-real-estate mapping has been
@@ -42,6 +42,21 @@ public BI sales-picker source.
   normalizer but owns only SARBON, isolating both transactions. HTTP 429 retries
   honor the source's bounded `Retry-After` window without accepting a partial
   candidate.
+- NRG `blockMatrix.placementUIStatus` is the only lifecycle authority:
+  `FREE/isSale=true`, `BOOKED/isSale=false`, and `SOLD/isSale=false` are the
+  three accepted pairs. `placementList` is used only to enrich current rows;
+  every listed identity must match the matrix on block, number, entrance,
+  floor, rooms, area, and property type. Missing matrices, unknown statuses,
+  duplicate placement UUIDs, or a FREE/list mismatch reject all eleven NRG
+  artifacts. Non-apartment matrix rows are validated but not published.
+- The built-in NRG block registry is a reviewed 64-block snapshot of the
+  official `realEstateList`. Every capture takes the union of that registry,
+  the last successfully normalized mode-0600 registry, and the current
+  `realEstateList`, then requests every block exactly once. New blocks are
+  appended atomically; a missing/retired block is never removed automatically.
+  The backend also rejects subtraction from the previously accepted
+  `matrixBlockIds`, preventing a partial matrix from deactivating baseline
+  sold units even when its total count drop is small.
 - `mbc-sarbon` uses the coordinator's current positive floor at
   `minimumRecords: 1`. A legitimate zero-AVAILABLE sold-out feed therefore
   fails only this isolated provider and preserves its last-known-good catalogue;
@@ -141,6 +156,11 @@ install -o residence-catalog-sync -g residence-catalog-sync -m 0600 \
   website/data/4u-plan-audit.json \
   /var/lib/residence-live-sync/captures/nrg-bi/plan-assets-cache.json
 ```
+
+The companion `block-registry.json` is created automatically only after an
+error-free matrix normalization. It is seeded in code from the reviewed
+2026-09-15 `realEstateList` universe and therefore does not need a manual
+bootstrap file.
 
 `npm --prefix website run verify:4u` proves that every cache row matches the
 committed catalogue and that a bootstrap refresh reuses all rows without a

@@ -6,6 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { atomicRunDirectory, atomicWriteFile, jsonBody } from './atomic.mjs';
 import { captureFiles, captureFromAuthorizedTab } from './capture.mjs';
 import { captureFromDirectSource } from './direct.mjs';
+import { mergeNrgBlockRegistries, nrgBiSeedBlockRegistry, normalizeNrgBlockRegistry } from './nrg-block-registry.mjs';
 import {
   loadCaptureDirectory,
   loadLegacyProviderInput,
@@ -180,7 +181,7 @@ function inputFromCapture(providerId, capture) {
         throw new Error('MBC capture contains a plans response outside the exact project/property scope');
       }
     }
-    return provider.projectDefinitions.map((project) => {
+    const groups = provider.projectDefinitions.map((project) => {
       const pagesFor = (propertyType) => records
         .filter((item) => item.scope.projectSlug === project.slug && item.scope.propertyType === propertyType)
         .sort((left, right) => Number(left.scope.page) - Number(right.scope.page))
@@ -193,6 +194,7 @@ function inputFromCapture(providerId, capture) {
       if (!residentialPages.length || !commercialPages.length) throw new Error(`MBC capture has no complete ${project.slug} category pages`);
       return { project, residentialPages, commercialPages };
     });
+    return groups;
   }
   if (providerId === 'sun') {
     const pages = capture.records
@@ -214,16 +216,68 @@ function inputFromCapture(providerId, capture) {
   }
   if (providerId === 'nrg-bi') {
     const provider = getProvider(providerId);
-    return provider.projectDefinitions.map((project) => {
-      const pages = capture.records
+    const expectedProjectSlugs = new Set(provider.projectDefinitions.map((project) => project.slug));
+    const registryRecords = capture.records.filter((item) => item.method === 'DERIVED'
+      && item.url?.origin === 'https://apigw.bi.group'
+      && item.url?.path === '/sales-picker/microfe-v3/realEstateList'
+      && item.scope?.endpoint === 'blockRegistry'
+      && item.scope?.derived === true);
+    if (registryRecords.length !== 1) throw new Error(`NRG capture has ${registryRecords.length}/1 block registry candidate records`);
+    const blockRegistry = normalizeNrgBlockRegistry(registryRecords[0].value, 'NRG capture block registry');
+    const matrixRecords = capture.records.filter((item) => item.scope?.endpoint === 'blockMatrix');
+    for (const record of matrixRecords) {
+      if (record.method !== 'POST'
+        || record.url?.origin !== 'https://apigw.bi.group'
+        || record.url?.path !== '/sales-picker/microfe-v3/blockMatrix'
+        || !expectedProjectSlugs.has(record.scope?.projectSlug)) {
+        throw new Error('NRG capture contains a blockMatrix response outside the exact provider/project scope');
+      }
+    }
+    let expectedMatrixRecords = 0;
+    const groups = provider.projectDefinitions.map((project) => {
+      const pageRecords = capture.records
         .filter((item) => item.scope?.projectSlug === project.slug && item.scope?.endpoint === 'placementList')
-        .sort((left, right) => Number(left.scope.page) - Number(right.scope.page))
-        .map((item, index) => {
-          if (Number(item.scope.page) !== index + 1) throw new Error(`NRG ${project.slug} pagination scope is not contiguous`);
-          return item.value;
-        });
+        .sort((left, right) => Number(left.scope.page) - Number(right.scope.page));
+      const pages = pageRecords.map((item, index) => {
+        if (item.method !== 'POST' || item.url?.origin !== 'https://apigw.bi.group' || item.url?.path !== '/sales-picker/microfe-v3/placementList') {
+          throw new Error(`NRG ${project.slug} placementList response is outside the exact endpoint scope`);
+        }
+        if (Number(item.scope.page) !== index + 1) throw new Error(`NRG ${project.slug} pagination scope is not contiguous`);
+        return item.value;
+      });
       const realEstateRecords = capture.records.filter((item) => item.scope?.projectSlug === project.slug && item.scope?.endpoint === 'realEstateList');
       if (realEstateRecords.length !== 1) throw new Error(`NRG ${project.slug} has ${realEstateRecords.length} realEstateList responses`);
+      const realEstateRecord = realEstateRecords[0];
+      if (realEstateRecord.method !== 'POST' || realEstateRecord.url?.origin !== 'https://apigw.bi.group' || realEstateRecord.url?.path !== '/sales-picker/microfe-v3/realEstateList') {
+        throw new Error(`NRG ${project.slug} realEstateList response is outside the exact endpoint scope`);
+      }
+      const estate = realEstateRecord.value?.realEstates?.find((item) => item?.uuid === project.realEstateUUID);
+      if (!estate || !Array.isArray(estate.blocks) || estate.blocks.length === 0) throw new Error(`NRG ${project.slug} realEstateList has no requested-project block universe`);
+      const requiredProject = blockRegistry.projects[project.slug];
+      if (!requiredProject || requiredProject.realEstateUUID !== project.realEstateUUID) throw new Error(`NRG ${project.slug} block registry project identity mismatch`);
+      const blocks = new Map();
+      for (const [index, block] of requiredProject.blocks.entries()) {
+        const blockId = String(block?.id ?? '').trim();
+        if (!blockId || blocks.has(blockId)) throw new Error(`NRG ${project.slug} block registry has an invalid or duplicate block identity`);
+        blocks.set(blockId, { block, index: index + 1 });
+      }
+      for (const block of estate.blocks) {
+        const expected = blocks.get(String(block?.id ?? '').trim());
+        if (!expected || expected.block.name !== block.name) throw new Error(`NRG ${project.slug} realEstateList block is outside or conflicts with the trusted registry candidate`);
+      }
+      expectedMatrixRecords += blocks.size;
+      const projectMatrices = matrixRecords.filter((item) => item.scope.projectSlug === project.slug);
+      if (projectMatrices.length !== blocks.size) throw new Error(`NRG ${project.slug} has ${projectMatrices.length}/${blocks.size} required blockMatrix responses`);
+      const matrixByBlock = new Map();
+      for (const record of projectMatrices) {
+        const blockId = String(record.scope?.blockId ?? '').trim();
+        const expected = blocks.get(blockId);
+        if (!expected || matrixByBlock.has(blockId) || Number(record.scope?.blockIndex) !== expected.index) {
+          throw new Error(`NRG ${project.slug} blockMatrix scope is missing, duplicated, or outside realEstateList`);
+        }
+        matrixByBlock.set(blockId, record.value);
+      }
+      const blockMatrices = [...blocks.keys()].map((blockId) => matrixByBlock.get(blockId));
       let planAssets;
       if (project.slug === '4u') {
         const auditRecords = capture.records.filter((item) => item.method === 'DERIVED'
@@ -235,8 +289,18 @@ function inputFromCapture(providerId, capture) {
         if (auditRecords.length !== 1) throw new Error(`NRG 4u has ${auditRecords.length}/1 plan asset audit records`);
         planAssets = auditRecords[0].value;
       }
-      return { project, apartmentPropertyTypeUUID: provider.apartmentPropertyTypeUUID, pages, realEstate: realEstateRecords[0].value, ...(planAssets ? { planAssets } : {}) };
+      return {
+        project,
+        apartmentPropertyTypeUUID: provider.apartmentPropertyTypeUUID,
+        pages,
+        realEstate: realEstateRecord.value,
+        requiredBlocks: requiredProject.blocks,
+        blockMatrices,
+        ...(planAssets ? { planAssets } : {}),
+      };
     });
+    if (matrixRecords.length !== expectedMatrixRecords) throw new Error(`NRG capture has ${matrixRecords.length}/${expectedMatrixRecords} exact blockMatrix records`);
+    return groups;
   }
   throw new Error(`${providerId}: current authenticated response contract is still discovery-only`);
 }
@@ -262,6 +326,10 @@ function nrgPlanCachePath(root) {
   return resolve(root, 'nrg-bi', 'plan-assets-cache.json');
 }
 
+function nrgBlockRegistryPath(root) {
+  return resolve(root, 'nrg-bi', 'block-registry.json');
+}
+
 async function loadNrgPlanAssetCache(root) {
   if (!root) return null;
   const path = nrgPlanCachePath(root);
@@ -276,6 +344,22 @@ async function loadNrgPlanAssetCache(root) {
   }
 }
 
+async function loadNrgBlockRegistry(root) {
+  if (!root) return normalizeNrgBlockRegistry(nrgBiSeedBlockRegistry);
+  const path = nrgBlockRegistryPath(root);
+  try {
+    const metadata = await lstat(path);
+    if (!metadata.isFile() || metadata.isSymbolicLink() || metadata.size <= 0 || metadata.size > 1024 * 1024) {
+      throw new Error(`NRG block registry is not a safe bounded regular file: ${path}`);
+    }
+    const persisted = normalizeNrgBlockRegistry(JSON.parse(await readFile(path, 'utf8')), 'NRG persisted block registry');
+    return mergeNrgBlockRegistries(nrgBiSeedBlockRegistry, persisted);
+  } catch (error) {
+    if (error?.code === 'ENOENT') return normalizeNrgBlockRegistry(nrgBiSeedBlockRegistry);
+    throw error;
+  }
+}
+
 function planAssetAuditFromCapture(capture) {
   const records = capture.records.filter((item) => item.method === 'DERIVED'
     && item.url?.origin === 'https://s3.bi.group'
@@ -286,18 +370,31 @@ function planAssetAuditFromCapture(capture) {
   return records.length === 1 ? records[0].value : null;
 }
 
-async function persistNrgPlanAssetCache(providerId, root, capture) {
+function blockRegistryFromCapture(capture) {
+  const records = capture.records.filter((item) => item.method === 'DERIVED'
+    && item.url?.origin === 'https://apigw.bi.group'
+    && item.url?.path === '/sales-picker/microfe-v3/realEstateList'
+    && item.scope?.endpoint === 'blockRegistry'
+    && item.scope?.derived === true);
+  return records.length === 1 ? normalizeNrgBlockRegistry(records[0].value, 'NRG captured block registry') : null;
+}
+
+async function persistNrgCaches(providerId, root, capture) {
   if (providerId !== 'nrg-bi' || !root) return;
   const audit = planAssetAuditFromCapture(capture);
   if (!audit) throw new Error('NRG 4u plan asset audit is unavailable for cache persistence');
+  const registry = blockRegistryFromCapture(capture);
+  if (!registry) throw new Error('NRG block registry is unavailable for cache persistence');
   await atomicWriteFile(nrgPlanCachePath(root), jsonBody(audit));
+  await atomicWriteFile(nrgBlockRegistryPath(root), jsonBody(mergeNrgBlockRegistries(nrgBiSeedBlockRegistry, registry)));
 }
 
 async function captureProvider(provider, options) {
   if (isDirectProvider(provider)) {
     const captureRoot = options['capture-output'] ?? options.output;
     const planAssetCache = provider.id === 'nrg-bi' ? await loadNrgPlanAssetCache(captureRoot) : null;
-    return captureFromDirectSource(provider, { planAssetCache });
+    const blockRegistry = provider.id === 'nrg-bi' ? await loadNrgBlockRegistry(captureRoot) : null;
+    return captureFromDirectSource(provider, { planAssetCache, blockRegistry });
   }
   if (!options.cdp) throw new Error(`${provider.id}: browser capture requires --cdp`);
   return captureFromAuthorizedTab(provider, {
@@ -336,7 +433,7 @@ async function captureCommand(options) {
   if (normalized && capture.errors.length === 0) files.push(['success.json', jsonBody({ provider: providerId, complete: true })]);
   // Regenerate index after normalization errors were appended.
   const finalFiles = [...captureFiles(capture), ...files.filter(([path]) => path.startsWith('artifacts/') || path === 'completeness.json' || path === 'success.json')];
-  if (normalized && capture.errors.length === 0) await persistNrgPlanAssetCache(providerId, options.output, capture);
+  if (normalized && capture.errors.length === 0) await persistNrgCaches(providerId, options.output, capture);
   const destination = await atomicRunDirectory(options.output, providerId, finalFiles);
   process.stdout.write(jsonBody({ provider: providerId, destination, responseBodies: capture.records.length, blockedRequests: capture.blocked.length, errors: capture.errors, normalized: Boolean(normalized), audit: normalized?.audit ?? null }));
   if ((!normalized || capture.errors.length) && provider.maturity !== 'discovery') process.exitCode = 2;
@@ -357,7 +454,6 @@ async function collectCommand(options) {
   } catch (error) {
     capture.errors.push(error instanceof Error ? error.message : String(error));
   }
-  if (result && capture.errors.length === 0) await persistNrgPlanAssetCache(providerId, options['capture-output'], capture);
   const evidenceFiles = captureFiles(capture);
   if (result) {
     evidenceFiles.push(['completeness.json', jsonBody(result.audit)]);
@@ -374,6 +470,7 @@ async function collectCommand(options) {
     await atomicWriteFile(catalogPath, jsonBody(entry.artifact));
     artifacts.push(catalogPath);
   }
+  await persistNrgCaches(providerId, options['capture-output'], capture);
   process.stdout.write(jsonBody({ provider: providerId, artifacts, evidence: captureDestination, audit: result.audit }));
 }
 

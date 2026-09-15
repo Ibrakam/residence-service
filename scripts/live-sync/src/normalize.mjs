@@ -3,7 +3,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { opaqueMbcSourceKey, templateMbcSourceKey } from './mbc-identity.mjs';
 import { expectedNrgOriginalUrl, expectedNrgPlanUrl, nrgPlanAssetGeometryValid, nrgPlanVariants } from './nrg-plan-assets.mjs';
-import { mbcProjects } from './providers.mjs';
+import { mbcProjects, nrgBiApartmentPropertyTypeUUID, nrgBiProjects } from './providers.mjs';
 
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 
@@ -451,13 +451,95 @@ export function normalizeRegnumPages(pages, capturedAt = new Date().toISOString(
   return normalizeMbcProject({ project: mbcProjects.find((project) => project.slug === 'regnum-plaza'), residentialPages: pages }, capturedAt, template);
 }
 
-function nrgStatus(row) {
-  assert(typeof row.isSale === 'boolean', `NRG row ${row.uuid ?? '(unknown)'}.isSale must be boolean`);
-  if (row.isSale) return 'available';
-  const raw = String(row.placementStatusName ?? '').toUpperCase();
-  if (/БРОН|RESERV|BOOK/.test(raw)) return 'reserved';
-  if (/ПРОДАН|SOLD/.test(raw)) return 'sold';
-  return 'unavailable';
+const nrgUuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const nrgMatrixStatusMap = Object.freeze({ FREE: 'available', BOOKED: 'reserved', SOLD: 'sold' });
+
+function nrgUuid(value, label) {
+  const id = numberText(value, label);
+  assert(nrgUuidPattern.test(id), `${label} is not a UUID`);
+  return id;
+}
+
+function nrgMatrixStatus(row, label) {
+  const raw = numberText(row?.placementUIStatus, `${label}.placementUIStatus`);
+  const normalized = nrgMatrixStatusMap[raw];
+  assert(normalized, `${label} has unknown placementUIStatus ${JSON.stringify(raw)}`);
+  assert(typeof row.isSale === 'boolean', `${label}.isSale must be boolean`);
+  assert(row.isSale === (raw === 'FREE'), `${label} has inconsistent placementUIStatus/isSale`);
+  return normalized;
+}
+
+function nrgMatrixRows(slug, estate, matrices) {
+  assert(Array.isArray(estate.blocks) && estate.blocks.length > 0, `NRG ${slug} realEstateList has no blocks`);
+  assert(estate.blocks.length <= 100, `NRG ${slug} realEstateList exceeds the block safety limit`);
+  assert(Array.isArray(matrices) && matrices.length === estate.blocks.length, `NRG ${slug} has ${matrices?.length ?? 0}/${estate.blocks.length} required blockMatrix responses`);
+  const blockById = new Map();
+  for (const [index, block] of estate.blocks.entries()) {
+    assert(record(block), `NRG ${slug} block ${index + 1} is invalid`);
+    const blockId = nrgUuid(block.id, `NRG ${slug} block ${index + 1}.id`);
+    assert(!blockById.has(blockId), `NRG ${slug} realEstateList duplicates block ${blockId}`);
+    blockById.set(blockId, { ...block, name: numberText(block.name, `NRG ${slug} block ${blockId}.name`) });
+  }
+
+  const matrixByBlock = new Map();
+  for (const [index, matrix] of matrices.entries()) {
+    assert(record(matrix), `NRG ${slug} blockMatrix ${index + 1} is invalid`);
+    const blockId = nrgUuid(matrix.blockUUID, `NRG ${slug} blockMatrix ${index + 1}.blockUUID`);
+    const block = blockById.get(blockId);
+    assert(block, `NRG ${slug} blockMatrix contains foreign block ${blockId}`);
+    assert(!matrixByBlock.has(blockId), `NRG ${slug} blockMatrix duplicates block ${blockId}`);
+    assert(numberText(matrix.blockName, `NRG ${slug} blockMatrix ${blockId}.blockName`) === block.name, `NRG ${slug} blockMatrix ${blockId} name mismatch`);
+    assert(Array.isArray(matrix.entrances), `NRG ${slug} blockMatrix ${blockId}.entrances is invalid`);
+    matrixByBlock.set(blockId, matrix);
+  }
+  for (const blockId of blockById.keys()) assert(matrixByBlock.has(blockId), `NRG ${slug} blockMatrix is missing block ${blockId}`);
+
+  const identities = new Set();
+  const rows = [];
+  for (const [blockId, block] of blockById) {
+    const matrix = matrixByBlock.get(blockId);
+    const entranceKeys = new Set();
+    let blockPlacementCount = 0;
+    for (const [entranceIndex, entrance] of matrix.entrances.entries()) {
+      assert(record(entrance), `NRG ${slug} block ${blockId} entrance ${entranceIndex + 1} is invalid`);
+      const entranceNumber = integer(entrance.entrance);
+      assert(entranceNumber !== null, `NRG ${slug} block ${blockId} entrance ${entranceIndex + 1} number is invalid`);
+      assert(!entranceKeys.has(entranceNumber), `NRG ${slug} block ${blockId} duplicates entrance ${entranceNumber}`);
+      entranceKeys.add(entranceNumber);
+      assert(Array.isArray(entrance.floors), `NRG ${slug} block ${blockId} entrance ${entranceNumber}.floors is invalid`);
+      const floorKeys = new Set();
+      for (const [floorIndex, floor] of entrance.floors.entries()) {
+        assert(record(floor), `NRG ${slug} block ${blockId} entrance ${entranceNumber} floor ${floorIndex + 1} is invalid`);
+        const floorNumber = integer(floor.floor);
+        assert(floorNumber !== null, `NRG ${slug} block ${blockId} entrance ${entranceNumber} floor number is invalid`);
+        assert(!floorKeys.has(floorNumber), `NRG ${slug} block ${blockId} entrance ${entranceNumber} duplicates floor ${floorNumber}`);
+        floorKeys.add(floorNumber);
+        assert(Array.isArray(floor.placements), `NRG ${slug} block ${blockId} entrance ${entranceNumber} floor ${floorNumber}.placements is invalid`);
+        blockPlacementCount += floor.placements.length;
+        assert(blockPlacementCount <= 5_000, `NRG ${slug} block ${blockId} exceeds the matrix placement safety limit`);
+        for (const [placementIndex, placement] of floor.placements.entries()) {
+          const label = `NRG ${slug} block ${blockId} placement ${placementIndex + 1}`;
+          assert(record(placement), `${label} is invalid`);
+          const placementUUID = nrgUuid(placement.placementUUID, `${label}.placementUUID`);
+          assert(!identities.has(placementUUID), `NRG ${slug} duplicate matrix placement UUID ${placementUUID}`);
+          identities.add(placementUUID);
+          assert(nrgUuid(placement.blockUUID, `${label}.blockUUID`) === blockId, `${label} blockUUID mismatch`);
+          assert(numberText(placement.blockName, `${label}.blockName`) === block.name, `${label} blockName mismatch`);
+          assert(integer(placement.entrance) === entranceNumber && integer(placement.floor) === floorNumber, `${label} entrance/floor mismatch`);
+          const rooms = integer(placement.roomCount);
+          assert(rooms !== null && rooms >= 0 && positive(placement.square) !== null, `${label} dimensions are invalid`);
+          numberText(placement.placementName, `${label}.placementName`);
+          const propertyTypeUUID = nrgUuid(placement.propertyTypeUUID, `${label}.propertyTypeUUID`);
+          assert(record(placement.propertyType) && nrgUuid(placement.propertyType.uuid, `${label}.propertyType.uuid`) === propertyTypeUUID, `${label} property type identity mismatch`);
+          assert(numberText(placement.propertyTypeName, `${label}.propertyTypeName`) === numberText(placement.propertyType.name, `${label}.propertyType.name`), `${label} property type name mismatch`);
+          const normalizedStatus = nrgMatrixStatus(placement, label);
+          rows.push({ placement, block, entrance: entranceNumber, floor: floorNumber, normalizedStatus });
+        }
+      }
+    }
+  }
+  assert(rows.length <= 30_000, `NRG ${slug} exceeds the project matrix placement safety limit`);
+  return { rows, identities, blockCount: blockById.size };
 }
 
 function normalize4uPlanAudit(value, rows) {
@@ -545,16 +627,21 @@ function normalize4uPlanAudit(value, rows) {
 
 /** Normalize the public BI sales-picker responses used by the eleven NRG projects. */
 export function normalizeNrgBiCapture(groups, capturedAt = new Date().toISOString()) {
-  assert(Array.isArray(groups) && groups.length === 11, `NRG capture requires 11 project groups, received ${groups?.length ?? 0}`);
+  assert(Array.isArray(groups) && groups.length === nrgBiProjects.length, `NRG capture requires ${nrgBiProjects.length} project groups, received ${groups?.length ?? 0}`);
+  const expectedProjects = new Map(nrgBiProjects.map((project) => [project.slug, project]));
   const projectSlugs = new Set();
   const artifacts = [];
   const audits = {};
   for (const group of groups) {
     assert(record(group?.project), 'NRG project metadata is missing');
     const slug = numberText(group.project.slug, 'NRG project slug');
+    const configuredProject = expectedProjects.get(slug);
+    assert(configuredProject, `NRG capture contains unexpected project ${slug}`);
     assert(!projectSlugs.has(slug), `NRG duplicate project group ${slug}`);
     projectSlugs.add(slug);
-    assert(Array.isArray(group.pages) && group.pages.length >= 2, `NRG ${slug} pagination evidence is incomplete`);
+    assert(group.project.realEstateUUID === configuredProject.realEstateUUID && group.project.name === configuredProject.name, `NRG ${slug} configured project identity mismatch`);
+    assert(group.apartmentPropertyTypeUUID === nrgBiApartmentPropertyTypeUUID, `NRG ${slug} apartment property type identity mismatch`);
+    assert(Array.isArray(group.pages) && group.pages.length >= 1, `NRG ${slug} pagination evidence is incomplete`);
     const lastPage = group.pages.at(-1);
     assert(Array.isArray(lastPage?.placements) && lastPage.placements.length === 0, `NRG ${slug} did not reach an empty terminal page`);
     const rows = group.pages.slice(0, -1).flatMap((page, index) => {
@@ -562,38 +649,77 @@ export function normalizeNrgBiCapture(groups, capturedAt = new Date().toISOStrin
       assert(page.placements.length > 0 && page.placements.length <= 300, `NRG ${slug} page ${index + 1} size is invalid`);
       return page.placements;
     });
-    assert(rows.length > 0, `NRG ${slug} has no apartment rows`);
     assert(record(group.realEstate) && Array.isArray(group.realEstate.realEstates), `NRG ${slug} realEstateList is invalid`);
     const estate = group.realEstate.realEstates.find((item) => item?.uuid === group.project.realEstateUUID);
     assert(record(estate), `NRG ${slug} realEstateList does not contain the requested project`);
     assert(Array.isArray(estate.propertyTypes) && estate.propertyTypes.some((item) => item?.uuid === group.apartmentPropertyTypeUUID), `NRG ${slug} has no apartment property type`);
     const mixedPlacementCount = integer(estate.placementCount);
     assert(mixedPlacementCount === null || mixedPlacementCount >= rows.length, `NRG ${slug} apartment rows exceed realEstateList mixed placementCount`);
+    const requiredBlocks = group.requiredBlocks ?? estate.blocks;
+    if (group.requiredBlocks) {
+      assert(Array.isArray(requiredBlocks) && requiredBlocks.length > 0, `NRG ${slug} trusted block registry is empty`);
+      const requiredById = new Map(requiredBlocks.map((block) => [String(block?.id ?? ''), block]));
+      assert(requiredById.size === requiredBlocks.length, `NRG ${slug} trusted block registry contains duplicate blocks`);
+      for (const block of estate.blocks) {
+        const required = requiredById.get(String(block?.id ?? ''));
+        assert(required && required.name === block.name, `NRG ${slug} realEstateList block conflicts with the trusted block registry`);
+      }
+    }
+    const matrix = nrgMatrixRows(slug, { blocks: requiredBlocks }, group.blockMatrices);
+    const matrixBlockIds = requiredBlocks.map((block) => String(block.id)).sort();
+    const matrixApartments = matrix.rows.filter(({ placement }) => placement.propertyTypeUUID === group.apartmentPropertyTypeUUID);
+    assert(matrixApartments.length > 0, `NRG ${slug} blockMatrix has no apartments`);
+    const matrixApartmentById = new Map(matrixApartments.map((entry) => [String(entry.placement.placementUUID), entry]));
+
+    const listedById = new Map();
+    for (const [index, row] of rows.entries()) {
+      assert(record(row), `NRG ${slug} row ${index + 1} is invalid`);
+      const id = nrgUuid(row.uuid, `NRG ${slug} row ${index + 1}.uuid`);
+      assert(!listedById.has(id), `NRG ${slug} duplicate placementList UUID ${id}`);
+      listedById.set(id, row);
+      assert(String(row.realEstateUUID) === group.project.realEstateUUID, `NRG ${slug} row ${id} realEstateUUID mismatch`);
+      assert(row.propertyType?.uuid === group.apartmentPropertyTypeUUID, `NRG ${slug} row ${id} is not an apartment`);
+      assert(typeof row.isSale === 'boolean', `NRG ${slug} row ${id}.isSale must be boolean`);
+      const matrixEntry = matrixApartmentById.get(id);
+      assert(matrixEntry, `NRG ${slug} placementList UUID ${id} is missing from blockMatrix`);
+      const placement = matrixEntry.placement;
+      const expectedMatrixStatus = row.isSale ? 'FREE' : 'BOOKED';
+      assert(placement.placementUIStatus === expectedMatrixStatus, `NRG ${slug} placementList UUID ${id} does not reconcile with blockMatrix ${placement.placementUIStatus}`);
+      assert(nrgUuid(row.blockId, `NRG ${slug} row ${id}.blockId`) === placement.blockUUID, `NRG ${slug} row ${id} block identity mismatch`);
+      assert(numberText(row.blockName, `NRG ${slug} row ${id}.blockName`) === placement.blockName, `NRG ${slug} row ${id} block name mismatch`);
+      assert(numberText(row.name, `NRG ${slug} row ${id}.name`) === placement.placementName, `NRG ${slug} row ${id} number mismatch`);
+      assert(integer(row.floor) === matrixEntry.floor && integer(row.entrance) === matrixEntry.entrance, `NRG ${slug} row ${id} entrance/floor mismatch`);
+      assert(integer(row.roomCount) === integer(placement.roomCount) && positive(row.square) === positive(placement.square), `NRG ${slug} row ${id} dimensions do not reconcile with blockMatrix`);
+    }
+    const matrixFreeIds = new Set(matrixApartments.filter(({ placement }) => placement.placementUIStatus === 'FREE').map(({ placement }) => placement.placementUUID));
+    const listedFreeIds = new Set([...listedById].filter(([, row]) => row.isSale === true).map(([id]) => id));
+    assert(matrixFreeIds.size === listedFreeIds.size && [...matrixFreeIds].every((id) => listedFreeIds.has(id)), `NRG ${slug} FREE inventory does not reconcile exactly with placementList`);
     const planAudit = slug === '4u' ? normalize4uPlanAudit(group.planAssets, rows) : null;
 
     const identities = new Set();
-    const units = rows.map((row, index) => {
-      assert(record(row), `NRG ${slug} row ${index + 1} is invalid`);
-      const id = numberText(row.uuid, `NRG ${slug} row ${index + 1}.uuid`);
-      assert(!identities.has(id), `NRG ${slug} duplicate placement UUID ${id}`);
+    const maxFloorByBlock = new Map();
+    for (const entry of matrixApartments) maxFloorByBlock.set(entry.placement.blockUUID, Math.max(maxFloorByBlock.get(entry.placement.blockUUID) ?? entry.floor, entry.floor));
+    const units = matrixApartments.map(({ placement, normalizedStatus, entrance, floor }, index) => {
+      const id = nrgUuid(placement.placementUUID, `NRG ${slug} matrix apartment ${index + 1}.placementUUID`);
+      assert(!identities.has(id), `NRG ${slug} duplicate apartment placement UUID ${id}`);
       identities.add(id);
-      assert(String(row.realEstateUUID) === group.project.realEstateUUID, `NRG ${slug} row ${id} realEstateUUID mismatch`);
-      assert(row.propertyType?.uuid === group.apartmentPropertyTypeUUID, `NRG ${slug} row ${id} is not an apartment`);
-      const number = numberText(row.name, `NRG ${slug} row ${id}.name`);
-      const floor = integer(row.floor);
-      const rooms = integer(row.roomCount);
-      const area = positive(row.square);
-      assert(floor !== null && rooms !== null && rooms >= 0 && area !== null, `NRG ${slug} row ${id} dimensions are invalid`);
-      const blockId = numberText(row.blockId, `NRG ${slug} row ${id}.blockId`);
-      const blockName = numberText(row.blockName, `NRG ${slug} row ${id}.blockName`);
-      const normalizedStatus = nrgStatus(row);
+      const row = listedById.get(id) ?? null;
+      const number = numberText(placement.placementName, `NRG ${slug} matrix apartment ${id}.placementName`);
+      const rooms = integer(placement.roomCount);
+      const area = positive(placement.square);
+      const blockId = nrgUuid(placement.blockUUID, `NRG ${slug} matrix apartment ${id}.blockUUID`);
+      const blockName = numberText(placement.blockName, `NRG ${slug} matrix apartment ${id}.blockName`);
       const campaignPrice = slug === '4u'
         ? optionalPositive(row?.discount?.stock?.data?.find((item) => optionalPositive(item?.priceWithDiscount))?.priceWithDiscount)
         : null;
-      const price = normalizedStatus === 'available' ? campaignPrice ?? optionalPositive(row.totalPriceWithDiscount) ?? optionalPositive(row.totalPrice) : null;
-      const pricePerM2 = normalizedStatus === 'available' ? (campaignPrice ? campaignPrice / area : optionalPositive(row.priceBySquare) ?? (price ? price / area : null)) : null;
+      const price = normalizedStatus === 'available'
+        ? campaignPrice ?? optionalPositive(row?.totalPriceWithDiscount) ?? optionalPositive(row?.totalPrice) ?? optionalPositive(placement.totalPrice)
+        : null;
+      const pricePerM2 = normalizedStatus === 'available'
+        ? (campaignPrice ? campaignPrice / area : optionalPositive(row?.priceBySquare) ?? optionalPositive(placement.price) ?? (price ? price / area : null))
+        : null;
       const planImageUrl = planAudit?.selectedById.get(id)
-        ?? (slug !== '4u' && typeof row.photoURL1600 === 'string' && row.photoURL1600.startsWith('https://') ? row.photoURL1600 : null);
+        ?? (slug !== '4u' && typeof row?.photoURL1600 === 'string' && row.photoURL1600.startsWith('https://') ? row.photoURL1600 : null);
       return {
         id,
         sourceId: id,
@@ -602,19 +728,19 @@ export function normalizeNrgBiCapture(groups, capturedAt = new Date().toISOStrin
         phaseSlug: `block-${blockId}`,
         phaseName: blockName,
         propertyType: 'apartment',
-        rawPropertyType: String(row.propertyType?.name || 'Квартира'),
+        rawPropertyType: String(placement.propertyTypeName || placement.propertyType?.name || 'Квартира'),
         number,
         building: blockName,
         block: blockName,
         blockId,
-        entrance: String(row.entrance ?? ''),
+        entrance: String(entrance),
         floor,
-        maxFloor: integer(row.maxFloor) ?? floor,
+        maxFloor: integer(row?.maxFloor) ?? maxFloorByBlock.get(blockId),
         rooms,
         area,
         status: normalizedStatus,
-        rawStatus: String(row.placementStatusName ?? ''),
-        isSale: row.isSale,
+        rawStatus: placement.placementUIStatus,
+        isSale: placement.isSale,
         price,
         pricePerM2,
         currency: 'UZS',
@@ -622,7 +748,7 @@ export function normalizeNrgBiCapture(groups, capturedAt = new Date().toISOStrin
       };
     });
     const audit = completeness({
-      expected: rows.length,
+      expected: matrixApartments.length,
       units,
       identities,
       extra: {
@@ -630,7 +756,17 @@ export function normalizeNrgBiCapture(groups, capturedAt = new Date().toISOStrin
         apartmentPropertyTypeUuid: group.apartmentPropertyTypeUUID,
         terminalEmptyPage: true,
         realEstateListMixedPlacementCount: mixedPlacementCount,
-        availabilityPolicy: 'isSale===true',
+        matrixBlockCount: matrix.blockCount,
+        matrixBlockIds,
+        matrixPlacementCount: matrix.rows.length,
+        apartmentMatrixPlacementCount: matrixApartments.length,
+        placementListCount: rows.length,
+        freePlacementsReconciled: matrixFreeIds.size,
+        lifecycleIdentityField: 'placementUUID',
+        lifecycleStatusField: 'placementUIStatus',
+        lifecycleStatusValues: ['FREE', 'BOOKED', 'SOLD'],
+        availabilityPolicy: 'blockMatrix FREE must equal placementList isSale===true',
+        saleDatePolicy: 'blockMatrix has no sale timestamp; baseline SOLD contributes only to all-time known-sold totals',
         ...(planAudit ? { planAssets: planAudit.summary } : {}),
       },
     });
@@ -643,14 +779,18 @@ export function normalizeNrgBiCapture(groups, capturedAt = new Date().toISOStrin
         projectSlug: slug,
         realEstateUUID: group.project.realEstateUUID,
         capturedAt,
-        sourceCount: rows.length,
-        source: 'https://apigw.bi.group/sales-picker/microfe-v3/placementList',
-        availabilityPolicy: 'placementList.isSale===true; lifecycle label is diagnostic only',
+        sourceCount: matrixApartments.length,
+        source: 'https://apigw.bi.group/sales-picker/microfe-v3/blockMatrix',
+        availabilitySource: 'https://apigw.bi.group/sales-picker/microfe-v3/placementList',
+        availabilityPolicy: 'explicit blockMatrix.placementUIStatus; FREE set reconciled exactly with placementList.isSale===true',
+        historicalSaleDates: null,
+        matrixBlockIds,
         completeness: audit,
         units,
       },
     });
   }
+  for (const project of nrgBiProjects) assert(projectSlugs.has(project.slug), `NRG capture is missing project ${project.slug}`);
   return { artifacts, audit: audits };
 }
 

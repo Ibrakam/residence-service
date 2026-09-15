@@ -11,6 +11,7 @@ import { captureFiles, captureFromAuthorizedTab, classifyRequest, makeBodyRecord
 import { captureFromDirectSource, directSourceInternals } from '../src/direct.mjs';
 import { loadTemplate } from '../src/cli.mjs';
 import { opaqueMbcSourceKey, templateMbcSourceKey } from '../src/mbc-identity.mjs';
+import { mergeNrgBlockRegistries, nrgBiSeedBlockRegistry, normalizeNrgBlockRegistry } from '../src/nrg-block-registry.mjs';
 import { auditNrgPlanAssets, expectedNrgOriginalUrl, expectedNrgPlanUrl, fetchNrgPlanDetails, imageMetadata, refreshNrgPlanAssets, validateNrgOriginalUrl, validateNrgPlanUrl } from '../src/nrg-plan-assets.mjs';
 import { normalizeKayanPropertyResponses, normalizeMbcProjects, normalizeNrgBiCapture, normalizeRegnumPages, normalizeSunPages, normalizeUysotTable } from '../src/normalize.mjs';
 import { getProvider, mbcProjects, mbcSarbonProjects } from '../src/providers.mjs';
@@ -207,10 +208,33 @@ test('direct-source bodies use exact read-only scopes', () => {
   const project = provider.projectDefinitions[0];
   assert.deepEqual(Object.keys(directSourceInternals.nrgPlacementBody(provider, project, 1)).sort(), ['companyIds', 'filterTags', 'pageNo', 'pageSize', 'propertyTypes', 'realEstateUUIDs']);
   assert.equal(directSourceInternals.nrgPlacementBody(provider, project, 1).pageSize, 300);
+  assert.deepEqual(directSourceInternals.nrgBlockMatrixBody('10000000-0000-4000-8000-000000000001'), { blockId: '10000000-0000-4000-8000-000000000001' });
+  assert.throws(() => directSourceInternals.nrgBlockMatrixBody('not-a-block'), /not a UUID/);
+  assert.equal(provider.maxBlocksPerProject, 100);
+  assert.equal(provider.maxMatrixPlacementsPerBlock, 5_000);
+  assert.equal(provider.maxMatrixPlacementsPerProject, 30_000);
+  const boundedMatrix = { entrances: [{ floors: [{ placements: [{ placementUUID: 'x' }] }] }] };
+  assert.equal(directSourceInternals.nrgMatrixPlacementCount(boundedMatrix, 'test matrix', 1), 1);
+  assert.throws(() => directSourceInternals.nrgMatrixPlacementCount(boundedMatrix, 'test matrix', 0), /safety limit/);
   const sun = directSourceInternals.sunObjectsBody(7);
   assert.equal(sun.action, 'objects_list');
   assert.equal(sun.auth_token, null);
   assert.deepEqual(Object.keys(sun.data).sort(), ['activity', 'cabinetMode', 'category', 'complex_id', 'filters', 'page']);
+});
+
+test('NRG trusted block registry covers every configured project and only grows', () => {
+  const provider = getProvider('nrg-bi');
+  const seed = normalizeNrgBlockRegistry(nrgBiSeedBlockRegistry);
+  assert.deepEqual(Object.keys(seed.projects), provider.projectDefinitions.map((project) => project.slug));
+  assert.equal(Object.values(seed.projects).reduce((sum, project) => sum + project.blocks.length, 0), 64);
+  const next = structuredClone(seed);
+  next.projects['4u'].blocks = [{ id: '30000000-0000-4000-8000-000000000001', name: 'New official block' }];
+  const merged = mergeNrgBlockRegistries(seed, next);
+  assert.equal(merged.projects['4u'].blocks.length, seed.projects['4u'].blocks.length + 1);
+  assert.ok(seed.projects['4u'].blocks.every(({ id }) => merged.projects['4u'].blocks.some((block) => block.id === id)));
+  const duplicate = structuredClone(seed);
+  duplicate.projects['4u'].blocks.push(duplicate.projects['4u'].blocks[0]);
+  assert.throws(() => normalizeNrgBlockRegistry(duplicate), /invalid or duplicated/);
 });
 
 test('publishable providers require complete public artwork templates', async () => {
@@ -728,14 +752,27 @@ test('SUN normalization accepts intentional page overlap but rejects conflicts',
 test('NRG normalization covers all eleven project adapters and requires an empty terminal page', () => {
   const provider = getProvider('nrg-bi');
   const groups = provider.projectDefinitions.map((project, index) => {
+    const blockId = `10000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`;
     const unit = {
       uuid: `00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
       realEstateUUID: project.realEstateUUID, roomCount: 1, name: '1', square: 40,
       floor: 2, entrance: 1, priceBySquare: 10, maxFloor: 10, blockName: 'Block 1',
-      blockId: `10000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+      blockId,
       totalPrice: 400, totalPriceWithDiscount: 400, placementStatusName: 'Снятие резерва', isSale: true,
       propertyType: { uuid: provider.apartmentPropertyTypeUUID, name: 'Квартира' },
     };
+    const matrixPlacement = (offset, placementUIStatus, isSale) => ({
+      placementUUID: `20000000-0000-4000-8000-${String(index + 1 + offset).padStart(12, '0')}`,
+      placementName: String(offset + 1), square: 40 + offset, price: 10, totalPrice: 400 + offset,
+      repairSum: 0, repairPrice: 0, isRepaired: false,
+      blockUUID: blockId, blockName: 'Block 1', floor: 2, entrance: 1, roomCount: 1,
+      isSale, propertyTypeUUID: provider.apartmentPropertyTypeUUID, propertyTypeName: 'Квартира',
+      propertyType: { uuid: provider.apartmentPropertyTypeUUID, name: 'Квартира' },
+      placementUIStatus,
+    });
+    const available = { ...matrixPlacement(0, 'FREE', true), placementUUID: unit.uuid, placementName: unit.name, square: unit.square };
+    const sold = matrixPlacement(100, 'SOLD', false);
+    const booked = matrixPlacement(200, 'BOOKED', false);
     for (const variant of [1600, 400, 200]) unit[`photoURL${variant}`] = expectedNrgPlanUrl(unit, variant);
     if (project.slug === '4u') unit.discount = { stock: { data: [{ priceWithDiscount: 360 }] } };
     const planAssets = project.slug === '4u' ? {
@@ -751,17 +788,31 @@ test('NRG normalization covers all eleven project adapters and requires an empty
       project,
       apartmentPropertyTypeUUID: provider.apartmentPropertyTypeUUID,
       pages: [{ placements: [unit] }, { placements: [] }],
-      realEstate: { realEstates: [{ uuid: project.realEstateUUID, placementCount: 1, propertyTypes: [{ uuid: provider.apartmentPropertyTypeUUID, name: 'Квартира' }] }] },
+      realEstate: { realEstates: [{
+        uuid: project.realEstateUUID, placementCount: 1,
+        propertyTypes: [{ uuid: provider.apartmentPropertyTypeUUID, name: 'Квартира' }],
+        blocks: [{ id: blockId, name: 'Block 1', count: 1 }],
+      }] },
+      blockMatrices: [{
+        blockUUID: blockId, blockName: 'Block 1', squareUnit: 'sqm',
+        entrances: [{ entrance: 1, floors: [{ floor: 2, placements: [available, booked, sold] }] }],
+      }],
       ...(planAssets ? { planAssets } : {}),
     };
   });
   const result = normalizeNrgBiCapture(groups);
   assert.equal(result.artifacts.length, 11);
   assert.ok(Object.values(result.audit).every((audit) => audit.complete));
-  const fourU = result.artifacts.find((item) => item.filename === '4u-catalog.json').artifact.units[0];
+  assert.ok(Object.values(result.audit).every((audit) => audit.statusCounts.available === 1 && audit.statusCounts.reserved === 1 && audit.statusCounts.sold === 1));
+  const fourUArtifact = result.artifacts.find((item) => item.filename === '4u-catalog.json').artifact;
+  const fourU = fourUArtifact.units.find((unit) => unit.status === 'available');
   assert.equal(fourU.planImageUrl, expectedNrgOriginalUrl(groups[0].pages[0].placements[0]));
   assert.equal(fourU.price, 360, '4U publishes the official active campaign price');
   assert.equal(fourU.pricePerM2, 9, '4U per-m² price follows the selected campaign total');
+  assert.equal(fourUArtifact.sourceCount, 3);
+  assert.equal(fourUArtifact.historicalSaleDates, null);
+  assert.equal(fourUArtifact.units.find((unit) => unit.status === 'sold').price, null);
+  assert.ok(fourUArtifact.units.every((unit) => unit.id === unit.sourceId && unit.sourceKey === `nrg-bi:4u:${unit.id}`));
   const invalidAudit = structuredClone(groups);
   invalidAudit[0].planAssets.units[0].original.width = 400;
   assert.throws(() => normalizeNrgBiCapture(invalidAudit), /dimensions are invalid/);
@@ -770,10 +821,49 @@ test('NRG normalization covers all eleven project adapters and requires an empty
   missingCurrentPreview[0].planAssets.units[0].selectedOriginalUrl = null;
   missingCurrentPreview[0].planAssets.publishablePlans = 0;
   missingCurrentPreview[0].planAssets.variants[1600] = { attempted: 1, valid: 0, invalid: 1 };
-  const lkgCandidate = normalizeNrgBiCapture(missingCurrentPreview).artifacts.find((item) => item.filename === '4u-catalog.json').artifact.units[0];
+  const lkgCandidate = normalizeNrgBiCapture(missingCurrentPreview).artifacts.find((item) => item.filename === '4u-catalog.json').artifact.units.find((unit) => unit.status === 'available');
   assert.equal(lkgCandidate.planImageUrl, undefined, 'an invalid new preview must omit the URL so the database keeps its last-known-good plan');
-  groups[0].pages.pop();
-  assert.throws(() => normalizeNrgBiCapture(groups), /pagination evidence/);
+
+  const missingMatrix = structuredClone(groups);
+  missingMatrix[0].blockMatrices = [];
+  assert.throws(() => normalizeNrgBiCapture(missingMatrix), /required blockMatrix responses/);
+  const duplicateIdentity = structuredClone(groups);
+  duplicateIdentity[0].blockMatrices[0].entrances[0].floors[0].placements[2].placementUUID = duplicateIdentity[0].blockMatrices[0].entrances[0].floors[0].placements[1].placementUUID;
+  assert.throws(() => normalizeNrgBiCapture(duplicateIdentity), /duplicate matrix placement UUID/);
+  const freeMismatch = structuredClone(groups);
+  freeMismatch[0].blockMatrices[0].entrances[0].floors[0].placements[0].placementUIStatus = 'SOLD';
+  freeMismatch[0].blockMatrices[0].entrances[0].floors[0].placements[0].isSale = false;
+  assert.throws(() => normalizeNrgBiCapture(freeMismatch), /does not reconcile with blockMatrix/);
+  const unknownLifecycle = structuredClone(groups);
+  unknownLifecycle[0].blockMatrices[0].entrances[0].floors[0].placements[2].placementUIStatus = 'CONTRACT';
+  assert.throws(() => normalizeNrgBiCapture(unknownLifecycle), /unknown placementUIStatus/);
+  const retainedSoldBlock = structuredClone(groups);
+  const historicalBlock = { id: '30000000-0000-4000-8000-000000000002', name: 'Previously accepted sold block' };
+  const historicalSold = {
+    ...retainedSoldBlock[1].blockMatrices[0].entrances[0].floors[0].placements[2],
+    placementUUID: '40000000-0000-4000-8000-000000000002',
+    placementName: '900', blockUUID: historicalBlock.id, blockName: historicalBlock.name,
+  };
+  retainedSoldBlock[1].requiredBlocks = [...retainedSoldBlock[1].realEstate.realEstates[0].blocks, historicalBlock];
+  retainedSoldBlock[1].blockMatrices.push({
+    blockUUID: historicalBlock.id, blockName: historicalBlock.name,
+    entrances: [{ entrance: 1, floors: [{ floor: 2, placements: [historicalSold] }] }],
+  });
+  const retainedArtifact = normalizeNrgBiCapture(retainedSoldBlock).artifacts.find((item) => item.filename === 'bayterak-catalog.json').artifact;
+  assert.equal(retainedArtifact.sourceCount, 4);
+  assert.ok(retainedArtifact.matrixBlockIds.includes(historicalBlock.id));
+  retainedSoldBlock[1].blockMatrices.pop();
+  assert.throws(() => normalizeNrgBiCapture(retainedSoldBlock), /required blockMatrix responses/);
+  const fullySoldListing = structuredClone(groups);
+  fullySoldListing[1].pages = [{ placements: [] }];
+  fullySoldListing[1].blockMatrices[0].entrances[0].floors[0].placements[0].placementUIStatus = 'SOLD';
+  fullySoldListing[1].blockMatrices[0].entrances[0].floors[0].placements[0].isSale = false;
+  const fullySoldArtifact = normalizeNrgBiCapture(fullySoldListing).artifacts.find((item) => item.filename === 'bayterak-catalog.json').artifact;
+  assert.equal(fullySoldArtifact.completeness.statusCounts.available, undefined);
+  assert.equal(fullySoldArtifact.completeness.statusCounts.sold, 2);
+  const noTerminalPage = structuredClone(groups);
+  noTerminalPage[0].pages.pop();
+  assert.throws(() => normalizeNrgBiCapture(noTerminalPage), /empty terminal page/);
 });
 
 function testJpeg(width, height, discriminator = 0) {

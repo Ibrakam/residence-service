@@ -182,6 +182,10 @@ assert.deepEqual(unmatched.provenance, { api: '', sourceSha256: '' });
 
 const reserved4U = { ...live[0], projectSlug: '4u', status: 'reserved' };
 assert.equal(mergeLiveCatalogUnits('4u', embedded, [reserved4U]).length, 0, 'available-only UI must not label a reserved unit as available');
+for (const projectSlug of ['4u', 'bayterak', 'botanika-saroyi', 'flagman', 'jomiy', 'maftun-makon', 'meros', 'sado', 'voha', 'yangibaxt', 'zamon']) {
+  const sold = { ...live[0], projectSlug, status: 'sold', price: undefined };
+  assert.equal(mergeLiveCatalogUnits(projectSlug, embedded, [sold]).length, 0, `${projectSlug} must not expose a matrix SOLD row in the available-unit catalogue`);
+}
 const fourUnitId = '546458ee-a312-4073-be02-cecfde18623b';
 const fourBlockId = 'f61f45d8-6138-4161-abee-aed9e4d11a4e';
 const fourOriginal = `https://s3.bi.group/crm-clients-e1csales/layouts/${fourBlockId}/${fourUnitId}/10.png`;

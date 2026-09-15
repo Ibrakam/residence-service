@@ -111,9 +111,13 @@ const cachedPayloadMaxAgeMs = 7 * 24 * 60 * 60 * 1_000;
 const cacheVersion = 2;
 const availableOnlyCatalogues = new Set([
   '4u',
+  'bayterak',
+  'botanika-saroyi',
   'c1',
   'flagman',
+  'jomiy',
   'maftun-makon',
+  'meros',
   'regnum-plaza',
   'saadiyat',
   'sarbon',
@@ -121,6 +125,8 @@ const availableOnlyCatalogues = new Set([
   'soy-boyi',
   'sun',
   'voha',
+  'yangibaxt',
+  'zamon',
 ]);
 const mbcCatalogues = new Set(['c1', 'regnum-plaza', 'saadiyat', 'sarbon', 'soy-boyi']);
 

@@ -2,6 +2,7 @@ package catalogsync
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -376,7 +377,8 @@ func loadAcceptedProjects(ctx context.Context, connection *pgxpool.Conn, source 
 	rows, err := connection.Query(ctx, `
 		SELECT DISTINCT ON (snapshots.project_slug)
 			snapshots.project_slug,snapshots.record_count,snapshots.captured_at,
-			COALESCE(NULLIF(snapshots.content_checksum_sha256,''),snapshots.checksum_sha256)
+			COALESCE(NULLIF(snapshots.content_checksum_sha256,''),snapshots.checksum_sha256),
+			snapshots.metadata
 		FROM source_snapshots AS snapshots
 		JOIN sync_runs AS runs ON runs.id=snapshots.sync_run_id
 		WHERE snapshots.source=$1 AND runs.status='succeeded'
@@ -389,8 +391,30 @@ func loadAcceptedProjects(ctx context.Context, connection *pgxpool.Conn, source 
 	for rows.Next() {
 		var slug string
 		var item AcceptedProject
-		if err := rows.Scan(&slug, &item.Records, &item.CapturedAt, &item.Checksum); err != nil {
+		var metadata []byte
+		if err := rows.Scan(&slug, &item.Records, &item.CapturedAt, &item.Checksum, &metadata); err != nil {
 			return nil, err
+		}
+		var snapshot struct {
+			MatrixBlockIDs []string `json:"matrixBlockIds"`
+		}
+		if err := json.Unmarshal(metadata, &snapshot); err != nil {
+			return nil, fmt.Errorf("decode accepted project %s metadata: %w", slug, err)
+		}
+		if len(snapshot.MatrixBlockIDs) > 0 {
+			seen := make(map[string]struct{}, len(snapshot.MatrixBlockIDs))
+			for _, blockID := range snapshot.MatrixBlockIDs {
+				blockID = strings.TrimSpace(blockID)
+				if blockID == "" {
+					return nil, fmt.Errorf("accepted project %s has an empty matrix block identity", slug)
+				}
+				if _, duplicate := seen[blockID]; duplicate {
+					return nil, fmt.Errorf("accepted project %s duplicates matrix block %s", slug, blockID)
+				}
+				seen[blockID] = struct{}{}
+				item.MatrixBlockIDs = append(item.MatrixBlockIDs, blockID)
+			}
+			sort.Strings(item.MatrixBlockIDs)
 		}
 		result[slug] = item
 	}

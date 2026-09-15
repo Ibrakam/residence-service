@@ -39,6 +39,7 @@ type CatalogProject struct {
 	Complete             bool
 	OfficialCount        *int
 	QueueMetadataPresent bool
+	MatrixBlockIDs       []string
 	Queues               []CatalogQueue
 	Phases               []CatalogPhase
 	Units                []NormalizedUnit
@@ -112,6 +113,7 @@ func CatalogProjectContentChecksum(project CatalogProject) (string, error) {
 		Complete             bool
 		OfficialCount        *int
 		QueueMetadataPresent bool
+		MatrixBlockIDs       []string
 		Queues               []CatalogQueue
 		Phases               []CatalogPhase
 		Units                []NormalizedUnit
@@ -128,6 +130,7 @@ func CatalogProjectContentChecksum(project CatalogProject) (string, error) {
 		Complete:             project.Complete,
 		OfficialCount:        project.OfficialCount,
 		QueueMetadataPresent: project.QueueMetadataPresent,
+		MatrixBlockIDs:       project.MatrixBlockIDs,
 		Queues:               project.Queues,
 		Phases:               project.Phases,
 		Units:                project.Units,
@@ -304,6 +307,10 @@ func normalizeCatalogProject(filename string, root, node map[string]json.RawMess
 		Slug: slug, Name: name, SourceURL: source, CapturedAt: projectCapturedAt,
 		SourcePayload: catalogMetadata(node),
 		Complete:      filename == "avalon-units.json" || !strings.HasSuffix(filename, "-client.json"),
+	}
+	project.MatrixBlockIDs, err = catalogMatrixBlockIDs(node)
+	if err != nil {
+		return CatalogProject{}, err
 	}
 	project.SourceID = firstString(node, "realEstateUUID", "sourceProjectUuid", "projectId", "houseId")
 	if project.SourceID == "" {
@@ -732,6 +739,32 @@ func catalogMetadata(root map[string]json.RawMessage) json.RawMessage {
 	}
 	body, _ := json.Marshal(copy)
 	return body
+}
+
+func catalogMatrixBlockIDs(node map[string]json.RawMessage) ([]string, error) {
+	raw, present := node["matrixBlockIds"]
+	if !present {
+		return nil, nil
+	}
+	var values []string
+	if err := json.Unmarshal(raw, &values); err != nil || len(values) == 0 {
+		return nil, errors.New("matrixBlockIds must be a non-empty string array when present")
+	}
+	seen := make(map[string]struct{}, len(values))
+	result := make([]string, 0, len(values))
+	for index, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			return nil, fmt.Errorf("matrixBlockIds[%d] is empty", index)
+		}
+		if _, duplicate := seen[value]; duplicate {
+			return nil, fmt.Errorf("matrixBlockIds contains duplicate %q", value)
+		}
+		seen[value] = struct{}{}
+		result = append(result, value)
+	}
+	sort.Strings(result)
+	return result, nil
 }
 
 func sourceURL(values map[string]json.RawMessage) string {

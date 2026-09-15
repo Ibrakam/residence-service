@@ -87,6 +87,9 @@ func TestCompletenessGuardFailureCodes(t *testing.T) {
 	officialMismatch := preparedProject("mirador", 100, now, "m", true)
 	officialCount := 101
 	officialMismatch.Bundles[0].Projects[0].OfficialCount = &officialCount
+	blockDrop := preparedProject("mirador", 100, now, "m", true)
+	blockDrop.Bundles[0].Projects[0].MatrixBlockIDs = []string{"block-a"}
+	blockMetadataMissing := preparedProject("mirador", 100, now, "m", true)
 	tests := []struct {
 		name      string
 		prepared  importer.PreparedCatalogImport
@@ -99,6 +102,8 @@ func TestCompletenessGuardFailureCodes(t *testing.T) {
 		{"below configured minimum", mergePrepared(preparedProject("mirador", 9, now, "m", true), validOfiyat), nil, "below_minimum"},
 		{"official count mismatch", mergePrepared(officialMismatch, validOfiyat), nil, "official_count_mismatch"},
 		{"record count collapse", mergePrepared(preparedProject("mirador", 60, now, "m", true), validOfiyat), map[string]AcceptedProject{"mirador": {Records: 100, CapturedAt: now.Add(-time.Minute), Checksum: "old"}}, "excessive_record_drop"},
+		{"matrix block universe regression", mergePrepared(blockDrop, validOfiyat), map[string]AcceptedProject{"mirador": {Records: 100, CapturedAt: now.Add(-time.Minute), Checksum: "old", MatrixBlockIDs: []string{"block-a", "block-b"}}}, "block_universe_regressed"},
+		{"matrix block universe metadata missing", mergePrepared(blockMetadataMissing, validOfiyat), map[string]AcceptedProject{"mirador": {Records: 100, CapturedAt: now.Add(-time.Minute), Checksum: "old", MatrixBlockIDs: []string{"block-a"}}}, "block_universe_missing"},
 		{"capture time regression", mergePrepared(validMirador, validOfiyat), map[string]AcceptedProject{"mirador": {Records: 100, CapturedAt: now.Add(time.Minute), Checksum: "old"}}, "capture_time_regressed"},
 		{"same time changed bytes", mergePrepared(validMirador, validOfiyat), map[string]AcceptedProject{"mirador": {Records: 100, CapturedAt: now, Checksum: "different"}}, "timestamp_content_conflict"},
 		{"future capture", mergePrepared(preparedProject("mirador", 100, now.Add(16*time.Minute), "m", true), validOfiyat), nil, "future_capture_time"},

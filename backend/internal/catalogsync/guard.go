@@ -11,9 +11,10 @@ import (
 const maximumFutureSkew = 15 * time.Minute
 
 type AcceptedProject struct {
-	Records    int
-	CapturedAt time.Time
-	Checksum   string
+	Records        int
+	CapturedAt     time.Time
+	Checksum       string
+	MatrixBlockIDs []string
 }
 
 type GuardError struct {
@@ -82,6 +83,20 @@ func ValidatePreparedCatalog(provider ProviderConfig, prepared importer.Prepared
 		baseline, hasBaseline := baselines[slug]
 		if !hasBaseline {
 			continue
+		}
+		if len(baseline.MatrixBlockIDs) > 0 {
+			if len(project.MatrixBlockIDs) == 0 {
+				return guardFailure("block_universe_missing", slug, "project %q dropped its trusted matrix block universe", slug)
+			}
+			candidateBlocks := make(map[string]struct{}, len(project.MatrixBlockIDs))
+			for _, blockID := range project.MatrixBlockIDs {
+				candidateBlocks[blockID] = struct{}{}
+			}
+			for _, blockID := range baseline.MatrixBlockIDs {
+				if _, retained := candidateBlocks[blockID]; !retained {
+					return guardFailure("block_universe_regressed", slug, "project %q lost previously accepted matrix block %q", slug, blockID)
+				}
+			}
 		}
 		minimumRetained := float64(baseline.Records) * (100 - provider.MaximumDropPercent()) / 100
 		if float64(count) < minimumRetained {

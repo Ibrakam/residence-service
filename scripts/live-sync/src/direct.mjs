@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import { makeBodyRecord } from './capture.mjs';
+import { mergeNrgBlockRegistries, nrgBiSeedBlockRegistry, normalizeNrgBlockRegistry } from './nrg-block-registry.mjs';
 import { refreshNrgPlanAssets } from './nrg-plan-assets.mjs';
 
 const MBC_ENDPOINT = 'https://mbc.uz/api/plans';
@@ -180,8 +181,35 @@ function nrgEstateBody(provider, project) {
   return body;
 }
 
+function nrgBlockMatrixBody(blockId) {
+  const id = String(blockId ?? '').trim();
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
+    throw new Error('NRG blockMatrix blockId is not a UUID');
+  }
+  const body = { blockId: id };
+  exactKeys(body, ['blockId'], 'NRG blockMatrix request');
+  return body;
+}
+
+function nrgMatrixPlacementCount(value, label, maximum) {
+  const matrix = assertObject(value, label);
+  if (!Array.isArray(matrix.entrances)) throw new Error(`${label}.entrances is not an array`);
+  let count = 0;
+  for (const [entranceIndex, entranceValue] of matrix.entrances.entries()) {
+    const entrance = assertObject(entranceValue, `${label}.entrances[${entranceIndex}]`);
+    if (!Array.isArray(entrance.floors)) throw new Error(`${label}.entrances[${entranceIndex}].floors is not an array`);
+    for (const [floorIndex, floorValue] of entrance.floors.entries()) {
+      const floor = assertObject(floorValue, `${label}.entrances[${entranceIndex}].floors[${floorIndex}]`);
+      if (!Array.isArray(floor.placements)) throw new Error(`${label}.entrances[${entranceIndex}].floors[${floorIndex}].placements is not an array`);
+      count += floor.placements.length;
+      if (count > maximum) throw new Error(`${label} exceeded the placement safety limit ${maximum}`);
+    }
+  }
+  return count;
+}
+
 async function nrgPost(endpoint, body, label) {
-  if (!['placementList', 'realEstateList'].includes(endpoint)) throw new Error('NRG endpoint is outside the allowlist');
+  if (!['placementList', 'realEstateList', 'blockMatrix'].includes(endpoint)) throw new Error('NRG endpoint is outside the allowlist');
   const url = `${NRG_BASE}/${endpoint}`;
   assertExactUrl(url, { host: 'apigw.bi.group', path: `/sales-picker/microfe-v3/${endpoint}` }, label);
   return jsonResponse({
@@ -193,8 +221,34 @@ async function nrgPost(endpoint, body, label) {
   });
 }
 
-async function captureNrgBi(provider, records, { planAssetCache = null } = {}) {
+async function captureNrgBi(provider, records, { planAssetCache = null, blockRegistry = nrgBiSeedBlockRegistry } = {}) {
+  const trustedRegistry = mergeNrgBlockRegistries(nrgBiSeedBlockRegistry, normalizeNrgBlockRegistry(blockRegistry));
+  const registryCandidate = {
+    schemaVersion: 1,
+    provider: 'nrg-bi',
+    source: `${NRG_BASE}/realEstateList`,
+    reviewedAt: new Date().toISOString(),
+    projects: {},
+  };
   for (const project of provider.projectDefinitions) {
+    const estate = await nrgPost('realEstateList', nrgEstateBody(provider, project), `NRG ${project.slug} realEstateList`);
+    if (!Array.isArray(estate.value?.realEstates)) throw new Error(`NRG ${project.slug} realEstateList has no realEstates array`);
+    const targetEstate = estate.value.realEstates.find((item) => item?.uuid === project.realEstateUUID);
+    if (!targetEstate || typeof targetEstate !== 'object' || Array.isArray(targetEstate)) throw new Error(`NRG ${project.slug} realEstateList does not contain the requested project`);
+    if (!Array.isArray(targetEstate.blocks) || targetEstate.blocks.length === 0) throw new Error(`NRG ${project.slug} realEstateList has no blocks`);
+    const savedProject = trustedRegistry.projects[project.slug];
+    if (!savedProject || savedProject.realEstateUUID !== project.realEstateUUID) throw new Error(`NRG ${project.slug} trusted block registry identity mismatch`);
+    const requiredBlocks = new Map(savedProject.blocks.map((block) => [block.id, block]));
+    for (const [index, block] of targetEstate.blocks.entries()) {
+      const blockValue = assertObject(block, `NRG ${project.slug} block ${index + 1}`);
+      const blockId = nrgBlockMatrixBody(blockValue.id).blockId;
+      if (targetEstate.blocks.slice(0, index).some((candidate) => candidate?.id === blockId)) throw new Error(`NRG ${project.slug} realEstateList duplicates block ${blockId}`);
+      const name = String(blockValue.name ?? '').trim();
+      if (!name) throw new Error(`NRG ${project.slug} block ${blockId} has no name`);
+      requiredBlocks.set(blockId, { id: blockId, name });
+    }
+    if (requiredBlocks.size > provider.maxBlocksPerProject) throw new Error(`NRG ${project.slug} exceeded the block safety limit ${provider.maxBlocksPerProject}`);
+    registryCandidate.projects[project.slug] = { realEstateUUID: project.realEstateUUID, blocks: [...requiredBlocks.values()] };
     let sawEmptyPage = false;
     const placements = [];
     for (let page = 1; page <= 50; page += 1) {
@@ -214,14 +268,29 @@ async function captureNrgBi(provider, records, { planAssetCache = null } = {}) {
       if (result.value.placements.length > provider.pageSize) throw new Error(`NRG ${project.slug} exceeded requested page size`);
     }
     if (!sawEmptyPage) throw new Error(`NRG ${project.slug} pagination did not reach an empty page`);
-    const estate = await nrgPost('realEstateList', nrgEstateBody(provider, project), `NRG ${project.slug} realEstateList`);
-    if (!Array.isArray(estate.value?.realEstates)) throw new Error(`NRG ${project.slug} realEstateList has no realEstates array`);
     recordResponse(records, {
       id: `nrg-bi-${project.slug}-real-estate`,
       canonicalUrl: `${NRG_BASE}/realEstateList`,
       scope: { projectSlug: project.slug, endpoint: 'realEstateList', page: 1 },
       result: estate,
     });
+    let matrixPlacements = 0;
+    for (const [index, block] of registryCandidate.projects[project.slug].blocks.entries()) {
+      const blockId = String(block.id);
+      const matrix = await nrgPost('blockMatrix', nrgBlockMatrixBody(blockId), `NRG ${project.slug} blockMatrix ${index + 1}/${targetEstate.blocks.length}`);
+      if (String(matrix.value?.blockUUID ?? '') !== blockId) throw new Error(`NRG ${project.slug} blockMatrix ${blockId} identity mismatch`);
+      if (String(matrix.value?.blockName ?? '').trim() !== String(block.name).trim()) throw new Error(`NRG ${project.slug} blockMatrix ${blockId} name mismatch`);
+      matrixPlacements += nrgMatrixPlacementCount(matrix.value, `NRG ${project.slug} blockMatrix ${blockId}`, provider.maxMatrixPlacementsPerBlock);
+      if (matrixPlacements > provider.maxMatrixPlacementsPerProject) {
+        throw new Error(`NRG ${project.slug} exceeded the project matrix placement safety limit ${provider.maxMatrixPlacementsPerProject}`);
+      }
+      recordResponse(records, {
+        id: `nrg-bi-${project.slug}-block-matrix-${index + 1}`,
+        canonicalUrl: `${NRG_BASE}/blockMatrix`,
+        scope: { projectSlug: project.slug, endpoint: 'blockMatrix', blockId, blockIndex: index + 1 },
+        result: matrix,
+      });
+    }
     if (project.slug === '4u') {
       const capturedAt = new Date().toISOString();
       const { audit } = await refreshNrgPlanAssets(placements, { capturedAt, previousAudit: planAssetCache });
@@ -234,6 +303,15 @@ async function captureNrgBi(provider, records, { planAssetCache = null } = {}) {
       });
     }
   }
+  const capturedAt = new Date().toISOString();
+  const normalizedRegistry = normalizeNrgBlockRegistry(registryCandidate, 'NRG captured block registry');
+  recordDerivedJson(records, {
+    id: 'nrg-bi-block-registry-candidate',
+    canonicalUrl: `${NRG_BASE}/realEstateList`,
+    scope: { endpoint: 'blockRegistry', derived: true },
+    value: normalizedRegistry,
+    capturedAt,
+  });
 }
 
 function macroEmbedApiUrl(js) {
@@ -396,6 +474,8 @@ export const directSourceInternals = Object.freeze({
   mbcPlansBody,
   nrgPlacementBody,
   nrgEstateBody,
+  nrgBlockMatrixBody,
+  nrgMatrixPlacementCount,
   sunObjectsBody,
   sunBusinessProjection,
 });

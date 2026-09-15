@@ -7,13 +7,50 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assertLoopbackCdp, matchAllowedUrl, safeUrlMetadata } from '../src/allowlist.mjs';
 import { atomicRunDirectory, atomicWriteFile, pruneRunDirectories } from '../src/atomic.mjs';
-import { classifyRequest, parseUysotReadOnlyBody } from '../src/capture.mjs';
+import { captureFromAuthorizedTab, classifyRequest, parseUysotReadOnlyBody } from '../src/capture.mjs';
 import { captureFromDirectSource, directSourceInternals } from '../src/direct.mjs';
 import { loadTemplate } from '../src/cli.mjs';
 import { opaqueMbcSourceKey, templateMbcSourceKey } from '../src/mbc-identity.mjs';
 import { normalizeKayanPropertyResponses, normalizeMbcProjects, normalizeNrgBiCapture, normalizeRegnumPages, normalizeSunPages, normalizeUysotTable } from '../src/normalize.mjs';
 import { getProvider, mbcProjects } from '../src/providers.mjs';
 import { containsObviousSecret, sanitizeValue } from '../src/redact.mjs';
+
+function fakeUysotBrowser(reloadScripts, responseBody = '{}') {
+  const listeners = new Map();
+  const state = { calls: [], reloads: 0, closed: false };
+  const client = {
+    on(method, listener) {
+      const methodListeners = listeners.get(method) ?? new Set();
+      methodListeners.add(listener);
+      listeners.set(method, methodListeners);
+      return () => methodListeners.delete(listener);
+    },
+    async emit(method, params) {
+      for (const listener of [...(listeners.get(method) ?? [])]) await listener(params);
+    },
+    async call(method, params = {}) {
+      state.calls.push({ method, params });
+      if (method === 'Page.reload') {
+        const script = reloadScripts[state.reloads++];
+        if (script) await script(client);
+      }
+      if (method === 'Network.getResponseBody') return { body: responseBody, base64Encoded: false };
+      return {};
+    },
+    close() { state.closed = true; },
+  };
+  return {
+    state,
+    connectTarget: async () => ({
+      client,
+      target: {
+        id: 'uysot-page',
+        type: 'page',
+        url: { origin: 'https://app.uysot.uz', path: '/showroom/', queryKeys: [] },
+      },
+    }),
+  };
+}
 
 test('CLI executes when the installed package is reached through a release symlink', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'live-sync-symlink-'));
@@ -52,6 +89,88 @@ test('Uysot POST exception is exact, bounded, and preserves the required order s
   assert.equal(classifyRequest(getProvider('uysot'), { method: 'POST', url: 'https://service.app.uysot.uz/.well-known/vercel/security/request-challenge', postData: '{}' }).action, 'block');
   assert.equal(classifyRequest(getProvider('uysot'), { method: 'POST', url: 'https://service.app.uysot.uz/v1/smart-catalog/delete', postData: input }).action, 'block');
   assert.ok(getProvider('uysot').launchFlags.includes('--enable-unsafe-swiftshader'));
+});
+
+test('Uysot capture stops after a top-level document HTTP 403 without retrying or reading its body', async () => {
+  const fake = fakeUysotBrowser([
+    async (client) => {
+      await client.emit('Network.responseReceived', {
+        requestId: 'document-403',
+        frameId: 'main',
+        type: 'Document',
+        response: { url: 'https://app.uysot.uz/showroom/', status: 403, mimeType: 'text/html' },
+      });
+      await client.emit('Page.frameNavigated', { frame: { id: 'main' } });
+    },
+  ]);
+
+  const capture = await captureFromAuthorizedTab(getProvider('uysot'), {
+    cdpEndpoint: 'http://127.0.0.1:9223',
+    timeoutMs: 1,
+    connectTarget: fake.connectTarget,
+  });
+
+  assert.equal(fake.state.reloads, 1);
+  assert.equal(fake.state.closed, true);
+  assert.equal(capture.failureCode, 'uysot_document_http_403');
+  assert.deepEqual(capture.errors, [
+    'uysot_document_http_403: app.uysot.uz top-level document returned HTTP 403 before SPA startup',
+  ]);
+  assert.deepEqual(capture.records, []);
+  assert.deepEqual(capture.blocked, []);
+  assert.equal(fake.state.calls.some(({ method }) => method === 'Network.getResponseBody'), false);
+  assert.equal(fake.state.calls.some(({ method }) => /Cookies|Storage/.test(method)), false);
+});
+
+test('Uysot capture ignores a subframe 403 and captures the guarded table response on its bounded retry', async () => {
+  const input = JSON.stringify({ page: 4, size: 10, orders: {}, houseId: [1074] });
+  const tableBody = JSON.stringify({ accept: true, errors: [], data: { data: [] } });
+  const fake = fakeUysotBrowser([
+    async (client) => {
+      await client.emit('Page.frameNavigated', { frame: { id: 'main' } });
+      await client.emit('Network.responseReceived', {
+        requestId: 'child-document-403',
+        frameId: 'child',
+        type: 'Document',
+        response: { url: 'https://app.uysot.uz/showroom/', status: 403, mimeType: 'text/html' },
+      });
+      await client.emit('Page.frameNavigated', { frame: { id: 'child', parentId: 'main' } });
+    },
+    async (client) => {
+      await client.emit('Network.requestWillBeSent', {
+        requestId: 'table-network',
+        request: { method: 'POST' },
+      });
+      await client.emit('Fetch.requestPaused', {
+        requestId: 'table-fetch',
+        networkId: 'table-network',
+        request: { method: 'POST', url: 'https://service.app.uysot.uz/v1/smart-catalog/table', postData: input },
+      });
+      await client.emit('Network.responseReceived', {
+        requestId: 'table-network',
+        frameId: 'main',
+        type: 'Fetch',
+        response: { url: 'https://service.app.uysot.uz/v1/smart-catalog/table', status: 200, mimeType: 'application/json' },
+      });
+      await client.emit('Network.loadingFinished', { requestId: 'table-network' });
+    },
+  ], tableBody);
+
+  const capture = await captureFromAuthorizedTab(getProvider('uysot'), {
+    cdpEndpoint: 'http://127.0.0.1:9223',
+    timeoutMs: 1,
+    connectTarget: fake.connectTarget,
+  });
+
+  assert.equal(fake.state.reloads, 2);
+  assert.equal(capture.failureCode, null);
+  assert.deepEqual(capture.errors, []);
+  assert.equal(capture.records.length, 1);
+  assert.equal(capture.records[0].url.path, '/v1/smart-catalog/table');
+  const continuation = fake.state.calls.find(({ method }) => method === 'Fetch.continueRequest');
+  assert.deepEqual(JSON.parse(Buffer.from(continuation.params.postData, 'base64').toString('utf8')), {
+    page: 1, size: 500, orders: {}, houseId: [1074],
+  });
 });
 
 test('provider allowlist rejects unexpected Kayan query keys', () => {

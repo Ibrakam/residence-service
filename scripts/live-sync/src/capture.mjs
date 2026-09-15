@@ -6,6 +6,8 @@ import { containsObviousSecret, sanitizeJsonText } from './redact.mjs';
 
 const sha256 = (body) => createHash('sha256').update(body).digest('hex');
 const safeMethods = new Set(['GET', 'HEAD', 'OPTIONS']);
+const uysotDocumentForbiddenCode = 'uysot_document_http_403';
+const uysotDocumentForbiddenMessage = 'app.uysot.uz top-level document returned HTTP 403 before SPA startup';
 
 export function parseUysotReadOnlyBody(postData) {
   let body;
@@ -78,22 +80,47 @@ export async function captureFromAuthorizedTab(provider, {
   targetId = null,
   timeoutMs = 45_000,
   reload = true,
+  connectTarget = connectProviderTarget,
 } = {}) {
-  const { client, target } = await connectProviderTarget(provider, cdpEndpoint, targetId);
+  const { client, target } = await connectTarget(provider, cdpEndpoint, targetId);
   const methods = new Map();
   const eligible = new Map();
   const records = [];
   const blocked = [];
   const errors = [];
+  let failureCode = null;
+  let mainFrameId = null;
+  const forbiddenDocumentFrameIds = new Set();
   let uysotTableRequestId = null;
   const kayanHouseIds = new Set();
   let completionResolve;
   const completion = new Promise((resolve) => { completionResolve = resolve; });
 
+  const failUysotDocumentForbidden = () => {
+    if (failureCode) return;
+    failureCode = uysotDocumentForbiddenCode;
+    errors.push(`${uysotDocumentForbiddenCode}: ${uysotDocumentForbiddenMessage}`);
+    completionResolve();
+  };
+
   const stopRequest = client.on('Network.requestWillBeSent', ({ requestId, request }) => {
     methods.set(requestId, String(request?.method || '').toUpperCase());
   });
-  const stopResponse = client.on('Network.responseReceived', ({ requestId, response, type }) => {
+  const stopFrame = client.on('Page.frameNavigated', ({ frame }) => {
+    if (provider.id !== 'uysot' || !frame?.id || frame.parentId != null) return;
+    mainFrameId = frame.id;
+    if (forbiddenDocumentFrameIds.has(mainFrameId)) failUysotDocumentForbidden();
+  });
+  const stopResponse = client.on('Network.responseReceived', ({ requestId, response, type, frameId }) => {
+    if (provider.id === 'uysot' && !failureCode && frameId && type === 'Document') {
+      let hostname = null;
+      try { hostname = new URL(response?.url).hostname; } catch {}
+      if (provider.pageHosts.includes(hostname) && Number(response?.status) === 403) {
+        if (frameId === mainFrameId) failUysotDocumentForbidden();
+        else forbiddenDocumentFrameIds.add(frameId);
+        return;
+      }
+    }
     const method = methods.get(requestId) || '';
     const match = matchAllowedUrl(provider, response.url);
     if (!match || !['XHR', 'Fetch'].includes(type) || response.status < 200 || response.status >= 300) return;
@@ -176,7 +203,7 @@ export async function captureFromAuthorizedTab(provider, {
     // A cold Uysot SPA occasionally finishes bootstrapping without issuing its
     // showroom request. One bounded reload makes the scheduled collector
     // reliable while retaining the same exact read-only interception guard.
-    if (provider.id === 'uysot' && !hasUysotTable() && reload) {
+    if (provider.id === 'uysot' && !failureCode && !hasUysotTable() && reload) {
       await client.call('Page.reload', { ignoreCache: true });
       await Promise.race([completion, delay(timeoutMs)]);
     }
@@ -187,11 +214,12 @@ export async function captureFromAuthorizedTab(provider, {
     stopPaused();
     stopFinished();
     stopResponse();
+    stopFrame();
     stopRequest();
     client.close();
   }
 
-  if (provider.id === 'uysot' && !uysotTableRequestId) errors.push('Uysot table request was not observed');
+  if (provider.id === 'uysot' && !failureCode && !uysotTableRequestId) errors.push('Uysot table request was not observed');
   if (provider.id === 'kayan' && kayanHouseIds.size !== 4) errors.push(`KAYAN captured ${kayanHouseIds.size}/4 required houses`);
   return {
     schemaVersion: 1,
@@ -209,6 +237,7 @@ export async function captureFromAuthorizedTab(provider, {
     },
     blocked,
     errors,
+    failureCode,
     records,
   };
 }

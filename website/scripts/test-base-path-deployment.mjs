@@ -35,6 +35,7 @@ const projects = [
   'mirador',
   'ofiyat',
   'regnum-plaza',
+  'sarbon',
   'sado',
   'sun',
   'voha',
@@ -47,6 +48,7 @@ const publicAssetChecks = [
   { path: '/kayan/ofiyat/hero.webp', contentType: 'image/webp' },
   { path: '/kayan/mirador/hero.webp', contentType: 'image/webp' },
   { path: '/kayan/mirador/floor-schemes/entrance-3-floor-16.webp', contentType: 'image/webp' },
+  { path: '/sarbon/media/hero-wide-3db3388c42d3.webp', contentType: 'image/webp' },
   { path: '/sun/sun-official-booklet.pdf', contentType: 'application/pdf', range: true },
   { path: '/sun/video/hero-mobile.mp4', contentType: 'video/mp4', range: true },
 ];

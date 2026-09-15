@@ -419,9 +419,10 @@ function normalizeMbcProject(group, capturedAt, template) {
   };
 }
 
-export function normalizeMbcProjects(groups, capturedAt = new Date().toISOString(), templates = {}) {
-  assert(Array.isArray(groups) && groups.length === mbcProjects.length, `MBC capture requires ${mbcProjects.length} project groups, received ${groups?.length ?? 0}`);
-  const expected = new Map(mbcProjects.map((project) => [project.slug, project]));
+export function normalizeMbcProjects(groups, capturedAt = new Date().toISOString(), templates = {}, projectDefinitions = mbcProjects) {
+  assert(Array.isArray(projectDefinitions) && projectDefinitions.length > 0, 'MBC provider has no project definitions');
+  assert(Array.isArray(groups) && groups.length === projectDefinitions.length, `MBC capture requires ${projectDefinitions.length} project groups, received ${groups?.length ?? 0}`);
+  const expected = new Map(projectDefinitions.map((project) => [project.slug, project]));
   const seen = new Set();
   const artifacts = [];
   const audits = {};
@@ -441,7 +442,7 @@ export function normalizeMbcProjects(groups, capturedAt = new Date().toISOString
     artifacts.push({ filename: `${slug}-catalog.json`, artifact: result.artifact });
     audits[slug] = result.audit;
   }
-  for (const project of mbcProjects) assert(seen.has(project.slug), `MBC capture is missing project ${project.slug}`);
+  for (const project of projectDefinitions) assert(seen.has(project.slug), `MBC capture is missing project ${project.slug}`);
   return { artifacts, audit: audits };
 }
 

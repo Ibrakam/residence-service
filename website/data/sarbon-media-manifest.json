@@ -1,0 +1,270 @@
+{
+  "schemaVersion": 1,
+  "project": "SARBON",
+  "note": "All project imagery is official CGI/render material; no documentary construction photography is used.",
+  "assets": [
+    {
+      "name": "hero",
+      "classification": "cgi-render",
+      "derivatives": [
+        {
+          "variant": "wide",
+          "format": "webp",
+          "localPath": "/sarbon/media/hero-wide-3db3388c42d3.webp",
+          "mime": "image/webp",
+          "width": 2200,
+          "height": 1000
+        },
+        {
+          "variant": "wide",
+          "format": "avif",
+          "localPath": "/sarbon/media/hero-wide-accd4d7871c7.avif",
+          "mime": "image/avif",
+          "width": 2200,
+          "height": 1000
+        },
+        {
+          "variant": "mobile",
+          "format": "webp",
+          "localPath": "/sarbon/media/hero-mobile-18f86fa7bb38.webp",
+          "mime": "image/webp",
+          "width": 900,
+          "height": 1200
+        },
+        {
+          "variant": "mobile",
+          "format": "avif",
+          "localPath": "/sarbon/media/hero-mobile-21ce07dff3c5.avif",
+          "mime": "image/avif",
+          "width": 900,
+          "height": 1200
+        }
+      ]
+    },
+    {
+      "name": "hero-mobile-source",
+      "classification": "cgi-render",
+      "derivatives": []
+    },
+    {
+      "name": "logo",
+      "classification": "official-logo",
+      "derivatives": [
+        {
+          "variant": "main",
+          "format": "webp",
+          "localPath": "/sarbon/media/logo-main-9e2a02ef16c9.webp",
+          "mime": "image/webp",
+          "width": 900,
+          "height": 533
+        },
+        {
+          "variant": "main",
+          "format": "avif",
+          "localPath": "/sarbon/media/logo-main-975b51a0598d.avif",
+          "mime": "image/avif",
+          "width": 900,
+          "height": 533
+        }
+      ]
+    },
+    {
+      "name": "aerial",
+      "classification": "overview-cgi",
+      "derivatives": [
+        {
+          "variant": "main",
+          "format": "webp",
+          "localPath": "/sarbon/media/aerial-main-bf90773f262f.webp",
+          "mime": "image/webp",
+          "width": 1409,
+          "height": 849
+        },
+        {
+          "variant": "main",
+          "format": "avif",
+          "localPath": "/sarbon/media/aerial-main-dde47c7cbf62.avif",
+          "mime": "image/avif",
+          "width": 1409,
+          "height": 849
+        }
+      ]
+    },
+    {
+      "name": "architecture-01",
+      "classification": "cgi-render",
+      "derivatives": [
+        {
+          "variant": "main",
+          "format": "webp",
+          "localPath": "/sarbon/media/architecture-01-main-bea37c60a0fa.webp",
+          "mime": "image/webp",
+          "width": 1018,
+          "height": 852
+        },
+        {
+          "variant": "main",
+          "format": "avif",
+          "localPath": "/sarbon/media/architecture-01-main-573ae337cb2d.avif",
+          "mime": "image/avif",
+          "width": 1018,
+          "height": 852
+        }
+      ]
+    },
+    {
+      "name": "architecture-02",
+      "classification": "cgi-render",
+      "derivatives": [
+        {
+          "variant": "main",
+          "format": "webp",
+          "localPath": "/sarbon/media/architecture-02-main-f16211d15ef6.webp",
+          "mime": "image/webp",
+          "width": 1076,
+          "height": 1366
+        },
+        {
+          "variant": "main",
+          "format": "avif",
+          "localPath": "/sarbon/media/architecture-02-main-89ddd6197d68.avif",
+          "mime": "image/avif",
+          "width": 1076,
+          "height": 1366
+        }
+      ]
+    },
+    {
+      "name": "architecture-03",
+      "classification": "cgi-render",
+      "derivatives": [
+        {
+          "variant": "main",
+          "format": "webp",
+          "localPath": "/sarbon/media/architecture-03-main-856070955982.webp",
+          "mime": "image/webp",
+          "width": 1018,
+          "height": 852
+        },
+        {
+          "variant": "main",
+          "format": "avif",
+          "localPath": "/sarbon/media/architecture-03-main-dc8250a33521.avif",
+          "mime": "image/avif",
+          "width": 1018,
+          "height": 852
+        }
+      ]
+    },
+    {
+      "name": "amenity-01",
+      "classification": "cgi-render",
+      "derivatives": [
+        {
+          "variant": "main",
+          "format": "webp",
+          "localPath": "/sarbon/media/amenity-01-main-ccacd8ed44a1.webp",
+          "mime": "image/webp",
+          "width": 1800,
+          "height": 1112
+        },
+        {
+          "variant": "main",
+          "format": "avif",
+          "localPath": "/sarbon/media/amenity-01-main-e407c174aa4c.avif",
+          "mime": "image/avif",
+          "width": 1800,
+          "height": 1112
+        }
+      ]
+    },
+    {
+      "name": "amenity-02",
+      "classification": "cgi-render",
+      "derivatives": [
+        {
+          "variant": "main",
+          "format": "webp",
+          "localPath": "/sarbon/media/amenity-02-main-4e3018f3ba2f.webp",
+          "mime": "image/webp",
+          "width": 1800,
+          "height": 1112
+        },
+        {
+          "variant": "main",
+          "format": "avif",
+          "localPath": "/sarbon/media/amenity-02-main-12ead8d8fdf4.avif",
+          "mime": "image/avif",
+          "width": 1800,
+          "height": 1112
+        }
+      ]
+    },
+    {
+      "name": "amenity-03",
+      "classification": "cgi-render",
+      "derivatives": [
+        {
+          "variant": "main",
+          "format": "webp",
+          "localPath": "/sarbon/media/amenity-03-main-5fd6f61667f6.webp",
+          "mime": "image/webp",
+          "width": 1800,
+          "height": 1112
+        },
+        {
+          "variant": "main",
+          "format": "avif",
+          "localPath": "/sarbon/media/amenity-03-main-c003b6249f7b.avif",
+          "mime": "image/avif",
+          "width": 1800,
+          "height": 1112
+        }
+      ]
+    },
+    {
+      "name": "amenity-04",
+      "classification": "cgi-render",
+      "derivatives": [
+        {
+          "variant": "main",
+          "format": "webp",
+          "localPath": "/sarbon/media/amenity-04-main-d4ffc325b3e2.webp",
+          "mime": "image/webp",
+          "width": 1800,
+          "height": 1112
+        },
+        {
+          "variant": "main",
+          "format": "avif",
+          "localPath": "/sarbon/media/amenity-04-main-7427e733b46b.avif",
+          "mime": "image/avif",
+          "width": 1800,
+          "height": 1112
+        }
+      ]
+    },
+    {
+      "name": "amenity-05",
+      "classification": "cgi-render",
+      "derivatives": [
+        {
+          "variant": "main",
+          "format": "webp",
+          "localPath": "/sarbon/media/amenity-05-main-bc720f490b02.webp",
+          "mime": "image/webp",
+          "width": 1800,
+          "height": 1112
+        },
+        {
+          "variant": "main",
+          "format": "avif",
+          "localPath": "/sarbon/media/amenity-05-main-bc1ab59cf792.avif",
+          "mime": "image/avif",
+          "width": 1800,
+          "height": 1112
+        }
+      ]
+    }
+  ]
+}

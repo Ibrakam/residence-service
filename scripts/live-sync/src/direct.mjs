@@ -8,6 +8,7 @@ const NRG_BASE = 'https://apigw.bi.group/sales-picker/microfe-v3';
 const SUN_EMBED = 'https://api.macroserver.uz/estate/embedjs/?domain=human2human.uz';
 const SUN_CANONICAL_CATALOG = 'https://api.macroserver.uz/estate/catalog/';
 const RETRYABLE = new Set([408, 425, 429, 500, 502, 503, 504]);
+const MAX_RETRY_AFTER_MS = 65_000;
 
 function assertObject(value, label) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`${label} is not an object`);
@@ -35,10 +36,20 @@ function assertExactUrl(value, { host, path, queryKeys = [] }, label) {
   return url;
 }
 
+function retryAfterMilliseconds(response) {
+  const value = response.headers.get('retry-after')?.trim();
+  if (!value) return null;
+  if (/^\d+$/.test(value)) return Math.min(Number(value) * 1_000, MAX_RETRY_AFTER_MS);
+  const timestamp = Date.parse(value);
+  if (!Number.isFinite(timestamp)) return null;
+  return Math.min(Math.max(timestamp - Date.now(), 0), MAX_RETRY_AFTER_MS);
+}
+
 async function request({ label, url, method = 'GET', headers = {}, body = null, attempts = 4, timeoutMs = 60_000 }) {
   let lastStatus = null;
   let lastError = null;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    let retryDelayMs = 250 * attempt;
     try {
       const response = await fetch(url, {
         method,
@@ -50,12 +61,14 @@ async function request({ label, url, method = 'GET', headers = {}, body = null, 
       });
       lastStatus = response.status;
       if (response.ok) return response;
+      if (response.status === 429) retryDelayMs = retryAfterMilliseconds(response) ?? retryDelayMs;
+      await response.body?.cancel();
       if (!RETRYABLE.has(response.status) || attempt === attempts) break;
     } catch (error) {
       lastError = error;
       if (attempt === attempts) break;
     }
-    await delay(250 * attempt);
+    await delay(retryDelayMs);
   }
   throw new Error(`${label} failed${lastStatus ? ` with HTTP ${lastStatus}` : `: ${lastError instanceof Error ? lastError.name : 'network error'}`}`);
 }
@@ -349,7 +362,7 @@ export async function captureFromDirectSource(provider, options = {}) {
   const records = [];
   const errors = [];
   try {
-    if (provider.id === 'mbc') await captureMbc(provider, records);
+    if (provider.id === 'mbc' || provider.id === 'mbc-sarbon') await captureMbc(provider, records);
     else if (provider.id === 'nrg-bi') await captureNrgBi(provider, records, options);
     else if (provider.id === 'sun') await captureSun(records);
     else throw new Error(`${provider.id}: no direct-source adapter`);
@@ -379,6 +392,7 @@ export async function captureFromDirectSource(provider, options = {}) {
 export const directSourceInternals = Object.freeze({
   exactKeys,
   assertExactUrl,
+  retryAfterMilliseconds,
   mbcPlansBody,
   nrgPlacementBody,
   nrgEstateBody,

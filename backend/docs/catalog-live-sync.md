@@ -36,6 +36,13 @@ conservative safety floors. Review those floors against the first complete CRM
 capture before installing it. Lowering a floor or increasing the allowed drop
 is an explicit operator decision, not an automatic recovery action.
 
+`mbc-sarbon` intentionally starts with `minimumRecords: 1`. The current
+coordinator and MBC normalizer reject zero-record project candidates, so a
+legitimate fully sold-out SARBON feed remains last-known-good and reports a
+failed/stale isolated provider instead of deactivating every unit. Supporting an
+authoritative zero requires a separately reviewed zero-universe contract; do
+not weaken the shared completeness guard ad hoc.
+
 ## Capture wrapper contract
 
 The configured command is executed directly, without a shell. Its executable
@@ -61,16 +68,19 @@ Files ending in `*-client.json` are intentionally treated as partial and are
 rejected by live synchronization.
 
 For Kayan, one invocation must output both `mirador` and `ofiyat`; they commit
-together. Likewise, one MBC invocation must output Regnum Plaza, C1, Soy Bo‘yi,
-and Saadiyat from exact `type=residential` requests; the four projects commit
-together and one incomplete project fails the whole provider candidate.
+together. The established `mbc` invocation outputs Regnum Plaza, C1, Soy Bo‘yi,
+and Saadiyat from exact `type=residential` and `type=commercial` requests; those
+four projects remain one atomic candidate. SARBON uses the separate
+`mbc-sarbon` invocation against the same read-only endpoint and normalizer. Its
+candidate contains only SARBON, so a new-project outage, schema drift, or empty
+feed cannot freeze refreshes for the four established MBC projects.
 MBC `crm_id` remains private source provenance: the public `sourceKey` retains
 an existing template identity when available, otherwise it is a deterministic
 project-namespaced SHA-256 value that does not contain the raw CRM identifier.
 Production ownership is Kayan → Mirador/Ofiyat, MBC → Regnum Plaza/C1/Soy
-Bo‘yi/Saadiyat, Uysot → Avalon Residence, Human2Human → SUN, and NRG/BI → 4U, Bayterak,
+Bo‘yi/Saadiyat, MBC SARBON → SARBON, Uysot → Avalon Residence, Human2Human → SUN, and NRG/BI → 4U, Bayterak,
 Botanika Saroyi, Flagman, Jomiy, Maftun Makon, Meros, Sad'O, Voha, Yangi Baxt,
-and Zamon. These five provider entries cover all 19 projects. Alemica remains a
+and Zamon. These six provider entries cover all 20 projects. Alemica remains a
 discovery-only source until its authenticated identifiers and schema are mapped;
 its wrapper must fail closed and it is deliberately absent from the runnable
 configuration.
@@ -152,6 +162,7 @@ automatically.
 ```bash
 systemctl enable --now residence-catalog-sync@kayan.timer
 systemctl enable --now residence-catalog-sync@mbc.timer
+systemctl enable --now residence-catalog-sync@mbc-sarbon.timer
 systemctl enable --now residence-catalog-sync@uysot.timer
 systemctl enable --now residence-catalog-sync@human2human.timer
 systemctl enable --now residence-catalog-sync@nrg-bi.timer

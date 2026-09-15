@@ -54,6 +54,7 @@ readonly -a DIRECT_PROJECTS=(
   ofiyat
   regnum-plaza
   saadiyat
+  sarbon
   sado
   soy-boyi
   sun

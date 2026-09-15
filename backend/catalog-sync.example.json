@@ -29,6 +29,17 @@
       }
     },
     {
+      "name": "mbc-sarbon",
+      "command": ["/opt/residence-live-sync/bin/capture-mbc-sarbon"],
+      "workingDirectory": "/opt/residence-live-sync",
+      "timeout": "10m",
+      "freshnessWindow": "30m",
+      "maximumRecordDropPercent": 25,
+      "projects": {
+        "sarbon": {"minimumRecords": 1}
+      }
+    },
+    {
       "name": "uysot",
       "command": ["/opt/residence-live-sync/bin/capture-uysot"],
       "workingDirectory": "/opt/residence-live-sync",

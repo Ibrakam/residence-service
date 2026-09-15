@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "project": "SARBON",
+  "snapshot": "/data/sarbon-catalog.json",
+  "counts": {
+    "units": 20,
+    "plans": 20,
+    "uniquePlans": 18,
+    "missingPlans": 0
+  },
+  "assets": [
+    {
+      "localPath": "/sarbon/plans/09c99f2c2d6b96d6.webp",
+      "mime": "image/webp",
+      "width": 589,
+      "height": 980
+    },
+    {
+      "localPath": "/sarbon/plans/22d9261005be990d.webp",
+      "mime": "image/webp",
+      "width": 589,
+      "height": 980
+    },
+    {
+      "localPath": "/sarbon/plans/3b10c3a00840681d.webp",
+      "mime": "image/webp",
+      "width": 980,
+      "height": 725
+    },
+    {
+      "localPath": "/sarbon/plans/43f3df6c068fac6d.webp",
+      "mime": "image/webp",
+      "width": 980,
+      "height": 645
+    },
+    {
+      "localPath": "/sarbon/plans/447e3c61cb8135d9.webp",
+      "mime": "image/webp",
+      "width": 980,
+      "height": 645
+    },
+    {
+      "localPath": "/sarbon/plans/5e9cc6021b90de0f.webp",
+      "mime": "image/webp",
+      "width": 589,
+      "height": 980
+    },
+    {
+      "localPath": "/sarbon/plans/7a95013e976a1906.webp",
+      "mime": "image/webp",
+      "width": 590,
+      "height": 980
+    },
+    {
+      "localPath": "/sarbon/plans/7bf7fc075f682a0c.webp",
+      "mime": "image/webp",
+      "width": 259,
+      "height": 980
+    },
+    {
+      "localPath": "/sarbon/plans/7c51c7cc181a632a.webp",
+      "mime": "image/webp",
+      "width": 590,
+      "height": 980
+    },
+    {
+      "localPath": "/sarbon/plans/8d0025742fce232b.webp",
+      "mime": "image/webp",
+      "width": 980,
+      "height": 486
+    },
+    {
+      "localPath": "/sarbon/plans/9fde1effba229379.webp",
+      "mime": "image/webp",
+      "width": 621,
+      "height": 980
+    },
+    {
+      "localPath": "/sarbon/plans/b69fa0c7cbdf607f.webp",
+      "mime": "image/webp",
+      "width": 590,
+      "height": 980
+    },
+    {
+      "localPath": "/sarbon/plans/d171183af2080e46.webp",
+      "mime": "image/webp",
+      "width": 589,
+      "height": 980
+    },
+    {
+      "localPath": "/sarbon/plans/d421bddb6a4459f1.webp",
+      "mime": "image/webp",
+      "width": 980,
+      "height": 725
+    },
+    {
+      "localPath": "/sarbon/plans/ddc1375a4925f2dd.webp",
+      "mime": "image/webp",
+      "width": 589,
+      "height": 980
+    },
+    {
+      "localPath": "/sarbon/plans/e97289f65d3229a8.webp",
+      "mime": "image/webp",
+      "width": 590,
+      "height": 980
+    },
+    {
+      "localPath": "/sarbon/plans/eb7929c2c8ac9ad3.webp",
+      "mime": "image/webp",
+      "width": 980,
+      "height": 645
+    },
+    {
+      "localPath": "/sarbon/plans/fc5e80ab14a22a6a.webp",
+      "mime": "image/webp",
+      "width": 577,
+      "height": 980
+    }
+  ]
+}

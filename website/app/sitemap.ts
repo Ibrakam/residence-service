@@ -12,7 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: route === '' ? 1 : route === '/privacy' ? .6 : .9,
   }));
 
-  const projects = ['mirador', 'ofiyat', 'meros', 'sado', 'flagman', '4u', 'voha', 'maftun-makon', 'botanika-saroyi', 'bayterak', 'zamon', 'yangibaxt', 'jomiy', 'regnum-plaza', 'sun', 'saadiyat', 'c1', 'soy-boyi'];
+  const projects = ['mirador', 'ofiyat', 'meros', 'sado', 'flagman', '4u', 'voha', 'maftun-makon', 'botanika-saroyi', 'bayterak', 'zamon', 'yangibaxt', 'jomiy', 'regnum-plaza', 'sun', 'saadiyat', 'c1', 'sarbon', 'soy-boyi'];
   const projectRoutes = projects.flatMap((project) => [`/${project}`, `/${project}/apartments`]);
   const localizedProjectRoutes: MetadataRoute.Sitemap = projectRoutes.flatMap((route) => (
     (['ru', 'uz', 'en'] as const).map((language) => ({

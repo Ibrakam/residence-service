@@ -576,7 +576,7 @@ if (
 )
   fail("Card price naming or zero-results tab IDREF contract is incomplete.");
 if (
-  !privacy.includes("preserveSoyAttribution") ||
+  !privacy.includes("preserveProjectAttribution") ||
   !privacy.includes("utm_campaign") ||
   !privacy.includes("fbclid") ||
   !privacy.includes("tcid")

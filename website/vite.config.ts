@@ -94,6 +94,15 @@ function isSoyBoyiPrivatePath(pathname: string) {
   );
 }
 
+function isSarbonPrivatePath(pathname: string) {
+  return (
+    containsCanonicalPath(pathname, '/source/sarbon') ||
+    containsCanonicalPath(pathname, '/data/sarbon-catalog.json') ||
+    containsCanonicalPath(pathname, '/data/sarbon-catalog-manifest.json') ||
+    /\/scripts\/[^/]*sarbon[^/]*(?:\/|$)/.test(pathname)
+  );
+}
+
 function regnumPrivateSourceGuard() {
   return {
     name: 'regnum-private-source-guard',
@@ -123,10 +132,12 @@ function regnumPrivateSourceGuard() {
           isRegnumPrivatePath(pathname) ||
           isSunPrivatePath(pathname) ||
           isSoyBoyiPrivatePath(pathname) ||
+          isSarbonPrivatePath(pathname) ||
           (fsPath !== null &&
             (isRegnumPrivatePath(fsPath) ||
               isSunPrivatePath(fsPath) ||
-              isSoyBoyiPrivatePath(fsPath)))
+              isSoyBoyiPrivatePath(fsPath) ||
+              isSarbonPrivatePath(fsPath)))
         ) {
           response.statusCode = 404;
           response.setHeader('Cache-Control', 'no-store');

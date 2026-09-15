@@ -152,7 +152,7 @@ func TestReadyWorkspaceCatalogCounts(t *testing.T) {
 		"4u": 176, "avalon-residence": 268, "bayterak": 140, "botanika-saroyi": 224,
 		"c1": 42, "flagman": 8, "jomiy": 121, "mirador": 199, "ofiyat": 585,
 		"maftun-makon": 204, "meros": 256, "regnum-plaza": 12, "sado": 338,
-		"saadiyat": 159, "soy-boyi": 209, "sun": 51, "voha": 104, "yangibaxt": 265, "zamon": 104,
+		"saadiyat": 159, "sarbon": 20, "soy-boyi": 209, "sun": 51, "voha": 104, "yangibaxt": 265, "zamon": 104,
 	}
 	for _, item := range audit.Items {
 		expected, tracked := want[item.ProjectSlug]
@@ -179,7 +179,7 @@ func TestReadyWorkspaceCatalogCounts(t *testing.T) {
 			}
 		}
 	}
-	if audit.Files != 18 || audit.Projects != 19 || audit.Records != 3465 || audit.CompleteRecords != 3414 || audit.PartialRecords != 51 {
+	if audit.Files != 19 || audit.Projects != 20 || audit.Records != 3485 || audit.CompleteRecords != 3434 || audit.PartialRecords != 51 {
 		t.Fatalf("unexpected workspace totals: %#v", audit)
 	}
 	if audit.FloorSchemeArtifacts != 2 || audit.FloorSchemes != 34 || audit.FloorSchemeHotspots != 209 {
@@ -188,10 +188,56 @@ func TestReadyWorkspaceCatalogCounts(t *testing.T) {
 }
 
 func TestMBCProjectsUseMuradBuildingsOwnership(t *testing.T) {
-	for _, slug := range []string{"c1", "regnum-plaza", "saadiyat", "soy-boyi"} {
+	for _, slug := range []string{"c1", "regnum-plaza", "saadiyat", "sarbon", "soy-boyi"} {
 		developerSlug, developerName := catalogDeveloper(slug, nil)
 		if developerSlug != "murad-buildings" || developerName != "Murad Buildings" {
 			t.Errorf("%s ownership=(%q, %q), want Murad Buildings", slug, developerSlug, developerName)
+		}
+	}
+}
+
+func TestExplicitMuradBuildingsMetadataPreservesDisplayName(t *testing.T) {
+	project := map[string]json.RawMessage{
+		"developerSlug": json.RawMessage(`"murad-buildings"`),
+	}
+	developerSlug, developerName := catalogDeveloper("sarbon", project)
+	if developerSlug != "murad-buildings" || developerName != "Murad Buildings" {
+		t.Fatalf("sarbon ownership=(%q, %q), want Murad Buildings", developerSlug, developerName)
+	}
+}
+
+func TestSarbonBootstrapUsesLiveQueueAndPhaseIdentities(t *testing.T) {
+	path := filepath.Clean(filepath.Join("..", "..", "..", "website", "data", "sarbon-catalog.json"))
+	bundle, err := LoadCatalogFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(bundle.Projects) != 1 {
+		t.Fatalf("sarbon catalogue has %d projects, want 1", len(bundle.Projects))
+	}
+	project := bundle.Projects[0]
+	if !project.QueueMetadataPresent || len(project.Queues) != 1 {
+		t.Fatalf("sarbon bootstrap queue metadata=%t/%#v", project.QueueMetadataPresent, project.Queues)
+	}
+	queue := project.Queues[0]
+	if queue.SourceID != "1" || queue.Key != "q1" || queue.Label != "I очередь" || queue.DisplayCode != "I" || queue.SortOrder != 1 {
+		t.Fatalf("sarbon bootstrap queue=%#v", queue)
+	}
+	if len(project.Phases) != 4 {
+		t.Fatalf("sarbon bootstrap phases=%d, want 4", len(project.Phases))
+	}
+	phaseKeys := make(map[string]CatalogPhase, len(project.Phases))
+	for _, phase := range project.Phases {
+		phaseKeys[phase.Slug] = phase
+		if phase.SourceID != phase.Slug || phase.QueueKey != "q1" {
+			t.Errorf("sarbon bootstrap phase=%#v", phase)
+		}
+	}
+	for _, unit := range project.Units {
+		wantPhase := "q1-s" + unit.Entrance
+		phase, ok := phaseKeys[wantPhase]
+		if !ok || unit.PhaseSlug != wantPhase || unit.QueueKey != "q1" || phase.Name != "S"+unit.Entrance {
+			t.Errorf("sarbon unit %q identity phase=%q entrance=%q queue=%q; phase metadata=%#v", unit.SourceKey, unit.PhaseSlug, unit.Entrance, unit.QueueKey, phase)
 		}
 	}
 }

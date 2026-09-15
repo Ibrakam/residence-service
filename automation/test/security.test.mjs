@@ -262,7 +262,7 @@ test("root deployer preserves nginx-readable immutable releases and disk reserve
   assert.match(script, /smoke_asset_contract "\$PUBLIC_ORIGIN" "\/4u\/apartments"/);
   assert.match(script, /Rechecking origin\/main immediately before the production switch/);
   assert.ok(script.indexOf('smoke_routes "$PUBLIC_ORIGIN" 5') < script.indexOf('"$FINAL_RELEASE/DEPLOY_CONFIRMED"'));
-  for (const project of ["4u", "bayterak", "botanika-saroyi", "c1", "flagman", "jomiy", "maftun-makon", "meros", "mirador", "ofiyat", "regnum-plaza", "saadiyat", "sado", "soy-boyi", "sun", "voha", "yangibaxt", "zamon"]) {
+  for (const project of ["4u", "bayterak", "botanika-saroyi", "c1", "flagman", "jomiy", "maftun-makon", "meros", "mirador", "ofiyat", "regnum-plaza", "saadiyat", "sarbon", "sado", "soy-boyi", "sun", "voha", "yangibaxt", "zamon"]) {
     assert.match(script, new RegExp(`\\n  ${project.replaceAll("-", "\\-")}\\n`));
   }
 });

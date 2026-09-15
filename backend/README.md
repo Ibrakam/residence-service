@@ -7,7 +7,7 @@ versioned-import остаётся bootstrap/recovery-механизмом, а
 
 ## Проверенный охват
 
-На 14 сентября 2026 dry-run и импорт дают 18 файлов, 19 проектов и 3 322 локальные записи:
+На 15 сентября 2026 dry-run и импорт дают 19 файлов, 20 проектов и 3 485 локальных записей:
 
 | Проект | Импортируется | Официальный/public universe | Полнота |
 |---|---:|---:|---|
@@ -17,7 +17,7 @@ versioned-import остаётся bootstrap/recovery-механизмом, а
 | Meros | 256 | 256 | полный |
 | Sad'O | 338 | 338 | полный |
 | Flagman Tashkent | 8 | 8 | полный текущий листинг |
-| 4U Tashkent | 33 | 183 | **локальная выборка, неполный** |
+| 4U Tashkent | 176 | 176 | полный |
 | Voha | 104 | 104 | полный |
 | Maftun Makon | 204 | 204 | полный |
 | Botanika Saroyi | 224 | 224 | полный |
@@ -29,9 +29,10 @@ versioned-import остаётся bootstrap/recovery-механизмом, а
 | C1 | 42 | 42 typed residential | полный |
 | Soy Bo‘yi | 209 | 209 typed residential | полный |
 | Saadiyat | 159 | 159 typed residential | полный |
+| SARBON | 20 | 20 typed residential | полный |
 | SUN | 51 available | 306 public records | **sanitized available subset** |
 
-SUN metadata сохраняет public universe `306 = 51 available + 41 reserve + 214 sold`. В БД загружаются только 51 разрешённая public-клиентская запись; архивные записи не реконструируются и не выдумываются. Неполные 4U и SUN snapshots никогда не деактивируют отсутствующие в них записи.
+SUN metadata сохраняет public universe `306 = 51 available + 41 reserve + 214 sold`. В БД загружаются только 51 разрешённая public-клиентская запись; архивные записи не реконструируются и не выдумываются. Неполный SUN snapshot никогда не деактивирует отсутствующие в нём записи.
 
 Официальные unit IDs, исходные статусы, цены, локальные/официальные ссылки планировок и полный JSON объекта сохраняются в PostgreSQL. Публичный API отдаёт внутренний ID и непрозрачный `sourceKey`, но не выдаёт CRM `source_id` или raw provenance. Metadata snapshot содержит checksum, дату capture, источник, schema, локальное/официальное число и признак полноты.
 
@@ -150,7 +151,7 @@ Backend не содержит внешнего CRM sink и сам ничего �
 - Mirador: 51 unit-level plan строго сверен по number/area/rooms/floor с видимым official DOM; для оставшихся 148 нет доказанной exact-связи. Отдельно импортируются 44 официальных Mirador layouts; они не выдаются за поэтажные схемы. Ofiyat unit-level mapping не менялся. Цена отсутствует у 617 неактуальных/несвободных записей.
 - Avalon Residence: у 60 занятых/проданных объектов нет цены; unit-level plan отсутствует во всех 268 JSON rows (floor-layout конфигурация живёт отдельно от snapshot).
 - Regnum Plaza: все 12 public rows имеют «цена по запросу», поэтому numeric price остаётся `null`; у 2 rows нет официального public plan.
-- C1 и Saadiyat: все 42 и 159 typed residential rows имеют локальные официальные планы; numeric price источником не опубликован.
+- C1, Saadiyat и SARBON: все 42, 159 и 20 typed residential rows имеют локальные официальные планы; numeric price источником не опубликован.
 - Soy Bo‘yi: локальный официальный план есть у 207 из 209 typed residential rows; numeric price источником не опубликован.
 - Maftun Makon: у 3 из 204 rows нет подтверждённой планировки.
 - Meros: 1 numeric price отсутствует; Sad'O: 3 numeric prices отсутствуют.

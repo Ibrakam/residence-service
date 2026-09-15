@@ -107,6 +107,7 @@ func TestProductionExampleOwnsAllLiveProjects(t *testing.T) {
 		"human2human": {"sun"},
 		"kayan":       {"mirador", "ofiyat"},
 		"mbc":         {"c1", "regnum-plaza", "saadiyat", "soy-boyi"},
+		"mbc-sarbon":  {"sarbon"},
 		"nrg-bi": {
 			"4u", "bayterak", "botanika-saroyi", "flagman", "jomiy", "maftun-makon",
 			"meros", "sado", "voha", "yangibaxt", "zamon",
@@ -116,6 +117,9 @@ func TestProductionExampleOwnsAllLiveProjects(t *testing.T) {
 	got := make(map[string][]string, len(config.Providers))
 	for _, provider := range config.Providers {
 		got[provider.Name] = provider.ProjectSlugs()
+		if provider.Name == "mbc-sarbon" && provider.Projects["sarbon"].MinimumRecords != 1 {
+			t.Errorf("isolated SARBON first-run floor=%d, want 1", provider.Projects["sarbon"].MinimumRecords)
+		}
 		if provider.WorkingDirectory != "/opt/residence-live-sync" {
 			t.Errorf("provider %q workingDirectory=%q", provider.Name, provider.WorkingDirectory)
 		}

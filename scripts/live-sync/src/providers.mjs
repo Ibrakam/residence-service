@@ -70,6 +70,18 @@ export const mbcProjects = Object.freeze([
   }),
 ]);
 
+// SARBON deliberately has its own provider transaction. Its lifecycle is much
+// newer than the established four-project MBC set, so a schema change, outage,
+// or empty AVAILABLE feed cannot block refreshes for those existing projects.
+export const mbcSarbonProjects = Object.freeze([
+  Object.freeze({
+    id: 21, slug: 'sarbon', name: 'SARBON', sourceLanding: 'https://mbc.uz/ru/project/sarbon', templateFile: 'sarbon-catalog.json',
+    queues: Object.freeze([
+      Object.freeze({ sourceValue: '1', queueKey: 'q1', queueLabel: 'I очередь', queueDisplayCode: 'I', queueOrder: 1 }),
+    ]),
+  }),
+]);
+
 /**
  * Provider definitions are intentionally data-only. A provider marked `discovery`
  * may be captured, but it cannot emit a publishable catalogue until its current
@@ -161,6 +173,26 @@ export const providers = Object.freeze({
     probes: Object.freeze([]),
     requiredProbeIds: Object.freeze([]),
     outputFiles: Object.freeze(mbcProjects.map((project) => `${project.slug}-catalog.json`)),
+  }),
+
+  'mbc-sarbon': Object.freeze({
+    id: 'mbc-sarbon',
+    label: 'MBC Partners / SARBON',
+    projects: Object.freeze(mbcSarbonProjects.map((project) => project.slug)),
+    projectDefinitions: mbcSarbonProjects,
+    maturity: 'normalize-ready',
+    captureMode: 'public-read-post',
+    profileHint: null,
+    pageHosts: Object.freeze([]),
+    startUrl: 'https://mbc.uz/ru/project/sarbon',
+    launchFlags: Object.freeze([]),
+    allowedMethods: Object.freeze(['POST']),
+    allowedResponses: Object.freeze([
+      https('mbc.uz', ['/api/plans']),
+    ]),
+    probes: Object.freeze([]),
+    requiredProbeIds: Object.freeze([]),
+    outputFiles: Object.freeze(mbcSarbonProjects.map((project) => `${project.slug}-catalog.json`)),
   }),
 
   sun: Object.freeze({

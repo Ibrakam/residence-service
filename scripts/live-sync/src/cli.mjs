@@ -17,7 +17,7 @@ import {
   normalizeSunPages,
   normalizeUysotTable,
 } from './normalize.mjs';
-import { getProvider, mbcProjects, providerStatus } from './providers.mjs';
+import { getProvider, providerStatus } from './providers.mjs';
 
 const repositoryRoot = resolve(fileURLToPath(new URL('../../..', import.meta.url)));
 const packageRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -60,13 +60,17 @@ function providerAlias(value) {
   return value;
 }
 
+function isMbcProvider(providerId) {
+  return providerId === 'mbc' || providerId === 'mbc-sarbon';
+}
+
 function validateTemplate(providerId, template, path, project = null) {
   if (providerId === 'kayan') {
     const projects = Array.isArray(template?.projects) ? template.projects : [];
     const slugs = new Set(projects.map((item) => item?.project?.slug));
     const layouts = projects.reduce((sum, item) => sum + (Array.isArray(item?.layouts) ? item.layouts.length : 0), 0);
     if (!slugs.has('mirador') || !slugs.has('ofiyat') || layouts === 0) throw new Error(`KAYAN enrichment template is incomplete: ${path}`);
-  } else if (providerId === 'mbc') {
+  } else if (isMbcProvider(providerId)) {
     const units = Array.isArray(template?.units) ? template.units : [];
     const observedSlug = template?.projectSlug ?? template?.project?.slug;
     if (project && observedSlug !== project.slug) throw new Error(`MBC ${project.slug} enrichment template has unexpected project ${JSON.stringify(observedSlug)}: ${path}`);
@@ -94,9 +98,10 @@ export async function loadTemplate(providerId, explicitPath) {
     kayan: 'website/data/kayan-catalog.json',
     sun: 'website/data/sun-client.json',
   };
-  if (providerId === 'mbc') {
+  if (isMbcProvider(providerId)) {
+    const projects = getProvider(providerId).projectDefinitions;
     const templates = {};
-    for (const project of mbcProjects) {
+    for (const project of projects) {
       const filename = project.templateFile;
       const explicitCandidate = explicitPath
         ? (basename(explicitPath).endsWith('.json') ? resolve(dirname(explicitPath), filename) : resolve(explicitPath, filename))
@@ -118,7 +123,7 @@ export async function loadTemplate(providerId, explicitPath) {
           throw error;
         }
       }
-      if (!found) throw new Error(`mbc: required public enrichment template ${filename} is missing; set LIVE_SYNC_TEMPLATE_DIR or install it under ${packageRoot}/templates`);
+      if (!found) throw new Error(`${providerId}: required public enrichment template ${filename} is missing; set LIVE_SYNC_TEMPLATE_DIR or install it under ${packageRoot}/templates`);
     }
     return templates;
   }
@@ -144,12 +149,13 @@ export async function loadTemplate(providerId, explicitPath) {
 
 function normalize(providerId, input, capturedAt, template, legacy = false) {
   if (providerId === 'uysot') return normalizeUysotTable(input, capturedAt);
-  if (providerId === 'mbc') {
+  if (isMbcProvider(providerId)) {
     if (legacy) {
+      if (providerId !== 'mbc') throw new Error(`${providerId}: legacy MBC captures are not supported`);
       const result = normalizeRegnumPages(input, capturedAt, template?.['regnum-plaza'] ?? null);
       return { artifacts: [{ filename: 'regnum-plaza-catalog.json', artifact: result.artifact }], audit: { 'regnum-plaza': result.audit } };
     }
-    return normalizeMbcProjects(input, capturedAt, template);
+    return normalizeMbcProjects(input, capturedAt, template, getProvider(providerId).projectDefinitions);
   }
   if (providerId === 'sun') return normalizeSunPages(input, capturedAt, template);
   if (providerId === 'kayan') return legacy ? normalizeKayanSnapshots(input, capturedAt, template) : normalizeKayanPropertyResponses(input, capturedAt, template);
@@ -163,7 +169,7 @@ function inputFromCapture(providerId, capture) {
     if (!record) throw new Error('Uysot capture does not contain the guarded table response');
     return record.value;
   }
-  if (providerId === 'mbc') {
+  if (isMbcProvider(providerId)) {
     const provider = getProvider(providerId);
     const records = capture.records
       .filter((item) => item.url?.origin === 'https://mbc.uz' && item.url?.path === '/api/plans' && item.scope?.endpoint === 'plans');
@@ -244,7 +250,7 @@ function artifactFilename(providerId) {
 }
 
 function artifactEntries(providerId, result) {
-  if (providerId === 'mbc' || providerId === 'nrg-bi') return result.artifacts;
+  if (isMbcProvider(providerId) || providerId === 'nrg-bi') return result.artifacts;
   return [{ filename: artifactFilename(providerId), artifact: result.artifact }];
 }
 

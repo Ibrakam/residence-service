@@ -28,6 +28,7 @@ export const config = {
     '/privacy',
     '/regnum-plaza/:path*',
     '/saadiyat/:path*',
+    '/sarbon/:path*',
     '/sado/:path*',
     '/soy-boyi/:path*',
     '/sun/:path*',

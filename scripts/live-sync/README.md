@@ -1,6 +1,6 @@
 # Residence live catalogue collectors
 
-These adapters capture complete, current unit catalogues for the 19 Residence
+These adapters capture complete, current unit catalogues for the 20 Residence
 projects without changing any source CRM. They publish only full
 `*-catalog.json` files (plus `avalon-units.json`); an authentication, schema,
 pagination, identity, or count uncertainty makes the command exit non-zero.
@@ -11,7 +11,8 @@ pagination, identity, or count uncertainty makes the command exit non-zero.
 | --- | --- | --- | --- |
 | `kayan` | Mirador, Ofiyat | Authorized Profitbase OOPIF, exact `GET https://pb21432.profitbase.ru/api/v4/json/property`; allowed query keys are `houseId`, `returnFilteredCount`, `showQueueCount`; house IDs `154813`, `153505`, `153506`, `154273` | Mirador 209; Ofiyat apartments/parking 585; every response satisfied `properties.length === filteredCount` |
 | `uysot` | Avalon Residence | Authorized showroom; exact read-only `POST https://service.app.uysot.uz/v1/smart-catalog/table`, body keys `page,size,orders,houseId`, forced to page 1/size 500/house 1074 | 268 unique units, declared 268, one page, buildings A/B1/B2 |
-| `mbc` | Regnum Plaza, C1, Soy Bo‘yi, Saadiyat | Public read-only `POST https://mbc.uz/api/plans`; each project uses the exact URL-encoded keys `project={1\|2\|3\|18}&type=residential&page=N` | Every project must provide all declared pages, only `AVAILABLE residential` rows, and unique public and CRM IDs; all four artifacts publish atomically |
+| `mbc` | Regnum Plaza, C1, Soy Bo‘yi, Saadiyat | Public read-only `POST https://mbc.uz/api/plans`; each project uses the exact URL-encoded keys `project={1\|2\|3\|18}&type={residential\|commercial}&page=N` | Every project/category must provide all declared pages; published rows must be `AVAILABLE residential` with unique public and CRM IDs; all four established artifacts publish atomically |
+| `mbc-sarbon` | SARBON | The same public read-only MBC endpoint and exact body contract, restricted to `project=21&type={residential\|commercial}&page=N` | A complete SARBON-only candidate; failure or an empty feed cannot block the established four-project MBC transaction |
 | `sun` | SUN | Public `GET /estate/embedjs/`, `GET /estate/request/get_request_url/`, then read-only `POST https://api.macroserver.uz/estate/catalog/` action `objects_list` | Pages 0–10 contain 336 overlapping rows and exactly 306 stable unique IDs: 51 available, 41 reserved, 214 sold |
 | `nrg-bi` | 4U, Bayterak, Botanika Saroyi, Flagman, Jomiy, Maftun Makon, Meros, Sado, Voha, Yangibaxt, Zamon | Public read-only `POST https://apigw.bi.group/sales-picker/microfe-v3/placementList` and `/realEstateList`; 4U additionally uses exact anonymous `/placement` detail lookups and exact `GET` requests to its unit-bound `s3.bi.group/crm-clients-e1csales/layouts/` assets. Apartment type and project UUID are allowlisted; page size is capped at 300 and pagination must reach an empty page | Current 4U apartment coverage is 176/176 active rows. Every 4U suffixless detail original and `_1600`/`_400`/`_200` variant is fetched, MIME-sniffed, dimension/byte checked, hashed, and bound to the same block/unit/number before publication. Other project counts remain capture-derived. |
 
@@ -34,10 +35,17 @@ public BI sales-picker source.
 - Every browser request is checked against an exact host/path/method/query-key
   allowlist. Mutating methods are blocked. Uysot has one exact read-only POST
   exception whose request is constrained to house 1074.
-- MBC, SUN, and NRG use fixed read-only query bodies and no credentials. One
-  MBC run owns Regnum Plaza, C1, Soy Bo‘yi, and Saadiyat together; an invalid
-  row or incomplete pagination in any one project prevents all four artifacts
-  from being published.
+- MBC, SUN, and NRG use fixed read-only query bodies and no credentials. The
+  `mbc` run owns Regnum Plaza, C1, Soy Bo‘yi, and Saadiyat together; an invalid
+  row or incomplete pagination prevents all four established artifacts from
+  being published. `mbc-sarbon` reuses the exact guarded MBC transport and
+  normalizer but owns only SARBON, isolating both transactions. HTTP 429 retries
+  honor the source's bounded `Retry-After` window without accepting a partial
+  candidate.
+- `mbc-sarbon` uses the coordinator's current positive floor at
+  `minimumRecords: 1`. A legitimate zero-AVAILABLE sold-out feed therefore
+  fails only this isolated provider and preserves its last-known-good catalogue;
+  authoritative zero support needs a separately reviewed coordinator contract.
 - 4U publishes a plan URL only when both the 3,000px-or-larger suffixless PNG
   original and its 1,600px JPEG card preview pass exact identity, origin, MIME,
   dimensions, byte-size, and body-hash checks. The `.png` suffix on list
@@ -94,6 +102,7 @@ and a candidate artifact under a new run directory:
 
 ```sh
 node src/cli.mjs capture --provider mbc --output /tmp/residence-captures
+node src/cli.mjs capture --provider mbc-sarbon --output /tmp/residence-captures
 node src/cli.mjs capture --provider sun --output /tmp/residence-captures
 node src/cli.mjs capture --provider nrg-bi --output /tmp/residence-captures
 node src/cli.mjs capture --provider kayan --cdp http://127.0.0.1:9222 --output /tmp/residence-captures
@@ -106,6 +115,7 @@ Revalidate an existing capture without writing a catalogue:
 node src/cli.mjs dry-run --provider kayan --input /tmp/residence-captures/kayan/RUN_ID
 node src/cli.mjs dry-run --provider uysot --input /tmp/residence-captures/uysot/RUN_ID
 node src/cli.mjs dry-run --provider mbc --input /tmp/residence-captures/mbc/RUN_ID
+node src/cli.mjs dry-run --provider mbc-sarbon --input /tmp/residence-captures/mbc-sarbon/RUN_ID
 node src/cli.mjs dry-run --provider nrg-bi --input /tmp/residence-captures/nrg-bi/RUN_ID
 ```
 
@@ -113,6 +123,7 @@ Production wrappers require a fresh output directory supplied by the caller:
 
 ```sh
 CATALOG_OUTPUT_DIR=/run/residence-sync/catalogs bin/capture-mbc
+CATALOG_OUTPUT_DIR=/run/residence-sync/catalogs bin/capture-mbc-sarbon
 CATALOG_OUTPUT_DIR=/run/residence-sync/catalogs bin/capture-human2human
 CATALOG_OUTPUT_DIR=/run/residence-sync/catalogs bin/capture-nrg-bi
 CATALOG_OUTPUT_DIR=/run/residence-sync/catalogs bin/capture-kayan
@@ -140,10 +151,10 @@ Optional environment variables are `LIVE_SYNC_CAPTURE_DIR`,
 `LIVE_SYNC_CDP_KAYAN_URL`, and `LIVE_SYNC_CDP_UYSOT_URL`. MBC, SUN, and NRG do
 not need CDP.
 
-Kayan, SUN, and all four MBC projects deliberately require their public
+Kayan, SUN, and all five MBC projects deliberately require their public
 artwork-enrichment templates; the collector fails before capture if one is
 missing or malformed, so a standalone installation cannot silently erase
-plans/layouts during sync. Package these six files with the collector:
+plans/layouts during sync. Package these seven files with the collector:
 
 ```text
 /opt/residence-live-sync/templates/kayan-catalog.json
@@ -151,11 +162,12 @@ plans/layouts during sync. Package these six files with the collector:
 /opt/residence-live-sync/templates/c1-catalog.json
 /opt/residence-live-sync/templates/soy-boyi-catalog.json
 /opt/residence-live-sync/templates/saadiyat-catalog.json
+/opt/residence-live-sync/templates/sarbon-catalog.json
 /opt/residence-live-sync/templates/sun-client.json
 ```
 
 Their canonical repository sources are `website/data/kayan-catalog.json`, the
-four matching MBC files under `website/data`, and `website/data/sun-client.json`.
+five matching MBC files under `website/data`, and `website/data/sun-client.json`.
 Alternatively set `LIVE_SYNC_TEMPLATE_DIR` to a read-only directory containing
 those filenames, or preserve `website/data` below the collector working
 directory. These files contain public catalogue/artwork metadata; the packaging
@@ -172,6 +184,6 @@ cd backend
 go run ./cmd/import-catalogs -dry-run -data-dir /run/residence-sync/catalogs
 ```
 
-A combined run now produces exactly 18 catalog files for 19 projects. Record
+A combined run now produces exactly 19 catalog files for 20 projects. Record
 counts are intentionally validated against each capture's official declaration
 and the configured last-known-good baseline rather than frozen in this guide.

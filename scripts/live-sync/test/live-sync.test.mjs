@@ -7,13 +7,13 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assertLoopbackCdp, matchAllowedUrl, safeUrlMetadata } from '../src/allowlist.mjs';
 import { atomicRunDirectory, atomicWriteFile, pruneRunDirectories } from '../src/atomic.mjs';
-import { captureFromAuthorizedTab, classifyRequest, parseUysotReadOnlyBody } from '../src/capture.mjs';
+import { captureFiles, captureFromAuthorizedTab, classifyRequest, makeBodyRecord, parseUysotReadOnlyBody } from '../src/capture.mjs';
 import { captureFromDirectSource, directSourceInternals } from '../src/direct.mjs';
 import { loadTemplate } from '../src/cli.mjs';
 import { opaqueMbcSourceKey, templateMbcSourceKey } from '../src/mbc-identity.mjs';
 import { auditNrgPlanAssets, expectedNrgOriginalUrl, expectedNrgPlanUrl, fetchNrgPlanDetails, imageMetadata, refreshNrgPlanAssets, validateNrgOriginalUrl, validateNrgPlanUrl } from '../src/nrg-plan-assets.mjs';
 import { normalizeKayanPropertyResponses, normalizeMbcProjects, normalizeNrgBiCapture, normalizeRegnumPages, normalizeSunPages, normalizeUysotTable } from '../src/normalize.mjs';
-import { getProvider, mbcProjects } from '../src/providers.mjs';
+import { getProvider, mbcProjects, mbcSarbonProjects } from '../src/providers.mjs';
 import { containsObviousSecret, sanitizeValue } from '../src/redact.mjs';
 
 function fakeUysotBrowser(reloadScripts, responseBody = '{}') {
@@ -196,9 +196,13 @@ test('direct-source bodies use exact read-only scopes', () => {
     { id: 3, slug: 'soy-boyi' },
     { id: 18, slug: 'saadiyat' },
   ]);
+  assert.deepEqual(mbcSarbonProjects.map(({ id, slug }) => ({ id, slug })), [{ id: 21, slug: 'sarbon' }]);
   assert.deepEqual(getProvider('mbc').outputFiles, ['regnum-plaza-catalog.json', 'c1-catalog.json', 'soy-boyi-catalog.json', 'saadiyat-catalog.json']);
+  assert.deepEqual(getProvider('mbc-sarbon').outputFiles, ['sarbon-catalog.json']);
   const mbc = directSourceInternals.mbcPlansBody(mbcProjects[1], 2);
   assert.deepEqual(Object.fromEntries(mbc), { project: '2', type: 'residential', page: '2' });
+  const sarbon = directSourceInternals.mbcPlansBody(mbcSarbonProjects[0], 3, 'commercial');
+  assert.deepEqual(Object.fromEntries(sarbon), { project: '21', type: 'commercial', page: '3' });
   const provider = getProvider('nrg-bi');
   const project = provider.projectDefinitions[0];
   assert.deepEqual(Object.keys(directSourceInternals.nrgPlacementBody(provider, project, 1)).sort(), ['companyIds', 'filterTags', 'pageNo', 'pageSize', 'propertyTypes', 'realEstateUUIDs']);
@@ -220,6 +224,19 @@ test('publishable providers require complete public artwork templates', async ()
   const mbc = await loadTemplate('mbc');
   assert.deepEqual(Object.keys(mbc), mbcProjects.map((project) => project.slug));
   for (const project of mbcProjects) assert.ok(mbc[project.slug].units.length > 0);
+  const sarbon = await loadTemplate('mbc-sarbon');
+  assert.deepEqual(Object.keys(sarbon), ['sarbon']);
+  assert.ok(sarbon.sarbon.units.length > 0);
+  assert.deepEqual(sarbon.sarbon.queues, [
+    { sourceId: '1', queueKey: 'q1', queueLabel: 'I очередь', queueDisplayCode: 'I', queueOrder: 1 },
+  ]);
+  assert.ok(sarbon.sarbon.units.every((unit) => unit.phase === '1'
+    && unit.phaseSlug === `q1-s${unit.section}`
+    && unit.phaseName === `S${unit.section}`
+    && unit.queueKey === 'q1'
+    && unit.queueLabel === 'I очередь'
+    && unit.queueDisplayCode === 'I'
+    && unit.queueOrder === 1));
 });
 
 test('Uysot normalization requires and emits a complete 268-row universe', () => {
@@ -292,6 +309,130 @@ function mbcGroups() {
   });
 }
 
+function mbcCaptureFixture(projects = mbcProjects, provider = 'mbc') {
+  const capturedAt = '2026-09-15T12:00:00.000Z';
+  const records = projects.flatMap((project) => {
+    const row = mbcRow(project, 7_000 + project.id, 900_000 + project.id);
+    return [
+      { propertyType: 'residential', data: [row] },
+      { propertyType: 'commercial', data: [] },
+    ].map(({ propertyType, data }) => makeBodyRecord({
+      id: `mbc-${project.slug}-${propertyType}-plans-1`,
+      method: 'POST',
+      url: 'https://mbc.uz/api/plans',
+      status: 200,
+      mimeType: 'application/json',
+      text: JSON.stringify({ plans: { total: data.length, current_page: 1, last_page: 1, data } }),
+      capturedAt,
+      scope: { projectSlug: project.slug, projectId: project.id, propertyType, endpoint: 'plans', page: 1 },
+    }));
+  });
+  return {
+    schemaVersion: 1,
+    provider,
+    capturedAt,
+    target: null,
+    safety: { publicReadOnlyTransport: true, credentialsUsed: false },
+    blocked: [],
+    errors: [],
+    records,
+  };
+}
+
+async function writeMbcTemplateFixtures(root, projects = [...mbcProjects, ...mbcSarbonProjects]) {
+  await mkdir(root, { recursive: true });
+  for (const project of projects) {
+    const row = mbcRow(project, 7_000 + project.id, 900_000 + project.id);
+    const template = {
+      projectSlug: project.slug,
+      units: [{
+        id: String(row.id),
+        crmId: String(row.crm_id),
+        number: row.number,
+        rooms: row.rooms,
+        area: row.square,
+        floor: row.floor,
+        phase: row.queue,
+        section: row.section,
+        plan: `/${project.slug}/plans/fixture.webp`,
+      }],
+    };
+    await writeFile(join(root, project.templateFile), JSON.stringify(template));
+  }
+}
+
+test('MBC CLI keeps the established four-project transaction separate from SARBON', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'live-sync-mbc-dry-run-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const templates = join(root, 'templates');
+  await writeMbcTemplateFixtures(templates);
+  const complete = await atomicRunDirectory(join(root, 'captures'), 'mbc', captureFiles(mbcCaptureFixture()));
+  const cli = fileURLToPath(new URL('../src/cli.mjs', import.meta.url));
+  const mbcOutput = JSON.parse(execFileSync(process.execPath, [cli, 'dry-run', '--provider', 'mbc', '--input', complete, '--template', templates], { encoding: 'utf8' }));
+  assert.equal(mbcOutput.write, false);
+  assert.deepEqual(mbcOutput.artifacts, mbcProjects.map((project) => `${project.slug}-catalog.json`));
+  assert.deepEqual(Object.keys(mbcOutput.audit), mbcProjects.map((project) => project.slug));
+  assert.ok(Object.values(mbcOutput.audit).every((audit) => audit.complete && audit.observedRecords === 1));
+
+  const partial = await atomicRunDirectory(
+    join(root, 'partial-captures'),
+    'mbc',
+    captureFiles(mbcCaptureFixture(mbcProjects.slice(0, -1))),
+  );
+  assert.throws(
+    () => execFileSync(process.execPath, [cli, 'dry-run', '--provider', 'mbc', '--input', partial, '--template', templates], { encoding: 'utf8' }),
+    (error) => /no complete saadiyat category pages/.test(String(error?.stderr)),
+    'the established MBC provider must remain atomic across its four projects',
+  );
+
+  const sarbonCapture = mbcCaptureFixture(mbcSarbonProjects, 'mbc-sarbon');
+  const sarbonComplete = await atomicRunDirectory(join(root, 'sarbon-captures'), 'mbc-sarbon', captureFiles(sarbonCapture));
+  const sarbonOutput = JSON.parse(execFileSync(process.execPath, [cli, 'dry-run', '--provider', 'mbc-sarbon', '--input', sarbonComplete, '--template', templates], { encoding: 'utf8' }));
+  assert.deepEqual(sarbonOutput.artifacts, ['sarbon-catalog.json']);
+  assert.deepEqual(Object.keys(sarbonOutput.audit), ['sarbon']);
+  assert.equal(sarbonOutput.audit.sarbon.complete, true);
+
+  const emptySarbonCapture = await atomicRunDirectory(
+    join(root, 'empty-sarbon-captures'),
+    'mbc-sarbon',
+    captureFiles(mbcCaptureFixture([], 'mbc-sarbon')),
+  );
+  assert.throws(
+    () => execFileSync(process.execPath, [cli, 'dry-run', '--provider', 'mbc-sarbon', '--input', emptySarbonCapture, '--template', templates], { encoding: 'utf8' }),
+    (error) => /no complete sarbon category pages/.test(String(error?.stderr)),
+    'a broken SARBON candidate must fail without becoming part of the four-project MBC run',
+  );
+});
+
+test('MBC capture honors a bounded Retry-After response and resumes the same exact request', async (t) => {
+  assert.equal(directSourceInternals.retryAfterMilliseconds(new Response('', { status: 429, headers: { 'retry-after': '0' } })), 0);
+  assert.equal(directSourceInternals.retryAfterMilliseconds(new Response('', { status: 429, headers: { 'retry-after': '9999' } })), 65_000);
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  let attempts = 0;
+  let firstBody = null;
+  globalThis.fetch = async (_url, options) => {
+    attempts += 1;
+    const body = Object.fromEntries(new URLSearchParams(options.body));
+    if (attempts === 1) {
+      firstBody = body;
+      return new Response('', { status: 429, headers: { 'retry-after': '0' } });
+    }
+    if (attempts === 2) assert.deepEqual(body, firstBody, 'the retry must not change project/category/page scope');
+    const project = [...mbcProjects, ...mbcSarbonProjects].find((candidate) => String(candidate.id) === body.project);
+    assert.ok(project);
+    const data = body.type === 'commercial' ? [] : [mbcRow(project, project.id)];
+    return new Response(JSON.stringify({ plans: { total: data.length, current_page: 1, last_page: 1, data } }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  };
+  const capture = await captureFromDirectSource(getProvider('mbc'));
+  assert.deepEqual(capture.errors, []);
+  assert.equal(attempts, mbcProjects.length * 2 + 1);
+  assert.equal(capture.records.length, mbcProjects.length * 2);
+});
+
 test('MBC capture posts exact residential and commercial evidence requests for every owned project', async (t) => {
   const originalFetch = globalThis.fetch;
   t.after(() => { globalThis.fetch = originalFetch; });
@@ -299,7 +440,7 @@ test('MBC capture posts exact residential and commercial evidence requests for e
   globalThis.fetch = async (url, options) => {
     const body = Object.fromEntries(new URLSearchParams(options.body));
     requests.push({ url, method: options.method, body });
-    const project = mbcProjects.find((candidate) => String(candidate.id) === body.project);
+    const project = [...mbcProjects, ...mbcSarbonProjects].find((candidate) => String(candidate.id) === body.project);
     assert.ok(project);
     return new Response(JSON.stringify({ plans: { total: 1, current_page: 1, last_page: 1, data: [mbcRow(project, project.id)] } }), {
       status: 200,
@@ -315,10 +456,24 @@ test('MBC capture posts exact residential and commercial evidence requests for e
   assert.ok(requests.every((request) => request.url === 'https://mbc.uz/api/plans' && request.method === 'POST'));
   assert.deepEqual(capture.records.map((record) => record.scope.projectSlug), mbcProjects.flatMap((project) => [project.slug, project.slug]));
   assert.deepEqual(capture.records.map((record) => record.scope.propertyType), mbcProjects.flatMap(() => ['residential', 'commercial']));
+
+  requests.length = 0;
+  const sarbonCapture = await captureFromDirectSource(getProvider('mbc-sarbon'));
+  assert.deepEqual(sarbonCapture.errors, []);
+  assert.deepEqual(requests.map((request) => request.body), [
+    { project: '21', type: 'residential', page: '1' },
+    { project: '21', type: 'commercial', page: '1' },
+  ]);
+  assert.deepEqual(sarbonCapture.records.map((record) => record.scope.projectSlug), ['sarbon', 'sarbon']);
 });
 
 test('MBC normalization publishes four complete owned artifacts and retains local plans', () => {
-  const planFields = ['planPublicPath', 'plan', 'plan', 'planImageUrl'];
+  const planFields = {
+    'regnum-plaza': 'planPublicPath',
+    c1: 'plan',
+    'soy-boyi': 'plan',
+    saadiyat: 'planImageUrl',
+  };
   const expectedPlanPaths = {};
   const templates = Object.fromEntries(mbcProjects.map((project, index) => {
     const id = String(index * 10 + 1);
@@ -336,7 +491,7 @@ test('MBC normalization publishes four complete owned artifacts and retains loca
       floor: 2,
       phase,
       section,
-      [planFields[index]]: expectedPlanPaths[project.slug],
+      [planFields[project.slug]]: expectedPlanPaths[project.slug],
       ...(project.slug === 'soy-boyi' ? { sourceKey: 'soy-boyi:stale-public-id' } : {}),
     }] }];
   }));
@@ -377,6 +532,46 @@ test('MBC normalization publishes four complete owned artifacts and retains loca
       { queueKey: 'q4', queueLabel: 'IV очередь', queueOrder: 4 },
     ],
     'queue I remains explicit CRM metadata even when the residential rows currently begin at raw q2',
+  );
+});
+
+test('isolated SARBON normalizer publishes only AVAILABLE residential rows', () => {
+  const sarbon = mbcSarbonProjects[0];
+  const residential = mbcRow(sarbon, 154, 57946);
+  const commercial = { ...mbcRow(sarbon, 900, 88000), type: 'commercial', rooms: 0 };
+  const groups = [{
+    project: sarbon,
+    residentialPages: [{ plans: { total: 1, current_page: 1, last_page: 1, data: [residential] } }],
+    commercialPages: [{ plans: { total: 1, current_page: 1, last_page: 1, data: [commercial] } }],
+  }];
+  const template = { sarbon: { projectSlug: 'sarbon', units: [{
+    id: '154', crmId: '57946', number: residential.number, rooms: 2, area: 50,
+    floor: 2, phase: '1', phaseSlug: 'q1-s2', phaseName: 'S2', section: '2',
+    queueKey: 'q1', queueLabel: 'I очередь', queueDisplayCode: 'I', queueOrder: 1,
+    sourceKey: 'sarbon:154', plan: '/sarbon/plans/fixture.webp',
+  }] } };
+  const result = normalizeMbcProjects(groups, '2026-09-15T12:00:00.000Z', template, mbcSarbonProjects);
+  assert.deepEqual(result.artifacts.map((entry) => entry.filename), ['sarbon-catalog.json']);
+  const artifact = result.artifacts[0].artifact;
+  assert.equal(artifact.projectId, 21);
+  assert.equal(artifact.sourceLanding, 'https://mbc.uz/ru/project/sarbon');
+  assert.equal(artifact.units.length, 1);
+  assert.equal(artifact.units[0].sourceKey, 'sarbon:154');
+  assert.equal(artifact.units[0].phaseSlug, template.sarbon.units[0].phaseSlug);
+  assert.equal(artifact.units[0].phaseName, template.sarbon.units[0].phaseName);
+  assert.equal(artifact.units[0].queueKey, template.sarbon.units[0].queueKey);
+  assert.equal(artifact.units[0].planImageUrl, '/sarbon/plans/fixture.webp');
+  assert.equal(artifact.units[0].propertyType, 'apartment');
+  assert.equal(artifact.units[0].status, 'available');
+  assert.equal(artifact.excludedCommercial, 1);
+  assert.deepEqual(artifact.queues, [{ sourceId: '1', queueKey: 'q1', queueLabel: 'I очередь', queueDisplayCode: 'I', queueOrder: 1 }]);
+
+  const sold = structuredClone(groups);
+  sold[0].residentialPages[0].plans.data[0].status = 'SOLD';
+  assert.throws(
+    () => normalizeMbcProjects(sold, undefined, template, mbcSarbonProjects),
+    /is not available/,
+    'the isolated provider must keep the same customer-safe AVAILABLE-only contract',
   );
 });
 
@@ -468,7 +663,7 @@ test('MBC normalization fails closed on missing pages, duplicates, wrong type, o
   }] }]));
   assert.throws(() => normalizeMbcProjects(mbcGroups(), undefined, unmatchedTemplates), /could not match any local plan/);
 
-  assert.throws(() => normalizeMbcProjects(mbcGroups().slice(0, 3)), /requires 4 project groups/);
+  assert.throws(() => normalizeMbcProjects(mbcGroups().slice(0, -1)), /requires 4 project groups/);
 });
 
 test('KAYAN maps only Ofiyat residential phases to queues and keeps parking independent', () => {

@@ -268,9 +268,9 @@ include /etc/nginx/snippets/tencorp-auth-protect-page.conf;
 - `location ^~ /avalon/`;
 - `location ^~ /tencrop/`;
 - exact `/sanat/` and `/sanat/flats`;
-- the regex containing the 18 direct projects: `4u`, `bayterak`,
+- the regex containing the 19 direct projects: `4u`, `bayterak`,
   `botanika-saroyi`, `c1`, `flagman`, `jomiy`, `maftun-makon`, `meros`,
-  `mirador`, `ofiyat`, `regnum-plaza`, `saadiyat`, `sado`, `soy-boyi`, `sun`,
+  `mirador`, `ofiyat`, `regnum-plaza`, `saadiyat`, `sarbon`, `sado`, `soy-boyi`, `sun`,
   `voha`, `yangibaxt`, and `zamon`;
 - `location ^~ /tencorp/`;
 - `location ^~ /u/` and the final legacy `location /` fallback.

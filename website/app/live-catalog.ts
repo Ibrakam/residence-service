@@ -116,12 +116,13 @@ const availableOnlyCatalogues = new Set([
   'maftun-makon',
   'regnum-plaza',
   'saadiyat',
+  'sarbon',
   'sado',
   'soy-boyi',
   'sun',
   'voha',
 ]);
-const mbcCatalogues = new Set(['c1', 'regnum-plaza', 'saadiyat', 'soy-boyi']);
+const mbcCatalogues = new Set(['c1', 'regnum-plaza', 'saadiyat', 'sarbon', 'soy-boyi']);
 
 function cacheKey(projectSlug: string) {
   return `tencorp:live-catalog:v${cacheVersion}:${projectSlug}`;
@@ -679,12 +680,17 @@ function updateFilterMetadata(snapshot: Record<string, unknown>, units: Record<s
 }
 
 export function mergeLiveCatalogUnits<T extends object>(projectSlug: string, embeddedUnits: readonly T[], liveUnits: LiveCatalogUnit[]) {
+  const source = new Map<string, Record<string, unknown>[]>();
   const exact = new Map<string, Record<string, unknown>[]>();
   const loose = new Map<string, Record<string, unknown>[]>();
   const embedded = embeddedUnits as readonly Record<string, unknown>[];
   embedded.forEach((unit) => {
+    const sourceKey = typeof unit.sourceKey === 'string' && unit.sourceKey.trim()
+      ? unit.sourceKey.trim()
+      : typeof unit.unitKey === 'string' ? unit.unitKey.trim() : '';
     const exactKey = exactIdentity(unit);
     const looseKey = looseIdentity(unit);
+    if (sourceKey) source.set(sourceKey, [...(source.get(sourceKey) ?? []), unit]);
     exact.set(exactKey, [...(exact.get(exactKey) ?? []), unit]);
     loose.set(looseKey, [...(loose.get(looseKey) ?? []), unit]);
   });
@@ -698,7 +704,8 @@ export function mergeLiveCatalogUnits<T extends object>(projectSlug: string, emb
 
   return displayUnits.map((unit, index) => {
     const record = unit as unknown as Record<string, unknown>;
-    const template = takeBestMatch(exact.get(exactIdentity(record)), unit, used)
+    const template = takeBestMatch(source.get(unit.sourceKey), unit, used)
+      ?? takeBestMatch(exact.get(exactIdentity(record)), unit, used)
       ?? takeBestMatch(loose.get(looseIdentity(record)), unit, used);
     const fallbackTemplate = embedded.find((candidate) => candidate.rooms === unit.rooms)
       ?? embedded[0];

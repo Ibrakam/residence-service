@@ -751,13 +751,15 @@ func catalogDeveloper(slug string, project map[string]json.RawMessage) (string, 
 		name := strings.ToUpper(developer)
 		if developer == "kayan" {
 			name = "KAYAN"
+		} else if developer == "murad-buildings" {
+			name = "Murad Buildings"
 		}
 		return developer, name
 	}
 	switch slug {
 	case "mirador", "ofiyat":
 		return "kayan", "KAYAN"
-	case "c1", "regnum-plaza", "saadiyat", "soy-boyi":
+	case "c1", "regnum-plaza", "saadiyat", "sarbon", "soy-boyi":
 		return "murad-buildings", "Murad Buildings"
 	case "sun":
 		return "human2human", "Human2Human"
@@ -784,7 +786,7 @@ func projectName(slug string) string {
 		"4u": "4U Tashkent", "avalon-residence": "Avalon Residence",
 		"botanika-saroyi": "Botanika Saroyi", "flagman": "Flagman Tashkent",
 		"c1": "C1", "maftun-makon": "Maftun Makon", "regnum-plaza": "REGNUM PLAZA",
-		"saadiyat": "SAADIYAT", "sado": "Sad'O", "soy-boyi": "Soy Bo‘yi", "sun": "SUN", "voha": "Voha", "yangibaxt": "Yangi Baxt",
+		"saadiyat": "SAADIYAT", "sarbon": "SARBON", "sado": "Sad'O", "soy-boyi": "Soy Bo‘yi", "sun": "SUN", "voha": "Voha", "yangibaxt": "Yangi Baxt",
 	}
 	if value := names[slug]; value != "" {
 		return value

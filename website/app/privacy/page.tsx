@@ -50,7 +50,7 @@ function nextLinkHref(prefixedUrl: string) {
     : prefixedUrl;
 }
 
-const soyAttributionKeys = [
+const projectAttributionKeys = [
   "utm_source",
   "utm_medium",
   "utm_campaign",
@@ -60,13 +60,16 @@ const soyAttributionKeys = [
   "tcid",
 ] as const;
 
-function preserveSoyAttribution(
+function preserveProjectAttribution(
   url: string | null,
   params?: Awaited<PageProps["searchParams"]>,
 ) {
-  if (!url || params?.project !== "soy-boyi") return url;
+  if (
+    !url ||
+    (params?.project !== "soy-boyi" && params?.project !== "sarbon")
+  ) return url;
   const attribution = new URLSearchParams();
-  for (const key of soyAttributionKeys) {
+  for (const key of projectAttributionKeys) {
     if (params[key]) attribution.set(key, params[key]);
   }
   const query = attribution.toString();
@@ -658,6 +661,13 @@ const legacyProjects: Record<
     phoneHref: "tel:+998781137712",
     phoneLabel: "+998 78 113 77 12",
   },
+  sarbon: {
+    name: "SARBON",
+    path: "/sarbon",
+    image: "/sarbon/media/hero-wide-3db3388c42d3.webp",
+    phoneHref: "tel:+998781137712",
+    phoneLabel: "+998 78 113 77 12",
+  },
   "soy-boyi": {
     name: "SOY BO‘YI",
     path: "/soy-boyi",
@@ -926,8 +936,8 @@ export default async function PrivacyPage({ searchParams }: PageProps) {
                       `${appBasePath}/bayterak/apartments?lang=${language}`,
                     )
                   : null;
-  const projectUrl = preserveSoyAttribution(baseProjectUrl, params)!;
-  const catalogUrl = preserveSoyAttribution(baseCatalogUrl, params);
+  const projectUrl = preserveProjectAttribution(baseProjectUrl, params)!;
+  const catalogUrl = preserveProjectAttribution(baseCatalogUrl, params);
   const fromCatalog =
     (isYangiBaxt ||
       isJomiy ||

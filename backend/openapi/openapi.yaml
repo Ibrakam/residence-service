@@ -382,6 +382,10 @@ components:
         id: { type: integer, format: int64 }
         slug: { type: string }
         name: { type: string }
+        aliases:
+          type: array
+          description: Явные прежние, локализованные или маркетинговые варианты названия для точного сопоставления; canonical key не заменяют.
+          items: { type: string }
     ProjectSummary:
       type: object
       required: [id, developerSlug, slug, name, totalUnits, availableUnits]

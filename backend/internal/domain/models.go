@@ -23,6 +23,7 @@ type ProjectSummary struct {
 type ProjectRegistryItem struct {
 	ProjectKey     string     `json:"projectKey"`
 	Name           string     `json:"name"`
+	Aliases        []string   `json:"aliases,omitempty"`
 	Published      bool       `json:"published"`
 	PassportPath   string     `json:"passportPath"`
 	ApartmentsPath string     `json:"apartmentsPath,omitempty"`

@@ -166,6 +166,7 @@ func TestProjectRegistryRouteAndOpenAPIContract(t *testing.T) {
 		"operationId: listProjectRegistry",
 		"ProjectRegistryItem:",
 		"required: [projectKey, name, published, passportPath",
+		"aliases:",
 		"const: true",
 		"клиент не должен вычислять его из projectKey",
 	} {

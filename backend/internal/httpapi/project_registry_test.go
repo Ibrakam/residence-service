@@ -50,8 +50,8 @@ func TestBuildProjectRegistryMapsCurrentSummariesAndFiltersUnpublished(t *testin
 
 	got := buildProjectRegistry(projects)
 	want := []domain.ProjectRegistryItem{
-		{ProjectKey: "avalon-residence", Name: "Avalon Residence", Published: true, PassportPath: "/", TotalUnits: 268, AvailableUnits: 41, UpdatedAt: &updatedAt},
-		{ProjectKey: "soy-boyi", Name: "Soy Bo‘yi", Published: true, PassportPath: "/soy-boyi", ApartmentsPath: "/soy-boyi/apartments", TotalUnits: 209, AvailableUnits: 20, UpdatedAt: &updatedAt},
+		{ProjectKey: "avalon-residence", Name: "Avalon Residence", Aliases: []string{"Avalon", "Авалон", "Авалон Резиденс"}, Published: true, PassportPath: "/", TotalUnits: 268, AvailableUnits: 41, UpdatedAt: &updatedAt},
+		{ProjectKey: "soy-boyi", Name: "Soy Bo‘yi", Aliases: []string{"Soy Boyi", "Soy Bo'yi", "Сой Бойи", "Сой Бўйи"}, Published: true, PassportPath: "/soy-boyi", ApartmentsPath: "/soy-boyi/apartments", TotalUnits: 209, AvailableUnits: 20, UpdatedAt: &updatedAt},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("registry = %#v, want %#v", got, want)
@@ -91,5 +91,9 @@ func TestAvalonRegistryJSONIsExplicitAndDoesNotSynthesizePaths(t *testing.T) {
 	}
 	if _, exists := item["developerSlug"]; exists {
 		t.Fatalf("catalog-only developer metadata leaked into registry JSON: %s", encoded)
+	}
+	aliases, ok := item["aliases"].([]any)
+	if !ok || len(aliases) != 3 || aliases[1] != "Авалон" {
+		t.Fatalf("Avalon aliases contract = %s", encoded)
 	}
 }

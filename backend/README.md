@@ -85,7 +85,7 @@ GET /v1/projects/saadiyat/units?queue=q2&status=available&limit=50
 
 Фильтры каталога: `phase`, `queue`, `status`, `propertyType`, `rooms`, `floorFrom`, `floorTo`, `priceFrom`, `priceTo`, `limit`, `offset`. В `queue` передаётся стабильный `queueKey` из `GET /v1/projects/{slug}`. Максимальный `limit` — 500. Полный контракт находится в [`openapi/openapi.yaml`](./openapi/openapi.yaml).
 
-`GET /v1/project-registry` фильтрует текущие `ProjectSummary` через явный allowlist опубликованных сайтов. Поэтому импорт внутреннего или ещё не опубликованного проекта не раскрывает его автоматически. Для 19 именованных сайтов явно заданы `/{projectKey}` и `/{projectKey}/apartments`; Avalon Residence — намеренное исключение с `passportPath: "/"` и без отдельного `apartmentsPath`. Ложный путь `/avalon-residence` не возвращается, а потребитель не синтезирует URL из ключа.
+`GET /v1/project-registry` фильтрует текущие `ProjectSummary` через явный allowlist опубликованных сайтов. Поэтому импорт внутреннего или ещё не опубликованного проекта не раскрывает его автоматически. Для 19 именованных сайтов явно заданы `/{projectKey}` и `/{projectKey}/apartments`; Avalon Residence — намеренное исключение с `passportPath: "/"` и без отдельного `apartmentsPath`. Ложный путь `/avalon-residence` не возвращается, а потребитель не синтезирует URL из ключа. Опциональные `aliases` — также явные и служат только для точного сопоставления локализованных/прежних названий; сохраняемым идентификатором остаётся `projectKey`.
 
 Нормализованные статусы: `available`, `reserved`, `sold`, `unavailable`. Исходное значение всегда хранится в `rawStatus` и полном `source_payload`, поэтому workflow-статусы не теряются.
 

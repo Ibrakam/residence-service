@@ -27,6 +27,8 @@ type Server struct {
 	requestTimeout      time.Duration
 	leadDuplicateWindow time.Duration
 	leadSlots           chan struct{}
+	marketMapURL        *url.URL
+	marketMapClient     *http.Client
 }
 
 type Options struct {
@@ -35,6 +37,8 @@ type Options struct {
 	RequestTimeout      time.Duration
 	LeadDuplicateWindow time.Duration
 	LeadMaxInFlight     int
+	MarketMapURL        string
+	MarketMapTimeout    time.Duration
 }
 
 func New(store *database.Store, logger *slog.Logger, allowedOrigin string, leadWrites ...bool) http.Handler {
@@ -48,10 +52,16 @@ func New(store *database.Store, logger *slog.Logger, allowedOrigin string, leadW
 		RequestTimeout:      10 * time.Second,
 		LeadDuplicateWindow: time.Minute,
 		LeadMaxInFlight:     8,
+		MarketMapURL:        defaultMarketMapURL,
+		MarketMapTimeout:    3 * time.Second,
 	})
 }
 
 func NewWithOptions(store *database.Store, logger *slog.Logger, options Options) http.Handler {
+	marketMapTimeout := options.MarketMapTimeout
+	if marketMapTimeout <= 0 {
+		marketMapTimeout = 3 * time.Second
+	}
 	server := &Server{
 		store:               store,
 		logger:              logger,
@@ -59,6 +69,13 @@ func NewWithOptions(store *database.Store, logger *slog.Logger, options Options)
 		leadWrites:          options.LeadWrites,
 		requestTimeout:      options.RequestTimeout,
 		leadDuplicateWindow: options.LeadDuplicateWindow,
+		marketMapURL:        parseMarketMapURL(options.MarketMapURL),
+		marketMapClient: &http.Client{
+			Timeout: marketMapTimeout,
+			CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		},
 	}
 	if options.LeadMaxInFlight > 0 {
 		server.leadSlots = make(chan struct{}, options.LeadMaxInFlight)
@@ -69,6 +86,7 @@ func NewWithOptions(store *database.Store, logger *slog.Logger, options Options)
 	mux.HandleFunc("GET /readyz", server.ready)
 	mux.HandleFunc("GET /v1/developers", server.listDevelopers)
 	mux.HandleFunc("GET /v1/project-registry", server.listProjectRegistry)
+	mux.HandleFunc("GET /v1/construction-passports/{projectKey}", server.getConstructionPassports)
 	mux.HandleFunc("GET /v1/projects", server.listProjects)
 	mux.HandleFunc("GET /v1/projects/{slug}", server.getProject)
 	mux.HandleFunc("GET /v1/projects/{slug}/units", server.listUnits)

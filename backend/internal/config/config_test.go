@@ -22,6 +22,9 @@ func TestLoadProductionSafetyDefaults(t *testing.T) {
 	t.Setenv("LEAD_MAX_IN_FLIGHT", "0")
 
 	cfg := Load()
+	if cfg.MarketMapURL != "http://127.0.0.1:8765" {
+		t.Fatalf("market map URL = %q", cfg.MarketMapURL)
+	}
 	if cfg.AutoMigrate {
 		t.Fatal("invalid AUTO_MIGRATE unexpectedly enabled migrations")
 	}
@@ -36,6 +39,13 @@ func TestLoadProductionSafetyDefaults(t *testing.T) {
 	}
 	if cfg.LeadMaxInFlight != 8 {
 		t.Fatalf("lead max in flight = %d", cfg.LeadMaxInFlight)
+	}
+}
+
+func TestLoadAcceptsExplicitMarketMapURL(t *testing.T) {
+	t.Setenv("MARKET_MAP_INTERNAL_URL", "http://127.0.0.1:9876/internal")
+	if got := Load().MarketMapURL; got != "http://127.0.0.1:9876/internal" {
+		t.Fatalf("market map URL = %q", got)
 	}
 }
 

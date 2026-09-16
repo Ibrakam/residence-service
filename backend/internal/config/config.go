@@ -9,6 +9,7 @@ import (
 type Config struct {
 	Address         string
 	DatabaseURL     string
+	MarketMapURL    string
 	MigrationsDir   string
 	KayanRawDataDir string
 	CatalogDataDir  string
@@ -26,6 +27,7 @@ func Load() Config {
 	return Config{
 		Address:         getenv("API_ADDR", "127.0.0.1:8080"),
 		DatabaseURL:     getenv("DATABASE_URL", "postgres://catalog:catalog@localhost:5432/catalog?sslmode=disable"),
+		MarketMapURL:    getenv("MARKET_MAP_INTERNAL_URL", "http://127.0.0.1:8765"),
 		MigrationsDir:   getenv("MIGRATIONS_DIR", "./migrations"),
 		KayanRawDataDir: getenv("KAYAN_RAW_DATA_DIR", "./data/raw/kayan"),
 		CatalogDataDir:  getenv("CATALOG_DATA_DIR", "../website/data"),

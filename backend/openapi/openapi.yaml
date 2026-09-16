@@ -77,6 +77,29 @@ paths:
                   items:
                     type: array
                     items: { $ref: '#/components/schemas/ProjectRegistryItem' }
+  /v1/construction-passports/{projectKey}:
+    parameters:
+      - name: projectKey
+        in: path
+        required: true
+        description: Canonical projectKey опубликованного Residence-проекта.
+        schema: { type: string, pattern: '^[a-z0-9][a-z0-9-]*$' }
+    get:
+      tags: [Catalog]
+      operationId: getConstructionPassports
+      description: >-
+        Безопасная read-only проекция связи с DSHK из внутреннего Market Map.
+        Basic credentials карты и её полный операторский payload клиенту не передаются.
+      responses:
+        '200':
+          description: Состояние связи и, при наличии, проверенная ссылка официального строительного надзора.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ConstructionPassports' }
+        '400': { $ref: '#/components/responses/Error' }
+        '404': { $ref: '#/components/responses/Error' }
+        '502': { $ref: '#/components/responses/Error' }
+        '503': { $ref: '#/components/responses/Error' }
   /v1/projects:
     get:
       tags: [Catalog]
@@ -420,6 +443,28 @@ components:
         totalUnits: { type: integer, format: int64 }
         availableUnits: { type: integer, format: int64 }
         updatedAt: { type: string, format: date-time }
+    ConstructionPassports:
+      type: object
+      required: [projectKey, linked, objectCount, passports]
+      properties:
+        projectKey: { type: string }
+        linked:
+          type: boolean
+          description: В Market Map существует хотя бы один связанный активный DSHK-объект.
+        objectCount: { type: integer, minimum: 0 }
+        passports:
+          type: array
+          maxItems: 50
+          description: Дедуплицированные проверенные официальные паспорта; несколько элементов показываются как выбор, без неявного primary.
+          items:
+            type: object
+            required: [objectId, url]
+            properties:
+              objectId: { type: integer, format: int64 }
+              name: { type: string }
+              address: { type: string }
+              url: { type: string, format: uri, description: Проверенный HTTPS URL api-nazorat.mc.uz. }
+              linkedAt: { type: string, format: date-time }
     Project:
       allOf:
         - $ref: '#/components/schemas/ProjectSummary'

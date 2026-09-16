@@ -175,3 +175,31 @@ func TestProjectRegistryRouteAndOpenAPIContract(t *testing.T) {
 		}
 	}
 }
+
+func TestConstructionPassportRouteAndOpenAPIContract(t *testing.T) {
+	handler := NewWithOptions(nil, slog.New(slog.NewTextHandler(io.Discard, nil)), Options{MarketMapURL: "://invalid"})
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/v1/construction-passports/soy-boyi", nil)
+	handler.ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("project passport path is not registered as a GET route: status=%d", recorder.Code)
+	}
+
+	body, err := os.ReadFile(filepath.Join("..", "..", "openapi", "openapi.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	document := string(body)
+	for _, required := range []string{
+		"/v1/construction-passports/{projectKey}:",
+		"operationId: getConstructionPassports",
+		"ConstructionPassports:",
+		"required: [projectKey, linked, objectCount, passports]",
+		"Basic credentials карты",
+		"api-nazorat.mc.uz",
+	} {
+		if !strings.Contains(document, required) {
+			t.Errorf("OpenAPI project passport contract is missing %q", required)
+		}
+	}
+}

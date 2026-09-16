@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Golos_Text, Prata } from 'next/font/google';
 import { headers } from 'next/headers';
+import ConstructionPassportControl from './construction-passport-control';
 import './globals.css';
 
 const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
@@ -50,7 +51,10 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const documentLanguage = requestedLanguage === 'uz' || requestedLanguage === 'en' ? requestedLanguage : 'ru';
   return (
     <html lang={documentLanguage}>
-      <body className={`${golos.variable} ${prata.variable}`}>{children}</body>
+      <body className={`${golos.variable} ${prata.variable}`}>
+        <ConstructionPassportControl />
+        {children}
+      </body>
     </html>
   );
 }

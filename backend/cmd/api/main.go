@@ -53,6 +53,7 @@ func run(logger *slog.Logger) error {
 		RequestTimeout:      cfg.RequestTimeout,
 		LeadDuplicateWindow: cfg.LeadCooldown,
 		LeadMaxInFlight:     cfg.LeadMaxInFlight,
+		MarketMapURL:        cfg.MarketMapURL,
 	})
 	server := &http.Server{
 		Addr:              cfg.Address,

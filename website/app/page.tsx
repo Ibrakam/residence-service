@@ -247,9 +247,6 @@ export default function Home() {
           </picture>
           <div className="city-scene__shade" />
           <SiteHeader language={language} onLanguageChange={changeLanguage} onHome={() => setView('city')} onApartments={() => setView('facade')} />
-          <a className="construction-passport-link" href="https://api-nazorat.mc.uz/object-info/240228796" target="_blank" rel="noreferrer" aria-label={language === 'ru' ? 'Открыть официальный паспорт объекта строительного надзора' : 'Qurilish nazoratidagi obyektning rasmiy pasportini ochish'}>
-            <img src={assetPath('/construction-nazorat.svg')} alt="" />
-          </a>
           <div className="hero-copy"><p className="eyebrow">{t.district}</p><h1 id="hero-title">{t.cityTitle}<em>{t.homeTitle}</em></h1><p className="hero-copy__lead">{t.enterShowroom}</p></div>
           <div className="mobile-hero-meta" aria-label={language === 'ru' ? 'Ключевая информация о проекте' : 'Loyiha haqida asosiy ma’lumot'}><span>{t.comfort}</span><span>{t.dueShort}</span><span>{language === 'ru' ? 'Метро рядом' : 'Metro yonida'}</span></div>
           <svg className="hotspot-map" viewBox="0 0 4096 2359" preserveAspectRatio="xMidYMid slice" aria-label="Интерактивная карта района">

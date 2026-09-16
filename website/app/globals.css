@@ -57,10 +57,25 @@ section { scroll-margin-top:0; }
 .hero-copy h1 em,.complex-intro h2 em,.apartments-heading h2 em,.contact-main h2 em,.facade-copy h2 em,.project-modal h2 em { font-style:normal; }
 .unit-price,.payment-grid,.calculator-result,.proposal-summary,.mobile-unit-card,.floor-unit-zone { font-variant-numeric:tabular-nums; }
 .hero-copy__lead { width:min(410px,92%); margin:20px 0 0; color:rgba(255,255,255,.76); font-size:12px; line-height:1.65; }
-.construction-passport-link { position:absolute; z-index:21; top:112px; right:clamp(20px,4vw,72px); display:grid; width:48px; height:48px; place-items:center; border:1px solid rgba(255,255,255,.52); border-radius:50%; background:rgba(255,253,248,.94); box-shadow:0 12px 32px rgba(2,18,21,.22); backdrop-filter:blur(14px); transition:transform 180ms ease,box-shadow 180ms ease; }
+.construction-passport-link { position:absolute; z-index:21; top:112px; right:clamp(20px,4vw,72px); display:grid; width:48px; height:48px; padding:0; place-items:center; border:1px solid rgba(255,255,255,.52); border-radius:50%; background:rgba(255,253,248,.94); box-shadow:0 12px 32px rgba(2,18,21,.22); backdrop-filter:blur(14px); cursor:pointer; text-decoration:none; transition:transform 180ms ease,box-shadow 180ms ease; }
+.construction-passport-link--universal { position:fixed; z-index:80; top:max(112px,calc(env(safe-area-inset-top) + 80px)); }
 .construction-passport-link:hover { transform:translateY(-3px); box-shadow:0 17px 38px rgba(2,18,21,.3); }
-.construction-passport-link:focus-visible { outline:2px solid var(--mint); outline-offset:4px; }
+.construction-passport-link:focus-visible { outline:3px solid #0a5fd7; outline-offset:4px; }
 .construction-passport-link img { display:block; width:23px; height:23px; }
+.construction-passport-dialog { width:min(520px,calc(100vw - 28px)); max-height:min(680px,calc(100svh - 28px)); padding:0; border:1px solid rgba(16,32,34,.18); border-radius:22px; background:var(--paper-2); color:var(--ink); box-shadow:0 30px 90px rgba(2,18,21,.38); }
+.construction-passport-dialog[open] { display:grid; grid-template-rows:auto minmax(0,1fr); overflow:hidden; }
+.construction-passport-dialog::backdrop { background:rgba(2,18,21,.72); backdrop-filter:blur(7px); }
+.construction-passport-dialog header { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:20px 22px; border-bottom:1px solid rgba(16,32,34,.14); }
+.construction-passport-dialog h2 { margin:0; font-family:var(--font-display),Georgia,serif; font-size:clamp(24px,4vw,34px); font-weight:400; }
+.construction-passport-dialog header button { display:grid; width:44px; height:44px; flex:0 0 auto; place-items:center; border:1px solid rgba(16,32,34,.18); border-radius:50%; background:transparent; color:var(--ink); cursor:pointer; font-size:25px; }
+.construction-passport-dialog__list { display:grid; min-height:0; padding:10px; overflow:auto; }
+.construction-passport-dialog__list a { position:relative; display:grid; grid-template-columns:38px minmax(0,1fr) auto; gap:4px 12px; align-items:center; min-height:72px; padding:14px 12px; border-bottom:1px solid rgba(16,32,34,.12); color:var(--ink); text-decoration:none; }
+.construction-passport-dialog__list a:last-child { border-bottom:0; }
+.construction-passport-dialog__list a>span { grid-row:1/3; color:rgba(16,32,34,.42); font-size:10px; font-weight:700; letter-spacing:.12em; }
+.construction-passport-dialog__list a>strong { font-size:13px; }
+.construction-passport-dialog__list a>small { color:rgba(16,32,34,.58); font-size:10px; line-height:1.45; }
+.construction-passport-dialog__list a>b { grid-column:3; grid-row:1/3; color:#0a74ff; font-size:19px; }
+.construction-passport-dialog__list a:focus-visible,.construction-passport-dialog header button:focus-visible { outline:2px solid #0a74ff; outline-offset:-2px; }
 .text-link { display:flex; align-items:center; gap:32px; margin-top:30px; padding:12px 0; border-bottom:1px solid rgba(255,255,255,.28); background:transparent; font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; cursor:pointer; }
 .text-link span { color:var(--mint); font-size:17px; }
 .hotspot-map { z-index:2; }
@@ -920,7 +935,7 @@ body.is-lead-locked { overflow:hidden; }
   .hero-copy h1 { max-width:300px; margin:10px 0 10px; font-size:clamp(47px,13vw,63px); line-height:.78; }
   .hero-copy h1 em { margin:4px 0 0; }
   .hero-copy__lead { width:min(275px,88vw); margin-top:15px; font-size:10px; line-height:1.55; }
-  .construction-passport-link { top:80px; right:14px; width:44px; height:44px; }
+  .construction-passport-link { top:max(80px,calc(env(safe-area-inset-top) + 62px)); right:max(14px,env(safe-area-inset-right)); width:44px; height:44px; }
   .construction-passport-link img { width:21px; height:21px; }
   .map-label { min-height:38px; padding:8px 10px; font-size:7px; }
   .hotspot--metro,.hotspot--mall,.map-label--metro,.map-label--mall { display:none; }

@@ -72,6 +72,8 @@ assert.match(component, /setInterval\(refresh,\s*refreshIntervalMs\)/);
 assert.match(component, /window\.addEventListener\('focus',\s*refresh\)/);
 assert.match(component, /passports\.length === 1/);
 assert.match(component, /showModal\(\)/);
+assert.match(component, /<svg[^>]*aria-hidden="true"/, 'the control icon must be inlined so it cannot fall through to another nginx site');
+assert.doesNotMatch(component, /construction-nazorat\.svg/, 'the control must not depend on an unrouted root-level public asset');
 assert.match(component, /clearCurrent\(\)/, 'unlinked, invalid, and unavailable responses must fail closed instead of keeping a stale passport');
 assert.match(component, /dialogRef\.current\?\.close\(\)/, 'a shrinking passport set must close the chooser explicitly');
 assert.doesNotMatch(component, /\/market-map\/api\//, 'the browser must not bypass the Residence BFF or the Market Map Basic gate');

@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
-import { KayanCatalogPage } from '@/app/kayan/project-page';
 import { getCatalogBundle, merosCatalogGeneratedAt } from '@/app/kayan/catalog-snapshot';
-import '@/app/kayan/kayan.css';
+import { MerosUnifiedCatalog, type MerosSafeSnapshot } from './meros-unified-catalog';
 import '../meros.css';
 
 const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
@@ -30,5 +29,29 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 export default async function MerosApartmentsPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const language = params?.lang === 'uz' || params?.lang === 'en' ? params.lang : 'ru';
-  return <KayanCatalogPage slug="meros" initialBundle={getCatalogBundle('meros')} snapshotGeneratedAt={merosCatalogGeneratedAt} initialLanguage={language} />;
+  const bundle = getCatalogBundle('meros');
+  const snapshot: MerosSafeSnapshot = {
+    capturedAt: merosCatalogGeneratedAt,
+    totalCount: bundle.project.totalUnits,
+    project: { name: bundle.project.name, totalUnits: bundle.project.totalUnits, availableUnits: bundle.project.availableUnits },
+    units: bundle.units.map((unit) => ({
+      id: `meros:${unit.phaseSlug}:${unit.number}:${unit.floor}:${unit.entrance}:${unit.area}`,
+      sourceKey: unit.sourceKey,
+      number: unit.number,
+      rooms: unit.rooms ?? 0,
+      area: unit.area,
+      floor: unit.floor,
+      maxFloor: bundle.project.phases.find((phase) => phase.slug === unit.phaseSlug)?.floorsTotal ?? unit.floor,
+      entrance: unit.entrance ?? '',
+      phase: unit.phaseName,
+      phaseSlug: unit.phaseSlug,
+      propertyType: unit.propertyType,
+      status: unit.status,
+      price: unit.price ?? 0,
+      pricePerM2: unit.pricePerM2 ?? 0,
+      currency: unit.currency,
+      plan: unit.planImageUrl ?? '',
+    })),
+  };
+  return <MerosUnifiedCatalog snapshot={snapshot} initialLanguage={language} />;
 }

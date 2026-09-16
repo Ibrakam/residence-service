@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import snapshot from '@/data/botanika-saroyi-catalog.json';
 import { publicClientPayload } from '@/app/public-client-payload';
-import { BotanikaCatalog } from './botanika-catalog';
-import './botanika-catalog.css';
+import { BotanikaUnifiedCatalog, type BotanikaSafeSnapshot } from './botanika-unified-catalog';
 
 type Language = 'ru' | 'uz' | 'en';
 type PageProps = { searchParams?: Promise<{ lang?: string }> };
@@ -66,7 +65,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 
 export default async function Page({ searchParams }: PageProps) {
   const language = getLanguage((await searchParams)?.lang);
-  const data = publicClientPayload(snapshot) as Parameters<typeof BotanikaCatalog>[0]['snapshot'];
+  const data = publicClientPayload(snapshot) as unknown as BotanikaSafeSnapshot;
   const current = meta[language];
   const canonical = `${appBasePath}/botanika-saroyi/apartments?lang=${language}`;
   const roomName = (rooms: number) => language === 'ru'
@@ -109,7 +108,7 @@ export default async function Page({ searchParams }: PageProps) {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }} />
-      <BotanikaCatalog snapshot={data} initialLanguage={language} />
+      <BotanikaUnifiedCatalog snapshot={data} initialLanguage={language} />
     </>
   );
 }

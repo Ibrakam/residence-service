@@ -1471,3 +1471,7 @@
     transition:none!important;
   }
 }
+
+@media(max-height:599px) {
+  .kayan-site--mirador .mirador-block-explorer { display:none!important; }
+}

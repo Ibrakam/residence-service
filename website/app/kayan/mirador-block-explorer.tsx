@@ -23,6 +23,7 @@ import {
   type MiradorFloorScheme,
   type MiradorFloorSchemeZone,
 } from './mirador-floor-scheme-data';
+import { MIRADOR_VISUAL_FLOW_MEDIA } from './mirador-flow-policy';
 
 export type MiradorExplorerSelection = {
   block: MiradorBlockNumber;
@@ -39,7 +40,7 @@ type MiradorBlockExplorerProps = {
   onLead?: (selection: MiradorExplorerSelection) => void;
   onBlockSelect?: (block: MiradorBlockNumber | null) => void;
   onSelectionChange?: (selection: MiradorExplorerSelection | null) => void;
-  variant?: 'section' | 'hero';
+  variant?: 'section' | 'hero' | 'catalog';
 };
 
 type PanState = {
@@ -313,7 +314,7 @@ export function MiradorBlockExplorer({
   }, [onBlockSelect, onSelectionChange]);
 
   useEffect(() => {
-    const media = window.matchMedia('(min-width: 768px)');
+    const media = window.matchMedia(MIRADOR_VISUAL_FLOW_MEDIA);
     const update = () => {
       setDesktopFlowEnabled(media.matches);
       if (media.matches) return;

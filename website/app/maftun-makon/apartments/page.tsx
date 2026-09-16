@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import snapshot from '@/data/maftun-makon-catalog.json';
 import { publicClientPayload } from '@/app/public-client-payload';
-import { MaftunMakonCatalog } from './maftun-makon-catalog';
-import './maftun-makon-catalog.css';
+import { MaftunMakonUnifiedCatalog, type MaftunMakonSafeSnapshot } from './maftun-makon-unified-catalog';
 import '../maftun-shared.css';
 
 type Language = 'ru' | 'uz' | 'en';
@@ -57,7 +56,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 
 export default async function Page({ searchParams }: PageProps) {
   const language = getLanguage((await searchParams)?.lang);
-  const data = publicClientPayload(snapshot) as Parameters<typeof MaftunMakonCatalog>[0]['snapshot'];
+  const data = publicClientPayload(snapshot) as unknown as MaftunMakonSafeSnapshot;
   const route = `${appBasePath}/maftun-makon/apartments`;
   const canonical = language === 'ru' ? route : `${route}?lang=${language}`;
   const listName = language === 'ru' ? 'Квартиры Maftun Makon' : language === 'uz' ? 'Maftun Makon xonadonlari' : 'Maftun Makon apartments';
@@ -89,7 +88,7 @@ export default async function Page({ searchParams }: PageProps) {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }} />
-      <MaftunMakonCatalog snapshot={data} initialLanguage={language} />
+      <MaftunMakonUnifiedCatalog snapshot={data} initialLanguage={language} />
     </>
   );
 }

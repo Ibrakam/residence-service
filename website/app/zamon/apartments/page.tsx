@@ -1,9 +1,7 @@
 import type { Metadata } from 'next';
 import snapshot from '@/data/zamon-catalog.json';
 import { publicClientPayload } from '@/app/public-client-payload';
-import { ZamonCatalog, type ZamonSnapshot } from './zamon-catalog';
-import './zamon-catalog.css';
-import '../zamon-shared.css';
+import { ZamonUnifiedCatalog, type ZamonSafeSnapshot } from './zamon-unified-catalog';
 
 type Language = 'ru' | 'uz' | 'en';
 type PageProps = { searchParams?: Promise<{ lang?: string }> };
@@ -88,7 +86,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 
 export default async function ZamonApartmentsPage({ searchParams }: PageProps) {
   const language = languageOf((await searchParams)?.lang);
-  const data = publicClientPayload(snapshot) as unknown as ZamonSnapshot;
+  const data = publicClientPayload(snapshot) as unknown as ZamonSafeSnapshot;
   const current = meta[language];
   const list = {
     '@context': 'https://schema.org',
@@ -126,7 +124,7 @@ export default async function ZamonApartmentsPage({ searchParams }: PageProps) {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(list).replace(/</g, '\\u003c') }} />
-      <ZamonCatalog snapshot={data} initialLanguage={language} />
+      <ZamonUnifiedCatalog snapshot={data} initialLanguage={language} />
     </>
   );
 }

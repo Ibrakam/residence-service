@@ -1,9 +1,8 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import snapshot from '@/data/yangibaxt-catalog.json';
 import { publicClientPayload } from '@/app/public-client-payload';
-import { YangiBaxtCatalog } from './yangibaxt-catalog';
-import './yangibaxt-catalog.css';
-import '../yangibaxt-shared.css';
+import { YangiBaxtUnifiedCatalog, type YangiBaxtSafeSnapshot } from './yangibaxt-unified-catalog';
 
 type Language = 'ru' | 'uz' | 'en';
 type PageProps = { searchParams?: Promise<{ lang?: string }> };
@@ -88,6 +87,12 @@ function projectPath(language: Language) {
   return sitePath(`/yangibaxt?lang=${language}`);
 }
 
+function catalogStatus(rawStatus: string, isSale: boolean): 'available' | 'reserved' | 'sold' | 'unavailable' {
+  if (rawStatus === 'Бронирование' || rawStatus === 'Бронь') return 'reserved';
+  if (rawStatus === 'Продано') return 'sold';
+  return isSale ? 'available' : 'unavailable';
+}
+
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
   const language = languageOf((await searchParams)?.lang);
   const current = copy[language];
@@ -128,6 +133,11 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 
 export default async function Page({ searchParams }: PageProps) {
   const language = languageOf((await searchParams)?.lang);
+  const evaluationHeader = (await headers()).get('x-catalog-evaluation-time');
+  const parsedEvaluationTime = Number(evaluationHeader);
+  const initialEvaluationTime = Number.isFinite(parsedEvaluationTime) && parsedEvaluationTime > 0
+    ? parsedEvaluationTime
+    : Number.MAX_SAFE_INTEGER;
   const current = copy[language];
   const inLanguage = languageTag(language);
   const catalogUrl = `${publicOrigin}${canonicalPath(language)}`;
@@ -220,11 +230,37 @@ export default async function Page({ searchParams }: PageProps) {
       },
     ],
   };
+  const safeSnapshot: YangiBaxtSafeSnapshot = {
+    project: snapshot.project,
+    capturedAt: snapshot.capturedAt,
+    totalCount: snapshot.officialTotalAtCapture,
+    evaluationTime: initialEvaluationTime,
+    units: snapshot.units.map((unit) => ({
+      id: `yangibaxt:${unit.buildingDisplay}:${unit.entrance}:${unit.floor}:${unit.number}:${unit.area}`,
+      sourceKey: '',
+      number: unit.number,
+      rooms: unit.rooms,
+      area: unit.area,
+      floor: unit.floor,
+      maxFloor: unit.totalFloors,
+      entrance: unit.entrance,
+      building: unit.buildingDisplay,
+      propertyType: 'apartment',
+      status: catalogStatus(unit.statusOriginal, unit.isSale),
+      price: unit.price,
+      regularPrice: unit.oldPrice,
+      pricePerM2: unit.currentPricePerM2,
+      currency: unit.currency,
+      plan: unit.plan,
+      floorPositionPlan: unit.floorPositionPlan,
+      promotion: unit.promotion?.deadlineUtc ? { deadlineUtc: unit.promotion.deadlineUtc } : null,
+    })),
+  };
 
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, '\\u003c') }} />
-      <YangiBaxtCatalog snapshot={publicClientPayload(snapshot) as unknown as Parameters<typeof YangiBaxtCatalog>[0]['snapshot']} initialLanguage={language} />
+      <YangiBaxtUnifiedCatalog snapshot={publicClientPayload(safeSnapshot)} initialLanguage={language} />
     </>
   );
 }

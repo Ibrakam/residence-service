@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import catalog from "@/data/soy-boyi-catalog.json";
 import { soyBoyiPublicSnapshot } from "@/data/soy-boyi-public.mjs";
-import { SoyBoyiCatalog } from "./soy-boyi-catalog";
-import "./soy-boyi-catalog.css";
+import { SoyBoyiUnifiedCatalog, type SoyBoyiSafeSnapshot } from "./soy-boyi-unified-catalog";
 
 type Language = "ru" | "uz" | "en";
 type PageProps = { searchParams?: Promise<{ lang?: string }> };
@@ -139,10 +138,8 @@ export default async function Page({ searchParams }: PageProps) {
           __html: JSON.stringify(structuredData).replace(/</g, "\\u003c"),
         }}
       />
-      <SoyBoyiCatalog
-        snapshot={
-          publicSnapshot as Parameters<typeof SoyBoyiCatalog>[0]["snapshot"]
-        }
+      <SoyBoyiUnifiedCatalog
+        snapshot={publicSnapshot as unknown as SoyBoyiSafeSnapshot}
         initialLanguage={language}
       />
     </>

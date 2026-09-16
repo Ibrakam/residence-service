@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
-import { SunCatalog } from './sun-catalog';
-import '../sun-shared.css';
-import './sun-catalog.css';
+import catalog from '@/data/sun-client.json';
+import { SunUnifiedCatalog, type SunSafeSnapshot } from './sun-unified-catalog';
 
 type Language = 'ru' | 'uz' | 'en';
 type PageProps = { searchParams?: Promise<{ lang?: string }> };
@@ -84,7 +83,7 @@ export default async function Page({ searchParams }: PageProps) {
         inLanguage: languageTag(language),
         url: catalogUrl,
         isPartOf: { '@type': 'ApartmentComplex', name: 'SUN', url: projectUrl },
-        mainEntity: { '@type': 'ItemList', numberOfItems: 51, itemListOrder: 'https://schema.org/ItemListUnordered' },
+        mainEntity: { '@type': 'ItemList', numberOfItems: catalog.units.length, itemListOrder: 'https://schema.org/ItemListUnordered' },
       },
       {
         '@type': 'BreadcrumbList',
@@ -97,8 +96,34 @@ export default async function Page({ searchParams }: PageProps) {
       },
     ],
   };
+  const safeSnapshot: SunSafeSnapshot = {
+    project: catalog.project,
+    capturedAt: catalog.capturedAt,
+    totalCount: catalog.units.length,
+    address: catalog.projectFacts.address,
+    positioning: catalog.projectFacts.positioning,
+    units: catalog.units.map((unit) => ({
+      id: unit.id,
+      sourceKey: unit.unitKey,
+      number: unit.number,
+      rooms: unit.rooms,
+      area: unit.area,
+      floor: unit.floor,
+      maxFloor: unit.maxFloor,
+      entrance: unit.entrance,
+      building: unit.blockName,
+      propertyType: 'apartment',
+      status: 'available',
+      price: unit.price,
+      regularPrice: unit.regularPrice,
+      pricePerM2: unit.pricePerM2,
+      currency: 'UZS',
+      plan: unit.secondPlanPath,
+      floorPositionPlan: unit.primaryPlanPath,
+    })),
+  };
   return <>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, '\\u003c') }} />
-    <SunCatalog initialLanguage={language} />
+    <SunUnifiedCatalog snapshot={safeSnapshot} initialLanguage={language} />
   </>;
 }

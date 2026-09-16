@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import snapshot from '@/data/bayterak-catalog.json';
 import { publicClientPayload } from '@/app/public-client-payload';
-import { BayterakCatalog } from './bayterak-catalog';
-import './bayterak-catalog.css';
+import { BayterakUnifiedCatalog, type BayterakSafeSnapshot } from './bayterak-unified-catalog';
 
 type Language = 'ru' | 'uz' | 'en';
 type PageProps = { searchParams?: Promise<{ lang?: string }> };
@@ -80,7 +79,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 
 export default async function Page({ searchParams }: PageProps) {
   const language = getLanguage((await searchParams)?.lang);
-  const data = publicClientPayload(snapshot) as Parameters<typeof BayterakCatalog>[0]['snapshot'];
+  const data = publicClientPayload(snapshot) as unknown as BayterakSafeSnapshot;
   const current = meta[language];
   const canonical = canonicalPath(language);
   const roomName = (rooms: number) => language === 'ru'
@@ -123,7 +122,7 @@ export default async function Page({ searchParams }: PageProps) {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }} />
-      <BayterakCatalog snapshot={data} initialLanguage={language} />
+      <BayterakUnifiedCatalog snapshot={data} initialLanguage={language} />
     </>
   );
 }

@@ -601,16 +601,18 @@ for (const unit of catalog.units) {
 
 const landingRoutePath = 'app/yangibaxt/page.tsx';
 const catalogRoutePath = 'app/yangibaxt/apartments/page.tsx';
-const catalogUiPath = 'app/yangibaxt/apartments/yangibaxt-catalog.tsx';
+const catalogUiPath = 'app/yangibaxt/apartments/yangibaxt-unified-catalog.tsx';
+const sharedCatalogUiPath = 'app/catalog/apartment-catalog.tsx';
 const leadHelperPath = 'app/yangibaxt/yangibaxt-lead.ts';
 const leadRoutePath = 'app/api/yangibaxt-lead/route.ts';
 const privacyPath = 'app/privacy/page.tsx';
 const sitemapPath = 'app/sitemap.ts';
 const packagePath = 'package.json';
-const [landingRoute, catalogRoute, catalogUi, leadHelper, leadRoute, privacyRoute, sitemap, packageJson] = await Promise.all([
+const [landingRoute, catalogRoute, catalogUi, sharedCatalogUi, leadHelper, leadRoute, privacyRoute, sitemap, packageJson] = await Promise.all([
   readFile(repoPath(landingRoutePath), 'utf8'),
   readFile(repoPath(catalogRoutePath), 'utf8'),
   readFile(repoPath(catalogUiPath), 'utf8'),
+  readFile(repoPath(sharedCatalogUiPath), 'utf8'),
   readFile(repoPath(leadHelperPath), 'utf8'),
   readFile(repoPath(leadRoutePath), 'utf8'),
   readFile(repoPath(privacyPath), 'utf8'),
@@ -640,11 +642,14 @@ assert(
 );
 
 assertTokens(catalogUi, catalogUiPath, [
-  'type Mode = "cards" | "chess"', 'const modes: Mode[] = ["cards", "chess"]',
-  'priceAsc', 'priceDesc', 'areaAsc', 'areaDesc', 'floorAsc', 'floorDesc', 'roomsAsc', 'roomsDesc', 'ppmAsc', 'ppmDesc',
-  'rooms:', 'areaFrom:', 'areaTo:', 'priceFrom:', 'priceTo:', 'floor:', 'building:', 'entrance:', 'status:', 'completion:', 'repair:', 'studio:',
-  'projectSlug=yangibaxt', 'unitUuid=', 'rememberLastViewedApartment', 'role="tablist"', 'aria-modal', 'event.key === "ArrowLeft"', 'event.key === "ArrowRight"', 'event.key === "Home"', 'event.key === "End"',
-  "loading=\"lazy\"", 'Карточки', 'Шахматка', 'Kartalar', 'Shaxmatka', 'Cards', 'Matrix',
+  "useLiveCatalogSnapshot('yangibaxt', embeddedSnapshot)", 'unitKey: unit.sourceKey', 'promotion?.deadlineUtc',
+  'snapshot.evaluationTime < deadline', '<ApartmentCatalog', "slug: 'yangibaxt'", 'pricesVisible: true',
+]);
+assertTokens(sharedCatalogUi, sharedCatalogUiPath, [
+  "type CatalogMode = 'cards' | 'chess'", "'price-asc'", "'price-desc'", "'area-asc'", "'area-desc'", "'floor-asc'", "'floor-desc'",
+  'setRooms', 'setAreaFrom', 'setAreaTo', 'setFloor', 'setBuilding', 'setEntrance', 'setStatus',
+  'rememberLiveCatalogUnit', 'unitKey={leadUnit?.unitKey}', 'role="radiogroup"', 'aria-modal', "event.key === 'ArrowLeft'", "event.key === 'ArrowRight'", "event.key === 'Home'", "event.key === 'End'",
+  "loading=\"lazy\"", 'Карточки', 'Шахматка', 'Kartalar', 'Shaxmatka', 'Cards', 'Availability grid',
 ]);
 assert(!catalogUi.includes('chess-plus') && !catalogUi.includes('Matrix+'), `${catalogUiPath} contains a duplicate matrix mode`);
 assert(!/floor-plan|floorPlanMode|План этажа/.test(catalogUi), `${catalogUiPath} contains the forbidden floor-plan catalog mode`);
@@ -656,7 +661,7 @@ assertTokens(leadRoute, leadRoutePath, [
   'exactViewed', "receipt: 'development-only'", 'stored: false', 'forwarded: false', 'readLeadJson<Payload>', 'leadJson as json',
 ]);
 assertTokens(privacyRoute, privacyPath, [
-  'yangiBaxtCopy', "project === 'yangibaxt'", 'project=yangibaxt&lang=', '/yangibaxt/apartments?lang=', "params?.from === 'catalog'", 'generateMetadata', 'alternates', 'openGraph', 'twitter', 'tel:+998781137712',
+  'yangiBaxtCopy', 'const isYangiBaxt = project === "yangibaxt"', 'project=yangibaxt&lang=', '/yangibaxt/apartments?lang=', 'params?.from === "catalog"', 'generateMetadata', 'alternates', 'openGraph', 'twitter', 'tel:+998781137712',
 ]);
 assertTokens(sitemap, sitemapPath, ["'yangibaxt'", 'projectRoutes', '`/${project}`', '`/${project}/apartments`', "['ru', 'uz', 'en']", "'ru-RU'", "'uz-UZ'", "'x-default'"]);
 assert(packageJson.scripts?.['build:yangibaxt-catalog'] === 'node scripts/build-yangibaxt-catalog.mjs', 'package.json build:yangibaxt-catalog script mismatch');

@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import catalog from "@/data/sarbon-catalog.json";
 import { sarbonPublicSnapshot } from "@/data/sarbon-public.mjs";
-import { SarbonCatalog } from "./sarbon-catalog";
-import "./sarbon-catalog.css";
+import {
+  SarbonUnifiedCatalog,
+  type SarbonSafeSnapshot,
+} from "./sarbon-unified-catalog";
 
 type Language = "ru" | "uz" | "en";
 type Search = { lang?: string; utm_source?: string; utm_medium?: string; utm_campaign?: string; utm_term?: string; utm_content?: string; fbclid?: string; tcid?: string; rooms?: string; floor?: string; section?: string; sort?: string; view?: string; unit?: string };
@@ -26,16 +28,11 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 
 export default async function Page({ searchParams }: PageProps) {
   const params = await searchParams; const language = languageOf(params?.lang); const tracked = Object.fromEntries(Object.entries(params ?? {}).filter(([key, value]) => value && ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "fbclid", "tcid"].includes(key))) as Record<string, string>;
-  const publicSnapshot = sarbonPublicSnapshot(catalog) as Parameters<typeof SarbonCatalog>[0]["snapshot"];
-  const snapshot = { ...publicSnapshot, units: publicSnapshot.units.map((unit) => ({ ...unit, plan: unit.plan ? local(unit.plan) : null })) };
-  const requestedRooms = (params?.rooms ?? "").split(",").map(Number).filter((value) => snapshot.filters.rooms.includes(value));
-  const requestedFloor = params?.floor ?? ""; const requestedSection = params?.section ?? "";
-  const requestedSort = ["area-asc", "area-desc", "floor-asc", "floor-desc"].includes(params?.sort ?? "") ? params!.sort! : "source";
-  const initialState: Parameters<typeof SarbonCatalog>[0]["initialState"] = { rooms: requestedRooms, floor: !requestedFloor || snapshot.filters.floors.includes(Number(requestedFloor)) ? requestedFloor : "", section: !requestedSection || snapshot.filters.sections.includes(requestedSection) ? requestedSection : "", sort: requestedSort as Parameters<typeof SarbonCatalog>[0]["initialState"]["sort"], view: params?.view === "chess" ? "chess" : "cards", unitId: snapshot.units.some((unit) => unit.id === params?.unit) ? params?.unit ?? "" : "" };
+  const snapshot = sarbonPublicSnapshot(catalog) as unknown as SarbonSafeSnapshot;
   const url = `${siteOrigin}${canonical(language)}`; const projectUrl = `${siteOrigin}${local(`/sarbon?lang=${language}`)}`;
   const structuredData = { "@context": "https://schema.org", "@graph": [
     { "@type": "ApartmentComplex", "@id": `${projectUrl}#project`, name: "SARBON", url: projectUrl, numberOfAccommodationUnits: 1023, telephone: "+998781137712", address: { "@type": "PostalAddress", addressLocality: language === "ru" ? "Новый Ташкент" : language === "uz" ? "Yangi Toshkent" : "New Tashkent", addressCountry: "UZ" }, geo: { "@type": "GeoCoordinates", latitude: 41.283289, longitude: 69.498216 } },
     { "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "SARBON", item: projectUrl }, { "@type": "ListItem", position: 2, name: copy[language].crumb, item: url }] },
   ] };
-  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} /><SarbonCatalog snapshot={snapshot} initialLanguage={language} initialTracking={tracked} basePath={basePath} initialState={initialState} /></>;
+  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} /><SarbonUnifiedCatalog snapshot={snapshot} initialLanguage={language} initialTracking={tracked} basePath={basePath} initialUnitId={params?.unit} /></>;
 }

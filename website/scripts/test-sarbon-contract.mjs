@@ -14,8 +14,8 @@ const requiredUnitKeys = ["id", "unitKey", "sourceOrder", "number", "rooms", "ar
 const privateKeys = ["crmId", "sourceKey", "sourceCreatedAt", "sourceUpdatedAt", "sourceUrl", "sourceSha256", "sourceBytes", "serverDate", "price", "pricePerM2", "numericPrice"];
 const auditCapture = process.argv.includes("--audit-capture");
 
-const [catalog, mediaManifest, catalogManifest, landing, landingCss, catalogue, landingPage, cataloguePage, liveCatalog, vite, proxy, sitemap, privacy, packageText] = await Promise.all([
-  json("data/sarbon-catalog.json"), json("data/sarbon-media-manifest.json"), json("data/sarbon-catalog-manifest.json"), read("app/sarbon/sarbon-page.tsx"), read("app/sarbon/sarbon.css"), read("app/sarbon/apartments/sarbon-catalog.tsx"), read("app/sarbon/page.tsx"), read("app/sarbon/apartments/page.tsx"), read("app/live-catalog.ts"), read("vite.config.ts"), read("proxy.ts"), read("app/sitemap.ts"), read("app/privacy/page.tsx"), read("package.json"),
+const [catalog, mediaManifest, catalogManifest, landing, landingCss, catalogue, sharedCatalogue, landingPage, cataloguePage, liveCatalog, vite, proxy, sitemap, privacy, packageText] = await Promise.all([
+  json("data/sarbon-catalog.json"), json("data/sarbon-media-manifest.json"), json("data/sarbon-catalog-manifest.json"), read("app/sarbon/sarbon-page.tsx"), read("app/sarbon/sarbon.css"), read("app/sarbon/apartments/sarbon-unified-catalog.tsx"), read("app/catalog/apartment-catalog.tsx"), read("app/sarbon/page.tsx"), read("app/sarbon/apartments/page.tsx"), read("app/live-catalog.ts"), read("vite.config.ts"), read("proxy.ts"), read("app/sitemap.ts"), read("app/privacy/page.tsx"), read("package.json"),
 ]);
 
 assert.equal(catalog.schemaVersion, 1);
@@ -106,18 +106,18 @@ assert.ok(landing.includes("Loyiha vizualizatsiyasi / CGI") && landing.includes(
 assert.ok(landing.includes("import(\"lenis\")") && landingCss.includes("prefers-reduced-motion") && landing.includes("IntersectionObserver"));
 assert.ok(landing.includes("let cancelled = false") && landing.includes("if (cancelled) return") && landing.includes("cancelled = true"));
 assert.ok(landing.includes("aria-modal=\"true\"") && landing.includes("ArrowLeft") && landing.includes("ArrowRight") && landing.includes("Escape"));
-assert.ok(landing.includes(`button:not([disabled]):not([tabindex=\"-1\"])`) && catalogue.includes(`button:not([disabled]):not([tabindex=\"-1\"])`));
+assert.ok(landing.includes(`button:not([disabled]):not([tabindex=\"-1\"])`) && sharedCatalogue.includes("button:not([disabled]),a[href],select,input,textarea"));
 assert.ok(landing.includes("aria-label={t.amenitiesLabel}") && landing.includes("scrollAmenities(-1)") && landing.includes("scrollAmenities(1)"));
 assert.ok(landingCss.includes(".sarbon-amenities__controls button { width:48px; height:48px;") && landingCss.includes(".sarbon-amenities:focus-visible"));
 assert.ok(landing.includes("projectSlug=\"sarbon\"") && landing.includes("requireConsent") && landing.includes("from: \"landing\""));
-assert.ok(catalogue.includes("view === \"cards\"") && catalogue.includes("view === \"chess\"") && !catalogue.includes("floor-plan") && !catalogue.includes("chess-plus"));
-assert.ok(catalogue.includes("scrollBy") && catalogue.includes("ArrowLeft") && catalogue.includes("ArrowRight"));
-assert.ok(catalogue.includes("catalogLeadIdentity") && catalogue.includes("rememberLiveCatalogUnit") && catalogue.includes("projectSlug=\"sarbon\"") && catalogue.includes("requireConsent"));
+assert.ok(sharedCatalogue.includes("type CatalogMode = 'cards' | 'chess'"));
+assert.ok(sharedCatalogue.includes("scrollBy") && sharedCatalogue.includes("ArrowLeft") && sharedCatalogue.includes("ArrowRight"));
+assert.ok(sharedCatalogue.includes("rememberLiveCatalogUnit") && sharedCatalogue.includes("projectSlug={project.slug}") && sharedCatalogue.includes("requireConsent") && catalogue.includes('slug: "sarbon"'));
 assert.ok(catalogue.includes('useLiveCatalogSnapshot("sarbon", embeddedSnapshot)') && landing.includes('useLiveCatalogSnapshot("sarbon", embeddedSnapshot)'));
 assert.ok(liveCatalog.includes("'sarbon'") && liveCatalog.includes("projectSlug !== '4u'"), "Sarbon live units must keep matched local plans and reject untrusted remote plan URLs");
-assert.ok(cataloguePage.includes("snapshot.units.some((unit) => unit.id === params?.unit)") && catalogue.includes("String(item.id) === initialState.unitId"));
-assert.ok(catalogue.includes("loading=\"lazy\"") && catalogue.includes("setVisible((value) => value + 8)"));
-assert.ok(catalogue.includes("price: \"По запросу\"") && catalogue.includes("price: \"So‘rov bo‘yicha\"") && catalogue.includes("price: \"On request\""));
+assert.ok(cataloguePage.includes("initialUnitId={params?.unit}") && sharedCatalogue.includes("params.get('unit')"));
+assert.ok(sharedCatalogue.includes("loading=\"lazy\"") && catalogue.includes("cardPageSize: 8"));
+assert.ok(sharedCatalogue.includes("priceOnRequest: 'По запросу'") && sharedCatalogue.includes("priceOnRequest: 'So‘rov bo‘yicha'") && sharedCatalogue.includes("priceOnRequest: 'On request'"));
 for (const staleCopy of ["Текущий snapshot", "Joriy snapshot", "Current snapshot", "Joriy rasmiy snapshotda", "current official snapshot"]) {
   assert.ok(!landing.includes(staleCopy) && !catalogue.includes(staleCopy), `Sarbon contains stale user-facing copy: ${staleCopy}`);
 }

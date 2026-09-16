@@ -2,9 +2,7 @@ import type { Metadata } from 'next';
 import catalog from '@/data/regnum-plaza-client.json';
 import { publicClientPayload } from '@/app/public-client-payload';
 import { regnumQueueLabel } from '../regnum-queues';
-import { RegnumCatalog } from './regnum-catalog';
-import './regnum-catalog.css';
-import '../regnum-shared.css';
+import { RegnumUnifiedCatalog, type RegnumSafeSnapshot } from './regnum-unified-catalog';
 
 type Language = 'ru' | 'uz' | 'en';
 type PageProps = { searchParams?: Promise<{ lang?: string }> };
@@ -71,6 +69,6 @@ export default async function Page({ searchParams }: PageProps) {
   if (catalog.offerCount !== 0 || catalog.publicPrice || catalog.units.some((unit) => unit.publicPrice)) throw new Error('Regnum Plaza public-price / JSON-LD Offer policy changed');
   return <>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, '\\u003c') }} />
-    <RegnumCatalog snapshot={publicClientPayload(catalog)} initialLanguage={language} />
+    <RegnumUnifiedCatalog snapshot={publicClientPayload(catalog) as unknown as RegnumSafeSnapshot} initialLanguage={language} />
   </>;
 }

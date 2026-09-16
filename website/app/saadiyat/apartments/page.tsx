@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import catalog from '@/data/saadiyat-catalog.json';
 import { publicClientPayload } from '@/app/public-client-payload';
-import { SaadiyatCatalog } from './saadiyat-catalog';
-import './saadiyat-catalog.css';
+import { SaadiyatUnifiedCatalog, type SaadiyatSafeSnapshot } from './saadiyat-unified-catalog';
 
 type Language = 'ru' | 'uz' | 'en';
 type PageProps = { searchParams?: Promise<{ lang?: string }> };
@@ -55,8 +54,7 @@ export default async function Page({ searchParams }: PageProps) {
       status: unit.status,
       priceVisible: unit.priceVisible,
       plan: unit.plan,
-      sourceUpdatedAt: unit.sourceUpdatedAt,
     })),
   };
-  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, '\\u003c') }} /><SaadiyatCatalog snapshot={publicClientPayload(safeCatalog)} initialLanguage={language} /></>;
+  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, '\\u003c') }} /><SaadiyatUnifiedCatalog snapshot={publicClientPayload(safeCatalog) as unknown as SaadiyatSafeSnapshot} initialLanguage={language} /></>;
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
-import { KayanCatalogPage } from '@/app/kayan/project-page';
 import { getCatalogBundle, getCatalogBundleTimestamp } from '@/app/kayan/catalog-snapshot';
+import { ofiyatPublicBundle } from './ofiyat-public-bundle';
+import { OfiyatUnifiedCatalog } from './ofiyat-unified-catalog';
 import '@/app/kayan/kayan.css';
 
 const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
@@ -30,5 +31,5 @@ export default async function OfiyatApartmentsPage({ searchParams }: PageProps) 
   const params = await searchParams;
   const language = params?.lang === 'uz' || params?.lang === 'en' ? params.lang : 'ru';
   const bundle = getCatalogBundle('ofiyat');
-  return <KayanCatalogPage slug="ofiyat" initialBundle={bundle} snapshotGeneratedAt={getCatalogBundleTimestamp(bundle)} initialLanguage={language} />;
+  return <OfiyatUnifiedCatalog initialBundle={ofiyatPublicBundle(bundle)} snapshotGeneratedAt={getCatalogBundleTimestamp(bundle)} initialLanguage={language} />;
 }

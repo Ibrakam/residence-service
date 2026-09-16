@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import catalog from '@/data/sado-catalog.json';
-import { SadoCatalogPage, type SadoUnit } from './sado-catalog-page';
-import '../sado.css';
-import './sado-catalog.css';
+import { publicClientPayload } from '@/app/public-client-payload';
+import { SadoUnifiedCatalog, type SadoSafeSnapshot } from './sado-unified-catalog';
 
 const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
 const localized = {
@@ -27,6 +26,28 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
   };
 }
 
-export default function SadoApartmentsRoute() {
-  return <SadoCatalogPage initialUnits={catalog.units as SadoUnit[]} snapshotGeneratedAt={catalog.generatedAt} sourceCount={catalog.sourceCount} />;
+export default async function SadoApartmentsRoute({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const language = params?.lang === 'uz' || params?.lang === 'en' ? params.lang : 'ru';
+  const data: SadoSafeSnapshot = publicClientPayload({
+    project: catalog.project,
+    generatedAt: catalog.generatedAt,
+    sourceCount: catalog.sourceCount,
+    units: catalog.units.map((unit) => ({
+      id: unit.id,
+      number: unit.number,
+      rooms: unit.rooms,
+      area: unit.area,
+      class: unit.class === 'business' ? 'business' as const : 'comfort' as const,
+      price: unit.price,
+      listPrice: unit.listPrice,
+      block: unit.block,
+      floor: unit.floor,
+      maxFloor: unit.maxFloor,
+      entrance: unit.entrance,
+      status: 'available' as const,
+      plan: `/sado/plans/${unit.id}.webp`,
+    })),
+  });
+  return <SadoUnifiedCatalog snapshot={data} initialLanguage={language} />;
 }

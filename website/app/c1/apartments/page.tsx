@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import catalog from '@/data/c1-catalog.json';
-import { C1Catalog } from './c1-catalog';
-import './c1-catalog.css';
+import { C1UnifiedCatalog } from './c1-unified-catalog';
 
 type Language = 'ru' | 'uz' | 'en';
 type PageProps = { searchParams?: Promise<{ lang?: string }> };
@@ -36,5 +35,5 @@ export default async function Page({ searchParams }: PageProps) {
     { '@type': 'ApartmentComplex', '@id': `${projectUrl}#project`, name: 'C1', url: projectUrl },
     { '@type': 'BreadcrumbList', '@id': `${url}#breadcrumbs`, itemListElement: [{ '@type': 'ListItem', position: 1, name: current.home, item: `${origin}${basePath}/` }, { '@type': 'ListItem', position: 2, name: 'C1', item: projectUrl }, { '@type': 'ListItem', position: 3, name: current.list, item: url }] },
   ] };
-  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, '\\u003c') }} /><C1Catalog snapshot={clientSnapshot} initialLanguage={language} /></>;
+  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, '\\u003c') }} /><C1UnifiedCatalog snapshot={clientSnapshot} initialLanguage={language} /></>;
 }

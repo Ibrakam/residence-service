@@ -2,9 +2,7 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import snapshot from '@/data/jomiy-catalog.json';
 import { publicClientPayload } from '@/app/public-client-payload';
-import { JomiyCatalog } from './jomiy-catalog';
-import './jomiy-catalog.css';
-import '../jomiy-shared.css';
+import { JomiyUnifiedCatalog, type JomiySafeSnapshot } from './jomiy-unified-catalog';
 
 type Language = 'ru' | 'uz' | 'en';
 type PageProps = { searchParams?: Promise<{ lang?: string }> };
@@ -41,6 +39,11 @@ function languageTag(language: Language) { return language === 'ru' ? 'ru-RU' : 
 function locale(language: Language) { return language === 'ru' ? 'ru_RU' : language === 'uz' ? 'uz_UZ' : 'en_US'; }
 function canonicalPath(language: Language) { return sitePath(`/jomiy/apartments?lang=${language}`); }
 function projectPath(language: Language) { return sitePath(`/jomiy?lang=${language}`); }
+function catalogStatus(rawStatus: string, isSale: boolean): 'available' | 'reserved' | 'sold' | 'unavailable' {
+  if (rawStatus === 'Бронирование' || rawStatus === 'Бронь') return 'reserved';
+  if (rawStatus === 'Продано') return 'sold';
+  return isSale ? 'available' : 'unavailable';
+}
 
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
   const language = languageOf((await searchParams)?.lang);
@@ -96,9 +99,35 @@ export default async function Page({ searchParams }: PageProps) {
     ],
   };
   if (snapshot.offerCount !== 0 || snapshot.units.some((unit) => unit.strictOfferEligible)) throw new Error('Jomiy strict Offer policy changed; review JSON-LD eligibility before publishing');
+  const safeSnapshot: JomiySafeSnapshot = {
+    project: snapshot.project,
+    capturedAt: snapshot.capturedAt,
+    totalCount: snapshot.officialTotalAtCapture,
+    evaluationTime: initialEvaluationTime,
+    units: snapshot.units.map((unit) => ({
+      id: `jomiy:${unit.buildingDisplay}:${unit.entrance}:${unit.floor}:${unit.number}:${unit.area}`,
+      sourceKey: '',
+      number: unit.number,
+      rooms: unit.rooms,
+      area: unit.area,
+      floor: unit.floor,
+      maxFloor: unit.totalFloors,
+      entrance: unit.entrance,
+      building: unit.buildingDisplay,
+      propertyType: 'apartment',
+      status: catalogStatus(unit.statusOriginal, unit.isSale),
+      price: unit.price,
+      regularPrice: unit.oldPrice,
+      pricePerM2: unit.currentPricePerM2,
+      currency: unit.currency,
+      plan: unit.sheetPage2,
+      floorPositionPlan: unit.sheetPage1,
+      promotion: unit.promotion?.deadlineUtc ? { deadlineUtc: unit.promotion.deadlineUtc } : null,
+    })),
+  };
 
   return <>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, '\\u003c') }} />
-    <JomiyCatalog snapshot={publicClientPayload(snapshot) as unknown as Parameters<typeof JomiyCatalog>[0]['snapshot']} initialLanguage={language} initialEvaluationTime={initialEvaluationTime} />
+    <JomiyUnifiedCatalog snapshot={publicClientPayload(safeSnapshot)} initialLanguage={language} />
   </>;
 }

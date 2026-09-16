@@ -28,31 +28,42 @@ assert.deepEqual(liveCatalogQueueOptions({ queues: [queueOptions[0]] }), [], 'pr
 assert.deepEqual(liveCatalogQueueOptions({ queues: [queueOptions[0], { ...queueOptions[1], queueOrder: 1 }] }), [], 'invalid queue metadata fails closed');
 
 const integrations = new Map([
-  ['avalon-residence', ['app/page.tsx', "useLiveCatalogUnits('avalon-residence'"]],
-  ['4u', ['app/4u/apartments/four-u-catalog.tsx', "useLiveCatalogSnapshot('4u'"]],
-  ['bayterak', ['app/bayterak/apartments/bayterak-catalog.tsx', "useLiveCatalogSnapshot('bayterak'"]],
-  ['botanika-saroyi', ['app/botanika-saroyi/apartments/botanika-catalog.tsx', "useLiveCatalogSnapshot('botanika-saroyi'"]],
-  ['c1', ['app/c1/apartments/c1-catalog.tsx', "useLiveCatalogSnapshot('c1'"]],
-  ['flagman', ['app/flagman/apartments/flagman-catalog-page.tsx', "useLiveCatalogSnapshot('flagman'"]],
-  ['jomiy', ['app/jomiy/apartments/jomiy-catalog.tsx', 'useLiveCatalogSnapshot("jomiy"']],
-  ['maftun-makon', ['app/maftun-makon/apartments/maftun-makon-catalog.tsx', "useLiveCatalogSnapshot('maftun-makon'"]],
-  ['regnum-plaza', ['app/regnum-plaza/apartments/regnum-catalog.tsx', "useLiveCatalogSnapshot('regnum-plaza'"]],
-  ['sarbon', ['app/sarbon/apartments/sarbon-catalog.tsx', 'useLiveCatalogSnapshot("sarbon"']],
-  ['sado', ['app/sado/apartments/sado-catalog-page.tsx', "useLiveCatalogUnits('sado'"]],
-  ['soy-boyi', ['app/soy-boyi/apartments/soy-boyi-catalog.tsx', 'useLiveCatalogSnapshot("soy-boyi"']],
-  ['sun', ['app/sun/apartments/sun-catalog.tsx', "useLiveCatalogSnapshot('sun'"]],
-  ['voha', ['app/voha/apartments/voha-catalog.tsx', "useLiveCatalogSnapshot('voha'"]],
-  ['yangibaxt', ['app/yangibaxt/apartments/yangibaxt-catalog.tsx', 'useLiveCatalogSnapshot("yangibaxt"']],
-  ['zamon', ['app/zamon/apartments/zamon-catalog.tsx', "useLiveCatalogSnapshot('zamon'"]],
+  ['avalon-residence', 'app/page.tsx'],
+  ['4u', 'app/4u/apartments/four-u-unified-catalog.tsx'],
+  ['bayterak', 'app/bayterak/apartments/bayterak-unified-catalog.tsx'],
+  ['botanika-saroyi', 'app/botanika-saroyi/apartments/botanika-unified-catalog.tsx'],
+  ['c1', 'app/c1/apartments/c1-unified-catalog.tsx'],
+  ['flagman', 'app/flagman/apartments/flagman-unified-catalog.tsx'],
+  ['jomiy', 'app/jomiy/apartments/jomiy-unified-catalog.tsx'],
+  ['maftun-makon', 'app/maftun-makon/apartments/maftun-makon-unified-catalog.tsx'],
+  ['meros', 'app/meros/apartments/meros-unified-catalog.tsx'],
+  ['mirador', 'app/mirador/apartments/mirador-unified-catalog.tsx'],
+  ['ofiyat', 'app/ofiyat/apartments/ofiyat-unified-catalog.tsx'],
+  ['regnum-plaza', 'app/regnum-plaza/apartments/regnum-unified-catalog.tsx'],
+  ['saadiyat', 'app/saadiyat/apartments/saadiyat-unified-catalog.tsx'],
+  ['sarbon', 'app/sarbon/apartments/sarbon-unified-catalog.tsx'],
+  ['sado', 'app/sado/apartments/sado-unified-catalog.tsx'],
+  ['soy-boyi', 'app/soy-boyi/apartments/soy-boyi-unified-catalog.tsx'],
+  ['sun', 'app/sun/apartments/sun-unified-catalog.tsx'],
+  ['voha', 'app/voha/apartments/voha-unified-catalog.tsx'],
+  ['yangibaxt', 'app/yangibaxt/apartments/yangibaxt-unified-catalog.tsx'],
+  ['zamon', 'app/zamon/apartments/zamon-unified-catalog.tsx'],
 ]);
 
-for (const [slug, [relativePath, marker]] of integrations) {
+const unifiedEngine = await readFile(new URL('../app/catalog/apartment-catalog.tsx', import.meta.url), 'utf8');
+assert.match(unifiedEngine, /rememberLiveCatalogUnit\(\{ sourceKey: leadUnit\.unitKey \}/, 'unified leads must remember only canonical source keys');
+assert.match(unifiedEngine, /unitKey=\{leadUnit\?\.unitKey\}/, 'unified leads must submit only canonical source keys');
+assert.doesNotMatch(unifiedEngine, /unitId=\{/, 'unified leads must not submit stale embedded ids');
+
+for (const [slug, relativePath] of integrations) {
   const page = await readFile(new URL(`../${relativePath}`, import.meta.url), 'utf8');
-  assert.ok(page.includes(marker), `${slug} must use the live catalogue as its primary client source`);
-  if (slug !== 'sun') {
-    assert.ok(page.includes('catalogLeadIdentity'), `${slug} unit leads must resolve through the canonical source key`);
-    assert.doesNotMatch(page, /unitId=\{/, `${slug} must not submit a stale embedded unit id`);
+  if (slug === 'avalon-residence') {
+    assert.ok(page.includes("useLiveCatalogUnits('avalon-residence'"), `${slug} must use the live catalogue as its primary client source`);
+    continue;
   }
+  assert.match(page, new RegExp(`useLiveCatalog(?:Snapshot|Units)(?:<[^>]+>)?\\(['\"]${slug}['\"]`), `${slug} must use the live catalogue as its primary client source`);
+  assert.match(page, /unitKey:/, `${slug} must map canonical source keys into the shared lead engine`);
+  assert.doesNotMatch(page, /unitId=\{/, `${slug} must not submit a stale embedded unit id`);
 }
 
 const landingIntegrations = new Map([
@@ -81,12 +92,12 @@ for (const [slug, [relativePath, marker]] of landingIntegrations) {
 
 const newLiveSites = new Map([
   ['c1', {
-    catalogue: 'app/c1/apartments/c1-catalog.tsx',
+    catalogue: 'app/c1/apartments/c1-unified-catalog.tsx',
     landing: 'app/c1/c1-page.tsx',
     dynamicCount: /project\?\.availableUnits\s*\?\?\s*initialAvailableCount/,
   }],
   ['soy-boyi', {
-    catalogue: 'app/soy-boyi/apartments/soy-boyi-catalog.tsx',
+    catalogue: 'app/soy-boyi/apartments/soy-boyi-unified-catalog.tsx',
     landing: 'app/soy-boyi/soy-boyi-page.tsx',
     dynamicCount: /liveCatalog\.project\?\.availableUnits\s*\?\?\s*availableCount/,
   }],
@@ -97,10 +108,12 @@ for (const [slug, paths] of newLiveSites) {
     readFile(new URL(`../${paths.catalogue}`, import.meta.url), 'utf8'),
     readFile(new URL(`../${paths.landing}`, import.meta.url), 'utf8'),
   ]);
+  assert.match(catalogue, /unitKey:/, `${slug} catalogue must map only a canonical live source key`);
+  assert.doesNotMatch(catalogue, /unitId=\{/, `${slug} catalogue must not submit a stale embedded unit id`);
+  assert.ok(landing.includes('catalogLeadIdentity'), `${slug} landing must submit only a canonical live source key`);
+  assert.ok(landing.includes('rememberLiveCatalogUnit'), `${slug} landing must remember only live catalogue identities`);
+  assert.doesNotMatch(landing, /unitId=\{/, `${slug} landing must not submit a stale embedded unit id`);
   for (const [surface, page] of [['catalogue', catalogue], ['landing', landing]]) {
-    assert.ok(page.includes('catalogLeadIdentity'), `${slug} ${surface} must submit only a canonical live source key`);
-    assert.ok(page.includes('rememberLiveCatalogUnit'), `${slug} ${surface} must remember only live catalogue identities`);
-    assert.doesNotMatch(page, /unitId=\{/, `${slug} ${surface} must not submit a stale embedded unit id`);
     assert.doesNotMatch(page, /свежем официальном (?:snapshot|снимке)|Снимок получен|Yangi rasmiy snapshotda|Snapshot olingan vaqt|fresh official snapshot|Latest official availability snapshot|Snapshot captured/iu, `${slug} ${surface} must not show snapshot terminology to users`);
   }
   assert.match(landing, paths.dynamicCount, `${slug} landing count must follow the live project payload with an embedded fallback`);
@@ -108,8 +121,8 @@ for (const [slug, paths] of newLiveSites) {
 
 const kayan = await readFile(new URL('../app/kayan/project-page.tsx', import.meta.url), 'utf8');
 for (const slug of ['meros', 'mirador', 'ofiyat']) {
-  const route = await readFile(new URL(`../app/${slug}/apartments/page.tsx`, import.meta.url), 'utf8');
-  assert.ok(route.includes(`slug="${slug}"`), `${slug} must route through the live Kayan catalogue`);
+  const adapter = await readFile(new URL(`../app/${slug}/apartments/${slug}-unified-catalog.tsx`, import.meta.url), 'utf8');
+  assert.match(adapter, new RegExp(`useLiveCatalog(?:Snapshot|Units)(?:<[^>]+>)?\\(['\"]${slug}['\"]`), `${slug} must route through the live Kayan catalogue`);
 }
 assert.match(kayan, /liveCatalogAPIBase\(\)/);
 assert.match(kayan, /credentials:\s*'include'/);

@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
-import { KayanCatalogPage } from '@/app/kayan/project-page';
 import { getCatalogBundle, getCatalogBundleTimestamp } from '@/app/kayan/catalog-snapshot';
 import '@/app/kayan/kayan.css';
 import '@/app/kayan/mirador.css';
+import { MiradorUnifiedCatalog } from './mirador-unified-catalog';
 
 const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
 const localized = {
@@ -30,5 +30,5 @@ export default async function MiradorApartmentsPage({ searchParams }: PageProps)
   const params = await searchParams;
   const language = params?.lang === 'uz' || params?.lang === 'en' ? params.lang : 'ru';
   const bundle = getCatalogBundle('mirador');
-  return <KayanCatalogPage slug="mirador" initialBundle={bundle} snapshotGeneratedAt={getCatalogBundleTimestamp(bundle)} initialLanguage={language} />;
+  return <MiradorUnifiedCatalog initialBundle={bundle} snapshotGeneratedAt={getCatalogBundleTimestamp(bundle)} initialLanguage={language} />;
 }

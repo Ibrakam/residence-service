@@ -7,6 +7,7 @@ export function proxy(request: NextRequest) {
   requestHeaders.set('x-document-language', language);
   requestHeaders.set('x-jomiy-document-language', language);
   requestHeaders.set('x-jomiy-evaluation-time', String(Date.now()));
+  requestHeaders.set('x-catalog-evaluation-time', String(Date.now()));
   return NextResponse.next({ request: { headers: requestHeaders } });
 }
 

@@ -1,10 +1,37 @@
 import type { Metadata } from 'next';
 import catalogSnapshot from '@/data/flagman-catalog.json';
 import { publicClientPayload } from '@/app/public-client-payload';
-import { FlagmanCatalogPage, type FlagmanCatalogSnapshot } from './flagman-catalog-page';
-import './flagman-catalog.css';
+import { FlagmanUnifiedCatalog, type FlagmanSafeSnapshot } from './flagman-unified-catalog';
 
-const snapshot = publicClientPayload(catalogSnapshot) as FlagmanCatalogSnapshot;
+const snapshot: FlagmanSafeSnapshot = publicClientPayload({
+  project: {
+    slug: catalogSnapshot.project.slug,
+    name: catalogSnapshot.project.name,
+    propertyType: catalogSnapshot.project.propertyType,
+    address: catalogSnapshot.project.address,
+    class: catalogSnapshot.project.class,
+    catalogMaxFloor: catalogSnapshot.project.catalogMaxFloor,
+    status: catalogSnapshot.project.status,
+  },
+  capturedAt: catalogSnapshot.capturedAt,
+  totalCount: catalogSnapshot.source.visibleListingCount,
+  units: catalogSnapshot.units.map((unit) => ({
+    id: `flagman:${unit.number}:${unit.floor}:${unit.entrance}:${unit.area}`,
+    sourceKey: '',
+    number: unit.number,
+    rooms: unit.rooms,
+    area: unit.area,
+    floor: unit.floor,
+    maxFloor: unit.maxFloor,
+    entrance: unit.entrance,
+    status: 'available' as const,
+    price: unit.price,
+    regularPrice: unit.regularPrice,
+    pricePerM2: unit.pricePerM2,
+    currency: unit.currency,
+    plan: unit.plan,
+  })),
+});
 const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
 type Language = 'ru' | 'uz' | 'en';
 type PageProps = { searchParams?: Promise<{ lang?: string }> };
@@ -48,5 +75,5 @@ export default async function Page({ searchParams }: PageProps) {
       })),
     },
   };
-  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} /><FlagmanCatalogPage snapshot={snapshot} initialLanguage={language} /></>;
+  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} /><FlagmanUnifiedCatalog snapshot={snapshot} initialLanguage={language} /></>;
 }

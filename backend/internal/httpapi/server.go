@@ -68,6 +68,7 @@ func NewWithOptions(store *database.Store, logger *slog.Logger, options Options)
 	mux.HandleFunc("GET /healthz", server.health)
 	mux.HandleFunc("GET /readyz", server.ready)
 	mux.HandleFunc("GET /v1/developers", server.listDevelopers)
+	mux.HandleFunc("GET /v1/project-registry", server.listProjectRegistry)
 	mux.HandleFunc("GET /v1/projects", server.listProjects)
 	mux.HandleFunc("GET /v1/projects/{slug}", server.getProject)
 	mux.HandleFunc("GET /v1/projects/{slug}/units", server.listUnits)
@@ -89,6 +90,7 @@ func (s *Server) serviceInfo(w http.ResponseWriter, _ *http.Request) {
 		"version":   "v1",
 		"health":    "/healthz",
 		"readiness": "/readyz",
+		"registry":  "/v1/project-registry",
 		"projects":  "/v1/projects",
 	})
 }

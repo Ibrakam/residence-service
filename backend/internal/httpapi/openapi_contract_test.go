@@ -146,3 +146,31 @@ func TestProjectQueueOpenAPIContract(t *testing.T) {
 		t.Errorf("queue query parameter count=%d, want units/layouts/availability", count)
 	}
 }
+
+func TestProjectRegistryRouteAndOpenAPIContract(t *testing.T) {
+	handler := New(nil, slog.New(slog.NewTextHandler(io.Discard, nil)), "")
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/v1/project-registry", nil)
+	handler.ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("project registry path is not registered as a GET route: status=%d", recorder.Code)
+	}
+
+	body, err := os.ReadFile(filepath.Join("..", "..", "openapi", "openapi.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	document := string(body)
+	for _, required := range []string{
+		"/v1/project-registry:",
+		"operationId: listProjectRegistry",
+		"ProjectRegistryItem:",
+		"required: [projectKey, name, published, passportPath",
+		"const: true",
+		"клиент не должен вычислять его из projectKey",
+	} {
+		if !strings.Contains(document, required) {
+			t.Errorf("OpenAPI project registry contract is missing %q", required)
+		}
+	}
+}

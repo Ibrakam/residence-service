@@ -58,6 +58,25 @@ paths:
                   items:
                     type: array
                     items: { $ref: '#/components/schemas/Developer' }
+  /v1/project-registry:
+    get:
+      tags: [Catalog]
+      operationId: listProjectRegistry
+      description: >-
+        Опубликованные sales-site проекты. projectKey совпадает с catalog slug,
+        а same-origin пути задаются явным allowlist и не вычисляются клиентом.
+      responses:
+        '200':
+          description: Опубликованные проекты с актуальными агрегатами каталога.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/ProjectRegistryItem' }
   /v1/projects:
     get:
       tags: [Catalog]
@@ -371,6 +390,29 @@ components:
         developerSlug: { type: string }
         slug: { type: string }
         name: { type: string }
+        totalUnits: { type: integer, format: int64 }
+        availableUnits: { type: integer, format: int64 }
+        updatedAt: { type: string, format: date-time }
+    ProjectRegistryItem:
+      type: object
+      required: [projectKey, name, published, passportPath, totalUnits, availableUnits]
+      properties:
+        projectKey:
+          type: string
+          description: Стабильный canonical catalog slug; хранится потребителем вместо изменяемого имени.
+        name: { type: string }
+        published:
+          type: boolean
+          const: true
+          description: Явный fail-closed признак опубликованного sales-site проекта.
+        passportPath:
+          type: string
+          pattern: '^/'
+          description: Same-origin путь опубликованного паспорта проекта; для Avalon Residence это корень /.
+        apartmentsPath:
+          type: string
+          pattern: '^/'
+          description: Опциональный explicit same-origin путь отдельной страницы выбора квартир; клиент не должен вычислять его из projectKey.
         totalUnits: { type: integer, format: int64 }
         availableUnits: { type: integer, format: int64 }
         updatedAt: { type: string, format: date-time }

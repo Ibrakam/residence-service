@@ -18,6 +18,19 @@ type ProjectSummary struct {
 	UpdatedAt      *time.Time `json:"updatedAt,omitempty"`
 }
 
+// ProjectRegistryItem is the public sales-site projection of a catalog
+// project. Paths are same-origin application paths, not source CRM URLs.
+type ProjectRegistryItem struct {
+	ProjectKey     string     `json:"projectKey"`
+	Name           string     `json:"name"`
+	Published      bool       `json:"published"`
+	PassportPath   string     `json:"passportPath"`
+	ApartmentsPath string     `json:"apartmentsPath,omitempty"`
+	TotalUnits     int64      `json:"totalUnits"`
+	AvailableUnits int64      `json:"availableUnits"`
+	UpdatedAt      *time.Time `json:"updatedAt,omitempty"`
+}
+
 type PhaseSummary struct {
 	ID               int64      `json:"id"`
 	Slug             string     `json:"slug"`

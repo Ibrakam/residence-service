@@ -180,6 +180,36 @@ assert.equal(unmatched.sheetPage1, '');
 assert.deepEqual(unmatched.coordinates, { x: 0, y: 0 });
 assert.deepEqual(unmatched.provenance, { api: '', sourceSha256: '' });
 
+const stableGroupId = 'd7207ffd-9265-11ed-a82b-001dd8b726aa';
+const [matchedJomiy] = mergeLiveCatalogUnits('jomiy', [{
+  id: 'embedded-jomiy-unit',
+  sourceKey: 'embedded-jomiy-source-key',
+  number: '58(57)',
+  rooms: 2,
+  floor: 11,
+  area: 61.84,
+  entrance: 1,
+  buildingId: stableGroupId,
+  building: 'NRG Jomiy - 2 . 1',
+  phaseSlug: 'embedded-phase',
+}], [{
+  ...live[0],
+  id: 58,
+  sourceKey: 'jomiy:unit:58',
+  projectSlug: 'jomiy',
+  phaseSlug: 'nrg-jomiy-2-1',
+  phaseName: 'NRG Jomiy - 2 . 1',
+  status: 'available',
+  rawStatus: 'Available',
+  number: '58(57)',
+  entrance: '1',
+  floor: 11,
+  area: 61.84,
+  rooms: 2,
+}]);
+assert.equal(matchedJomiy.buildingId, stableGroupId, 'a matched unit must retain the bespoke matrix group join key');
+assert.equal([matchedJomiy].filter((unit) => unit.buildingId === stableGroupId).length, 1, 'matrix group filtering must keep matched live rows');
+
 const reserved4U = { ...live[0], projectSlug: '4u', status: 'reserved' };
 assert.equal(mergeLiveCatalogUnits('4u', embedded, [reserved4U]).length, 0, 'available-only UI must not label a reserved unit as available');
 for (const projectSlug of ['4u', 'bayterak', 'botanika-saroyi', 'flagman', 'jomiy', 'maftun-makon', 'meros', 'sado', 'voha', 'yangibaxt', 'zamon']) {

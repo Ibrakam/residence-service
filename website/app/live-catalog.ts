@@ -588,7 +588,11 @@ function adaptUnit(
   }
   assignIfPresent(result, 'building', phaseName);
   assignIfPresent(result, 'buildingDisplay', phaseName);
-  assignIfPresent(result, 'buildingId', live.phaseSlug);
+  // Bespoke catalogues use their embedded buildingId as a stable join key for
+  // matrix groups. Keep that structural key on matched rows; phaseSlug already
+  // carries the normalized live phase identity. New live rows still receive a
+  // useful buildingId so they remain filterable.
+  if (!matched || !result.buildingId) assignIfPresent(result, 'buildingId', live.phaseSlug);
   assignIfPresent(result, 'block', phaseName);
   assignIfPresent(result, 'blockName', phaseName);
   if (projectSlug === '4u') assignIfPresent(result, 'blockId', live.phaseSlug.replace(/^block-/, ''));

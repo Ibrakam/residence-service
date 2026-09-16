@@ -665,19 +665,6 @@ function date(value: string, language: Language) {
     timeZone: "UTC",
   }).format(parsed);
 }
-function captured(value: string, language: Language) {
-  const parsed = parseCatalogDate(value);
-  if (!parsed) return language === "ru" ? "Последние доступные данные" : language === "uz" ? "So‘nggi mavjud ma’lumotlar" : "Latest available data";
-  if (language === "uz") {
-    const parts = uzDateParts(value, "Asia/Tashkent");
-    return `${parts.day}-${parts.month}, ${parts.year}, ${parts.hour}:${parts.minute}`;
-  }
-  return new Intl.DateTimeFormat(locale(language), {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "Asia/Tashkent",
-  }).format(parsed);
-}
 function campaignDeadline(value: string, language: Language) {
   const parsed = parseCatalogDate(value);
   if (!parsed) return language === "ru" ? "Уточняется" : language === "uz" ? "Aniqlanmoqda" : "To be confirmed";
@@ -2133,39 +2120,6 @@ export function JomiyCatalog({
               <strong>{allApartments}</strong>
             </figcaption>
           </figure>
-          <dl>
-            <div>
-              <dt>
-                {language === "uz"
-                  ? uzDate(snapshot.capturedAt, "Asia/Tashkent")
-                  : new Intl.DateTimeFormat(locale(language), {
-                      dateStyle: "medium",
-                      timeZone: "Asia/Tashkent",
-                    }).format(new Date(snapshot.capturedAt))}
-              </dt>
-              <dd>{t.snapshot}</dd>
-            </div>
-            <div>
-              <dt>{captured(snapshot.capturedAt, language)}</dt>
-              <dd>{t.captured}</dd>
-            </div>
-            <div>
-              <dt>{snapshot.officialTotalAtCapture}</dt>
-              <dd>{recordLabel(snapshot.officialTotalAtCapture, language)}</dd>
-            </div>
-            <div>
-              <dt>{snapshot.offerCount}</dt>
-              <dd>{t.offers}</dd>
-            </div>
-            <div>
-              <dt>{snapshot.filterSummary.groups.length}</dt>
-              <dd>{t.groups}</dd>
-            </div>
-            <div>
-              <dt>{snapshot.officialTotalAtCapture} × 2</dt>
-              <dd>{t.plans}</dd>
-            </div>
-          </dl>
         </section>
         <section className="jmc-workspace">
           <FiltersPanel

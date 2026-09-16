@@ -36,6 +36,7 @@ export type MiradorExplorerSelection = {
 type MiradorBlockExplorerProps = {
   language: KayanLanguage;
   catalogHref: string;
+  availableUnitKeys?: readonly string[];
   onReady?: () => void;
   onLead?: (selection: MiradorExplorerSelection) => void;
   onBlockSelect?: (block: MiradorBlockNumber | null) => void;
@@ -245,6 +246,7 @@ function unitCatalogHref(catalogHref: string, scheme: MiradorFloorScheme, unitNu
 export function MiradorBlockExplorer({
   language,
   catalogHref,
+  availableUnitKeys,
   onReady,
   onLead,
   onBlockSelect,
@@ -283,18 +285,28 @@ export function MiradorBlockExplorer({
     () => MIRADOR_BLOCKS.find((block) => block.number === selectedBlock),
     [selectedBlock],
   );
+  const floorSchemes = useMemo(() => {
+    if (availableUnitKeys === undefined) return MIRADOR_FLOOR_SCHEMES;
+    const availableUnitKeySet = new Set(availableUnitKeys);
+    return MIRADOR_FLOOR_SCHEMES.flatMap((scheme) => {
+      const zones = scheme.zones.filter((zone) => (
+        zone.unitKey !== null && availableUnitKeySet.has(zone.unitKey)
+      ));
+      return zones.length ? [{ ...scheme, zones }] : [];
+    });
+  }, [availableUnitKeys]);
   const availableFloors = useMemo(
-    () => [...new Set(MIRADOR_FLOOR_SCHEMES.map((scheme) => scheme.floor))]
+    () => [...new Set(floorSchemes.map((scheme) => scheme.floor))]
       .sort((left, right) => right - left),
-    [],
+    [floorSchemes],
   );
   const selectedFloorSchemes = useMemo(
     () => selectedBlock === null || selectedFloor === null
       ? []
-      : MIRADOR_FLOOR_SCHEMES
+      : floorSchemes
         .filter((scheme) => scheme.floor === selectedFloor)
         .sort((a, b) => a.entrance.localeCompare(b.entrance, undefined, { numeric: true })),
-    [selectedBlock, selectedFloor],
+    [floorSchemes, selectedBlock, selectedFloor],
   );
   const selectedFloorScheme = useMemo(
     () => selectedEntrance === null
@@ -452,7 +464,7 @@ export function MiradorBlockExplorer({
   };
 
   const activateFloor = (floor: number, control: HTMLButtonElement) => {
-    const schemes = MIRADOR_FLOOR_SCHEMES
+    const schemes = floorSchemes
       .filter((scheme) => scheme.floor === floor)
       .sort((left, right) => left.entrance.localeCompare(right.entrance, undefined, { numeric: true }));
     const defaultScheme = schemes[0];

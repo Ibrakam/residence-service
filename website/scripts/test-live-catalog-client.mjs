@@ -51,14 +51,23 @@ const integrations = new Map([
 ]);
 
 const unifiedEngine = await readFile(new URL('../app/catalog/apartment-catalog.tsx', import.meta.url), 'utf8');
-assert.match(unifiedEngine, /rememberLiveCatalogUnit\(\{ sourceKey: leadUnit\.unitKey \}/, 'unified leads must remember only canonical source keys');
-assert.match(unifiedEngine, /unitKey=\{leadUnit\?\.unitKey\}/, 'unified leads must submit only canonical source keys');
+assert.match(unifiedEngine, /rememberLiveCatalogUnit\(\{ sourceKey: activeLeadUnit\.unitKey \}/, 'unified leads must remember only canonical source keys');
+assert.match(unifiedEngine, /unitKey=\{activeLeadUnit\?\.unitKey\}/, 'unified leads must submit only canonical source keys');
 assert.doesNotMatch(unifiedEngine, /unitId=\{/, 'unified leads must not submit stale embedded ids');
 
 for (const [slug, relativePath] of integrations) {
   const page = await readFile(new URL(`../${relativePath}`, import.meta.url), 'utf8');
   if (slug === 'avalon-residence') {
     assert.ok(page.includes("useLiveCatalogUnits('avalon-residence'"), `${slug} must use the live catalogue as its primary client source`);
+    assert.match(page, /const availableUnits = useMemo\(\(\) => units\.filter\(\(unit\) => unit\.status === 'free'\)/, `${slug} must establish a single available-only source for every selector surface`);
+    assert.match(page, /const floors = useMemo\(\(\) => floorList\(availableUnits, selectedBuilding\)/, `${slug} must expose only floors that contain available units`);
+    assert.match(page, /const selectedUnit = selectedUnitId \? availableUnits\.find/, `${slug} must drop a selected unit as soon as it is no longer available`);
+    assert.match(page, /if \(!unit \|\| unit\.status !== 'free'\) return null/, `${slug} must preserve floor-plan indexing while hiding non-available polygons`);
+    assert.match(page, /availableFloorUnits\.map\(\(unit\) => <button/, `${slug} mobile floor picker must list only available units`);
+    assert.match(page, /availableBuildingUnits\.filter\(\(unit\) => unit\.floor === floor\)[\s\S]*?\.map\(\(unit\) => <button/, `${slug} chess view must list only available units`);
+    assert.match(page, /const chooseUnit = \(unit: Apartment\) => \{\s*if \(unit\.status !== 'free'\) return;/, `${slug} deep unit selection must fail closed for non-available inventory`);
+    assert.doesNotMatch(page, /\bonlyFree\b|\bsetOnlyFree\b/, `${slug} must not expose an optional availability toggle`);
+    assert.doesNotMatch(page, /status-legend|table-status/, `${slug} must not expose sold, reserved, or status-filter UI`);
     continue;
   }
   assert.match(page, new RegExp(`useLiveCatalog(?:Snapshot|Units)(?:<[^>]+>)?\\(['\"]${slug}['\"]`), `${slug} must use the live catalogue as its primary client source`);

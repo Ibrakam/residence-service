@@ -44,6 +44,14 @@ const projects = [
 ];
 const languages = ['ru', 'uz', 'en'];
 const expectedExplorerKeys = ['area', 'entrance', 'floor', 'number', 'phaseSlug', 'rooms', 'sourceKey', 'status'];
+const kayanCatalog = JSON.parse(readFileSync(resolve(websiteRoot, 'data/kayan-catalog.json'), 'utf8'));
+const expectedOfiyatExplorerCount = kayanCatalog.projects
+  .find((bundle) => bundle.project.slug === 'ofiyat')
+  ?.units.filter((unit) => (
+    unit.status === 'available'
+    && (unit.phaseSlug === 'phase-1' || unit.phaseSlug === 'phase-2')
+  )).length;
+assert.ok(Number.isInteger(expectedOfiyatExplorerCount), 'Ofiyat snapshot is missing from the KAYAN catalogue');
 const publicAssetChecks = [
   { path: '/kayan/ofiyat/hero.webp', contentType: 'image/webp' },
   { path: '/kayan/mirador/hero.webp', contentType: 'image/webp' },
@@ -483,9 +491,10 @@ try {
   assert.equal(explorerResponse.status, 200, 'Ofiyat explorer API must be available below the base path');
   assert.match(explorerResponse.headers.get('cache-control') ?? '', /max-age=300/, 'Ofiyat explorer API has the wrong cache policy');
   const explorer = await explorerResponse.json();
-  assert.equal(explorer.items?.length, 414, 'Ofiyat explorer API item count changed');
+  assert.equal(explorer.items?.length, expectedOfiyatExplorerCount, 'Ofiyat available explorer API item count changed');
   for (const [index, item] of explorer.items.entries()) {
     assert.deepEqual(Object.keys(item).sort(), expectedExplorerKeys, `Ofiyat explorer item ${index} exposes an unexpected field set`);
+    assert.equal(item.status, 'available', `Ofiyat explorer item ${index} is not available`);
   }
 
   const { body: sitemap } = await fetchText(localOrigin, `${rawBasePath}/sitemap.xml`);
@@ -506,7 +515,7 @@ try {
     await fetchText(localOrigin, '/tencrop/sitemap.xml', 404);
   }
 
-  console.log(`Deployment-path smoke passed on Node ${process.versions.node}: ${projectRoutes.length} localized HTML pages plus ${projectRoutes.length} RSC navigations without official developer URLs, 2 shared pages, ${assetPaths.size} referenced build assets below ${rawAssetPrefix}, ${clientJavaScriptFiles.length} client JavaScript assets audited, ${runtimeManifest.publicAssetAliases.entries.length} CSS public-asset symlinks satisfying the nginx alias contract, ${publicAssetChecks.length} public image/floor/PDF/video assets, 414 API items, sitemap and robots. Page base: ${rawBasePath || '/'}; reverse-proxy static alias required: ${staticProxyRequired}.`);
+  console.log(`Deployment-path smoke passed on Node ${process.versions.node}: ${projectRoutes.length} localized HTML pages plus ${projectRoutes.length} RSC navigations without official developer URLs, 2 shared pages, ${assetPaths.size} referenced build assets below ${rawAssetPrefix}, ${clientJavaScriptFiles.length} client JavaScript assets audited, ${runtimeManifest.publicAssetAliases.entries.length} CSS public-asset symlinks satisfying the nginx alias contract, ${publicAssetChecks.length} public image/floor/PDF/video assets, ${expectedOfiyatExplorerCount} available API items, sitemap and robots. Page base: ${rawBasePath || '/'}; reverse-proxy static alias required: ${staticProxyRequired}.`);
 } catch (error) {
   if (logs()) console.error(`vinext output:\n${logs()}`);
   throw error;

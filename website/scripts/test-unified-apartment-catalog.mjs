@@ -11,17 +11,19 @@ const routes = [
   'saadiyat', 'sado', 'sarbon', 'soy-boyi', 'sun', 'voha',
   'yangibaxt', 'zamon',
 ];
-const [catalogue, styles, mirador] = await Promise.all([
+const [catalogue, styles, mirador, miradorExplorer] = await Promise.all([
   readFile(resolve(root, 'app/catalog/apartment-catalog.tsx'), 'utf8'),
   readFile(resolve(root, 'app/catalog/apartment-catalog.css'), 'utf8'),
   readFile(resolve(root, 'app/mirador/apartments/mirador-unified-catalog.tsx'), 'utf8'),
+  readFile(resolve(root, 'app/kayan/mirador-block-explorer.tsx'), 'utf8'),
 ]);
 
 assert.equal(MIRADOR_VISUAL_FLOW_MEDIA, '(min-width: 768px) and (min-height: 600px)');
 assert.equal(hasMiradorCatalogIntent('?lang=ru'), false);
-for (const key of ['mode', 'queue', 'building', 'phase', 'entrance', 'floor', 'rooms', 'status', 'areaFrom', 'areaTo', 'sort', 'unitKey', 'unit']) {
+for (const key of ['mode', 'queue', 'building', 'phase', 'entrance', 'floor', 'rooms', 'areaFrom', 'areaTo', 'sort', 'unitKey', 'unit']) {
   assert.equal(hasMiradorCatalogIntent(`?lang=ru&${key}=1`), true, `${key} must bypass visual flow`);
 }
+assert.equal(hasMiradorCatalogIntent('?lang=ru&status=sold'), false, 'legacy status must not suppress the available-only visual flow');
 
 assert.match(styles, /@media \(max-width:767px\)[\s\S]*?\.apartment-catalog__visual \{ display:none!important; \}/);
 assert.match(styles, /\.apartment-catalog-layout__detail \{ order:2; \}/);
@@ -29,14 +31,27 @@ assert.match(catalogue, /type CatalogMode = 'cards' \| 'chess';/);
 assert.doesNotMatch(catalogue, /Шахматка\+|Chess\+/);
 assert.match(catalogue, /visualFlowAvailable = false/);
 assert.match(catalogue, /capabilities\.visualFlow && visualFlowAvailable/);
+assert.match(catalogue, /\.filter\(\(unit\) => unit\.status === 'available'\)/);
+assert.doesNotMatch(catalogue, /setStatus|statusOptions|setFilter\('status'/);
+assert.doesNotMatch(catalogue, />\{t\.allStatuses\}</);
+assert.match(catalogue, /url\.searchParams\.delete\('status'\)/);
+assert.match(catalogue, /const activeLightbox = lightbox[\s\S]*?units\.find\(\(candidate\) => candidate\.id === lightbox\.unit\.id\)/);
+assert.match(catalogue, /const activeLeadUnit = leadUnit === null[\s\S]*?units\.find\(\(unit\) => unit\.id === leadUnit\.id\)/);
+assert.match(catalogue, /const availability = String\(project\.availableCount\)/);
+assert.match(catalogue, /const \[selectedId, setSelectedId\] = useState<string>\(\)/);
+assert.match(catalogue, /matchMedia\('\(max-width: 1100px\)'\)/);
+assert.match(catalogue, /className="apartment-catalog-card__select"[\s\S]*?chooseUnit\(unit, true\)/);
 assert.match(catalogue, /capabilities\.pricesVisible[\s\S]*?price: undefined, regularPrice: undefined, pricePerM2: undefined/);
 assert.match(catalogue, /params\.get\('queue'\)/);
 assert.match(catalogue, /params\.get\('unitKey'\)/);
 assert.match(catalogue, /unit\.unitKey === stableKey \|\| unit\.id === stableKey/);
 assert.match(catalogue, /unitKey: unit\.unitKey \?\? unit\.id/);
+assert.match(catalogue, /selectedCta: 'Уточнить условия по этой квартире'/);
+assert.match(styles, /\.apartment-catalog \.apartment-catalog__primary[\s\S]*?color:white/);
+assert.match(styles, /\.apartment-catalog-detail \{[\s\S]*?border:2px solid/);
 assert.match(catalogue, /unit\.queueKey === queue/);
 assert.match(catalogue, /disabled=\{item\.availableCount === 0\}/);
-assert.match(catalogue, /leadUnit\?\.queueKey/);
+assert.match(catalogue, /activeLeadUnit\?\.queueKey/);
 assert.match(catalogue, /aria-controls=\{detailId\}/);
 assert.match(catalogue, /apartment-catalog__sr-only/);
 assert.match(catalogue, /event\.key === 'ArrowLeft'/);
@@ -45,6 +60,12 @@ assert.match(catalogue, /event\.key === 'Home'/);
 assert.match(catalogue, /event\.key === 'End'/);
 assert.match(mirador, /void import\('@\/app\/kayan\/mirador-block-explorer'\)/);
 assert.doesNotMatch(mirador, /import \{ MiradorBlockExplorer/);
+assert.match(mirador, /unit\.status === 'available' && unit\.unitKey/);
+assert.match(mirador, /availableUnitKeys=\{availableUnitKeys\}/);
+assert.match(mirador, /visualFlowAvailable=\{visualAvailable && availableUnitKeys\.length > 0\}/);
+assert.match(miradorExplorer, /availableUnitKeys\?: readonly string\[\]/);
+assert.match(miradorExplorer, /zone\.unitKey !== null && availableUnitKeySet\.has\(zone\.unitKey\)/);
+assert.match(miradorExplorer, /return zones\.length \? \[\{ \.\.\.scheme, zones \}\] : \[\]/);
 
 for (const route of routes) {
   const directory = resolve(root, 'app', route, 'apartments');

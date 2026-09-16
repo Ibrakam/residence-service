@@ -37,5 +37,8 @@ export default async function MiradorPage({ searchParams }: PageProps) {
     address: { '@type': 'PostalAddress', streetAddress: 'Фаргона йули, 52', addressLocality: 'Ташкент', addressCountry: 'UZ' },
     telephone: '+998781137712', image: `${appBasePath}/kayan/mirador/hero.webp`,
   };
-  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} /><KayanProjectPage slug="mirador" initialProject={bundle.project} initialLanguage={language} /></>;
+  const initialAvailableUnitKeys = bundle.units.flatMap((unit) => (
+    unit.status === 'available' && unit.sourceKey.trim() ? [unit.sourceKey.trim()] : []
+  ));
+  return <><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} /><KayanProjectPage slug="mirador" initialProject={bundle.project} initialAvailableUnitKeys={initialAvailableUnitKeys} initialLanguage={language} /></>;
 }

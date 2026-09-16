@@ -29,7 +29,7 @@ assert.match(sharedCatalog, /unit\.queueKey === queue/);
 assert.match(sharedCatalog, /return options\.length >= 2 \? options : \[\]/);
 assert.match(sharedCatalog, /disabled=\{item\.availableCount === 0\}/);
 assert.match(sharedCatalog, /updateQuery\(\{ queue:/);
-assert.match(sharedCatalog, /leadUnit\?\.queueKey/);
+assert.match(sharedCatalog, /activeLeadUnit\?\.queueKey/);
 
 assert.match(regnumCatalog, /liveCatalogQueueOptions\(liveProject\)/);
 assert.match(regnumCatalog, /regnumQueueKey\(unit\)/);

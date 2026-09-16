@@ -7,7 +7,10 @@ if (!ofiyat) throw new Error('Ofiyat catalog bundle is missing');
 const explorerGeneratedAt = selectCatalogTimestamp(ofiyat.project.updatedAt, catalogSnapshot.generatedAt);
 
 const explorerUnits = ofiyat.units
-  .filter((unit) => unit.phaseSlug === 'phase-1' || unit.phaseSlug === 'phase-2')
+  .filter((unit) => (
+    unit.status === 'available'
+    && (unit.phaseSlug === 'phase-1' || unit.phaseSlug === 'phase-2')
+  ))
   .map((unit) => ({
     sourceKey: unit.sourceKey,
     phaseSlug: unit.phaseSlug,

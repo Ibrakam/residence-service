@@ -51,10 +51,148 @@ const amenities: { id: AmenityId; number: string; title: Record<Language, string
 
 const ui = {
   ru: {
-    district: 'Ташкент · Яшнободский район', cityTitle: 'В ритме города.', homeTitle: 'В комфорте дома.', enterShowroom: 'Нажмите на AVALON RESIDENCE, чтобы войти в интерактивный showroom комплекса.', metro: 'Метро Тузель', mall: 'ТРЦ', openComplex: 'Открыть комплекс', contact: 'Связаться', consultation: 'Консультация', cityAround: 'Город вокруг', interactiveArea: 'Интерактивная территория', complexTitle: 'Дом.', complexAccent: 'Двор. Жизнь.', complexLead: 'Выберите корпус для перехода к этажам или нажмите на объект благоустройства, чтобы посмотреть готовые рендеры.', projectEight: 'О проекте в 8 тезисах', selectedNow: 'Сейчас выбран', building: 'Корпус', apartments: 'Квартир', available: 'Свободно', rooms: 'Комнаты', chooseFloor: 'Выбрать этаж', chooseBuilding: 'Выберите корпус', chooseBuildingLead: 'Нажмите на корпус — дальше покажем этажи и квартиры.', buildingChoice: 'Выбор корпуса', visualChoice: 'Визуальный выбор', yourView: 'Ваш вид.', yourLevel: 'Ваш уровень.', facadeLead: 'Наведите на фасад или выберите номер этажа. После откроется план с доступными квартирами.', freeOnFloor: 'Свободные квартиры на этаже', floor: 'Этаж', facade: 'Фасад корпуса', floorPlan: 'План этажа', chess: 'Шахматка', list: 'Список', clickApartment: 'Нажмите на квартиру на плане', all: 'Все', onlyFree: 'Только свободные', courtyardView: 'Вид на двор', priceM2: 'Цена за м²', cost: 'Стоимость', repair: 'Ремонт', status: 'Статус', price: 'Цена', details: 'Подробнее', layout2d: 'Планировка 2D', condition: 'Состояние', projectTitle: 'Продуманный дом', projectAccent: 'для спокойной жизни.', projectDue: 'Срок сдачи — II квартал 2028 года', returnArea: 'Вернуться к территории', apartmentInfo: 'Информация о квартире', installment: 'Рассрочка · расчёт от 24 до 36 месяцев', total: 'Общая сумма', downPayment: 'Первоначальный взнос', monthly: 'Ежемесячный платёж', downPaymentUzs: 'Первоначальный взнос, UZS', installmentTerm: 'Срок рассрочки', months: 'месяцев', saleAmount: 'Сумма продажи', printOffer: 'Печатное предложение', contactTencorp: 'Связаться с Tencorp', disclaimer: 'Расчёт носит ознакомительный характер. Финальные условия подтверждаются менеджером Tencorp.', statusSource: 'Статус, площадь и цена обновляются автоматически.', landscaping: 'Благоустройство', returnTerritory: 'Вернуться к территории', comfort: 'Комфорт+', dueShort: 'II квартал 2028', neighborhood: 'Район', apartment: 'Квартира', chooseApartment: 'Выбрать квартиру', statuses: { free: 'Свободно', occupied: 'Занято', sold: 'Продано' },
+    district: 'Ташкент · Яшнободский район',
+    cityTitle: 'В ритме города.',
+    homeTitle: 'В комфорте дома.',
+    enterShowroom: 'Нажмите на AVALON RESIDENCE, чтобы войти в интерактивный showroom комплекса.',
+    metro: 'Метро Тузель',
+    mall: 'ТРЦ',
+    openComplex: 'Открыть комплекс',
+    contact: 'Связаться',
+    consultation: 'Консультация',
+    cityAround: 'Город вокруг',
+    interactiveArea: 'Интерактивная территория',
+    complexTitle: 'Дом.',
+    complexAccent: 'Двор. Жизнь.',
+    complexLead: 'Выберите корпус для перехода к этажам или нажмите на объект благоустройства, чтобы посмотреть готовые рендеры.',
+    projectEight: 'О проекте в 8 тезисах',
+    selectedNow: 'Сейчас выбран',
+    building: 'Корпус',
+    apartments: 'Квартир',
+    available: 'Свободно',
+    rooms: 'Комнаты',
+    chooseFloor: 'Выбрать этаж',
+    chooseBuilding: 'Выберите корпус',
+    chooseBuildingLead: 'Нажмите на корпус — дальше покажем этажи и квартиры.',
+    buildingChoice: 'Выбор корпуса',
+    visualChoice: 'Визуальный выбор',
+    yourView: 'Ваш вид.',
+    yourLevel: 'Ваш уровень.',
+    facadeLead: 'Наведите на фасад или выберите номер этажа. После откроется план с доступными квартирами.',
+    freeOnFloor: 'Свободные квартиры на этаже',
+    floor: 'Этаж',
+    facade: 'Фасад корпуса',
+    floorPlan: 'План этажа',
+    chess: 'Шахматка',
+    list: 'Список',
+    clickApartment: 'Нажмите на квартиру на плане',
+    all: 'Все',
+    courtyardView: 'Вид на двор',
+    priceM2: 'Цена за м²',
+    cost: 'Стоимость',
+    repair: 'Ремонт',
+    status: 'Статус',
+    price: 'Цена',
+    details: 'Подробнее',
+    layout2d: 'Планировка 2D',
+    condition: 'Состояние',
+    projectTitle: 'Продуманный дом',
+    projectAccent: 'для спокойной жизни.',
+    projectDue: 'Срок сдачи — II квартал 2028 года',
+    returnArea: 'Вернуться к территории',
+    apartmentInfo: 'Информация о квартире',
+    installment: 'Рассрочка · расчёт от 24 до 36 месяцев',
+    total: 'Общая сумма',
+    downPayment: 'Первоначальный взнос',
+    monthly: 'Ежемесячный платёж',
+    downPaymentUzs: 'Первоначальный взнос, UZS',
+    installmentTerm: 'Срок рассрочки',
+    months: 'месяцев',
+    saleAmount: 'Сумма продажи',
+    printOffer: 'Печатное предложение',
+    contactTencorp: 'Связаться с Tencorp',
+    disclaimer: 'Расчёт носит ознакомительный характер. Финальные условия подтверждаются менеджером Tencorp.',
+    statusSource: 'Статус, площадь и цена обновляются автоматически.',
+    landscaping: 'Благоустройство',
+    returnTerritory: 'Вернуться к территории',
+    comfort: 'Комфорт+',
+    dueShort: 'II квартал 2028',
+    neighborhood: 'Район',
+    apartment: 'Квартира',
+    chooseApartment: 'Выбрать квартиру',
+    statuses: { free: 'Свободно', occupied: 'Занято', sold: 'Продано' },
   },
   uz: {
-    district: 'Toshkent · Yashnobod tumani', cityTitle: 'Shahar ritmida.', homeTitle: 'Uy qulayligida.', enterShowroom: 'Majmuaning interaktiv showroomiga kirish uchun AVALON RESIDENCE ustiga bosing.', metro: 'Tuzel metrosi', mall: 'Savdo markazi', openComplex: 'Majmuani ochish', contact: 'Bog‘lanish', consultation: 'Maslahat', cityAround: 'Shahar atrofi', interactiveArea: 'Interaktiv hudud', complexTitle: 'Uy.', complexAccent: 'Hovli. Hayot.', complexLead: 'Qavatlarga o‘tish uchun korpusni tanlang yoki tayyor renderlarni ko‘rish uchun obodonlashtirish obyektini bosing.', projectEight: 'Loyiha haqida 8 ta tezis', selectedNow: 'Hozir tanlangan', building: 'Korpus', apartments: 'Kvartiralar', available: 'Bo‘sh', rooms: 'Xonalar', chooseFloor: 'Qavatni tanlash', chooseBuilding: 'Korpusni tanlang', chooseBuildingLead: 'Korpusni bosing — keyin qavatlar va kvartiralarni ko‘rsatamiz.', buildingChoice: 'Korpusni tanlash', visualChoice: 'Vizual tanlov', yourView: 'Sizning manzarangiz.', yourLevel: 'Sizning qavatingiz.', facadeLead: 'Fasad ustiga olib boring yoki qavat raqamini tanlang. Keyin mavjud kvartiralar rejasi ochiladi.', freeOnFloor: 'Qavatdagi bo‘sh kvartiralar', floor: 'Qavat', facade: 'Korpus fasadi', floorPlan: 'Qavat rejasi', chess: 'Shaxmatka', list: 'Ro‘yxat', clickApartment: 'Rejadagi kvartirani bosing', all: 'Barchasi', onlyFree: 'Faqat bo‘sh', courtyardView: 'Hovli tomoni', priceM2: '1 m² narxi', cost: 'Qiymati', repair: 'Ta’mir', status: 'Holati', price: 'Narxi', details: 'Batafsil', layout2d: '2D reja', condition: 'Holati', projectTitle: 'Puxta o‘ylangan uy', projectAccent: 'osoyishta hayot uchun.', projectDue: 'Topshirish muddati — 2028-yil II chorak', returnArea: 'Hududga qaytish', apartmentInfo: 'Kvartira haqida ma’lumot', installment: 'Muddatli to‘lov · 24 oydan 36 oygacha', total: 'Umumiy summa', downPayment: 'Boshlang‘ich to‘lov', monthly: 'Oylik to‘lov', downPaymentUzs: 'Boshlang‘ich to‘lov, UZS', installmentTerm: 'To‘lov muddati', months: 'oy', saleAmount: 'Sotuv summasi', printOffer: 'Taklifni chop etish', contactTencorp: 'Tencorp bilan bog‘lanish', disclaimer: 'Hisob-kitob tanishish uchun. Yakuniy shartlarni Tencorp menejeri tasdiqlaydi.', statusSource: 'Holat, maydon va narx avtomatik yangilanadi.', landscaping: 'Obodonlashtirish', returnTerritory: 'Hududga qaytish', comfort: 'Komfort+', dueShort: '2028-yil II chorak', neighborhood: 'Hudud', apartment: 'Kvartira', chooseApartment: 'Kvartira tanlash', statuses: { free: 'Bo‘sh', occupied: 'Band', sold: 'Sotilgan' },
+    district: 'Toshkent · Yashnobod tumani',
+    cityTitle: 'Shahar ritmida.',
+    homeTitle: 'Uy qulayligida.',
+    enterShowroom: 'Majmuaning interaktiv showroomiga kirish uchun AVALON RESIDENCE ustiga bosing.',
+    metro: 'Tuzel metrosi',
+    mall: 'Savdo markazi',
+    openComplex: 'Majmuani ochish',
+    contact: 'Bog‘lanish',
+    consultation: 'Maslahat',
+    cityAround: 'Shahar atrofi',
+    interactiveArea: 'Interaktiv hudud',
+    complexTitle: 'Uy.',
+    complexAccent: 'Hovli. Hayot.',
+    complexLead: 'Qavatlarga o‘tish uchun korpusni tanlang yoki tayyor renderlarni ko‘rish uchun obodonlashtirish obyektini bosing.',
+    projectEight: 'Loyiha haqida 8 ta tezis',
+    selectedNow: 'Hozir tanlangan',
+    building: 'Korpus',
+    apartments: 'Kvartiralar',
+    available: 'Bo‘sh',
+    rooms: 'Xonalar',
+    chooseFloor: 'Qavatni tanlash',
+    chooseBuilding: 'Korpusni tanlang',
+    chooseBuildingLead: 'Korpusni bosing — keyin qavatlar va kvartiralarni ko‘rsatamiz.',
+    buildingChoice: 'Korpusni tanlash',
+    visualChoice: 'Vizual tanlov',
+    yourView: 'Sizning manzarangiz.',
+    yourLevel: 'Sizning qavatingiz.',
+    facadeLead: 'Fasad ustiga olib boring yoki qavat raqamini tanlang. Keyin mavjud kvartiralar rejasi ochiladi.',
+    freeOnFloor: 'Qavatdagi bo‘sh kvartiralar',
+    floor: 'Qavat',
+    facade: 'Korpus fasadi',
+    floorPlan: 'Qavat rejasi',
+    chess: 'Shaxmatka',
+    list: 'Ro‘yxat',
+    clickApartment: 'Rejadagi kvartirani bosing',
+    all: 'Barchasi',
+    courtyardView: 'Hovli tomoni',
+    priceM2: '1 m² narxi',
+    cost: 'Qiymati',
+    repair: 'Ta’mir',
+    status: 'Holati',
+    price: 'Narxi',
+    details: 'Batafsil',
+    layout2d: '2D reja',
+    condition: 'Holati',
+    projectTitle: 'Puxta o‘ylangan uy',
+    projectAccent: 'osoyishta hayot uchun.',
+    projectDue: 'Topshirish muddati — 2028-yil II chorak',
+    returnArea: 'Hududga qaytish',
+    apartmentInfo: 'Kvartira haqida ma’lumot',
+    installment: 'Muddatli to‘lov · 24 oydan 36 oygacha',
+    total: 'Umumiy summa',
+    downPayment: 'Boshlang‘ich to‘lov',
+    monthly: 'Oylik to‘lov',
+    downPaymentUzs: 'Boshlang‘ich to‘lov, UZS',
+    installmentTerm: 'To‘lov muddati',
+    months: 'oy',
+    saleAmount: 'Sotuv summasi',
+    printOffer: 'Taklifni chop etish',
+    contactTencorp: 'Tencorp bilan bog‘lanish',
+    disclaimer: 'Hisob-kitob tanishish uchun. Yakuniy shartlarni Tencorp menejeri tasdiqlaydi.',
+    statusSource: 'Holat, maydon va narx avtomatik yangilanadi.',
+    landscaping: 'Obodonlashtirish',
+    returnTerritory: 'Hududga qaytish',
+    comfort: 'Komfort+',
+    dueShort: '2028-yil II chorak',
+    neighborhood: 'Hudud',
+    apartment: 'Kvartira',
+    chooseApartment: 'Kvartira tanlash',
+    statuses: { free: 'Bo‘sh', occupied: 'Band', sold: 'Sotilgan' },
   },
 } as const;
 
@@ -97,7 +235,6 @@ export default function Home() {
   const [selectedFloor, setSelectedFloor] = useState(9);
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const [roomFilter, setRoomFilter] = useState<RoomFilter>('all');
-  const [onlyFree, setOnlyFree] = useState(false);
   const [catalogMode, setCatalogMode] = useState<CatalogMode>('plan');
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [printOpen, setPrintOpen] = useState(false);
@@ -110,14 +247,17 @@ export default function Home() {
   const t = ui[language];
   const active = hotspots[activeHotspot][language];
 
+  const availableUnits = useMemo(() => units.filter((unit) => unit.status === 'free'), [units]);
   const buildingUnits = useMemo(() => units.filter((unit) => unit.building === selectedBuilding), [selectedBuilding, units]);
-  const floors = useMemo(() => floorList(units, selectedBuilding), [selectedBuilding, units]);
+  const availableBuildingUnits = useMemo(() => availableUnits.filter((unit) => unit.building === selectedBuilding), [availableUnits, selectedBuilding]);
+  const floors = useMemo(() => floorList(availableUnits, selectedBuilding), [availableUnits, selectedBuilding]);
   const floorUnits = useMemo(() => buildingUnits.filter((unit) => unit.floor === selectedFloor).sort((a, b) => a.number - b.number), [buildingUnits, selectedFloor]);
-  const selectedUnit = selectedUnitId ? units.find((unit) => unit.id === selectedUnitId) ?? null : null;
+  const availableFloorUnits = useMemo(() => floorUnits.filter((unit) => unit.status === 'free'), [floorUnits]);
+  const selectedUnit = selectedUnitId ? availableUnits.find((unit) => unit.id === selectedUnitId) ?? null : null;
   const floorLayout = floorLayouts[selectedBuilding];
-  const freeCount = buildingUnits.filter((unit) => unit.status === 'free').length;
-  const maxUnitsOnFloor = Math.max(...floors.map((floor) => buildingUnits.filter((unit) => unit.floor === floor).length));
-  const filteredUnits = buildingUnits.filter((unit) => (roomFilter === 'all' || unit.rooms === roomFilter) && (!onlyFree || unit.status === 'free'));
+  const freeCount = availableBuildingUnits.length;
+  const maxUnitsOnFloor = Math.max(1, ...floors.map((floor) => availableBuildingUnits.filter((unit) => unit.floor === floor).length));
+  const filteredUnits = availableBuildingUnits.filter((unit) => roomFilter === 'all' || unit.rooms === roomFilter);
 
   const changeLanguage = (next: Language) => {
     setLanguage(next);
@@ -198,8 +338,8 @@ export default function Home() {
   };
 
   const chooseBuilding = (building: BuildingId, openFacade = false) => {
-    const availableFloors = floorList(units, building);
-    const nextFloor = availableFloors.includes(9) ? 9 : availableFloors[0];
+    const availableFloors = floorList(availableUnits, building);
+    const nextFloor = availableFloors.includes(9) ? 9 : availableFloors[0] ?? 9;
     setSelectedBuilding(building);
     setSelectedFloor(nextFloor);
     setSelectedUnitId(null);
@@ -217,6 +357,7 @@ export default function Home() {
   };
 
   const chooseUnit = (unit: Apartment) => {
+    if (unit.status !== 'free') return;
     setSelectedFloor(unit.floor);
     setSelectedUnitId(unit.id);
     if (window.innerWidth <= 850) {
@@ -230,7 +371,7 @@ export default function Home() {
     setDetailsOpen(true);
   };
 
-  const matchesFilter = (unit: Apartment) => (roomFilter === 'all' || unit.rooms === roomFilter) && (!onlyFree || unit.status === 'free');
+  const matchesFilter = (unit: Apartment) => unit.status === 'free' && (roomFilter === 'all' || unit.rooms === roomFilter);
 
   const openAmenity = (id: AmenityId) => {
     setAmenitySlide(0);
@@ -313,19 +454,19 @@ export default function Home() {
           <SiteHeader light language={language} onLanguageChange={changeLanguage} onHome={() => setView('city')} onApartments={() => setView('facade')} />
           <div className="showroom-shell showroom-shell--visual">
             <div className="showroom-topbar"><button className="screen-back screen-back--static" type="button" onClick={() => setView('facade')}>← <span>{t.facade}</span></button><div className="showroom-title"><p className="eyebrow eyebrow--dark">AVALON RESIDENCE · {t.building.toLowerCase()} {selectedBuilding}</p><h1 id="apartments-title">{selectedFloor} {t.floor.toLowerCase()}</h1></div></div>
-            <div className="visual-modebar"><div className="catalog-tabs"><button type="button" className={catalogMode === 'plan' ? 'is-active' : ''} onClick={() => setCatalogMode('plan')}>◆ {t.floorPlan}</button><button type="button" className={catalogMode === 'chess' ? 'is-active' : ''} onClick={() => setCatalogMode('chess')}>▦ {t.chess}</button><button type="button" className={catalogMode === 'list' ? 'is-active' : ''} onClick={() => setCatalogMode('list')}>☷ {t.list}</button></div>{catalogMode !== 'plan' ? <div className="filter-pills"><span>{t.rooms}</span>{(['all', 2, 3] as RoomFilter[]).map((room) => <button key={room} type="button" className={roomFilter === room ? 'is-active' : ''} onClick={() => setRoomFilter(room)}>{room === 'all' ? t.all : room}</button>)}<button type="button" className={onlyFree ? 'is-active is-free' : ''} onClick={() => setOnlyFree((value) => !value)}>{t.onlyFree}</button></div> : <div className="plan-hint"><i /> {t.clickApartment}</div>}</div>
+            <div className="visual-modebar"><div className="catalog-tabs"><button type="button" className={catalogMode === 'plan' ? 'is-active' : ''} onClick={() => setCatalogMode('plan')}>◆ {t.floorPlan}</button><button type="button" className={catalogMode === 'chess' ? 'is-active' : ''} onClick={() => setCatalogMode('chess')}>▦ {t.chess}</button><button type="button" className={catalogMode === 'list' ? 'is-active' : ''} onClick={() => setCatalogMode('list')}>☷ {t.list}</button></div>{catalogMode !== 'plan' ? <div className="filter-pills"><span>{t.rooms}</span>{(['all', 2, 3] as RoomFilter[]).map((room) => <button key={room} type="button" className={roomFilter === room ? 'is-active' : ''} onClick={() => setRoomFilter(room)}>{room === 'all' ? t.all : room}</button>)}</div> : <div className="plan-hint"><i /> {t.clickApartment}</div>}</div>
 
             {catalogMode === 'plan' ? (
               <div className={`floor-plan-layout ${selectedUnit ? 'has-selection' : 'is-empty'}`}>
                 <nav className="floor-rail" aria-label={t.chooseFloor}><span>{t.floor}</span>{floors.map((floor) => <button key={floor} type="button" className={selectedFloor === floor ? 'is-active' : ''} onClick={() => chooseFloor(floor)}><strong>{floor}</strong><i /></button>)}</nav>
-                <div className="floor-plan-canvas"><div className="floor-plan-caption"><span>{t.courtyardView}</span><small>{floorUnits.length} {t.apartments.toLowerCase()} · {floorUnits.filter((unit) => unit.status === 'free').length} {t.available.toLowerCase()}</small></div><div className="floor-plan-image-wrap"><picture><source media="(max-width: 850px)" srcSet={assetPath(floorImagesMobile[selectedBuilding])} /><img src={assetPath(floorLayout.image)} alt={`${t.floorPlan} ${selectedFloor}, ${t.building} ${selectedBuilding}`} decoding="async" /></picture><svg className="floor-unit-overlay" viewBox="0 0 4961 3508" preserveAspectRatio="xMidYMid meet" aria-label={`${t.apartments} · ${selectedFloor} ${t.floor.toLowerCase()}`}>{floorLayout.zones.map((zone, zoneIndex) => { const unit = floorUnits[floorLayout.order[zoneIndex]]; if (!unit) return null; return <g key={unit.id} className={`floor-unit-zone floor-unit-zone--${unit.status} ${selectedUnit?.id === unit.id ? 'is-selected' : ''}`} role="button" tabIndex={0} aria-label={`${t.apartment} №${unit.number}, ${t.statuses[unit.status]}`} onClick={() => chooseUnit(unit)} onKeyDown={(event) => event.key === 'Enter' && chooseUnit(unit)}><polygon points={zone.points} /><text x={zone.x} y={zone.y - 32}>№{unit.number}</text><text className="floor-unit-zone__rooms" x={zone.x} y={zone.y + 48}>{unit.rooms}к · {unit.area} м²</text></g>; })}</svg></div></div>
-                <section className="mobile-unit-picker" aria-label={`${t.apartments} · ${selectedFloor} ${t.floor.toLowerCase()}`}><header><div><small>{t.floorPlan}</small><strong>{language === 'ru' ? `Квартиры на ${selectedFloor} этаже` : `${selectedFloor}-qavatdagi kvartiralar`}</strong></div><span>{floorUnits.filter((unit) => unit.status === 'free').length} {t.available.toLowerCase()}</span></header><div>{floorUnits.map((unit) => <button key={unit.id} type="button" className={`mobile-unit-card mobile-unit-card--${unit.status} ${selectedUnit?.id === unit.id ? 'is-active' : ''}`} onClick={() => chooseUnit(unit)}><span><small>№</small>{unit.number}</span><div><strong>{unit.rooms} {language === 'ru' ? 'комн.' : 'xona'} · {unit.area} m²</strong><small>{formatMoney(unit.price)}</small></div><i>{t.statuses[unit.status]}</i></button>)}</div></section>
+                <div className="floor-plan-canvas"><div className="floor-plan-caption"><span>{t.courtyardView}</span><small>{availableFloorUnits.length} {t.available.toLowerCase()}</small></div><div className="floor-plan-image-wrap"><picture><source media="(max-width: 850px)" srcSet={assetPath(floorImagesMobile[selectedBuilding])} /><img src={assetPath(floorLayout.image)} alt={`${t.floorPlan} ${selectedFloor}, ${t.building} ${selectedBuilding}`} decoding="async" /></picture><svg className="floor-unit-overlay" viewBox="0 0 4961 3508" preserveAspectRatio="xMidYMid meet" aria-label={`${t.apartments} · ${selectedFloor} ${t.floor.toLowerCase()}`}>{floorLayout.zones.map((zone, zoneIndex) => { const unit = floorUnits[floorLayout.order[zoneIndex]]; if (!unit || unit.status !== 'free') return null; return <g key={unit.id} className={`floor-unit-zone floor-unit-zone--${unit.status} ${selectedUnit?.id === unit.id ? 'is-selected' : ''}`} role="button" tabIndex={0} aria-label={`${t.apartment} №${unit.number}, ${t.statuses[unit.status]}`} onClick={() => chooseUnit(unit)} onKeyDown={(event) => event.key === 'Enter' && chooseUnit(unit)}><polygon points={zone.points} /><text x={zone.x} y={zone.y - 32}>№{unit.number}</text><text className="floor-unit-zone__rooms" x={zone.x} y={zone.y + 48}>{unit.rooms}к · {unit.area} м²</text></g>; })}</svg></div></div>
+                <section className="mobile-unit-picker" aria-label={`${t.apartments} · ${selectedFloor} ${t.floor.toLowerCase()}`}><header><div><small>{t.floorPlan}</small><strong>{language === 'ru' ? `Квартиры на ${selectedFloor} этаже` : `${selectedFloor}-qavatdagi kvartiralar`}</strong></div><span>{availableFloorUnits.length} {t.available.toLowerCase()}</span></header><div>{availableFloorUnits.map((unit) => <button key={unit.id} type="button" className={`mobile-unit-card mobile-unit-card--${unit.status} ${selectedUnit?.id === unit.id ? 'is-active' : ''}`} onClick={() => chooseUnit(unit)}><span><small>№</small>{unit.number}</span><div><strong>{unit.rooms} {language === 'ru' ? 'комн.' : 'xona'} · {unit.area} m²</strong><small>{formatMoney(unit.price)}</small></div><i>{t.statuses[unit.status]}</i></button>)}</div></section>
                 {selectedUnit ? <ApartmentDetail unit={selectedUnit} language={language} onDetails={openApartmentDetails} onPlan={() => setPrintOpen(true)} /> : null}
               </div>
             ) : (
               <div className="crm-layout crm-layout--screen crm-layout--catalog">
-                <div className="crm-board"><div className="crm-board__head"><div><strong>{catalogMode === 'chess' ? `${t.chess} · ${t.building} ${selectedBuilding}` : `${filteredUnits.length} ${t.apartments.toLowerCase()}`}</strong><span>{freeCount} / {buildingUnits.length} · {t.available.toLowerCase()}</span></div><div className="status-legend"><span className="free">{t.statuses.free}</span><span className="occupied">{t.statuses.occupied}</span><span className="sold">{t.statuses.sold}</span></div></div>
-                  {catalogMode === 'chess' ? <div className="floor-scroll"><div className="floor-grid" style={{ '--unit-columns': maxUnitsOnFloor } as React.CSSProperties}>{floors.map((floor) => <div className="floor-row" key={floor}><div className="floor-number"><strong>{floor}</strong><span>{t.floor.toLowerCase()}</span></div>{buildingUnits.filter((unit) => unit.floor === floor).sort((a, b) => a.number - b.number).map((unit) => <button key={unit.id} type="button" className={`unit-cell unit-cell--${unit.status} ${selectedUnit?.id === unit.id ? 'is-selected' : ''} ${matchesFilter(unit) ? '' : 'is-filtered'}`} onClick={() => chooseUnit(unit)}><span><small>№</small>{unit.number}</span><strong>{unit.rooms}к · {unit.area} м²</strong><em>{unit.status === 'free' && unit.price ? `${Math.round(unit.price / 1_000_000)} mln` : t.statuses[unit.status]}</em></button>)}</div>)}</div></div> : <div className="unit-table-wrap"><table className="unit-table"><thead><tr><th>№</th><th>{t.floor}</th><th>{t.rooms}</th><th>m²</th><th>{t.priceM2}</th><th>{t.cost}</th><th>{t.repair}</th><th>{t.status}</th></tr></thead><tbody>{filteredUnits.map((unit) => <tr key={unit.id} className={selectedUnit?.id === unit.id ? 'is-selected' : ''} onClick={() => chooseUnit(unit)}><td>{unit.number}</td><td>{unit.floor}</td><td>{unit.rooms}</td><td>{unit.area} m²</td><td>{formatMoney(unit.pricePerM2)}</td><td>{formatMoney(unit.price)}</td><td>{repairLabel(unit.repair, language)}</td><td><span className={`table-status table-status--${unit.status}`}>{t.statuses[unit.status]}</span></td></tr>)}</tbody></table></div>}
+                <div className="crm-board"><div className="crm-board__head"><div><strong>{catalogMode === 'chess' ? `${t.chess} · ${t.building} ${selectedBuilding}` : `${filteredUnits.length} ${t.apartments.toLowerCase()}`}</strong><span>{freeCount} {t.available.toLowerCase()}</span></div></div>
+                  {catalogMode === 'chess' ? <div className="floor-scroll"><div className="floor-grid" style={{ '--unit-columns': maxUnitsOnFloor } as React.CSSProperties}>{floors.map((floor) => <div className="floor-row" key={floor}><div className="floor-number"><strong>{floor}</strong><span>{t.floor.toLowerCase()}</span></div>{availableBuildingUnits.filter((unit) => unit.floor === floor).sort((a, b) => a.number - b.number).map((unit) => <button key={unit.id} type="button" className={`unit-cell unit-cell--${unit.status} ${selectedUnit?.id === unit.id ? 'is-selected' : ''} ${matchesFilter(unit) ? '' : 'is-filtered'}`} onClick={() => chooseUnit(unit)}><span><small>№</small>{unit.number}</span><strong>{unit.rooms}к · {unit.area} м²</strong><em>{unit.price ? `${Math.round(unit.price / 1_000_000)} mln` : t.statuses.free}</em></button>)}</div>)}</div></div> : <div className="unit-table-wrap"><table className="unit-table"><thead><tr><th>№</th><th>{t.floor}</th><th>{t.rooms}</th><th>m²</th><th>{t.priceM2}</th><th>{t.cost}</th><th>{t.repair}</th></tr></thead><tbody>{filteredUnits.map((unit) => <tr key={unit.id} className={selectedUnit?.id === unit.id ? 'is-selected' : ''} onClick={() => chooseUnit(unit)}><td>{unit.number}</td><td>{unit.floor}</td><td>{unit.rooms}</td><td>{unit.area} m²</td><td>{formatMoney(unit.pricePerM2)}</td><td>{formatMoney(unit.price)}</td><td>{repairLabel(unit.repair, language)}</td></tr>)}</tbody></table></div>}
                 </div>
                 {selectedUnit ? <ApartmentDetail unit={selectedUnit} language={language} onDetails={openApartmentDetails} onPlan={() => setPrintOpen(true)} /> : null}
               </div>

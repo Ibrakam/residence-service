@@ -46,7 +46,6 @@ type Props = {
 
 const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
 const residentialPhases = ['phase-1', 'phase-2'] as const;
-const statusRank = { available: 0, reserved: 1, sold: 2, unavailable: 3 } as const;
 
 const copy = {
   ru: {
@@ -188,12 +187,15 @@ export function OfiyatBlockExplorer({
   const inventoryMessage = inventoryState === 'error' ? t.inventoryError : t.inventoryLoading;
 
   const residentialUnits = useMemo(
-    () => units.filter((unit) => residentialPhases.includes(unit.phaseSlug as typeof residentialPhases[number])),
+    () => units.filter((unit) => (
+      unit.status === 'available'
+      && residentialPhases.includes(unit.phaseSlug as typeof residentialPhases[number])
+    )),
     [units],
   );
   const phases = useMemo(() => residentialPhases.map((slug) => ({
     slug,
-    available: residentialUnits.filter((unit) => unit.phaseSlug === slug && unit.status === 'available').length,
+    available: residentialUnits.filter((unit) => unit.phaseSlug === slug).length,
   })), [residentialUnits]);
   const entrances = useMemo(() => selectedPhase === null ? [] : [...new Set(residentialUnits
     .filter((unit) => unit.phaseSlug === selectedPhase && unit.entrance)
@@ -203,7 +205,7 @@ export function OfiyatBlockExplorer({
     .map((unit) => unit.floor))].sort((a, b) => b - a), [residentialUnits, selectedEntrance, selectedPhase]);
   const floorUnits = useMemo(() => selectedPhase === null || selectedEntrance === null || selectedFloor === null ? [] : residentialUnits
     .filter((unit) => unit.phaseSlug === selectedPhase && unit.entrance === selectedEntrance && unit.floor === selectedFloor)
-    .sort((a, b) => statusRank[a.status] - statusRank[b.status] || numericUnit(a, b)), [residentialUnits, selectedEntrance, selectedFloor, selectedPhase]);
+    .sort(numericUnit), [residentialUnits, selectedEntrance, selectedFloor, selectedPhase]);
   const selectedUnit = floorUnits.find((unit) => unit.sourceKey === selectedUnitKey) ?? null;
   const availableHomes = useMemo(
     () => phases.reduce((total, phase) => total + phase.available, 0),

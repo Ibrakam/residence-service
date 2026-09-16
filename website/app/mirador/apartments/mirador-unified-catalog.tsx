@@ -15,6 +15,7 @@ const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
 type ExplorerProps = {
   language: KayanLanguage;
   catalogHref: string;
+  availableUnitKeys?: readonly string[];
   variant: 'catalog';
   onLead?: (selection: MiradorExplorerSelection) => void;
 };
@@ -141,6 +142,9 @@ export function MiradorUnifiedCatalog({ initialBundle, snapshotGeneratedAt, init
           : [],
     };
   }), [initialBundle.layouts, liveUnits, maxFloors]);
+  const availableUnitKeys = useMemo(() => units.flatMap((unit) => (
+    unit.status === 'available' && unit.unitKey ? [unit.unitKey] : []
+  )), [units]);
 
   const availableCount = liveProject?.availableUnits ?? units.filter((unit) => unit.status === 'available').length;
   const totalCount = liveProject?.totalUnits ?? initialBundle.project.totalUnits;
@@ -160,7 +164,7 @@ export function MiradorUnifiedCatalog({ initialBundle, snapshotGeneratedAt, init
     initialLanguage={initialLanguage}
     refreshedAt={refreshedAt ?? liveProject?.updatedAt ?? snapshotGeneratedAt ?? initialBundle.project.updatedAt}
     dataSource={dataSource}
-    visualFlowAvailable={visualAvailable}
-    visualFlow={(language, actions) => Explorer ? <div className="kayan-site--mirador mirador-unified-flow" style={explorerStyle}><Explorer language={language} catalogHref={`${appBasePath}/mirador/apartments?lang=${language}#catalog`} variant="catalog" onLead={(selection) => actions.openLead(selection.unitKey)} /></div> : null}
+    visualFlowAvailable={visualAvailable && availableUnitKeys.length > 0}
+    visualFlow={(language, actions) => Explorer ? <div className="kayan-site--mirador mirador-unified-flow" style={explorerStyle}><Explorer language={language} catalogHref={`${appBasePath}/mirador/apartments?lang=${language}#catalog`} availableUnitKeys={availableUnitKeys} variant="catalog" onLead={(selection) => actions.openLead(selection.unitKey)} /></div> : null}
   />;
 }

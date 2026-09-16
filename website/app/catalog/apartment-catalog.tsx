@@ -31,11 +31,11 @@ const ui = {
     rooms: 'Комнаты', allRooms: 'Все', building: 'Корпус', allBuildings: 'Все корпуса', queue: 'Очередь', allQueues: 'Все очереди', phase: 'Этап', allPhases: 'Все этапы',
     entrance: 'Подъезд', allEntrances: 'Все подъезды', floor: 'Этаж', allFloors: 'Все этажи', status: 'Статус', allStatuses: 'Все статусы',
     areaFrom: 'Площадь от', areaTo: 'Площадь до', sort: 'Сортировка', found: 'Найдено', offers: 'предложений',
-    sorts: { status: 'Сначала свободные', 'price-asc': 'Сначала дешевле', 'price-desc': 'Сначала дороже', 'area-asc': 'Площадь по возрастанию', 'area-desc': 'Площадь по убыванию', 'floor-asc': 'С нижних этажей', 'floor-desc': 'С верхних этажей' },
+    sorts: { status: 'По умолчанию', 'price-asc': 'Сначала дешевле', 'price-desc': 'Сначала дороже', 'area-asc': 'Площадь по возрастанию', 'area-desc': 'Площадь по убыванию', 'floor-asc': 'С нижних этажей', 'floor-desc': 'С верхних этажей' },
     statuses: { available: 'Свободна', reserved: 'Бронь', sold: 'Продана', unavailable: 'Недоступна' },
     apartment: 'Квартира', parking: 'Машиноместо', commercial: 'Помещение', area: 'Площадь', price: 'Стоимость', priceOnRequest: 'По запросу', perM2: 'за м²',
     exactPlan: 'Планировка квартиры', floorPosition: 'Расположение на этаже', representative: 'Типовая планировка', noPlan: 'Планировка не опубликована',
-    enlarge: 'Увеличить', choose: 'Уточнить условия', selected: 'Выбранный объект', details: 'Детали квартиры', close: 'Закрыть',
+    enlarge: 'Увеличить', choose: 'Уточнить условия', selected: 'Вы выбрали эту квартиру', selectedCta: 'Уточнить условия по этой квартире', details: 'Детали квартиры', close: 'Закрыть',
     previousPlan: 'Предыдущий лист', nextPlan: 'Следующий лист', scrollLeft: 'Прокрутить влево', scrollRight: 'Прокрутить вправо',
     scrollHint: 'Шахматка прокручивается пальцем, трекпадом, стрелками, Home и End.', floorShort: 'эт.',
     showMore: 'Показать ещё', showing: 'Показано', empty: 'По выбранным параметрам квартир нет.', clearFilters: 'Сбросить фильтры',
@@ -48,11 +48,11 @@ const ui = {
     rooms: 'Xonalar', allRooms: 'Barchasi', building: 'Korpus', allBuildings: 'Barcha korpuslar', queue: 'Navbat', allQueues: 'Barcha navbatlar', phase: 'Bosqich', allPhases: 'Barcha bosqichlar',
     entrance: 'Kirish', allEntrances: 'Barcha kirishlar', floor: 'Qavat', allFloors: 'Barcha qavatlar', status: 'Holat', allStatuses: 'Barcha holatlar',
     areaFrom: 'Maydon, dan', areaTo: 'Maydon, gacha', sort: 'Saralash', found: 'Topildi', offers: 'ta taklif',
-    sorts: { status: 'Avval mavjudlari', 'price-asc': 'Avval arzonlari', 'price-desc': 'Avval qimmatlari', 'area-asc': 'Maydon o‘sishi bo‘yicha', 'area-desc': 'Maydon kamayishi bo‘yicha', 'floor-asc': 'Quyi qavatlardan', 'floor-desc': 'Yuqori qavatlardan' },
+    sorts: { status: 'Standart', 'price-asc': 'Avval arzonlari', 'price-desc': 'Avval qimmatlari', 'area-asc': 'Maydon o‘sishi bo‘yicha', 'area-desc': 'Maydon kamayishi bo‘yicha', 'floor-asc': 'Quyi qavatlardan', 'floor-desc': 'Yuqori qavatlardan' },
     statuses: { available: 'Mavjud', reserved: 'Band', sold: 'Sotilgan', unavailable: 'Mavjud emas' },
     apartment: 'Xonadon', parking: 'Parking o‘rni', commercial: 'Tijorat joyi', area: 'Maydon', price: 'Narx', priceOnRequest: 'So‘rov bo‘yicha', perM2: 'm² uchun',
     exactPlan: 'Xonadon rejasi', floorPosition: 'Qavatdagi joylashuv', representative: 'Namunaviy reja', noPlan: 'Reja e’lon qilinmagan',
-    enlarge: 'Kattalashtirish', choose: 'Shartlarni aniqlash', selected: 'Tanlangan obyekt', details: 'Xonadon tafsilotlari', close: 'Yopish',
+    enlarge: 'Kattalashtirish', choose: 'Shartlarni aniqlash', selected: 'Siz bu xonadonni tanladingiz', selectedCta: 'Bu xonadon shartlarini bilish', details: 'Xonadon tafsilotlari', close: 'Yopish',
     previousPlan: 'Oldingi varaq', nextPlan: 'Keyingi varaq', scrollLeft: 'Chapga surish', scrollRight: 'O‘ngga surish',
     scrollHint: 'Shaxmatkani barmoq, trekpad, strelkalar, Home va End bilan surish mumkin.', floorShort: 'qav.',
     showMore: 'Yana ko‘rsatish', showing: 'Ko‘rsatildi', empty: 'Tanlangan parametrlar bo‘yicha xonadon yo‘q.', clearFilters: 'Filtrlarni tozalash',
@@ -65,11 +65,11 @@ const ui = {
     rooms: 'Rooms', allRooms: 'All', building: 'Building', allBuildings: 'All buildings', queue: 'Construction phase', allQueues: 'All construction phases', phase: 'Stage', allPhases: 'All stages',
     entrance: 'Entrance', allEntrances: 'All entrances', floor: 'Floor', allFloors: 'All floors', status: 'Status', allStatuses: 'All statuses',
     areaFrom: 'Area from', areaTo: 'Area to', sort: 'Sort', found: 'Found', offers: 'listings',
-    sorts: { status: 'Available first', 'price-asc': 'Lowest price first', 'price-desc': 'Highest price first', 'area-asc': 'Area ascending', 'area-desc': 'Area descending', 'floor-asc': 'Lower floors first', 'floor-desc': 'Higher floors first' },
+    sorts: { status: 'Default', 'price-asc': 'Lowest price first', 'price-desc': 'Highest price first', 'area-asc': 'Area ascending', 'area-desc': 'Area descending', 'floor-asc': 'Lower floors first', 'floor-desc': 'Higher floors first' },
     statuses: { available: 'Available', reserved: 'Reserved', sold: 'Sold', unavailable: 'Unavailable' },
     apartment: 'Apartment', parking: 'Parking space', commercial: 'Commercial unit', area: 'Area', price: 'Price', priceOnRequest: 'On request', perM2: 'per m²',
     exactPlan: 'Apartment plan', floorPosition: 'Position on floor', representative: 'Representative plan', noPlan: 'Plan not published',
-    enlarge: 'Enlarge', choose: 'Ask about terms', selected: 'Selected property', details: 'Apartment details', close: 'Close',
+    enlarge: 'Enlarge', choose: 'Ask about terms', selected: 'You selected this apartment', selectedCta: 'Ask about this apartment', details: 'Apartment details', close: 'Close',
     previousPlan: 'Previous sheet', nextPlan: 'Next sheet', scrollLeft: 'Scroll left', scrollRight: 'Scroll right',
     scrollHint: 'Pan the grid with touch, a trackpad, arrow keys, Home or End.', floorShort: 'fl.',
     showMore: 'Show more', showing: 'Showing', empty: 'No apartments match the selected filters.', clearFilters: 'Reset filters',
@@ -259,7 +259,7 @@ function UnitDetail({ unit, language, phaseLabel, buildingLabel, onPlan, onLead 
   const t = ui[language];
   if (!unit) return <aside id="apartment-catalog-detail" className="apartment-catalog-detail" aria-live="polite"><div className="apartment-catalog-detail__empty">{t.empty}</div></aside>;
   return <aside id="apartment-catalog-detail" className="apartment-catalog-detail" aria-label={t.details} aria-live="polite" data-lenis-prevent>
-    <header><div><small>{t.selected}</small><strong>{propertyLabel(unit, language)} №{unit.number}</strong></div><span data-status={unit.status}>{t.statuses[unit.status]}</span></header>
+    <header><div><small><b aria-hidden="true">✓</b>{t.selected}</small><strong>{propertyLabel(unit, language)} №{unit.number}</strong></div><span data-status={unit.status}>{t.statuses[unit.status]}</span></header>
     <PlanPreview unit={unit} language={language} onOpen={onPlan} compact />
     <h3>{unit.rooms ? `${unit.rooms} · ` : ''}{number(unit.area, language)} м²</h3>
     <dl>
@@ -270,7 +270,7 @@ function UnitDetail({ unit, language, phaseLabel, buildingLabel, onPlan, onLead 
       <div><dt>{t.status}</dt><dd>{t.statuses[unit.status]}</dd></div>
     </dl>
     <div className="apartment-catalog-detail__price"><span>{t.price}</span><strong>{money(unit.price, unit.currency, language, t.priceOnRequest)}</strong>{unit.pricePerM2 ? <small>{money(unit.pricePerM2, unit.currency, language, t.priceOnRequest)} {t.perM2}</small> : null}{unit.regularPrice && unit.price && unit.regularPrice > unit.price ? <del>{money(unit.regularPrice, unit.currency, language, t.priceOnRequest)}</del> : null}</div>
-    <button className="apartment-catalog__primary" type="button" onClick={onLead}>{t.choose}<span aria-hidden="true">↗</span></button>
+    <button className="apartment-catalog__primary" type="button" onClick={onLead}>{t.selectedCta}<span aria-hidden="true">↗</span></button>
   </aside>;
 }
 
@@ -327,9 +327,11 @@ function ChessGroup({ label, units, language, selectedId, detailId, onSelect }: 
 }
 
 export function ApartmentCatalog({ project, units: sourceUnits, capabilities, presentation, initialLanguage = 'ru', refreshedAt, dataSource = 'embedded', visualFlow, visualFlowAvailable = false }: ApartmentCatalogProps) {
-  const units = useMemo(() => capabilities.pricesVisible
-    ? sourceUnits
-    : sourceUnits.map((unit) => ({ ...unit, price: undefined, regularPrice: undefined, pricePerM2: undefined })), [capabilities.pricesVisible, sourceUnits]);
+  const units = useMemo(() => sourceUnits
+    .filter((unit) => unit.status === 'available')
+    .map((unit) => capabilities.pricesVisible
+      ? unit
+      : { ...unit, price: undefined, regularPrice: undefined, pricePerM2: undefined }), [capabilities.pricesVisible, sourceUnits]);
   const detailId = useId();
   const [language, setLanguage] = useCatalogueLanguage(initialLanguage, presentation.storageKey ?? `${project.slug}-catalog-language`);
   const t = ui[language];
@@ -340,12 +342,11 @@ export function ApartmentCatalog({ project, units: sourceUnits, capabilities, pr
   const [phase, setPhase] = useState<FilterValue>('all');
   const [entrance, setEntrance] = useState<FilterValue>('all');
   const [floor, setFloor] = useState<FilterValue>('all');
-  const [status, setStatus] = useState<FilterValue>(presentation.availableOnlyDefault ? 'available' : 'all');
   const [areaFrom, setAreaFrom] = useState('');
   const [areaTo, setAreaTo] = useState('');
   const [sort, setSort] = useState<CatalogSort>(presentation.defaultSort ?? 'status');
   const [visibleCount, setVisibleCount] = useState(presentation.cardPageSize ?? 12);
-  const [selectedId, setSelectedId] = useState<string | undefined>(units[0]?.id);
+  const [selectedId, setSelectedId] = useState<string>();
   const [lightbox, setLightbox] = useState<{ unit: CatalogUnit; index: number }>();
   const [leadUnit, setLeadUnit] = useState<CatalogUnit | null | undefined>();
 
@@ -360,7 +361,6 @@ export function ApartmentCatalog({ project, units: sourceUnits, capabilities, pr
   }, [project.queues]);
   const entranceOptions = useMemo(() => uniqueStrings(units.map((unit) => unit.entrance)), [units]);
   const floorOptions = useMemo(() => [...new Set(units.map((unit) => unit.floor))].sort((a, b) => b - a), [units]);
-  const statusOptions = useMemo(() => [...new Set(units.map((unit) => unit.status))].sort((a, b) => statusRank(a) - statusRank(b)), [units]);
   const hasPrices = capabilities.pricesVisible && units.some((unit) => typeof unit.price === 'number' && unit.price > 0);
 
   const updateQuery = (changes: Record<string, string | undefined>) => {
@@ -393,20 +393,20 @@ export function ApartmentCatalog({ project, units: sourceUnits, capabilities, pr
       setPhase(valid(params.get('phase'), phaseOptions));
       setEntrance(valid(params.get('entrance'), entranceOptions));
       setFloor(valid(params.get('floor'), floorOptions));
-      setStatus(params.has('status') ? valid(params.get('status'), statusOptions) : presentation.availableOnlyDefault ? 'available' : 'all');
       setAreaFrom(params.get('areaFrom') ?? '');
       setAreaTo(params.get('areaTo') ?? '');
       const sortParam = params.get('sort') as CatalogSort | null;
       if (sortParam && ['status', 'price-asc', 'price-desc', 'area-asc', 'area-desc', 'floor-asc', 'floor-desc'].includes(sortParam)) setSort(sortParam);
       if (selected) setSelectedId(selected.id);
     });
-    if (legacyMode) {
+    if (legacyMode || params.has('status')) {
       const url = new URL(window.location.href);
-      url.searchParams.set('mode', 'chess');
+      if (legacyMode) url.searchParams.set('mode', 'chess');
+      url.searchParams.delete('status');
       window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
     }
     return () => window.cancelAnimationFrame(frame);
-  }, [buildingOptions, entranceOptions, floorOptions, phaseOptions, presentation.availableOnlyDefault, queueOptions, roomOptions, statusOptions, units]);
+  }, [buildingOptions, entranceOptions, floorOptions, phaseOptions, queueOptions, roomOptions, units]);
 
   const filtered = useMemo(() => {
     const min = Number(areaFrom) || 0;
@@ -418,7 +418,6 @@ export function ApartmentCatalog({ project, units: sourceUnits, capabilities, pr
       && (phase === 'all' || unit.phase === phase)
       && (entrance === 'all' || unit.entrance === entrance)
       && (floor === 'all' || unit.floor === Number(floor))
-      && (status === 'all' || unit.status === status)
       && unit.area >= min
       && unit.area <= max
     ));
@@ -432,9 +431,20 @@ export function ApartmentCatalog({ project, units: sourceUnits, capabilities, pr
       if (sort === 'floor-desc') return right.floor - left.floor || byNumber;
       return statusRank(left.status) - statusRank(right.status) || right.floor - left.floor || byNumber;
     });
-  }, [areaFrom, areaTo, building, entrance, floor, phase, queue, rooms, sort, status, units]);
+  }, [areaFrom, areaTo, building, entrance, floor, phase, queue, rooms, sort, units]);
 
   const selected = filtered.find((unit) => unit.id === selectedId) ?? filtered[0];
+  const activeLightbox = lightbox
+    ? (() => {
+      const unit = units.find((candidate) => candidate.id === lightbox.unit.id);
+      return unit ? { ...lightbox, unit } : undefined;
+    })()
+    : undefined;
+  const activeLeadUnit = leadUnit === null
+    ? null
+    : leadUnit
+      ? units.find((unit) => unit.id === leadUnit.id)
+      : undefined;
   const pageSize = presentation.cardPageSize ?? 12;
   const visibleUnits = filtered.slice(0, visibleCount);
   const chessGroups = useMemo(() => {
@@ -447,10 +457,10 @@ export function ApartmentCatalog({ project, units: sourceUnits, capabilities, pr
     return [...groups.entries()];
   }, [capabilities.buildings, capabilities.entrances, capabilities.phases, filtered, language, project.name, queueOptions.length]);
 
-  useEffect(() => { if (leadUnit) rememberLiveCatalogUnit({ sourceKey: leadUnit.unitKey }, project.slug); }, [leadUnit, project.slug]);
+  useEffect(() => { if (activeLeadUnit) rememberLiveCatalogUnit({ sourceKey: activeLeadUnit.unitKey }, project.slug); }, [activeLeadUnit, project.slug]);
 
-  const setFilter = (key: 'rooms' | 'building' | 'phase' | 'entrance' | 'floor' | 'status', value: FilterValue) => {
-    ({ rooms: setRooms, building: setBuilding, phase: setPhase, entrance: setEntrance, floor: setFloor, status: setStatus }[key])(value);
+  const setFilter = (key: 'rooms' | 'building' | 'phase' | 'entrance' | 'floor', value: FilterValue) => {
+    ({ rooms: setRooms, building: setBuilding, phase: setPhase, entrance: setEntrance, floor: setFloor }[key])(value);
     setVisibleCount(pageSize);
     updateQuery({ [key]: value === 'all' ? undefined : value, unitKey: undefined, unit: undefined, unitEntrance: undefined, unitFloor: undefined });
   };
@@ -461,13 +471,13 @@ export function ApartmentCatalog({ project, units: sourceUnits, capabilities, pr
   };
   const reset = () => {
     const defaultSort = presentation.defaultSort ?? 'status';
-    setRooms('all'); setQueue('all'); setBuilding('all'); setPhase('all'); setEntrance('all'); setFloor('all'); setStatus(presentation.availableOnlyDefault ? 'available' : 'all'); setAreaFrom(''); setAreaTo(''); setSort(defaultSort); setVisibleCount(pageSize);
-    updateQuery({ rooms: undefined, queue: undefined, building: undefined, phase: undefined, entrance: undefined, floor: undefined, status: presentation.availableOnlyDefault ? 'available' : undefined, areaFrom: undefined, areaTo: undefined, sort: defaultSort === 'status' ? undefined : defaultSort, unitKey: undefined, unit: undefined, unitEntrance: undefined, unitFloor: undefined });
+    setRooms('all'); setQueue('all'); setBuilding('all'); setPhase('all'); setEntrance('all'); setFloor('all'); setAreaFrom(''); setAreaTo(''); setSort(defaultSort); setVisibleCount(pageSize);
+    updateQuery({ rooms: undefined, queue: undefined, building: undefined, phase: undefined, entrance: undefined, floor: undefined, status: undefined, areaFrom: undefined, areaTo: undefined, sort: defaultSort === 'status' ? undefined : defaultSort, unitKey: undefined, unit: undefined, unitEntrance: undefined, unitFloor: undefined });
   };
-  const chooseUnit = (unit: CatalogUnit, scrollOnMobile = false) => {
+  const chooseUnit = (unit: CatalogUnit, scrollToDetail = false) => {
     setSelectedId(unit.id);
     updateQuery({ unitKey: unit.unitKey ?? unit.id, unit: unit.number, unitEntrance: unit.entrance, unitFloor: String(unit.floor) });
-    if (scrollOnMobile && window.matchMedia('(max-width: 767px)').matches) window.setTimeout(() => document.getElementById(detailId)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+    if (scrollToDetail && window.matchMedia('(max-width: 1100px)').matches) window.setTimeout(() => document.getElementById(detailId)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
   };
   const openPlan = (unit: CatalogUnit, index = 0) => { chooseUnit(unit); setLightbox({ unit, index }); };
   const title = localized(presentation.title, language, project.name);
@@ -484,7 +494,7 @@ export function ApartmentCatalog({ project, units: sourceUnits, capabilities, pr
       : visualFlow
     : null;
   const sourceLabel = dataSource === 'live' ? t.sourceLive : dataSource === 'cached' ? t.sourceCached : t.sourceEmbedded;
-  const availability = project.totalCount && project.totalCount !== project.availableCount ? `${project.availableCount} ${t.of} ${project.totalCount}` : String(project.availableCount);
+  const availability = String(project.availableCount);
   const refreshedLabel = dateLabel(refreshedAt, language);
 
   return <main className="apartment-catalog" lang={language} style={presentation.theme}>
@@ -517,7 +527,6 @@ export function ApartmentCatalog({ project, units: sourceUnits, capabilities, pr
           {capabilities.entrances && entranceOptions.length > 1 ? <label><span>{t.entrance}</span><select value={entrance} onChange={(event) => setFilter('entrance', event.target.value)}><option value="all">{t.allEntrances}</option>{entranceOptions.map((value) => <option key={value} value={value}>{value}</option>)}</select></label> : null}
           <label><span>{t.rooms}</span><select value={rooms} onChange={(event) => setFilter('rooms', event.target.value)}><option value="all">{t.allRooms}</option>{roomOptions.map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
           <label><span>{t.floor}</span><select value={floor} onChange={(event) => setFilter('floor', event.target.value)}><option value="all">{t.allFloors}</option>{floorOptions.map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
-          {statusOptions.length > 1 ? <label><span>{t.status}</span><select value={status} onChange={(event) => setFilter('status', event.target.value)}><option value="all">{t.allStatuses}</option>{statusOptions.map((value) => <option key={value} value={value}>{t.statuses[value]}</option>)}</select></label> : null}
           <label><span>{t.areaFrom}</span><input type="number" min="0" inputMode="decimal" value={areaFrom} onChange={(event) => { setAreaFrom(event.target.value); setVisibleCount(pageSize); updateQuery({ areaFrom: event.target.value || undefined }); }} /></label>
           <label><span>{t.areaTo}</span><input type="number" min="0" inputMode="decimal" value={areaTo} onChange={(event) => { setAreaTo(event.target.value); setVisibleCount(pageSize); updateQuery({ areaTo: event.target.value || undefined }); }} /></label>
         </div>
@@ -532,7 +541,7 @@ export function ApartmentCatalog({ project, units: sourceUnits, capabilities, pr
           {mode === 'cards' ? <><div className="apartment-catalog-cards">{visibleUnits.map((unit) => {
             const plan = unitPlan(unit);
             return <article key={unit.id} className={selected?.id === unit.id ? 'is-selected' : ''}>
-              <button type="button" className="apartment-catalog-card__select" aria-pressed={selected?.id === unit.id} aria-controls={detailId} onClick={() => chooseUnit(unit)}>
+              <button type="button" className="apartment-catalog-card__select" aria-pressed={selected?.id === unit.id} aria-controls={detailId} onClick={() => chooseUnit(unit, true)}>
                 <span className="apartment-catalog-card__top"><small>{propertyLabel(unit, language)} №{unit.number}</small><i data-status={unit.status}>{t.statuses[unit.status]}</i></span>
                 <figure>{plan ? <PlanImage plan={plan} preview alt={`${planLabel(plan, language)} · №${unit.number}`} loading="lazy" /> : <span className="apartment-catalog-card__no-plan" aria-label={t.noPlan}>⌑</span>}<figcaption>{plan ? planLabel(plan, language) : t.noPlan}</figcaption></figure>
                 <span className="apartment-catalog-card__title"><strong>{unit.rooms ? `${unit.rooms} · ` : ''}{number(unit.area, language)} м²</strong><small>{unit.floor}{unit.maxFloor ? ` / ${unit.maxFloor}` : ''} {t.floorShort}{unit.entrance ? ` · ${t.entrance} ${unit.entrance}` : ''}</small></span>
@@ -546,7 +555,7 @@ export function ApartmentCatalog({ project, units: sourceUnits, capabilities, pr
       </div>}
     </section>
 
-    {lightbox ? <PlanLightbox unit={lightbox.unit} language={language} initialIndex={lightbox.index} onClose={() => setLightbox(undefined)} /> : null}
-    {leadUnit !== undefined ? <LeadModal open language={language} context={[project.name, leadUnit ? `${propertyLabel(leadUnit, language)} №${leadUnit.number}` : t.catalog, leadUnit?.queueKey ? `${t.queue} ${unitQueueLabel(leadUnit, language)}` : leadUnit?.phase ? `${phaseLabel} ${leadUnit.phase}` : undefined, leadUnit?.building ? `${buildingLabel} ${leadUnit.building}` : undefined, leadUnit?.entrance ? `${t.entrance} ${leadUnit.entrance}` : undefined, leadUnit ? `${t.floor} ${leadUnit.floor}` : undefined].filter(Boolean).join(' · ')} onClose={() => setLeadUnit(undefined)} projectName={project.name} hideBrand tagline={leadUnit ? `${leadUnit.rooms ? `${leadUnit.rooms} · ` : ''}${number(leadUnit.area, language)} м²` : localized(presentation.lead, language)} facts={leadUnit ? [project.className ?? project.name, leadUnit.queueKey ? `${t.queue} ${unitQueueLabel(leadUnit, language)}` : leadUnit.phase ? `${phaseLabel} ${leadUnit.phase}` : `${t.floor} ${leadUnit.floor}`, money(leadUnit.price, leadUnit.currency, language, t.priceOnRequest)] : undefined} submitUrl={`${appBasePath}/v1/leads`} projectSlug={project.slug} unitKey={leadUnit?.unitKey} privacyUrl={presentation.privacyHref(language)} requireConsent /> : null}
+    {activeLightbox ? <PlanLightbox unit={activeLightbox.unit} language={language} initialIndex={activeLightbox.index} onClose={() => setLightbox(undefined)} /> : null}
+    {activeLeadUnit !== undefined ? <LeadModal open language={language} context={[project.name, activeLeadUnit ? `${propertyLabel(activeLeadUnit, language)} №${activeLeadUnit.number}` : t.catalog, activeLeadUnit?.queueKey ? `${t.queue} ${unitQueueLabel(activeLeadUnit, language)}` : activeLeadUnit?.phase ? `${phaseLabel} ${activeLeadUnit.phase}` : undefined, activeLeadUnit?.building ? `${buildingLabel} ${activeLeadUnit.building}` : undefined, activeLeadUnit?.entrance ? `${t.entrance} ${activeLeadUnit.entrance}` : undefined, activeLeadUnit ? `${t.floor} ${activeLeadUnit.floor}` : undefined].filter(Boolean).join(' · ')} onClose={() => setLeadUnit(undefined)} projectName={project.name} hideBrand tagline={activeLeadUnit ? `${activeLeadUnit.rooms ? `${activeLeadUnit.rooms} · ` : ''}${number(activeLeadUnit.area, language)} м²` : localized(presentation.lead, language)} facts={activeLeadUnit ? [project.className ?? project.name, activeLeadUnit.queueKey ? `${t.queue} ${unitQueueLabel(activeLeadUnit, language)}` : activeLeadUnit.phase ? `${phaseLabel} ${activeLeadUnit.phase}` : `${t.floor} ${activeLeadUnit.floor}`, money(activeLeadUnit.price, activeLeadUnit.currency, language, t.priceOnRequest)] : undefined} submitUrl={`${appBasePath}/v1/leads`} projectSlug={project.slug} unitKey={activeLeadUnit?.unitKey} privacyUrl={presentation.privacyHref(language)} requireConsent /> : null}
   </main>;
 }

@@ -174,6 +174,64 @@ async function fetchLiveBundle(slug: KayanProjectSlug, signal: AbortSignal): Pro
   return { project, units, layouts: layouts.items };
 }
 
+function selectAvailableUnitKeys(units: readonly Pick<Unit, 'sourceKey' | 'status'>[]) {
+  return [...new Set(units.flatMap((unit) => (
+    unit.status === 'available' && unit.sourceKey.trim() ? [unit.sourceKey.trim()] : []
+  )))];
+}
+
+async function fetchLiveAvailableUnitKeys(slug: KayanProjectSlug, signal: AbortSignal) {
+  const project = await fetchJSON<Project>(`${liveAPI}/v1/projects/${slug}`, signal);
+  const units: Unit[] = [];
+  const limit = 500;
+  let expectedTotal: number | null = null;
+  for (let offset = 0; ; offset += limit) {
+    const page = await fetchJSON<{ items: Unit[]; total: number }>(`${liveAPI}/v1/projects/${slug}/units?limit=${limit}&offset=${offset}`, signal);
+    if (!Array.isArray(page.items) || !Number.isInteger(page.total) || page.total < 0) throw new Error('catalog response is invalid');
+    if (expectedTotal === null) expectedTotal = page.total;
+    if (page.total !== expectedTotal) throw new Error('catalog response changed during refresh');
+    units.push(...page.items);
+    if (units.length >= page.total) break;
+    if (!page.items.length) throw new Error('catalog response is partial');
+  }
+  if (units.length !== expectedTotal || units.length !== project.totalUnits) throw new Error('catalog response is partial');
+  return selectAvailableUnitKeys(units);
+}
+
+function useLiveAvailableUnitKeys(
+  slug: KayanProjectSlug,
+  initialKeys: readonly string[],
+  enabled: boolean,
+) {
+  const [keys, setKeys] = useState(() => [...new Set(initialKeys.map((key) => key.trim()).filter(Boolean))]);
+
+  useEffect(() => {
+    if (!enabled) return;
+    let controller: AbortController | null = null;
+    const refresh = () => {
+      if (document.visibilityState === 'hidden') return;
+      controller?.abort();
+      controller = new AbortController();
+      fetchLiveAvailableUnitKeys(slug, controller.signal)
+        .then((next) => setKeys(next))
+        .catch(() => undefined);
+    };
+    const onVisibility = () => { if (document.visibilityState === 'visible') refresh(); };
+    refresh();
+    const interval = window.setInterval(refresh, 60_000);
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('online', refresh);
+    return () => {
+      controller?.abort();
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('online', refresh);
+    };
+  }, [enabled, slug]);
+
+  return keys;
+}
+
 function useCatalogBundle(slug: KayanProjectSlug, initialBundle: CatalogBundle) {
   const [bundle, setBundle] = useState(initialBundle);
   const [dataSource, setDataSource] = useState<'embedded' | 'live'>('embedded');
@@ -781,7 +839,17 @@ function OfiyatProjectPage({ initialProject, initialLanguage }: { initialProject
   </main>;
 }
 
-function DefaultKayanProjectPage({ slug, initialProject, initialLanguage }: { slug: KayanProjectSlug; initialProject: Project; initialLanguage: KayanLanguage }) {
+function DefaultKayanProjectPage({
+  slug,
+  initialProject,
+  initialLanguage,
+  initialAvailableUnitKeys,
+}: {
+  slug: KayanProjectSlug;
+  initialProject: Project;
+  initialLanguage: KayanLanguage;
+  initialAvailableUnitKeys: readonly string[];
+}) {
   const config = projectConfigs[slug];
   const { project, dataSource } = useProjectSummary(slug, initialProject);
   const [language, setLanguage] = useProjectLanguage(initialLanguage);
@@ -791,6 +859,11 @@ function DefaultKayanProjectPage({ slug, initialProject, initialLanguage }: { sl
   const [miradorSelection, setMiradorSelection] = useState<MiradorExplorerSelection | null>(null);
   const [shouldMountMiradorExplorer, setShouldMountMiradorExplorer] = useState(false);
   const [miradorExplorerReady, setMiradorExplorerReady] = useState(false);
+  const miradorAvailableUnitKeys = useLiveAvailableUnitKeys(
+    slug,
+    initialAvailableUnitKeys,
+    slug === 'mirador' && shouldMountMiradorExplorer,
+  );
   const heroRef = useRef<HTMLElement>(null);
   const copy = config.copy[language];
   const t = ui[language];
@@ -865,6 +938,7 @@ function DefaultKayanProjectPage({ slug, initialProject, initialLanguage }: { sl
         variant="hero"
         language={language}
         catalogHref={routeTo(slug, '/apartments', language)}
+        availableUnitKeys={miradorAvailableUnitKeys}
         onReady={() => setMiradorExplorerReady(true)}
         onBlockSelect={(block) => {
           setSelectedVisualBlock(block);
@@ -928,8 +1002,20 @@ function DefaultKayanProjectPage({ slug, initialProject, initialLanguage }: { sl
   </main>;
 }
 
-export function KayanProjectPage({ slug, initialProject, initialLanguage = 'ru' }: { slug: KayanProjectSlug; initialProject: Project; initialLanguage?: KayanLanguage }) {
-  return slug === 'ofiyat' ? <OfiyatProjectPage initialProject={initialProject} initialLanguage={initialLanguage} /> : <DefaultKayanProjectPage slug={slug} initialProject={initialProject} initialLanguage={initialLanguage} />;
+export function KayanProjectPage({
+  slug,
+  initialProject,
+  initialLanguage = 'ru',
+  initialAvailableUnitKeys = [],
+}: {
+  slug: KayanProjectSlug;
+  initialProject: Project;
+  initialLanguage?: KayanLanguage;
+  initialAvailableUnitKeys?: readonly string[];
+}) {
+  return slug === 'ofiyat'
+    ? <OfiyatProjectPage initialProject={initialProject} initialLanguage={initialLanguage} />
+    : <DefaultKayanProjectPage slug={slug} initialProject={initialProject} initialLanguage={initialLanguage} initialAvailableUnitKeys={initialAvailableUnitKeys} />;
 }
 
 export function KayanCatalogPage({ slug, initialBundle, snapshotGeneratedAt, initialLanguage = 'ru' }: { slug: KayanProjectSlug; initialBundle: CatalogBundle; snapshotGeneratedAt?: string; initialLanguage?: KayanLanguage }) {

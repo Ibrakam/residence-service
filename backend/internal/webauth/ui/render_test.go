@@ -33,7 +33,9 @@ func TestRenderLoginContract(t *testing.T) {
 	assertContains(t, body, `href="/privacy?lang=ru"`)
 	assertContains(t, body, `prefers-reduced-motion: reduce`)
 	assertContains(t, body, `min-height: 44px`)
-	assertContains(t, body, `Подтверждённый номер телефона`)
+	assertNotContains(t, body, `Подтвердите Telegram-аккаунт`)
+	assertNotContains(t, body, `Подтверждённый номер телефона`)
+	assertNotContains(t, body, `class="phone-notice"`)
 	assertContains(t, body, `Telegram OIDC · серверная сессия`)
 	assertContains(t, body, `class="session-note__shield" aria-hidden="true">✓</span>`)
 	assertContains(t, body, `class="session-note__copy"`)
@@ -261,5 +263,12 @@ func assertContains(t *testing.T, value, fragment string) {
 	t.Helper()
 	if !strings.Contains(value, fragment) {
 		t.Fatalf("output does not contain %q", fragment)
+	}
+}
+
+func assertNotContains(t *testing.T, value, fragment string) {
+	t.Helper()
+	if strings.Contains(value, fragment) {
+		t.Fatalf("output unexpectedly contains %q", fragment)
 	}
 }

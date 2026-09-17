@@ -495,97 +495,6 @@ a {
   line-height: 1.6;
 }
 
-.phone-notice {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
-  gap: 15px;
-  margin-top: 30px;
-  padding: 21px 0 18px;
-  border-top: 1px solid var(--line-soft);
-  border-bottom: 1px solid var(--line-soft);
-}
-
-.phone-notice__icon {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border: 1px solid rgba(153, 188, 169, .42);
-  border-radius: 50%;
-  color: var(--success);
-  font-size: .76rem;
-}
-
-.phone-notice__heading,
-.phone-notice__heading small,
-.phone-notice__heading strong {
-  display: block;
-}
-
-.phone-notice__heading {
-  margin: 0 0 7px;
-}
-
-.phone-notice__heading small {
-  margin-bottom: 4px;
-  color: var(--gold-light);
-  font-size: .52rem;
-  font-weight: 700;
-  letter-spacing: .2em;
-  text-transform: uppercase;
-}
-
-.phone-notice__heading strong {
-  color: var(--paper);
-  font-size: .8rem;
-  font-weight: 650;
-}
-
-.phone-notice__content > p:not(.phone-notice__heading),
-.phone-notice details p {
-  margin: 0;
-  color: var(--muted);
-  font-size: .68rem;
-  line-height: 1.65;
-}
-
-.phone-notice details {
-  margin-top: 10px;
-}
-
-.phone-notice summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 44px;
-  padding: 0;
-  color: rgba(242, 237, 226, .78);
-  cursor: pointer;
-  font-size: .63rem;
-  font-weight: 600;
-  letter-spacing: .05em;
-  list-style: none;
-}
-
-.phone-notice summary::-webkit-details-marker {
-  display: none;
-}
-
-.phone-notice summary span {
-  color: var(--gold-light);
-  font-size: 1rem;
-  font-weight: 300;
-  transition: transform .2s ease;
-}
-
-.phone-notice details[open] summary span {
-  transform: rotate(45deg);
-}
-
-.phone-notice details p {
-  padding: 0 22px 7px 0;
-}
-
 .telegram-form {
   margin-top: 24px;
 }
@@ -1299,10 +1208,6 @@ a {
   .auth-card__lead {
     font-size: .73rem;
     line-height: 1.65;
-  }
-
-  .phone-notice {
-    margin-top: 25px;
   }
 
   .telegram-button {

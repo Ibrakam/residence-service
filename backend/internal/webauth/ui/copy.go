@@ -9,12 +9,6 @@ type copybook struct {
 	BrandService         string
 	CardEyebrow          string
 	CardTitle            string
-	CardLead             string
-	PhoneRequired        string
-	PhoneTitle           string
-	PhoneText            string
-	PhoneDetailsTitle    string
-	PhoneDetailsText     string
 	CTA                  string
 	CTANote              string
 	PrivacyBefore        string
@@ -51,12 +45,6 @@ var translations = map[language]copybook{
 		BrandService:         "Access",
 		CardEyebrow:          "TENCORP ID",
 		CardTitle:            "Войти через Telegram",
-		CardLead:             "Подтвердите Telegram-аккаунт и номер телефона. После входа вы вернётесь на предыдущую страницу.",
-		PhoneRequired:        "Обязательно",
-		PhoneTitle:           "Подтверждённый номер телефона",
-		PhoneText:            "Telegram попросит разрешить передачу номера, привязанного к вашему аккаунту.",
-		PhoneDetailsTitle:    "Зачем нужен номер?",
-		PhoneDetailsText:     "Номер используется для подтверждения и защиты доступа. Любое другое использование требует отдельного согласия.",
 		CTA:                  "Продолжить через Telegram",
 		CTANote:              "Без пароля · подтверждение в Telegram",
 		PrivacyBefore:        "Продолжая, вы принимаете условия",
@@ -91,12 +79,6 @@ var translations = map[language]copybook{
 		BrandService:         "Access",
 		CardEyebrow:          "TENCORP ID",
 		CardTitle:            "Telegram orqali kiring",
-		CardLead:             "Telegram akkauntingiz va telefon raqamingizni tasdiqlang. Kirgach, avvalgi sahifaga qaytasiz.",
-		PhoneRequired:        "Majburiy",
-		PhoneTitle:           "Tasdiqlangan telefon raqami",
-		PhoneText:            "Telegram akkauntingizga bog‘langan raqamni yuborishga ruxsat so‘raydi.",
-		PhoneDetailsTitle:    "Raqam nima uchun kerak?",
-		PhoneDetailsText:     "Raqam kirishni tasdiqlash va himoya qilish uchun ishlatiladi. Boshqa har qanday foydalanish alohida rozilikni talab qiladi.",
 		CTA:                  "Telegram orqali davom etish",
 		CTANote:              "Parolsiz · Telegram’da tasdiqlash",
 		PrivacyBefore:        "Davom etish orqali siz",
@@ -131,12 +113,6 @@ var translations = map[language]copybook{
 		BrandService:         "Access",
 		CardEyebrow:          "TENCORP ID",
 		CardTitle:            "Sign in with Telegram",
-		CardLead:             "Confirm your Telegram account and phone number. After sign-in, you will return to the previous page.",
-		PhoneRequired:        "Required",
-		PhoneTitle:           "Verified phone number",
-		PhoneText:            "Telegram will ask permission to share the number linked to your account.",
-		PhoneDetailsTitle:    "Why is the number required?",
-		PhoneDetailsText:     "The number is used to verify and protect access. Any other use requires separate consent.",
 		CTA:                  "Continue with Telegram",
 		CTANote:              "No password · confirm in Telegram",
 		PrivacyBefore:        "By continuing, you accept the",

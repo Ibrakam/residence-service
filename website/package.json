@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "vinext dev",
-    "prebuild": "npm run verify:tencorp-contact && npm run verify:unified-catalog && npm run verify:mirador-plans && npm run verify:ofiyat && npm run verify:saadiyat && npm run verify:c1 && npm run verify:soy-boyi && npm run verify:sarbon && npm run verify:4u && npm run verify:construction-passports",
+    "prebuild": "npm run verify:tencorp-contact && npm run verify:session-revocation && npm run verify:unified-catalog && npm run verify:mirador-plans && npm run verify:ofiyat && npm run verify:saadiyat && npm run verify:c1 && npm run verify:soy-boyi && npm run verify:sarbon && npm run verify:4u && npm run verify:construction-passports",
     "build": "vinext build && node scripts/prepare-standalone-runtime.mjs",
     "start": "vinext start",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
@@ -63,6 +63,7 @@
     "verify:public-provenance": "node scripts/verify-public-provenance.mjs",
     "verify:base-path": "node scripts/test-base-path-deployment.mjs",
     "verify:tencorp-contact": "node scripts/verify-tencorp-contact.mjs",
+    "verify:session-revocation": "node scripts/test-session-revocation-guard.mjs",
     "verify:unified-catalog": "node --no-warnings --experimental-strip-types scripts/test-unified-apartment-catalog.mjs",
     "test:lead-client": "node scripts/test-lead-client-contract.mjs",
     "test:live-catalog": "node --no-warnings --experimental-strip-types scripts/test-live-catalog-client.mjs",

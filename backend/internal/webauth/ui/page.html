@@ -51,24 +51,12 @@
             <div class="auth-card__heading" role="alert"><h1 id="card-title">{{.ErrorTitle}}</h1><p class="auth-card__lead">{{.ErrorMessage}}</p></div>
           {{else}}
             <div class="status-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.2 11.4 20.8 3l-6.3 18-3.8-6.7-7.5-2.9Z"></path><path d="m10.7 14.3 4.8-5.1"></path></svg></div>
-            <div class="auth-card__heading"><h1 id="card-title">{{.Copy.CardTitle}}</h1><p class="auth-card__lead">{{.Copy.CardLead}}</p></div>
+            <div class="auth-card__heading"><h1 id="card-title">{{.Copy.CardTitle}}</h1></div>
           {{end}}
         </div>
 
         {{if not .IsError}}
           {{if .Notice}}<p class="inline-notice" role="status">{{.Notice}}</p>{{end}}
-
-          <div class="phone-notice">
-            <span class="phone-notice__icon" aria-hidden="true">✓</span>
-            <div class="phone-notice__content">
-              <p class="phone-notice__heading"><small>{{.Copy.PhoneRequired}}</small><strong>{{.Copy.PhoneTitle}}</strong></p>
-              <p>{{.Copy.PhoneText}}</p>
-              <details>
-                <summary>{{.Copy.PhoneDetailsTitle}}<span aria-hidden="true">＋</span></summary>
-                <p>{{.Copy.PhoneDetailsText}}</p>
-              </details>
-            </div>
-          </div>
         {{end}}
 
         <form class="telegram-form" method="post" action="/__auth/telegram/start">

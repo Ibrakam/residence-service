@@ -36,6 +36,11 @@ type unitCompletionFixtureRow struct {
 	completion     sql.NullString
 }
 
+type unitPageFixtureRow struct {
+	unitCompletionFixtureRow
+	total int64
+}
+
 func (row unitCompletionFixtureRow) Scan(dest ...any) error {
 	if len(dest) != 27 {
 		return fmt.Errorf("unit fixture scan destinations=%d, want 27", len(dest))
@@ -50,6 +55,21 @@ func (row unitCompletionFixtureRow) Scan(dest ...any) error {
 		return fmt.Errorf("unit fixture completion destination is %T", dest[23])
 	}
 	*completion = row.completion
+	return nil
+}
+
+func (row unitPageFixtureRow) Scan(dest ...any) error {
+	if len(dest) != 28 {
+		return fmt.Errorf("unit page fixture scan destinations=%d, want 28", len(dest))
+	}
+	if err := row.unitCompletionFixtureRow.Scan(dest[:27]...); err != nil {
+		return err
+	}
+	total, ok := dest[27].(*int64)
+	if !ok {
+		return fmt.Errorf("unit page fixture total destination is %T", dest[27])
+	}
+	*total = row.total
 	return nil
 }
 
@@ -184,6 +204,24 @@ func TestScanUnitCompletionIsOptional(t *testing.T) {
 		if !strings.Contains(unitCompletionSelect, fragment) {
 			t.Fatalf("completion selector is missing %q", fragment)
 		}
+	}
+}
+
+func TestScanUnitPageRowIncludesWindowTotal(t *testing.T) {
+	unit, total, err := scanUnitPageRow(unitPageFixtureRow{
+		unitCompletionFixtureRow: unitCompletionFixtureRow{
+			completion: sql.NullString{String: "2028", Valid: true},
+		},
+		total: 117,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if total != 117 {
+		t.Fatalf("total=%d, want 117", total)
+	}
+	if unit.Completion == nil || *unit.Completion != "2028" {
+		t.Fatalf("completion=%v, want 2028", unit.Completion)
 	}
 }
 

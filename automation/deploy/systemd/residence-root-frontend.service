@@ -12,12 +12,14 @@ Group=residence-frontend
 WorkingDirectory=/var/www/residence-service/root-current/frontend
 EnvironmentFile=/etc/residence-frontend/root-frontend.env
 ExecStartPre=/usr/bin/test -f /var/www/residence-service/root-current/frontend/server.js
-ExecStart=/usr/bin/node /var/www/residence-service/root-current/frontend/server.js
+ExecStartPre=/usr/bin/test -f /var/www/residence-service/root-current/frontend/worker-server.js
+ExecStart=/usr/bin/env WEB_CONCURRENCY=2 /usr/bin/node /var/www/residence-service/root-current/frontend/server.js
 Restart=on-failure
 RestartSec=3s
 TimeoutStartSec=30s
 TimeoutStopSec=20s
 KillSignal=SIGTERM
+KillMode=mixed
 UMask=0027
 
 NoNewPrivileges=true

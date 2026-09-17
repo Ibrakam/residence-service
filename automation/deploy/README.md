@@ -42,8 +42,14 @@ deployment command may switch a release.
 2. Install `systemd/residence-root-frontend.service` as
    `/etc/systemd/system/residence-root-frontend.service`, review its diff
    against the live unit, run `systemd-analyze verify`, then reload systemd.
+   Subsequent root deployments verify and atomically refresh this tracked unit
+   before restarting the frontend, so the live runtime cannot silently lag the
+   reviewed service definition.
 3. Keep `/etc/residence-frontend/root-frontend.env` root-controlled. Its
-   production listener must remain `127.0.0.1:4320`.
+   production listener must remain `127.0.0.1:4320`. The tracked unit fixes
+   `WEB_CONCURRENCY=2` in `ExecStart`, so an EnvironmentFile cannot silently
+   override it: two stateless Vinext workers share that listener while leaving
+   CPU capacity for Nginx, PostgreSQL and the Go services.
 4. Create a root-owned deployment checkout/worktree on the production host.
    It must not be writable by group or others. Build on a non-production host,
    then transfer only the completed `website/dist/standalone` tree into the
@@ -120,7 +126,8 @@ the completed directory into place. It then:
    route of every direct residence project; a missing route source is fatal;
 3. stops the candidate;
 4. atomically switches `root-current`;
-5. restarts `residence-root-frontend` and verifies its actual process working
+5. verifies and atomically installs the tracked frontend systemd unit, then
+   restarts `residence-root-frontend` and verifies its actual process working
    directory is the new release;
 6. repeats the smokes on port 4320 and through
    `https://form.tencorp.uz`;

@@ -28,6 +28,7 @@ type Server struct {
 	botWebhookSecret [32]byte
 	logger           *slog.Logger
 	now              func() time.Time
+	sessions         *sessionValidationCache
 	handler          http.Handler
 }
 
@@ -46,6 +47,7 @@ func NewServer(cfg Config, store authStore, provider identityProvider, options .
 	server := &Server{
 		cfg: runtimeConfig, store: store, provider: provider,
 		logger: slog.New(slog.DiscardHandler), now: func() time.Time { return time.Now().UTC() },
+		sessions: newSessionValidationCache(maxSessionCacheEntries),
 	}
 	for _, option := range options {
 		option(server)
@@ -350,7 +352,12 @@ func (server *Server) handleLogout(response http.ResponseWriter, request *http.R
 	}
 	token, err := uniqueCookie(request, SessionCookie)
 	if err == nil && validToken(token) {
-		if err := server.store.DeleteSession(request.Context(), tokenHash(token)); err != nil {
+		hash := tokenHash(token)
+		// Invalidate before touching the store so a concurrent request that starts
+		// after logout cannot join an older in-flight cache fill. On a store error
+		// the next request simply revalidates against PostgreSQL.
+		server.sessions.invalidate(hash)
+		if err := server.store.DeleteSession(request.Context(), hash); err != nil {
 			server.logEvent(slog.LevelError, eventLogout, outcomeStoreFailed)
 			if isHTMLNavigation(request) {
 				server.renderError(response, request, http.StatusServiceUnavailable, "temporarily_unavailable")
@@ -359,6 +366,10 @@ func (server *Server) handleLogout(response http.ResponseWriter, request *http.R
 			writeJSON(response, http.StatusServiceUnavailable, map[string]string{"error": "temporarily_unavailable"})
 			return
 		}
+		// Close the small invalidate/delete race: a check that reached the store
+		// between the first invalidation and the durable delete must not leave a
+		// freshly populated entry behind.
+		server.sessions.invalidate(hash)
 	}
 	clearSessionCookie(response)
 	finishLogout(response, request)
@@ -389,6 +400,10 @@ func (server *Server) handleLogoutAll(response http.ResponseWriter, request *htt
 		writeJSON(response, http.StatusServiceUnavailable, map[string]string{"error": "temporarily_unavailable"})
 		return
 	}
+	// This process stops trusting every cached token for the account before the
+	// durable delete. A failed delete remains fail-safe: subsequent requests
+	// revalidate instead of falling back to a previously cached decision.
+	server.sessions.invalidateUser(user.ID)
 	if err := server.store.DeleteAllUserSessions(request.Context(), user.ID); err != nil {
 		server.logEvent(slog.LevelError, eventLogoutAll, outcomeStoreFailed)
 		if isHTMLNavigation(request) {
@@ -398,6 +413,9 @@ func (server *Server) handleLogoutAll(response http.ResponseWriter, request *htt
 		writeJSON(response, http.StatusServiceUnavailable, map[string]string{"error": "temporarily_unavailable"})
 		return
 	}
+	// Remove any successful lookup that raced between the pre-delete
+	// invalidation and the durable account-wide delete.
+	server.sessions.invalidateUser(user.ID)
 	clearSessionCookie(response)
 	finishLogout(response, request)
 }
@@ -422,7 +440,13 @@ func (server *Server) requestUser(request *http.Request) (User, error) {
 	if err != nil || !validToken(token) {
 		return User{}, ErrSessionNotFound
 	}
-	return server.store.Session(request.Context(), tokenHash(token), server.now())
+	hash := tokenHash(token)
+	if server.cfg.SessionCacheTTL == 0 {
+		return server.store.Session(request.Context(), hash, server.now())
+	}
+	return server.sessions.load(request.Context(), hash, server.now(), server.cfg.SessionCacheTTL, func(ctx context.Context, now time.Time) (User, error) {
+		return server.store.Session(ctx, hash, now)
+	})
 }
 
 func (server *Server) sameOriginPOST(request *http.Request) bool {

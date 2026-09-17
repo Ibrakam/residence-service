@@ -141,6 +141,7 @@ validate_local_artifact() {
   local canonical_artifact canonical_manifest sensitive_entry link resolved artifact_owner artifact_mode
 
   [[ -f "$artifact/server.js" ]] || die "standalone server.js is missing"
+  [[ -f "$artifact/worker-server.js" ]] || die "standalone worker-server.js is missing"
   [[ -f "$artifact/package.json" ]] || die "standalone package.json is missing"
   [[ -f "$artifact/STANDALONE_RUNTIME.json" ]] || die "STANDALONE_RUNTIME.json is missing"
   [[ -d "$artifact/dist/client" ]] || die "standalone dist/client directory is missing"

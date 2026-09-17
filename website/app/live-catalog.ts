@@ -108,6 +108,8 @@ const configuredAPI = process.env.NEXT_PUBLIC_CATALOG_API_URL?.trim().replace(/\
 // fallback itself must match the deployed route.
 const catalogAPI = configuredAPI || '/residence-api/catalog';
 const refreshIntervalMs = 60_000;
+const refreshJitterFraction = 0.15;
+const maxRefreshBackoffMs = 5 * 60_000;
 const requestTimeoutMs = 15_000;
 const cachedPayloadMaxAgeMs = 7 * 24 * 60 * 60 * 1_000;
 const cacheVersion = 2;
@@ -220,7 +222,9 @@ function isLivePayload(value: unknown, projectSlug: string): value is LivePayloa
   if (!isRecord(value) || !isRecord(value.project) || !Array.isArray(value.units)) return false;
   if (!isLiveProject(value.project, projectSlug)) return false;
   if (typeof value.refreshedAt !== 'string' || !Number.isFinite(Date.parse(value.refreshedAt))) return false;
-  if (value.units.length !== value.project.totalUnits || !value.units.every((unit) => isLiveUnit(unit, projectSlug))) return false;
+  const expectedUnits = availableOnlyCatalogues.has(projectSlug) ? value.project.availableUnits : value.project.totalUnits;
+  if (value.units.length !== expectedUnits || !value.units.every((unit) => isLiveUnit(unit, projectSlug))) return false;
+  if (availableOnlyCatalogues.has(projectSlug) && value.units.some((unit) => !isRecord(unit) || unit.status !== 'available')) return false;
 
   const queues = value.project.queues;
   if (queues === undefined) return value.units.every((unit) => !isRecord(unit) || unit.queueKey === undefined);
@@ -302,31 +306,89 @@ async function fetchJSON<T>(url: string, signal: AbortSignal): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-async function fetchLivePayload(projectSlug: string, signal: AbortSignal): Promise<LivePayload> {
+export function catalogProjectRevision(project: LiveCatalogProject): string {
+  const queues = [...(project.queues ?? [])]
+    .sort((left, right) => left.queueKey.localeCompare(right.queueKey))
+    .map((queue) => [queue.queueKey, queue.queueLabel, queue.queueDisplayCode ?? '', queue.queueOrder, queue.totalUnits, queue.availableUnits]);
+  const phases = [...(project.phases ?? [])]
+    .sort((left, right) => left.slug.localeCompare(right.slug))
+    .map((phase) => [
+      phase.slug,
+      phase.name,
+      phase.floorsTotal,
+      phase.totalUnits,
+      phase.availableUnits,
+      phase.queueKey ?? '',
+      phase.queueLabel ?? '',
+      phase.queueDisplayCode ?? '',
+      phase.queueOrder ?? 0,
+    ]);
+  return JSON.stringify([
+    project.slug,
+    project.name,
+    project.totalUnits,
+    project.availableUnits,
+    project.updatedAt ?? '',
+    queues,
+    phases,
+  ]);
+}
+
+export function catalogRefreshDelayMs(failureCount: number, randomValue = Math.random()): number {
+  const failures = Math.max(0, Math.min(8, Math.floor(failureCount)));
+  const backoff = Math.min(maxRefreshBackoffMs, refreshIntervalMs * (2 ** failures));
+  const boundedRandom = Math.max(0, Math.min(1, randomValue));
+  const jitter = 1 - refreshJitterFraction + (2 * refreshJitterFraction * boundedRandom);
+  return Math.min(maxRefreshBackoffMs, Math.round(backoff * jitter));
+}
+
+async function fetchLivePayload(
+  projectSlug: string,
+  signal: AbortSignal,
+  previousPayload: LivePayload | null,
+): Promise<LivePayload | null> {
   const projectURL = `${catalogAPI}/v1/projects/${encodeURIComponent(projectSlug)}`;
   const unitsURL = `${projectURL}/units`;
-  const [project, firstPage] = await Promise.all([
-    fetchJSON<LiveCatalogProject>(projectURL, signal),
-    fetchJSON<{ items: unknown[]; total: number; limit: number; offset: number }>(`${unitsURL}?limit=500&offset=0`, signal),
-  ]);
+  const project = await fetchJSON<LiveCatalogProject>(projectURL, signal);
 
-  if (!project || project.slug !== projectSlug || !Number.isInteger(firstPage.total) || firstPage.total < 0) {
+  if (!isLiveProject(project, projectSlug)) {
+    throw new Error('catalog response has an invalid project');
+  }
+  if (previousPayload && catalogProjectRevision(previousPayload.project) === catalogProjectRevision(project)) {
+    return null;
+  }
+
+  const availableOnly = availableOnlyCatalogues.has(projectSlug);
+  const statusQuery = availableOnly ? '&status=available' : '';
+  const firstPage = await fetchJSON<{ items: unknown[]; total: number; limit: number; offset: number }>(
+    `${unitsURL}?limit=500&offset=0${statusQuery}`,
+    signal,
+  );
+
+  if (!Array.isArray(firstPage.items) || !Number.isInteger(firstPage.total) || firstPage.total < 0) {
     throw new Error('catalog response has an invalid project or total');
   }
 
   const rawUnits = [...firstPage.items];
   const requests: Array<Promise<{ items: unknown[] }>> = [];
   for (let offset = 500; offset < firstPage.total; offset += 500) {
-    requests.push(fetchJSON<{ items: unknown[] }>(`${unitsURL}?limit=500&offset=${offset}`, signal));
+    requests.push(fetchJSON<{ items: unknown[] }>(
+      `${unitsURL}?limit=500&offset=${offset}${statusQuery}`,
+      signal,
+    ));
   }
   const pages = await Promise.all(requests);
   pages.forEach((page) => rawUnits.push(...page.items));
 
-  if (rawUnits.length !== firstPage.total || rawUnits.length !== project.totalUnits) {
+  const expectedTotal = availableOnly ? project.availableUnits : project.totalUnits;
+  if (rawUnits.length !== firstPage.total || rawUnits.length !== expectedTotal) {
     throw new Error('catalog response is partial');
   }
   if (!rawUnits.every((unit) => isLiveUnit(unit, projectSlug))) {
     throw new Error('catalog response has invalid units');
+  }
+  if (availableOnly && rawUnits.some((unit) => !isRecord(unit) || unit.status !== 'available')) {
+    throw new Error('catalog response contains a non-available unit');
   }
   const generations = new Set(rawUnits.map((unit) => Date.parse(unit.sourceUpdatedAt as string)));
   if (generations.size > 1) {
@@ -348,6 +410,9 @@ function useLivePayload(projectSlug: string) {
   useEffect(() => {
     let disposed = false;
     let activeRequest: AbortController | null = null;
+    let refreshTimer: number | null = null;
+    let latestPayload: LivePayload | null = null;
+    let consecutiveFailures = 0;
     const requiresCurrentAvailability = availableOnlyCatalogues.has(projectSlug);
     const restoreCached = window.setTimeout(() => {
       if (disposed) return;
@@ -361,35 +426,59 @@ function useLivePayload(projectSlug: string) {
       }
       const cached = readCachedPayload(projectSlug);
       if (!cached) return;
+      latestPayload = cached;
       setPayload(cached);
       setDataSource('cached');
     }, 0);
 
+    const scheduleNext = () => {
+      if (disposed) return;
+      if (refreshTimer !== null) window.clearTimeout(refreshTimer);
+      refreshTimer = window.setTimeout(() => void refresh(), catalogRefreshDelayMs(consecutiveFailures));
+    };
+
     const refresh = async () => {
-      if (document.visibilityState === 'hidden') return;
-      activeRequest?.abort();
+      if (disposed) return;
+      if (document.visibilityState === 'hidden') {
+        scheduleNext();
+        return;
+      }
+      if (activeRequest) return;
       const controller = new AbortController();
       activeRequest = controller;
       const timeout = window.setTimeout(() => controller.abort(), requestTimeoutMs);
       try {
-        const next = await fetchLivePayload(projectSlug, controller.signal);
+        const next = await fetchLivePayload(projectSlug, controller.signal, latestPayload);
         if (disposed) return;
-        setPayload(next);
+        if (next) {
+          latestPayload = next;
+          setPayload(next);
+          if (!requiresCurrentAvailability) saveCachedPayload(projectSlug, next);
+        }
         setDataSource('live');
-        if (!requiresCurrentAvailability) saveCachedPayload(projectSlug, next);
+        consecutiveFailures = 0;
       } catch {
         // Keep the last complete API response, then the embedded catalogue.
+        if (!disposed) consecutiveFailures += 1;
       } finally {
         window.clearTimeout(timeout);
+        if (activeRequest === controller) activeRequest = null;
+        scheduleNext();
       }
     };
 
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible') void refresh();
+    const refreshNow = () => {
+      if (refreshTimer !== null) {
+        window.clearTimeout(refreshTimer);
+        refreshTimer = null;
+      }
+      void refresh();
     };
-    const onOnline = () => void refresh();
-    void refresh();
-    const interval = window.setInterval(() => void refresh(), refreshIntervalMs);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') refreshNow();
+    };
+    const onOnline = () => refreshNow();
+    refreshNow();
     document.addEventListener('visibilitychange', onVisibility);
     window.addEventListener('online', onOnline);
 
@@ -397,7 +486,7 @@ function useLivePayload(projectSlug: string) {
       disposed = true;
       activeRequest?.abort();
       window.clearTimeout(restoreCached);
-      window.clearInterval(interval);
+      if (refreshTimer !== null) window.clearTimeout(refreshTimer);
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('online', onOnline);
     };
@@ -827,18 +916,32 @@ export function useLiveCatalogProject(projectSlug: string, embeddedProject: Live
   useEffect(() => {
     let disposed = false;
     let activeRequest: AbortController | null = null;
+    let refreshTimer: number | null = null;
+    let latestProject: LiveCatalogProject | null = null;
+    let consecutiveFailures = 0;
     const restoreCached = window.setTimeout(() => {
       if (disposed) return;
       const cached = readCachedProject(projectSlug);
       if (!cached) return;
+      latestProject = cached.project;
       setProject(cached.project);
       setRefreshedAt(cached.project.updatedAt ?? cached.refreshedAt);
       setDataSource('cached');
     }, 0);
 
+    const scheduleNext = () => {
+      if (disposed) return;
+      if (refreshTimer !== null) window.clearTimeout(refreshTimer);
+      refreshTimer = window.setTimeout(() => void refresh(), catalogRefreshDelayMs(consecutiveFailures));
+    };
+
     const refresh = async () => {
-      if (document.visibilityState === 'hidden') return;
-      activeRequest?.abort();
+      if (disposed) return;
+      if (document.visibilityState === 'hidden') {
+        scheduleNext();
+        return;
+      }
+      if (activeRequest) return;
       const controller = new AbortController();
       activeRequest = controller;
       const timeout = window.setTimeout(() => controller.abort(), requestTimeoutMs);
@@ -847,23 +950,36 @@ export function useLiveCatalogProject(projectSlug: string, embeddedProject: Live
         if (!isLiveProject(next, projectSlug)) throw new Error('catalog response has an invalid project');
         const nextPayload = { project: next, refreshedAt: new Date().toISOString() };
         if (disposed) return;
-        setProject(next);
-        setRefreshedAt(next.updatedAt ?? nextPayload.refreshedAt);
+        if (!latestProject || catalogProjectRevision(latestProject) !== catalogProjectRevision(next)) {
+          latestProject = next;
+          setProject(next);
+          setRefreshedAt(next.updatedAt ?? nextPayload.refreshedAt);
+          saveCachedProject(projectSlug, nextPayload);
+        }
         setDataSource('live');
-        saveCachedProject(projectSlug, nextPayload);
+        consecutiveFailures = 0;
       } catch {
         // Keep the last complete project response, then the embedded summary.
+        if (!disposed) consecutiveFailures += 1;
       } finally {
         window.clearTimeout(timeout);
+        if (activeRequest === controller) activeRequest = null;
+        scheduleNext();
       }
     };
 
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible') void refresh();
+    const refreshNow = () => {
+      if (refreshTimer !== null) {
+        window.clearTimeout(refreshTimer);
+        refreshTimer = null;
+      }
+      void refresh();
     };
-    const onOnline = () => void refresh();
-    void refresh();
-    const interval = window.setInterval(() => void refresh(), refreshIntervalMs);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') refreshNow();
+    };
+    const onOnline = () => refreshNow();
+    refreshNow();
     document.addEventListener('visibilitychange', onVisibility);
     window.addEventListener('online', onOnline);
 
@@ -871,7 +987,7 @@ export function useLiveCatalogProject(projectSlug: string, embeddedProject: Live
       disposed = true;
       activeRequest?.abort();
       window.clearTimeout(restoreCached);
-      window.clearInterval(interval);
+      if (refreshTimer !== null) window.clearTimeout(refreshTimer);
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('online', onOnline);
     };

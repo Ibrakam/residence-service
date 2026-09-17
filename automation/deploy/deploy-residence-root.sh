@@ -12,6 +12,7 @@ readonly SERVICE_USER="residence-frontend"
 readonly SERVICE_GROUP="residence-frontend"
 readonly NGINX_USER="www-data"
 readonly SERVICE_ENV_FILE="/etc/residence-frontend/root-frontend.env"
+readonly SERVICE_UNIT_DESTINATION="/etc/systemd/system/${SERVICE_UNIT}"
 readonly DEPLOY_LOCK="/run/lock/residence-root-deploy.lock"
 readonly REPOSITORY_LOCK="/run/lock/residence-root-remote-worktree.lock"
 readonly NODE_BIN="/usr/bin/node"
@@ -36,6 +37,9 @@ CANDIDATE_STARTED=0
 CURRENT_SWITCHED=0
 DEPLOYMENT_CONFIRMED=0
 PUBLIC_AUTH_GATE_ENABLED=0
+SERVICE_UNIT_CHANGED=0
+SERVICE_UNIT_HAD_PREVIOUS=0
+SERVICE_UNIT_BACKUP=""
 AUTH_SMOKE_CURL_CONFIG=""
 AUTH_SMOKE_IDENTITY_FILE=""
 FRAMEWORK_ASSET_PATH=""
@@ -153,6 +157,66 @@ atomic_switch() {
     rm -f -- "$temporary_link"
     return 1
   fi
+}
+
+install_frontend_service_unit() {
+  local source="${WORKTREE}/automation/deploy/systemd/${SERVICE_UNIT}"
+  local temporary_unit
+
+  [[ -f "$source" && ! -L "$source" ]] || die "frontend service unit is missing or unsafe: ${source}"
+  [[ ! -L "$SERVICE_UNIT_DESTINATION" ]] || die "frontend service unit destination must not be a symlink"
+  systemd-analyze verify "$source" >/dev/null \
+    || die "frontend service unit failed systemd verification"
+  if [[ -f "$SERVICE_UNIT_DESTINATION" ]] && cmp -s -- "$source" "$SERVICE_UNIT_DESTINATION"; then
+    return 0
+  fi
+
+  SERVICE_UNIT_BACKUP="$(mktemp /run/residence-root-frontend.service.backup.XXXXXX)"
+  if [[ -e "$SERVICE_UNIT_DESTINATION" ]]; then
+    [[ -f "$SERVICE_UNIT_DESTINATION" && ! -L "$SERVICE_UNIT_DESTINATION" ]] \
+      || die "frontend service unit destination is not a regular file"
+    install -o root -g root -m 0600 -- "$SERVICE_UNIT_DESTINATION" "$SERVICE_UNIT_BACKUP"
+    SERVICE_UNIT_HAD_PREVIOUS=1
+  else
+    SERVICE_UNIT_HAD_PREVIOUS=0
+  fi
+  SERVICE_UNIT_CHANGED=1
+  temporary_unit="$(mktemp /etc/systemd/system/.residence-root-frontend.XXXXXX)"
+  install -o root -g root -m 0644 -- "$source" "$temporary_unit"
+  mv -Tf -- "$temporary_unit" "$SERVICE_UNIT_DESTINATION"
+  systemctl daemon-reload
+  log "Installed updated ${SERVICE_UNIT}"
+}
+
+restore_frontend_service_unit() {
+  local temporary_unit
+
+  (( SERVICE_UNIT_CHANGED == 1 )) || return 0
+  if (( SERVICE_UNIT_HAD_PREVIOUS == 1 )); then
+    [[ -f "$SERVICE_UNIT_BACKUP" && ! -L "$SERVICE_UNIT_BACKUP" ]] \
+      || return 1
+    temporary_unit="$(mktemp /etc/systemd/system/.residence-root-frontend.XXXXXX)"
+    install -o root -g root -m 0644 -- "$SERVICE_UNIT_BACKUP" "$temporary_unit"
+    mv -Tf -- "$temporary_unit" "$SERVICE_UNIT_DESTINATION"
+  else
+    rm -f -- "$SERVICE_UNIT_DESTINATION"
+  fi
+  systemctl daemon-reload
+  rm -f -- "$SERVICE_UNIT_BACKUP"
+  SERVICE_UNIT_BACKUP=""
+  SERVICE_UNIT_CHANGED=0
+  log "Restored previous ${SERVICE_UNIT}"
+}
+
+discard_frontend_service_unit_backup() {
+  if [[ -n "$SERVICE_UNIT_BACKUP" ]]; then
+    case "$SERVICE_UNIT_BACKUP" in
+      /run/residence-root-frontend.service.backup.*) rm -f -- "$SERVICE_UNIT_BACKUP" ;;
+      *) return 1 ;;
+    esac
+  fi
+  SERVICE_UNIT_BACKUP=""
+  SERVICE_UNIT_CHANGED=0
 }
 
 http_status() {
@@ -344,6 +408,7 @@ validate_artifact() {
   esac
 
   [[ -f "$artifact/server.js" ]] || die "standalone server.js is missing"
+  [[ -f "$artifact/worker-server.js" ]] || die "standalone worker-server.js is missing"
   [[ -f "$artifact/package.json" ]] || die "standalone package.json is missing"
   [[ -f "$artifact/STANDALONE_RUNTIME.json" ]] || die "STANDALONE_RUNTIME.json is missing; run the complete website build"
   [[ -d "$artifact/dist/client" ]] || die "standalone dist/client directory is missing"
@@ -357,6 +422,8 @@ validate_artifact() {
       throw new Error("unsupported standalone runtime manifest");
     }
   ' "$artifact/STANDALONE_RUNTIME.json"
+  "$NODE_BIN" --check "$artifact/server.js"
+  "$NODE_BIN" --check "$artifact/worker-server.js"
 
   unsafe_entry="$(find "$artifact" -mindepth 1 ! -type d ! -type f ! -type l -print -quit)"
   [[ -z "$unsafe_entry" ]] || die "artifact contains a non-file/directory/symlink entry: $unsafe_entry"
@@ -426,6 +493,7 @@ start_candidate() {
     --property="TimeoutStartSec=30s" \
     --property="TimeoutStopSec=15s" \
     --property="KillSignal=SIGTERM" \
+    --property="KillMode=mixed" \
     --property="UMask=0027" \
     --property="NoNewPrivileges=yes" \
     --property="PrivateTmp=yes" \
@@ -448,6 +516,7 @@ start_candidate() {
       NODE_ENV=production \
       HOST=127.0.0.1 \
       PORT="$CANDIDATE_PORT" \
+      WEB_CONCURRENCY=2 \
       "$NODE_BIN" "$frontend/server.js"
   CANDIDATE_STARTED=1
 }
@@ -969,6 +1038,7 @@ rollback_current() {
 on_exit() {
   local status=$?
   local rollback_status=0
+  local unit_restore_status=0
 
   trap - EXIT INT TERM
   set +e
@@ -976,6 +1046,13 @@ on_exit() {
   safe_remove_staging "$STAGING_RELEASE"
   cleanup_auth_smoke_config
 
+  if (( status != 0 && SERVICE_UNIT_CHANGED == 1 )); then
+    restore_frontend_service_unit
+    unit_restore_status=$?
+    if (( unit_restore_status != 0 )); then
+      log "CRITICAL: previous ${SERVICE_UNIT} could not be restored"
+    fi
+  fi
   if (( status != 0 && CURRENT_SWITCHED == 1 && DEPLOYMENT_CONFIRMED == 0 )); then
     rollback_current
     rollback_status=$?
@@ -1001,7 +1078,7 @@ main() {
   [[ "$2" =~ ^[0-9a-fA-F]{40}$ ]] || die "COMMIT must contain exactly 40 hexadecimal characters"
   COMMIT="${2,,}"
 
-  for command in awk basename chmod chown curl date df du find flock getent git grep head id install ln mktemp mv readlink realpath rm rsync runuser sed sleep ss stat sync systemctl systemd-run; do
+  for command in awk basename chmod chown cmp curl date df du find flock getent git grep head id install ln mktemp mv readlink realpath rm rsync runuser sed sleep ss stat sync systemctl systemd-analyze systemd-run; do
     require_command "$command"
   done
   [[ -x "$NODE_BIN" ]] || die "Node runtime is unavailable at ${NODE_BIN}"
@@ -1103,6 +1180,7 @@ main() {
   log "Switching root-current atomically to ${FINAL_RELEASE}"
   atomic_switch "$FINAL_RELEASE"
   CURRENT_SWITCHED=1
+  install_frontend_service_unit
   systemctl restart "$SERVICE_UNIT"
   wait_for_service_release "$FINAL_RELEASE/frontend" 30
   smoke_routes "http://127.0.0.1:${PRODUCTION_PORT}" 30
@@ -1125,6 +1203,7 @@ main() {
   mv -T -- "$FINAL_RELEASE/.DEPLOY_CONFIRMED.$$" "$FINAL_RELEASE/DEPLOY_CONFIRMED"
   sync -f "$FINAL_RELEASE"
   DEPLOYMENT_CONFIRMED=1
+  discard_frontend_service_unit_backup
   log "Deployment completed: commit=${COMMIT} release=${FINAL_RELEASE}"
 }
 

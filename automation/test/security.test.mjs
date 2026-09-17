@@ -252,7 +252,12 @@ test("launchd does not leak NODE_ENV=production into dependency installation", a
 
 test("root deployer preserves nginx-readable immutable releases and disk reserve", async () => {
   const script = await fs.readFile(path.join(AUTOMATION_ROOT, "deploy", "deploy-residence-root.sh"), "utf8");
+  const service = await fs.readFile(path.join(AUTOMATION_ROOT, "deploy", "systemd", "residence-root-frontend.service"), "utf8");
   assert.match(script, /readonly MIN_FREE_KB=10485760/);
+  assert.match(script, /standalone worker-server\.js is missing/);
+  assert.match(script, /WEB_CONCURRENCY=2/);
+  assert.match(script, /restore_frontend_service_unit/);
+  assert.match(script, /SERVICE_UNIT_BACKUP=.*mktemp \/run\/residence-root-frontend\.service\.backup/);
   assert.match(script, /find "\$STAGING_RELEASE\/frontend" -type d -exec chmod 0555/);
   assert.match(script, /find "\$STAGING_RELEASE\/frontend" -type f -exec chmod 0444/);
   assert.match(script, /chmod 0755 "\$STAGING_RELEASE\/frontend"/);
@@ -265,6 +270,9 @@ test("root deployer preserves nginx-readable immutable releases and disk reserve
   for (const project of ["4u", "bayterak", "botanika-saroyi", "c1", "flagman", "jomiy", "maftun-makon", "meros", "mirador", "ofiyat", "regnum-plaza", "saadiyat", "sarbon", "sado", "soy-boyi", "sun", "voha", "yangibaxt", "zamon"]) {
     assert.match(script, new RegExp(`\\n  ${project.replaceAll("-", "\\-")}\\n`));
   }
+  assert.match(service, /ExecStart=\/usr\/bin\/env WEB_CONCURRENCY=2 \/usr\/bin\/node/);
+  assert.match(service, /KillMode=mixed/);
+  assert.match(service, /ExecStartPre=\/usr\/bin\/test -f .*worker-server\.js/);
 });
 
 test("Seatbelt runs lint/build while denying outside-home reads and all verification network", async (t) => {

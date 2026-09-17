@@ -218,17 +218,14 @@ func (s *Store) ListUnits(ctx context.Context, filter domain.UnitFilter) (domain
           AND ($9::bigint IS NULL OR u.price >= $9)
           AND ($10::bigint IS NULL OR u.price <= $10)`
 
-	var total int64
-	if err := s.pool.QueryRow(ctx, "SELECT count(*) "+where, args...).Scan(&total); err != nil {
-		return domain.UnitPage{}, err
-	}
 	query := `SELECT u.id, u.source_key, p.slug, ph.slug, ph.name,
 		            COALESCE(q.queue_key,''),COALESCE(q.queue_label,''),COALESCE(q.display_code,''),COALESCE(q.sort_order,0),
                     u.property_type, u.raw_property_type, u.status, u.raw_status,
                     u.number, u.entrance, u.floor, u.area::float8, u.rooms,
                     u.price, u.price_per_m2::float8, u.currency, u.plan_image_url, u.repair_included,
                     ` + unitCompletionSelect + `,
-                    u.is_active, u.source_updated_at, u.updated_at ` + where + `
+					u.is_active, u.source_updated_at, u.updated_at,
+					count(*) OVER() ` + where + `
 		      ORDER BY COALESCE(q.sort_order,2147483647),ph.id,u.entrance,u.floor,u.number
 		      LIMIT $11 OFFSET $12`
 	rows, err := s.pool.Query(ctx, query, append(args, filter.Limit, filter.Offset)...)
@@ -237,14 +234,28 @@ func (s *Store) ListUnits(ctx context.Context, filter domain.UnitFilter) (domain
 	}
 	defer rows.Close()
 	items := make([]domain.Unit, 0, filter.Limit)
+	var total int64
 	for rows.Next() {
-		item, err := scanUnit(rows)
+		item, pageTotal, err := scanUnitPageRow(rows)
 		if err != nil {
 			return domain.UnitPage{}, err
 		}
+		total = pageTotal
 		items = append(items, item)
 	}
-	return domain.UnitPage{Items: items, Total: total, Limit: filter.Limit, Offset: filter.Offset}, rows.Err()
+	if err := rows.Err(); err != nil {
+		return domain.UnitPage{}, err
+	}
+	// A valid page gets its total from the same database scan as its rows. Only
+	// an out-of-range offset needs the old standalone count to preserve the API
+	// contract for arbitrary clients; the catalogue client never takes this
+	// fallback because it derives page offsets from the first response.
+	if len(items) == 0 && filter.Offset > 0 {
+		if err := s.pool.QueryRow(ctx, "SELECT count(*) "+where, args...).Scan(&total); err != nil {
+			return domain.UnitPage{}, err
+		}
+	}
+	return domain.UnitPage{Items: items, Total: total, Limit: filter.Limit, Offset: filter.Offset}, nil
 }
 
 func (s *Store) GetUnit(ctx context.Context, id int64) (domain.Unit, error) {
@@ -272,45 +283,67 @@ type rowScanner interface {
 	Scan(dest ...any) error
 }
 
-func scanUnit(row rowScanner) (domain.Unit, error) {
-	var item domain.Unit
-	var rooms sql.NullInt64
-	var price sql.NullInt64
-	var pricePerM2 sql.NullFloat64
-	var completion sql.NullString
-	var repairIncluded sql.NullBool
-	err := row.Scan(
+type unitScanValues struct {
+	rooms          sql.NullInt64
+	price          sql.NullInt64
+	pricePerM2     sql.NullFloat64
+	completion     sql.NullString
+	repairIncluded sql.NullBool
+}
+
+func unitScanDestinations(item *domain.Unit, values *unitScanValues) []any {
+	return []any{
 		&item.ID, &item.SourceKey, &item.ProjectSlug, &item.PhaseSlug, &item.PhaseName,
 		&item.QueueKey, &item.QueueLabel, &item.QueueDisplayCode, &item.QueueOrder,
 		&item.PropertyType, &item.RawPropertyType, &item.Status, &item.RawStatus,
-		&item.Number, &item.Entrance, &item.Floor, &item.Area, &rooms,
-		&price, &pricePerM2, &item.Currency, &item.PlanImageURL, &repairIncluded, &completion,
+		&item.Number, &item.Entrance, &item.Floor, &item.Area, &values.rooms,
+		&values.price, &values.pricePerM2, &item.Currency, &item.PlanImageURL, &values.repairIncluded, &values.completion,
 		&item.IsActive, &item.SourceUpdatedAt, &item.UpdatedAt,
-	)
-	if err != nil {
-		return domain.Unit{}, err
 	}
-	if rooms.Valid {
-		value := int(rooms.Int64)
+}
+
+func finishScannedUnit(item domain.Unit, values unitScanValues) domain.Unit {
+	if values.rooms.Valid {
+		value := int(values.rooms.Int64)
 		item.Rooms = &value
 	}
-	if price.Valid {
-		value := price.Int64
+	if values.price.Valid {
+		value := values.price.Int64
 		item.Price = &value
 	}
-	if pricePerM2.Valid {
-		value := pricePerM2.Float64
+	if values.pricePerM2.Valid {
+		value := values.pricePerM2.Float64
 		item.PricePerM2 = &value
 	}
-	if completion.Valid {
-		value := completion.String
+	if values.completion.Valid {
+		value := values.completion.String
 		item.Completion = &value
 	}
-	if repairIncluded.Valid {
-		value := repairIncluded.Bool
+	if values.repairIncluded.Valid {
+		value := values.repairIncluded.Bool
 		item.RepairIncluded = &value
 	}
-	return item, nil
+	return item
+}
+
+func scanUnit(row rowScanner) (domain.Unit, error) {
+	var item domain.Unit
+	var values unitScanValues
+	if err := row.Scan(unitScanDestinations(&item, &values)...); err != nil {
+		return domain.Unit{}, err
+	}
+	return finishScannedUnit(item, values), nil
+}
+
+func scanUnitPageRow(row rowScanner) (domain.Unit, int64, error) {
+	var item domain.Unit
+	var values unitScanValues
+	var total int64
+	destinations := append(unitScanDestinations(&item, &values), &total)
+	if err := row.Scan(destinations...); err != nil {
+		return domain.Unit{}, 0, err
+	}
+	return finishScannedUnit(item, values), total, nil
 }
 
 func (s *Store) ListLayouts(ctx context.Context, projectSlug, phaseSlug, queueKey string) ([]domain.Layout, error) {

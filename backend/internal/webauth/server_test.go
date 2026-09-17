@@ -135,6 +135,7 @@ func testConfig() Config {
 		PublicOrigin: "https://form.tencorp.uz", OIDCIssuer: TelegramIssuer,
 		OIDCClientID: "123456", OIDCClientSecret: "0123456789abcdef",
 		SessionTTL: 24 * time.Hour, TransactionTTL: 10 * time.Minute,
+		SessionCacheTTL: 10 * time.Second,
 		ShutdownTimeout: 5 * time.Second, HTTPTimeout: 5 * time.Second,
 	}
 }
@@ -452,6 +453,15 @@ func TestInternalCheckAndLogoutLifecycle(t *testing.T) {
 	if response.Code != http.StatusNoContent || len(store.sessions) != 0 || responseCookie(t, response, SessionCookie).MaxAge >= 0 {
 		t.Fatalf("logout result = %d, sessions = %d", response.Code, len(store.sessions))
 	}
+	// The successful check above warmed the cache. Logout must invalidate it,
+	// otherwise Nginx could continue authorizing protected requests until TTL.
+	check = httptest.NewRequest(http.MethodGet, "http://127.0.0.1/internal/check", nil)
+	check.AddCookie(&http.Cookie{Name: SessionCookie, Value: token})
+	response = httptest.NewRecorder()
+	server.Handler().ServeHTTP(response, check)
+	if response.Code != http.StatusUnauthorized {
+		t.Fatalf("post-logout check status = %d, want %d", response.Code, http.StatusUnauthorized)
+	}
 }
 
 func TestMeOmitsInternalUserID(t *testing.T) {
@@ -540,13 +550,27 @@ func TestHTMLFormLogoutRedirectsWhileAPILogoutReturnsNoContent(t *testing.T) {
 func TestLogoutAllRequiresOriginAndAuthenticatedSession(t *testing.T) {
 	server, store, _ := testServer(t)
 	token, _ := randomToken()
-	store.sessions[tokenHash(token)] = User{ID: 42, TelegramID: 99, ExpiresAt: server.now().Add(time.Hour)}
+	otherToken, _ := randomToken()
+	user := User{ID: 42, TelegramID: 99, ExpiresAt: server.now().Add(time.Hour)}
+	store.sessions[tokenHash(token)] = user
+	store.sessions[tokenHash(otherToken)] = user
+	// Warm both entries so this test exercises cache invalidation rather than
+	// succeeding only because DeleteAllUserSessions cleared the backing store.
+	for _, value := range []string{token, otherToken} {
+		warm := httptest.NewRequest(http.MethodGet, "http://127.0.0.1/internal/check", nil)
+		warm.AddCookie(&http.Cookie{Name: SessionCookie, Value: value})
+		warmResponse := httptest.NewRecorder()
+		server.Handler().ServeHTTP(warmResponse, warm)
+		if warmResponse.Code != http.StatusNoContent {
+			t.Fatalf("warm check = %d", warmResponse.Code)
+		}
+	}
 	crossSite := httptest.NewRequest(http.MethodPost, "https://form.tencorp.uz/__auth/logout-all", nil)
 	crossSite.Header.Set("Origin", "https://evil.example")
 	crossSite.AddCookie(&http.Cookie{Name: SessionCookie, Value: token})
 	response := httptest.NewRecorder()
 	server.Handler().ServeHTTP(response, crossSite)
-	if response.Code != http.StatusForbidden || len(store.sessions) != 1 {
+	if response.Code != http.StatusForbidden || len(store.sessions) != 2 {
 		t.Fatalf("cross-site logout = %d", response.Code)
 	}
 	request := httptest.NewRequest(http.MethodPost, "https://form.tencorp.uz/__auth/logout-all", nil)
@@ -556,6 +580,13 @@ func TestLogoutAllRequiresOriginAndAuthenticatedSession(t *testing.T) {
 	server.Handler().ServeHTTP(response, request)
 	if response.Code != http.StatusNoContent || store.deletedAll != 42 || len(store.sessions) != 0 {
 		t.Fatalf("logout-all = %d, user = %d", response.Code, store.deletedAll)
+	}
+	check := httptest.NewRequest(http.MethodGet, "http://127.0.0.1/internal/check", nil)
+	check.AddCookie(&http.Cookie{Name: SessionCookie, Value: otherToken})
+	response = httptest.NewRecorder()
+	server.Handler().ServeHTTP(response, check)
+	if response.Code != http.StatusUnauthorized {
+		t.Fatalf("other session after logout-all = %d, want %d", response.Code, http.StatusUnauthorized)
 	}
 }
 

@@ -30,6 +30,7 @@ type Config struct {
 	BotToken          string
 	BotWebhookSecret  string
 	SessionTTL        time.Duration
+	SessionCacheTTL   time.Duration
 	TransactionTTL    time.Duration
 	ShutdownTimeout   time.Duration
 	HTTPTimeout       time.Duration
@@ -50,6 +51,7 @@ func LoadConfig() (Config, error) {
 		OIDCClientSecret:  strings.TrimSpace(os.Getenv("TELEGRAM_OIDC_CLIENT_SECRET")),
 		BotWebhookEnabled: botWebhookEnabled,
 		SessionTTL:        30 * 24 * time.Hour,
+		SessionCacheTTL:   10 * time.Second,
 		TransactionTTL:    10 * time.Minute,
 		ShutdownTimeout:   15 * time.Second,
 		HTTPTimeout:       10 * time.Second,
@@ -62,6 +64,9 @@ func LoadConfig() (Config, error) {
 		return Config{}, err
 	}
 	if cfg.SessionTTL, err = parseOptionalDuration("AUTH_SESSION_TTL", cfg.SessionTTL); err != nil {
+		return Config{}, err
+	}
+	if cfg.SessionCacheTTL, err = parseOptionalDuration("AUTH_SESSION_CACHE_TTL", cfg.SessionCacheTTL); err != nil {
 		return Config{}, err
 	}
 	if cfg.TransactionTTL, err = parseOptionalDuration("AUTH_TRANSACTION_TTL", cfg.TransactionTTL); err != nil {
@@ -121,6 +126,9 @@ func (cfg Config) Validate() error {
 	}
 	if cfg.SessionTTL < time.Hour || cfg.SessionTTL > 90*24*time.Hour {
 		return errors.New("AUTH_SESSION_TTL must be between 1h and 2160h")
+	}
+	if cfg.SessionCacheTTL != 0 && (cfg.SessionCacheTTL < 5*time.Second || cfg.SessionCacheTTL > 15*time.Second) {
+		return errors.New("AUTH_SESSION_CACHE_TTL must be 0 or between 5s and 15s")
 	}
 	if cfg.TransactionTTL < time.Minute || cfg.TransactionTTL > 30*time.Minute {
 		return errors.New("AUTH_TRANSACTION_TTL must be between 1m and 30m")

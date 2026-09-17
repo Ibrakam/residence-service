@@ -44,7 +44,7 @@ func TestLoadConfigFailsClosedOnInvalidValues(t *testing.T) {
 	for _, key := range []string{
 		"AUTH_GATEWAY_ADDR", "DATABASE_URL", "MIGRATIONS_DIR", "AUTH_PUBLIC_ORIGIN",
 		"TELEGRAM_OIDC_ISSUER", "TELEGRAM_OIDC_CLIENT_ID", "TELEGRAM_OIDC_CLIENT_SECRET",
-		"AUTH_AUTO_MIGRATE", "AUTH_SESSION_TTL", "AUTH_TRANSACTION_TTL", "AUTH_SHUTDOWN_TIMEOUT",
+		"AUTH_AUTO_MIGRATE", "AUTH_SESSION_TTL", "AUTH_SESSION_CACHE_TTL", "AUTH_TRANSACTION_TTL", "AUTH_SHUTDOWN_TIMEOUT",
 		"AUTH_OIDC_HTTP_TIMEOUT", "AUTH_BOT_WEBHOOK_ENABLED", "TELEGRAM_AUTH_BOT_TOKEN", "TELEGRAM_AUTH_WEBHOOK_SECRET",
 	} {
 		t.Setenv(key, "")
@@ -57,7 +57,7 @@ func TestLoadConfigFailsClosedOnInvalidValues(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Address != "127.0.0.1:4340" || cfg.SessionTTL != 30*24*time.Hour || cfg.TransactionTTL != 10*time.Minute || cfg.BotWebhookEnabled {
+	if cfg.Address != "127.0.0.1:4340" || cfg.SessionTTL != 30*24*time.Hour || cfg.SessionCacheTTL != 10*time.Second || cfg.TransactionTTL != 10*time.Minute || cfg.BotWebhookEnabled {
 		t.Fatalf("defaults = %#v", cfg)
 	}
 	t.Setenv("TELEGRAM_AUTH_BOT_TOKEN", "ignored-invalid-token")
@@ -69,5 +69,21 @@ func TestLoadConfigFailsClosedOnInvalidValues(t *testing.T) {
 	t.Setenv("AUTH_AUTO_MIGRATE", "sometimes")
 	if _, err := LoadConfig(); err == nil {
 		t.Fatal("accepted invalid boolean")
+	}
+}
+
+func TestConfigBoundsSessionValidationCacheTTL(t *testing.T) {
+	cfg := testConfig()
+	for _, ttl := range []time.Duration{0, 5 * time.Second, 10 * time.Second, 15 * time.Second} {
+		cfg.SessionCacheTTL = ttl
+		if err := cfg.Validate(); err != nil {
+			t.Fatalf("cache TTL %s rejected: %v", ttl, err)
+		}
+	}
+	for _, ttl := range []time.Duration{time.Second, 4999 * time.Millisecond, 15*time.Second + time.Nanosecond, time.Minute} {
+		cfg.SessionCacheTTL = ttl
+		if err := cfg.Validate(); err == nil {
+			t.Fatalf("cache TTL %s accepted", ttl)
+		}
 	}
 }

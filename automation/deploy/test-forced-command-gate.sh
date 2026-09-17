@@ -213,6 +213,7 @@ git -C "$integration_worktree" push --quiet origin main
 integration_commit="$(git -C "$integration_worktree" rev-parse HEAD)"
 
 printf 'process.exit(0);\n' > "$integration_seal/standalone/server.js"
+printf 'process.exit(0);\n' > "$integration_seal/standalone/worker-server.js"
 printf '{}\n' > "$integration_seal/standalone/package.json"
 printf '{"schemaVersion":2,"packages":[]}\n' > "$integration_seal/standalone/STANDALONE_RUNTIME.json"
 find "$integration_seal/standalone" -type d -exec chmod 0555 {} +

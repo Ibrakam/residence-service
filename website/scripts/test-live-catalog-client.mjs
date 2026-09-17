@@ -1,7 +1,15 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { catalogLeadIdentity, initialCatalogUnits, liveCatalogQueueOptions, mergeLiveCatalogUnits, parseCatalogDate } from '../app/live-catalog.ts';
+import {
+  catalogLeadIdentity,
+  catalogProjectRevision,
+  catalogRefreshDelayMs,
+  initialCatalogUnits,
+  liveCatalogQueueOptions,
+  mergeLiveCatalogUnits,
+  parseCatalogDate,
+} from '../app/live-catalog.ts';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const source = await readFile(new URL('../app/live-catalog.ts', import.meta.url), 'utf8');
@@ -11,6 +19,9 @@ assert.doesNotMatch(source, /configuredAPI\s*\|\|[^\n]*\/residence-api[`'"]/, 't
 assert.match(source, /credentials:\s*'include'/);
 assert.match(source, /cache:\s*'no-store'/);
 assert.match(source, /refreshIntervalMs\s*=\s*60_000/);
+assert.match(source, /availableOnly\s*\?\s*['"]&status=available['"]\s*:\s*['"]['"]/, 'available-only catalogues must filter at the API instead of downloading every lifecycle status');
+assert.match(source, /catalogProjectRevision\(previousPayload\.project\)\s*===\s*catalogProjectRevision\(project\)/, 'unchanged project revisions must skip the unit payload');
+assert.doesNotMatch(source, /const \[project, firstPage\]\s*=\s*await Promise\.all/, 'the project revision must be checked before downloading units');
 assert.match(source, /catalog response is partial/);
 assert.match(source, /catalog response spans multiple import generations/);
 assert.match(source, /localStorage/);
@@ -18,6 +29,40 @@ assert.match(source, /localStorage\.removeItem\(cacheKey\(projectSlug\)\)/, 'ava
 assert.match(source, /if \(!requiresCurrentAvailability\) saveCachedPayload/, 'available-only catalogues must not persist stale availability');
 assert.doesNotMatch(source, /Math\.max\(Date\.now\(\)/, 'source freshness must not be replaced by browser fetch time');
 assert.doesNotMatch(source, /phaseSlug\.match|phaseName\.match/, 'queue identity must not be parsed from phase labels');
+
+assert.equal(catalogRefreshDelayMs(0, 0), 51_000, 'healthy refreshes use -15% jitter');
+assert.equal(catalogRefreshDelayMs(0, 0.5), 60_000, 'healthy refreshes retain a one-minute midpoint');
+assert.equal(catalogRefreshDelayMs(0, 1), 69_000, 'healthy refreshes use +15% jitter');
+assert.equal(catalogRefreshDelayMs(1, 0.5), 120_000, 'one failure doubles the retry interval');
+assert.equal(catalogRefreshDelayMs(2, 0.5), 240_000, 'two failures apply exponential backoff');
+assert.equal(catalogRefreshDelayMs(8, 1), 300_000, 'backoff is capped at five minutes');
+
+const revisionProject = {
+  slug: 'revision-test', name: 'Revision Test', totalUnits: 20, availableUnits: 7, updatedAt: '2026-09-17T12:00:00Z',
+  queues: [
+    { queueKey: 'q2', queueLabel: 'II очередь', queueOrder: 2, totalUnits: 10, availableUnits: 3 },
+    { queueKey: 'q1', queueLabel: 'I очередь', queueOrder: 1, totalUnits: 10, availableUnits: 4 },
+  ],
+  phases: [
+    { slug: 'phase-b', name: 'B', floorsTotal: 12, totalUnits: 10, availableUnits: 3, queueKey: 'q2', queueLabel: 'II очередь', queueOrder: 2 },
+    { slug: 'phase-a', name: 'A', floorsTotal: 10, totalUnits: 10, availableUnits: 4, queueKey: 'q1', queueLabel: 'I очередь', queueOrder: 1 },
+  ],
+};
+assert.equal(
+  catalogProjectRevision(revisionProject),
+  catalogProjectRevision({ ...revisionProject, queues: [...revisionProject.queues].reverse(), phases: [...revisionProject.phases].reverse() }),
+  'revision signatures must not change when API collections have the same content in another order',
+);
+assert.notEqual(
+  catalogProjectRevision(revisionProject),
+  catalogProjectRevision({ ...revisionProject, availableUnits: 6 }),
+  'availability changes must invalidate the unit payload',
+);
+assert.notEqual(
+  catalogProjectRevision(revisionProject),
+  catalogProjectRevision({ ...revisionProject, updatedAt: '2026-09-17T12:05:00Z' }),
+  'a new import generation must invalidate the unit payload even when counts stay equal',
+);
 
 const queueOptions = liveCatalogQueueOptions({ queues: [
   { queueKey: 'q3', queueLabel: 'II очередь', queueDisplayCode: 'II', queueOrder: 2, totalUnits: 6, availableUnits: 6 },

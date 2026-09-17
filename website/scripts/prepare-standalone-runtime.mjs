@@ -9,6 +9,7 @@ import {
   readlinkSync,
   readdirSync,
   realpathSync,
+  renameSync,
   rmSync,
   statSync,
   symlinkSync,
@@ -22,6 +23,9 @@ const standaloneRoot = resolve(websiteRoot, 'dist/standalone');
 const standaloneClientRoot = resolve(standaloneRoot, 'dist/client');
 const sourceNodeModules = resolve(websiteRoot, 'node_modules');
 const standaloneNodeModules = resolve(standaloneRoot, 'node_modules');
+const standaloneServer = resolve(standaloneRoot, 'server.js');
+const standaloneWorkerServer = resolve(standaloneRoot, 'worker-server.js');
+const clusterServerSource = resolve(websiteRoot, 'scripts/standalone-cluster-server.mjs');
 const appPackage = JSON.parse(readFileSync(resolve(websiteRoot, 'package.json'), 'utf8'));
 
 // Vinext 1.0.0-beta.8 does not currently trace the React import used by its
@@ -30,8 +34,17 @@ const appPackage = JSON.parse(readFileSync(resolve(websiteRoot, 'package.json'),
 // silently copying the whole development dependency tree.
 const runtimeRoots = ['react'];
 
-assert.ok(existsSync(resolve(standaloneRoot, 'server.js')), 'Standalone server is missing; run vinext build first');
+assert.ok(existsSync(standaloneServer), 'Standalone server is missing; run vinext build first');
 assert.ok(existsSync(resolve(standaloneNodeModules, 'vinext/package.json')), 'Standalone Vinext package is missing');
+assert.ok(existsSync(clusterServerSource), 'Standalone cluster supervisor source is missing');
+
+const clusterMarker = 'TENCORP_CLUSTER_ENTRYPOINT_V1';
+if (!readFileSync(standaloneServer, 'utf8').includes(clusterMarker)) {
+  rmSync(standaloneWorkerServer, { force: true });
+  renameSync(standaloneServer, standaloneWorkerServer);
+}
+assert.ok(existsSync(standaloneWorkerServer), 'Standalone Vinext worker entrypoint is missing');
+cpSync(clusterServerSource, standaloneServer, { force: true, preserveTimestamps: true });
 
 function readPackage(packageRoot) {
   return JSON.parse(readFileSync(resolve(packageRoot, 'package.json'), 'utf8'));
@@ -241,6 +254,11 @@ const runtimeManifest = {
   schemaVersion: 2,
   reason: 'vinext-standalone-runtime-closure',
   vinext: vinextPackage.version,
+  frontendCluster: {
+    entrypoint: 'server.js',
+    workerEntrypoint: 'worker-server.js',
+    maximumWorkers: 4,
+  },
   packages: [...copied.values()].sort((left, right) => left.name.localeCompare(right.name)),
   publicAssetAliases,
 };

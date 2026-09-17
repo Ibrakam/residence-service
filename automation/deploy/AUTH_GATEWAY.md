@@ -99,11 +99,17 @@ sudo sh -c \
 
 `list` and `export` show active users unless `--all` is supplied; both include
 the verified phone and the current count of unrevoked, unexpired sessions.
-Blocking immediately revokes every session, and unblocking requires a fresh
-sign-in. Deleting removes the user and cascades to every session and is not
-reversible. List and CSV output contain personal data: keep them out of shell
-debug traces, tickets, chat, and ordinary logs, and remove exports according to
-the privacy retention policy.
+Blocking revokes every stored session, and unblocking requires a fresh sign-in.
+The gateway caches only successful validation decisions for
+`AUTH_SESSION_CACHE_TTL` (10 seconds by default), so a block, database-side
+revoke, or logout handled by another replica can remain accepted by an existing
+process for at most that TTL. A logout handled by the same process invalidates
+its cache before the response is returned. Set the TTL to `0` if strict
+cross-process immediate revocation is more important than reducing database
+load; otherwise it must be between 5 and 15 seconds. Deleting removes the user
+and cascades to every session and is not reversible. List and CSV output contain
+personal data: keep them out of shell debug traces, tickets, chat, and ordinary
+logs, and remove exports according to the privacy retention policy.
 
 ## Service installation
 
@@ -152,6 +158,14 @@ no request URI/query, Telegram/profile identifier, phone, cookie, state, code,
 token, provider error, or database error text. Keep Nginx access logging off for
 the auth URLs so callback codes and states never enter an edge log; do not add
 dynamic fields to the gateway logger without extending its leak-regression test.
+
+Successful session checks are held in a bounded in-process cache keyed only by
+the SHA-256 session-token hash; raw cookie values, failures, missing sessions,
+blocked users, and revoked sessions are never inserted. Concurrent checks for
+one uncached hash share one PostgreSQL lookup. The cache is deliberately local:
+before adding gateway replicas, either accept the configured bounded revocation
+window, disable it with `AUTH_SESSION_CACHE_TTL=0`, or introduce a reviewed
+cross-process invalidation channel. Do not increase the 15-second upper bound.
 
 ## Bot presentation
 

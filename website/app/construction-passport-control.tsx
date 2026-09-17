@@ -13,8 +13,19 @@ const configuredBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
 const appBasePath = configuredBasePath ? `/${configuredBasePath.replace(/^\/+|\/+$/g, '')}` : '';
 const configuredAPI = process.env.NEXT_PUBLIC_CATALOG_API_URL?.trim().replace(/\/+$/, '');
 const catalogAPI = configuredAPI || `${appBasePath}/residence-api/catalog`;
-const refreshIntervalMs = 30_000;
+const refreshIntervalMs = 120_000;
+const maxRefreshBackoffMs = 15 * 60_000;
+const refreshJitterRatio = 0.2;
+const minimumForegroundRefreshMs = 15_000;
 const requestTimeoutMs = 5_000;
+
+function nextRefreshDelayMs(consecutiveFailures: number) {
+  const exponent = Math.min(Math.max(consecutiveFailures, 0), 3);
+  const baseDelay = Math.min(maxRefreshBackoffMs, refreshIntervalMs * (2 ** exponent));
+  const jitterMultiplier = 1 + (((Math.random() * 2) - 1) * refreshJitterRatio);
+  return Math.min(maxRefreshBackoffMs, Math.max(30_000, Math.round(baseDelay * jitterMultiplier)));
+}
+
 export default function ConstructionPassportControl() {
   const pathname = usePathname();
   const projectKey = projectKeyForLandingPath(pathname, configuredBasePath);
@@ -37,6 +48,10 @@ function ProjectConstructionPassportControl({ projectKey }: { projectKey: string
   useEffect(() => {
     let disposed = false;
     let activeRequest: AbortController | null = null;
+    let refreshTimer: number | null = null;
+    let consecutiveFailures = 0;
+    let lastRefreshStartedAt = 0;
+    let nextRefreshAt = 0;
 
     const replacePassports = (next: ConstructionPassport[]) => {
       const closesChooser = next.length < 2 && Boolean(dialogRef.current?.open);
@@ -45,12 +60,37 @@ function ProjectConstructionPassportControl({ projectKey }: { projectKey: string
       if (closesChooser && next.length === 1) window.requestAnimationFrame(() => singleLinkRef.current?.focus());
     };
 
+    const clearRefreshTimer = () => {
+      if (refreshTimer !== null) {
+        window.clearTimeout(refreshTimer);
+        refreshTimer = null;
+      }
+    };
+
+    const scheduleRefresh = () => {
+      if (disposed) return;
+      clearRefreshTimer();
+      const delay = nextRefreshDelayMs(consecutiveFailures);
+      nextRefreshAt = Date.now() + delay;
+      refreshTimer = window.setTimeout(() => {
+        refreshTimer = null;
+        void refresh();
+      }, delay);
+    };
+
     const refresh = async () => {
-      if (document.visibilityState === 'hidden') return;
-      activeRequest?.abort();
+      if (disposed || activeRequest) return;
+      if (document.visibilityState === 'hidden') {
+        scheduleRefresh();
+        return;
+      }
+      clearRefreshTimer();
       const controller = new AbortController();
       activeRequest = controller;
+      nextRefreshAt = 0;
+      lastRefreshStartedAt = Date.now();
       const timeout = window.setTimeout(() => controller.abort(), requestTimeoutMs);
+      let succeeded = false;
       const clearCurrent = () => {
         if (!disposed && activeRequest === controller) replacePassports([]);
       };
@@ -70,26 +110,44 @@ function ProjectConstructionPassportControl({ projectKey }: { projectKey: string
           clearCurrent();
           return;
         }
-        if (!disposed && activeRequest === controller) replacePassports(passports);
+        if (!disposed && activeRequest === controller) {
+          replacePassports(passports);
+          succeeded = true;
+        }
       } catch {
         clearCurrent();
       } finally {
         window.clearTimeout(timeout);
-        if (activeRequest === controller) activeRequest = null;
+        if (activeRequest === controller) {
+          activeRequest = null;
+          if (!disposed) {
+            consecutiveFailures = succeeded ? 0 : Math.min(consecutiveFailures + 1, 3);
+            scheduleRefresh();
+          }
+        }
       }
     };
 
-    const onVisibility = () => { if (document.visibilityState === 'visible') void refresh(); };
+    const refreshWhenForegrounded = () => {
+      if (document.visibilityState !== 'visible' || activeRequest) return;
+      if (Date.now() < nextRefreshAt) return;
+      if (Date.now() - lastRefreshStartedAt < minimumForegroundRefreshMs) return;
+      clearRefreshTimer();
+      void refresh();
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') refreshWhenForegrounded();
+    };
     void refresh();
-    const interval = window.setInterval(refresh, refreshIntervalMs);
     document.addEventListener('visibilitychange', onVisibility);
-    window.addEventListener('focus', refresh);
+    window.addEventListener('focus', refreshWhenForegrounded);
     return () => {
       disposed = true;
       activeRequest?.abort();
-      window.clearInterval(interval);
+      clearRefreshTimer();
       document.removeEventListener('visibilitychange', onVisibility);
-      window.removeEventListener('focus', refresh);
+      window.removeEventListener('focus', refreshWhenForegrounded);
     };
   }, [projectKey]);
 

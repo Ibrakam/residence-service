@@ -83,6 +83,12 @@ assert.ok(existsSync(resolve(sourceStandaloneRoot, 'node_modules/react/package.j
 const runtimeManifest = JSON.parse(readFileSync(resolve(sourceStandaloneRoot, 'STANDALONE_RUNTIME.json'), 'utf8'));
 assert.equal(runtimeManifest.schemaVersion, 2, 'Standalone runtime manifest schema changed without review');
 assert.deepEqual(runtimeManifest.packages?.map(({ name, version }) => `${name}@${version}`), ['react@19.2.8'], 'Standalone runtime closure changed without review');
+assert.deepEqual(runtimeManifest.frontendCluster, {
+  entrypoint: 'server.js',
+  workerEntrypoint: 'worker-server.js',
+  maximumWorkers: 4,
+}, 'Standalone frontend cluster contract changed without review');
+assert.ok(existsSync(resolve(sourceStandaloneRoot, runtimeManifest.frontendCluster.workerEntrypoint)), 'Standalone Vinext worker entrypoint is missing');
 
 function manifestPath(root, absolutePath) {
   return relative(root, absolutePath).split(sep).join('/');

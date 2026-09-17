@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "vinext dev",
-    "prebuild": "npm run verify:tencorp-contact && npm run verify:session-revocation && npm run verify:unified-catalog && npm run verify:mirador-plans && npm run verify:ofiyat && npm run verify:saadiyat && npm run verify:c1 && npm run verify:soy-boyi && npm run verify:sarbon && npm run verify:4u && npm run verify:construction-passports",
+    "prebuild": "npm run verify:tencorp-contact && npm run verify:session-revocation && npm run verify:unified-catalog && npm run test:frontend-cluster && npm run verify:mirador-plans && npm run verify:ofiyat && npm run verify:saadiyat && npm run verify:c1 && npm run verify:soy-boyi && npm run verify:sarbon && npm run verify:4u && npm run verify:construction-passports",
     "build": "vinext build && node scripts/prepare-standalone-runtime.mjs",
     "start": "vinext start",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
@@ -67,6 +67,7 @@
     "verify:unified-catalog": "node --no-warnings --experimental-strip-types scripts/test-unified-apartment-catalog.mjs",
     "test:lead-client": "node scripts/test-lead-client-contract.mjs",
     "test:live-catalog": "node --no-warnings --experimental-strip-types scripts/test-live-catalog-client.mjs",
+    "test:frontend-cluster": "node scripts/test-standalone-cluster.mjs",
     "test:lead-proxy": "node --no-warnings --experimental-strip-types scripts/test-residence-lead-proxy.mjs",
     "build:sado-assets": "node scripts/build-sado-assets.mjs"
   },

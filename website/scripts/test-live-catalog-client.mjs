@@ -1,18 +1,21 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { catalogLeadIdentity, liveCatalogQueueOptions, mergeLiveCatalogUnits, parseCatalogDate } from '../app/live-catalog.ts';
+import { catalogLeadIdentity, initialCatalogUnits, liveCatalogQueueOptions, mergeLiveCatalogUnits, parseCatalogDate } from '../app/live-catalog.ts';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const source = await readFile(new URL('../app/live-catalog.ts', import.meta.url), 'utf8');
 
-assert.match(source, /\/residence-api/);
+assert.match(source, /configuredAPI\s*\|\|\s*['"]\/residence-api\/catalog['"]/, 'the compiled browser fallback must match the deployed nginx catalogue prefix');
+assert.doesNotMatch(source, /configuredAPI\s*\|\|[^\n]*\/residence-api[`'"]/, 'the browser must not fall back to the unserved /residence-api root');
 assert.match(source, /credentials:\s*'include'/);
 assert.match(source, /cache:\s*'no-store'/);
 assert.match(source, /refreshIntervalMs\s*=\s*60_000/);
 assert.match(source, /catalog response is partial/);
 assert.match(source, /catalog response spans multiple import generations/);
 assert.match(source, /localStorage/);
+assert.match(source, /localStorage\.removeItem\(cacheKey\(projectSlug\)\)/, 'available-only catalogues must discard long-lived catalogue caches');
+assert.match(source, /if \(!requiresCurrentAvailability\) saveCachedPayload/, 'available-only catalogues must not persist stale availability');
 assert.doesNotMatch(source, /Math\.max\(Date\.now\(\)/, 'source freshness must not be replaced by browser fetch time');
 assert.doesNotMatch(source, /phaseSlug\.match|phaseName\.match/, 'queue identity must not be parsed from phase labels');
 
@@ -202,6 +205,49 @@ assert.equal(unmatched.sheetPage1, '');
 assert.deepEqual(unmatched.coordinates, { x: 0, y: 0 });
 assert.deepEqual(unmatched.provenance, { api: '', sourceSha256: '' });
 
+const merosBlockId = '08bccd05-81ee-4934-8652-5d40474e07be';
+const merosUnitId = 'e209805e-662d-4d34-9b01-27b309e9a609';
+const officialNrgPlan = `https://s3.bi.group/crm-clients-e1csales/layouts/${merosBlockId}/${merosUnitId}/224(13)_1600.png`;
+const merosTemplate = [{
+  ...embedded[0],
+  number: '224(13)',
+  floor: 3,
+  area: 71.23,
+  rooms: 3,
+  entrance: 4,
+  plan: '/meros/plans/0237.webp',
+}];
+const merosLive = {
+  ...live[0],
+  sourceKey: `nrg-bi:meros:${merosUnitId}`,
+  projectSlug: 'meros',
+  phaseSlug: `block-${merosBlockId}`,
+  status: 'available',
+  number: '224(13)',
+  floor: 3,
+  area: 71.23,
+  rooms: 3,
+  entrance: '4',
+  planImageUrl: officialNrgPlan,
+};
+const highResolutionMerosUnits = mergeLiveCatalogUnits('meros', merosTemplate, [
+  merosLive,
+  { ...merosLive, sourceKey: 'nrg-bi:meros:ffffffff-ffff-4fff-8fff-ffffffffffff', status: 'sold', number: '271(59)', floor: 10, area: 35.58, rooms: 1, planImageUrl: undefined },
+]);
+assert.deepEqual(highResolutionMerosUnits.map((unit) => unit.floor), [3], 'Meros must omit the sold floor-10 lifecycle row');
+assert.equal(highResolutionMerosUnits[0]?.plan, officialNrgPlan, 'the exact official NRG 1600px plan must replace the embedded 400px preview');
+
+for (const rejectedPlan of [
+  '/\\attacker.example/pixel.png',
+  officialNrgPlan.replace('https://', 'http://'),
+  officialNrgPlan.replace('s3.bi.group', 's3.bi.group.evil.test'),
+  officialNrgPlan.replace('_1600.png', '_400.png'),
+  `${officialNrgPlan}?token=secret`,
+]) {
+  const [unsafeMeros] = mergeLiveCatalogUnits('meros', merosTemplate, [{ ...merosLive, planImageUrl: rejectedPlan }]);
+  assert.equal(unsafeMeros.plan, '/meros/plans/0237.webp', `untrusted plan URL must not replace the embedded asset: ${rejectedPlan}`);
+}
+
 const stableGroupId = 'd7207ffd-9265-11ed-a82b-001dd8b726aa';
 const [matchedJomiy] = mergeLiveCatalogUnits('jomiy', [{
   id: 'embedded-jomiy-unit',
@@ -234,7 +280,12 @@ assert.equal([matchedJomiy].filter((unit) => unit.buildingId === stableGroupId).
 
 const reserved4U = { ...live[0], projectSlug: '4u', status: 'reserved' };
 assert.equal(mergeLiveCatalogUnits('4u', embedded, [reserved4U]).length, 0, 'available-only UI must not label a reserved unit as available');
-for (const projectSlug of ['4u', 'bayterak', 'botanika-saroyi', 'flagman', 'jomiy', 'maftun-makon', 'meros', 'sado', 'voha', 'yangibaxt', 'zamon']) {
+assert.deepEqual(initialCatalogUnits('4u', embedded), [], 'available-only UI must fail closed before a current API generation is loaded');
+assert.deepEqual(initialCatalogUnits('maftun-makon', embedded), [], 'an embedded NRG snapshot must never be used as current availability');
+assert.deepEqual(initialCatalogUnits('mirador', embedded), [], 'Kayan catalogues must not expose stale embedded availability');
+assert.deepEqual(initialCatalogUnits('ofiyat', embedded), [], 'Kayan catalogues must not expose stale embedded availability');
+assert.deepEqual(initialCatalogUnits('safe-project', embedded), embedded, 'status-aware catalogues may keep their embedded presentation fallback');
+for (const projectSlug of ['4u', 'bayterak', 'botanika-saroyi', 'flagman', 'jomiy', 'maftun-makon', 'meros', 'mirador', 'ofiyat', 'sado', 'voha', 'yangibaxt', 'zamon']) {
   const sold = { ...live[0], projectSlug, status: 'sold', price: undefined };
   assert.equal(mergeLiveCatalogUnits(projectSlug, embedded, [sold]).length, 0, `${projectSlug} must not expose a matrix SOLD row in the available-unit catalogue`);
 }

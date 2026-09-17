@@ -12,7 +12,7 @@ import {
 const configuredBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
 const appBasePath = configuredBasePath ? `/${configuredBasePath.replace(/^\/+|\/+$/g, '')}` : '';
 const configuredAPI = process.env.NEXT_PUBLIC_CATALOG_API_URL?.trim().replace(/\/+$/, '');
-const catalogAPI = configuredAPI || `${appBasePath}/residence-api`;
+const catalogAPI = configuredAPI || `${appBasePath}/residence-api/catalog`;
 const refreshIntervalMs = 30_000;
 const requestTimeoutMs = 5_000;
 export default function ConstructionPassportControl() {

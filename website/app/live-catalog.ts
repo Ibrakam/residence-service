@@ -101,10 +101,11 @@ type CatalogState<T> = {
   project?: LiveCatalogProject;
 };
 
-const configuredBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
-const appBasePath = configuredBasePath ? `/${configuredBasePath.replace(/^\/+|\/+$/g, '')}` : '';
 const configuredAPI = process.env.NEXT_PUBLIC_CATALOG_API_URL?.trim().replace(/\/+$/, '');
-const catalogAPI = configuredAPI || `${appBasePath}/residence-api`;
+// The public nginx contract intentionally exposes this API below /catalog.
+// Vinext does not reliably inline NEXT_PUBLIC_* values, so the browser
+// fallback itself must match the deployed route.
+const catalogAPI = configuredAPI || '/residence-api/catalog';
 const refreshIntervalMs = 60_000;
 const requestTimeoutMs = 15_000;
 const cachedPayloadMaxAgeMs = 7 * 24 * 60 * 60 * 1_000;
@@ -118,6 +119,8 @@ const availableOnlyCatalogues = new Set([
   'jomiy',
   'maftun-makon',
   'meros',
+  'mirador',
+  'ofiyat',
   'regnum-plaza',
   'saadiyat',
   'sarbon',
@@ -129,6 +132,17 @@ const availableOnlyCatalogues = new Set([
   'zamon',
 ]);
 const mbcCatalogues = new Set(['c1', 'regnum-plaza', 'saadiyat', 'sarbon', 'soy-boyi']);
+
+/**
+ * An embedded catalogue is a presentation fallback, not an availability
+ * source. Once a project promises an available-only catalogue, showing the
+ * embedded rows while the live request is pending (or failed) can briefly
+ * present a newly reserved/sold apartment as free. Fail closed instead: the
+ * catalogue stays empty until a complete, current API generation arrives.
+ */
+export function initialCatalogUnits<T>(projectSlug: string, embeddedUnits: readonly T[]): T[] {
+  return availableOnlyCatalogues.has(projectSlug) ? [] : [...embeddedUnits];
+}
 
 function cacheKey(projectSlug: string) {
   return `tencorp:live-catalog:v${cacheVersion}:${projectSlug}`;
@@ -331,8 +345,17 @@ function useLivePayload(projectSlug: string) {
   useEffect(() => {
     let disposed = false;
     let activeRequest: AbortController | null = null;
+    const requiresCurrentAvailability = availableOnlyCatalogues.has(projectSlug);
     const restoreCached = window.setTimeout(() => {
       if (disposed) return;
+      if (requiresCurrentAvailability) {
+        // A seven-day catalogue cache is useful for non-status-sensitive
+        // surfaces, but it is unsafe for a view that labels every row free.
+        // Remove the old entry as well so a future implementation cannot
+        // accidentally revive it.
+        try { window.localStorage.removeItem(cacheKey(projectSlug)); } catch { /* Storage may be unavailable. */ }
+        return;
+      }
       const cached = readCachedPayload(projectSlug);
       if (!cached) return;
       setPayload(cached);
@@ -350,7 +373,7 @@ function useLivePayload(projectSlug: string) {
         if (disposed) return;
         setPayload(next);
         setDataSource('live');
-        saveCachedPayload(projectSlug, next);
+        if (!requiresCurrentAvailability) saveCachedPayload(projectSlug, next);
       } catch {
         // Keep the last complete API response, then the embedded catalogue.
       } finally {
@@ -489,12 +512,23 @@ function assignPlan(result: Record<string, unknown>, planImageUrl: string) {
 function publicPlanPath(projectSlug: string, live: LiveCatalogUnit) {
   const value = live.planImageUrl;
   if (!value) return '';
-  if (value.startsWith('/') && !value.startsWith('//')) return value;
-  if (projectSlug !== '4u') return '';
-  const identity = /^nrg-bi:4u:([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i.exec(live.sourceKey)?.[1];
+  if (value.startsWith('/') && !value.startsWith('//')) {
+    if (/[\\\u0000-\u001f\u007f]/.test(value)) return '';
+    try {
+      const local = new URL(value, 'https://form.tencorp.uz');
+      if (local.origin !== 'https://form.tencorp.uz' || local.search || local.hash) return '';
+    } catch { return ''; }
+    return value;
+  }
+  if (projectSlug !== '4u' && projectSlug !== 'meros') return '';
+  const identityMatch = /^nrg-bi:([a-z0-9-]+):([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i.exec(live.sourceKey);
+  const identity = identityMatch?.[2];
   const blockId = /^block-([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i.exec(live.phaseSlug)?.[1];
-  if (!identity || !blockId) return '';
-  const expected = `https://s3.bi.group/crm-clients-e1csales/layouts/${blockId}/${identity}/${encodeURIComponent(live.number)}.png`;
+  if (!identity || !blockId || identityMatch?.[1] !== projectSlug) return '';
+  const filename = projectSlug === '4u'
+    ? `${encodeURIComponent(live.number)}.png`
+    : `${encodeURIComponent(live.number)}_1600.png`;
+  const expected = `https://s3.bi.group/crm-clients-e1csales/layouts/${blockId}/${identity}/${filename}`;
   if (value !== expected) return '';
   try {
     const url = new URL(value);
@@ -760,9 +794,13 @@ function mergeSnapshot<T extends { units: readonly object[] }>(projectSlug: stri
 
 export function useLiveCatalogSnapshot<T extends { units: readonly object[] }>(projectSlug: string, embeddedSnapshot: T): CatalogState<T> {
   const { payload, dataSource } = useLivePayload(projectSlug);
+  const initialSnapshot = useMemo(
+    () => ({ ...embeddedSnapshot, units: initialCatalogUnits(projectSlug, embeddedSnapshot.units) }) as T,
+    [embeddedSnapshot, projectSlug],
+  );
   const data = useMemo(
-    () => payload ? mergeSnapshot(projectSlug, embeddedSnapshot, payload) : embeddedSnapshot,
-    [embeddedSnapshot, payload, projectSlug],
+    () => payload ? mergeSnapshot(projectSlug, embeddedSnapshot, payload) : initialSnapshot,
+    [embeddedSnapshot, initialSnapshot, payload, projectSlug],
   );
   return { data, dataSource, refreshedAt: payload?.project.updatedAt ?? payload?.refreshedAt, project: payload?.project };
 }
@@ -770,7 +808,7 @@ export function useLiveCatalogSnapshot<T extends { units: readonly object[] }>(p
 export function useLiveCatalogUnits<T extends object>(projectSlug: string, embeddedUnits: readonly T[]): CatalogState<T[]> {
   const { payload, dataSource } = useLivePayload(projectSlug);
   const data = useMemo(
-    () => payload ? mergeLiveCatalogUnits(projectSlug, embeddedUnits, payload.units) : [...embeddedUnits],
+    () => payload ? mergeLiveCatalogUnits(projectSlug, embeddedUnits, payload.units) : initialCatalogUnits(projectSlug, embeddedUnits),
     [embeddedUnits, payload, projectSlug],
   );
   return { data, dataSource, refreshedAt: payload?.project.updatedAt ?? payload?.refreshedAt, project: payload?.project };

@@ -66,6 +66,7 @@ assert.match(layout, /<ConstructionPassportControl\s*\/>/);
 assert.doesNotMatch(avalonPage, /api-nazorat\.mc\.uz\/object-info\/240228796/, 'Avalon must use the universal control instead of a page-local anchor');
 assert.doesNotMatch(component, /api-nazorat\.mc\.uz\/object-info\/240228796/, 'the universal control must not invent an Avalon fallback before the map link exists');
 assert.match(component, /\/v1\/construction-passports\//);
+assert.match(component, /\/residence-api\/catalog/, 'the control must use the nginx catalogue API prefix');
 assert.match(component, /credentials:\s*'include'/);
 assert.match(component, /cache:\s*'no-store'/);
 assert.match(component, /setInterval\(refresh,\s*refreshIntervalMs\)/);

@@ -49,6 +49,14 @@ assert.match(catalogue, /unitKey: unit\.unitKey \?\? unit\.id/);
 assert.match(catalogue, /selectedCta: 'Уточнить условия по этой квартире'/);
 assert.match(styles, /\.apartment-catalog \.apartment-catalog__primary[\s\S]*?color:white/);
 assert.match(styles, /\.apartment-catalog-detail \{[\s\S]*?border:2px solid/);
+for (const selector of [
+  '.apartment-catalog-card__select figure img',
+  '.apartment-catalog__plan-preview img',
+  '.apartment-catalog-lightbox figure img',
+]) {
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  assert.match(styles, new RegExp(`${escaped} \\{[^}]*position:absolute;[^}]*object-fit:contain;[^}]*object-position:center;`), `${selector} must use an absolute, bounded contain frame`);
+}
 assert.match(catalogue, /unit\.queueKey === queue/);
 assert.match(catalogue, /disabled=\{item\.availableCount === 0\}/);
 assert.match(catalogue, /activeLeadUnit\?\.queueKey/);

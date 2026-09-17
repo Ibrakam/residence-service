@@ -206,6 +206,17 @@ func TestUnitUpsertPreservesVerifiedPlanOnEmptyReimport(t *testing.T) {
 	}
 }
 
+func TestUnitUpsertPersistsNullableRepairFlag(t *testing.T) {
+	for _, fragment := range []string{
+		"plan_image_url,repair_included,is_active",
+		"repair_included=EXCLUDED.repair_included",
+	} {
+		if !strings.Contains(upsertUnitSQL, fragment) {
+			t.Fatalf("unit upsert is missing %q", fragment)
+		}
+	}
+}
+
 func validFloorSchemeFixture() (NormalizedSnapshot, floorSchemeMapping) {
 	lockedAt := time.Date(2026, time.August, 29, 8, 46, 56, 739000000, time.UTC)
 	capturedAt := time.Date(2026, time.August, 31, 14, 0, 0, 0, time.UTC)

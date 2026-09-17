@@ -47,6 +47,8 @@ export type CatalogUnit = {
   regularPrice?: number;
   pricePerM2?: number;
   currency?: string;
+  /** Exact CRM finishing flag. Undefined means the provider does not expose it. */
+  repairIncluded?: boolean;
   plans: CatalogPlan[];
 };
 

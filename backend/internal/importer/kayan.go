@@ -114,6 +114,7 @@ type NormalizedUnit struct {
 	PricePerM2       *float64
 	Currency         string
 	PlanImageURL     string
+	RepairIncluded   *bool
 	SourcePayload    json.RawMessage
 }
 
@@ -490,9 +491,9 @@ func legacyKayanQueue(house SnapshotHouse) *CatalogQueue {
 const upsertUnitSQL = `
         INSERT INTO units(
           phase_id,source_key,source_id,property_type,raw_property_type,status,raw_status,number,entrance,
-          floor,house_name,area,rooms,price,price_per_m2,currency,plan_image_url,is_active,
+          floor,house_name,area,rooms,price,price_per_m2,currency,plan_image_url,repair_included,is_active,
           source_payload,source_updated_at
-        ) VALUES($1,$2,NULLIF($3,''),$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,true,$18::jsonb,$19)
+        ) VALUES($1,$2,NULLIF($3,''),$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,true,$19::jsonb,$20)
         ON CONFLICT(phase_id,source_key) DO UPDATE SET
           source_id=COALESCE(EXCLUDED.source_id,units.source_id),
           property_type=EXCLUDED.property_type, raw_property_type=EXCLUDED.raw_property_type,
@@ -500,7 +501,7 @@ const upsertUnitSQL = `
           entrance=EXCLUDED.entrance, floor=EXCLUDED.floor, house_name=EXCLUDED.house_name,
           area=EXCLUDED.area, rooms=EXCLUDED.rooms, price=EXCLUDED.price,
           price_per_m2=EXCLUDED.price_per_m2, currency=EXCLUDED.currency,
-          plan_image_url=COALESCE(NULLIF(EXCLUDED.plan_image_url,''),units.plan_image_url), is_active=true,
+          plan_image_url=COALESCE(NULLIF(EXCLUDED.plan_image_url,''),units.plan_image_url), repair_included=EXCLUDED.repair_included, is_active=true,
           source_payload=EXCLUDED.source_payload, source_updated_at=EXCLUDED.source_updated_at,
           updated_at=now()`
 
@@ -561,12 +562,12 @@ func upsertUnit(ctx context.Context, tx pgx.Tx, phaseID int64, observedAt time.T
 				source_key=$2,source_id=COALESCE(NULLIF($3,''),source_id),
 				property_type=$4,raw_property_type=$5,status=$6,raw_status=$7,number=$8,entrance=$9,
 				floor=$10,house_name=$11,area=$12,rooms=$13,price=$14,price_per_m2=$15,currency=$16,
-				plan_image_url=COALESCE(NULLIF($17,''),plan_image_url),is_active=true,
-				source_payload=$18::jsonb,source_updated_at=$19,updated_at=now()
+				plan_image_url=COALESCE(NULLIF($17,''),plan_image_url),repair_included=$18,is_active=true,
+				source_payload=$19::jsonb,source_updated_at=$20,updated_at=now()
 			WHERE id=$1`,
 			item.id, unit.SourceKey, unit.SourceID, unit.PropertyType, unit.RawPropertyType, unit.Status,
 			unit.RawStatus, unit.Number, unit.Entrance, unit.Floor, unit.HouseName, unit.Area,
-			unit.Rooms, unit.Price, unit.PricePerM2, unit.Currency, unit.PlanImageURL,
+			unit.Rooms, unit.Price, unit.PricePerM2, unit.Currency, unit.PlanImageURL, unit.RepairIncluded,
 			string(unit.SourcePayload), observedAt,
 		)
 		return err
@@ -575,7 +576,7 @@ func upsertUnit(ctx context.Context, tx pgx.Tx, phaseID int64, observedAt time.T
 	_, err = tx.Exec(ctx, upsertUnitSQL,
 		phaseID, unit.SourceKey, unit.SourceID, unit.PropertyType, unit.RawPropertyType, unit.Status,
 		unit.RawStatus, unit.Number, unit.Entrance, unit.Floor, unit.HouseName, unit.Area,
-		unit.Rooms, unit.Price, unit.PricePerM2, unit.Currency, unit.PlanImageURL,
+		unit.Rooms, unit.Price, unit.PricePerM2, unit.Currency, unit.PlanImageURL, unit.RepairIncluded,
 		string(unit.SourcePayload), observedAt,
 	)
 	return err

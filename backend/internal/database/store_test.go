@@ -32,16 +32,22 @@ type resolverFixtureRow struct {
 }
 
 type unitCompletionFixtureRow struct {
-	completion sql.NullString
+	repairIncluded sql.NullBool
+	completion     sql.NullString
 }
 
 func (row unitCompletionFixtureRow) Scan(dest ...any) error {
-	if len(dest) != 26 {
-		return fmt.Errorf("unit fixture scan destinations=%d, want 26", len(dest))
+	if len(dest) != 27 {
+		return fmt.Errorf("unit fixture scan destinations=%d, want 27", len(dest))
 	}
-	completion, ok := dest[22].(*sql.NullString)
+	repairIncluded, ok := dest[22].(*sql.NullBool)
 	if !ok {
-		return fmt.Errorf("unit fixture completion destination is %T", dest[22])
+		return fmt.Errorf("unit fixture repair destination is %T", dest[22])
+	}
+	*repairIncluded = row.repairIncluded
+	completion, ok := dest[23].(*sql.NullString)
+	if !ok {
+		return fmt.Errorf("unit fixture completion destination is %T", dest[23])
 	}
 	*completion = row.completion
 	return nil
@@ -180,6 +186,36 @@ func TestScanUnitCompletionIsOptional(t *testing.T) {
 		}
 	}
 }
+
+func TestScanUnitRepairIncludedIsTriState(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		value sql.NullBool
+		want  *bool
+	}{
+		{name: "with repair", value: sql.NullBool{Bool: true, Valid: true}, want: boolPointer(true)},
+		{name: "without repair", value: sql.NullBool{Bool: false, Valid: true}, want: boolPointer(false)},
+		{name: "provider unknown", value: sql.NullBool{}, want: nil},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			unit, err := scanUnit(unitCompletionFixtureRow{repairIncluded: test.value})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if test.want == nil {
+				if unit.RepairIncluded != nil {
+					t.Fatalf("repairIncluded=%v, want nil", *unit.RepairIncluded)
+				}
+				return
+			}
+			if unit.RepairIncluded == nil || *unit.RepairIncluded != *test.want {
+				t.Fatalf("repairIncluded=%v, want %v", unit.RepairIncluded, *test.want)
+			}
+		})
+	}
+}
+
+func boolPointer(value bool) *bool { return &value }
 
 func TestResolveLeadUnitDoesNotTreatNumericUnitKeyAsDatabaseID(t *testing.T) {
 	// The selected catalog unit has database id 45 and apartment number 50.

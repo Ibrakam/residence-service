@@ -28,6 +28,7 @@ export type ZamonSafeSnapshot = {
     status?: string;
     statusOriginal: string;
     isSale: boolean;
+    repairIncluded?: boolean;
   }>;
 };
 type SourceUnit = ZamonSafeSnapshot['units'][number];
@@ -102,6 +103,7 @@ export function ZamonUnifiedCatalog({ snapshot: embeddedSnapshot, initialLanguag
       building: unit.building || undefined,
       propertyType: 'apartment',
       status: statusFor(unit),
+      repairIncluded: unit.repairIncluded,
       price: unit.price > 0 ? unit.price : undefined,
       regularPrice: unit.oldPrice > unit.price ? unit.oldPrice : undefined,
       pricePerM2: unit.currentPricePerM2 > 0 ? unit.currentPricePerM2 : undefined,

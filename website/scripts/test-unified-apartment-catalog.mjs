@@ -11,22 +11,33 @@ const routes = [
   'saadiyat', 'sado', 'sarbon', 'soy-boyi', 'sun', 'voha',
   'yangibaxt', 'zamon',
 ];
-const [catalogue, styles, mirador, miradorExplorer] = await Promise.all([
+const [catalogue, styles, mirador, miradorExplorer, avalon] = await Promise.all([
   readFile(resolve(root, 'app/catalog/apartment-catalog.tsx'), 'utf8'),
   readFile(resolve(root, 'app/catalog/apartment-catalog.css'), 'utf8'),
   readFile(resolve(root, 'app/mirador/apartments/mirador-unified-catalog.tsx'), 'utf8'),
   readFile(resolve(root, 'app/kayan/mirador-block-explorer.tsx'), 'utf8'),
+  readFile(resolve(root, 'app/page.tsx'), 'utf8'),
 ]);
 
 assert.equal(MIRADOR_VISUAL_FLOW_MEDIA, '(min-width: 768px) and (min-height: 600px)');
 assert.equal(hasMiradorCatalogIntent('?lang=ru'), false);
-for (const key of ['mode', 'queue', 'building', 'phase', 'entrance', 'floor', 'rooms', 'areaFrom', 'areaTo', 'sort', 'unitKey', 'unit']) {
+for (const key of ['mode', 'queue', 'building', 'phase', 'entrance', 'floor', 'rooms', 'repair', 'areaFrom', 'areaTo', 'sort', 'unitKey', 'unit']) {
   assert.equal(hasMiradorCatalogIntent(`?lang=ru&${key}=1`), true, `${key} must bypass visual flow`);
 }
 assert.equal(hasMiradorCatalogIntent('?lang=ru&status=sold'), false, 'legacy status must not suppress the available-only visual flow');
 
 assert.match(styles, /@media \(max-width:767px\)[\s\S]*?\.apartment-catalog__visual \{ display:none!important; \}/);
 assert.match(styles, /\.apartment-catalog-layout__detail \{ order:2; \}/);
+assert.match(
+  styles,
+  /\.apartment-catalog-lightbox__panel \{[^}]*grid-template-rows:auto minmax\(0,1fr\) auto;[^}]*max-height:calc\(100svh - 32px\);/,
+  'the plan lightbox must reserve one bounded viewport row for the complete image',
+);
+assert.match(
+  styles,
+  /@media \(max-width:767px\)[\s\S]*?\.apartment-catalog-lightbox__panel \{[^}]*height:100svh;[^}]*max-height:100svh;/,
+  'the mobile plan lightbox must stay inside the visible viewport',
+);
 assert.match(catalogue, /type CatalogMode = 'cards' \| 'chess';/);
 assert.doesNotMatch(catalogue, /Шахматка\+|Chess\+/);
 assert.match(catalogue, /visualFlowAvailable = false/);
@@ -35,6 +46,10 @@ assert.match(catalogue, /\.filter\(\(unit\) => unit\.status === 'available'\)/);
 assert.doesNotMatch(catalogue, /setStatus|statusOptions|setFilter\('status'/);
 assert.doesNotMatch(catalogue, />\{t\.allStatuses\}</);
 assert.match(catalogue, /url\.searchParams\.delete\('status'\)/);
+assert.match(catalogue, /finishing: 'Ремонт', allRepairs: 'Все', withoutRepair: 'Без ремонта', withRepair: 'С ремонтом'/);
+assert.match(catalogue, /const hasRepairData = units\.some\(\(unit\) => typeof unit\.repairIncluded === 'boolean'\)/);
+assert.match(catalogue, /repair === 'all' \|\| unit\.repairIncluded === \(repair === 'with'\)/, 'unknown repair data must match neither repair-specific option');
+assert.doesNotMatch(catalogue, /unit\.repairIncluded !== true/, 'unknown repair data must not be classified as without repair');
 assert.match(catalogue, /const activeLightbox = lightbox[\s\S]*?units\.find\(\(candidate\) => candidate\.id === lightbox\.unit\.id\)/);
 assert.match(catalogue, /const activeLeadUnit = leadUnit === null[\s\S]*?units\.find\(\(unit\) => unit\.id === leadUnit\.id\)/);
 assert.match(catalogue, /const availability = String\(project\.availableCount\)/);
@@ -74,6 +89,18 @@ assert.match(mirador, /visualFlowAvailable=\{visualAvailable && availableUnitKey
 assert.match(miradorExplorer, /availableUnitKeys\?: readonly string\[\]/);
 assert.match(miradorExplorer, /zone\.unitKey !== null && availableUnitKeySet\.has\(zone\.unitKey\)/);
 assert.match(miradorExplorer, /return zones\.length \? \[\{ \.\.\.scheme, zones \}\] : \[\]/);
+assert.match(avalon, /finishing: 'Ремонт'/);
+assert.match(avalon, /const availableUnits = useMemo\(\(\) => units\.filter\(\(unit\) => unit\.status === 'free'\)/);
+assert.match(avalon, /repairFilter === 'all' \|\| unit\.repairIncluded === \(repairFilter === 'with'\)/, 'Avalon must preserve the repair tri-state');
+assert.doesNotMatch(avalon, /unit\.repairIncluded !== true/, 'Avalon must not classify unknown repair data as without repair');
+
+for (const route of ['4u', 'bayterak', 'botanika-saroyi', 'flagman', 'jomiy', 'maftun-makon', 'meros', 'sado', 'voha', 'yangibaxt', 'zamon']) {
+  const directory = resolve(root, 'app', route, 'apartments');
+  const files = await readdir(directory);
+  const adapter = files.find((file) => file.endsWith('-unified-catalog.tsx'));
+  const source = await readFile(resolve(directory, adapter), 'utf8');
+  assert.match(source, /repairIncluded:\s*unit\.repairIncluded/, `${route} must forward the authoritative NRG hammer flag`);
+}
 
 for (const route of routes) {
   const directory = resolve(root, 'app', route, 'apartments');

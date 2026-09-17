@@ -23,6 +23,7 @@ export type FourUSafeSnapshot = {
     maxFloor: number;
     entrance: string;
     status: 'available';
+    repairIncluded?: boolean;
     planImageUrl: string;
     planOriginalUrl: string;
     planPreviewUrl: string;
@@ -112,6 +113,7 @@ export function FourUUnifiedCatalog({ snapshot: embeddedSnapshot, initialLanguag
       building: unit.phase || undefined,
       propertyType: 'apartment',
       status: 'available',
+      repairIncluded: unit.repairIncluded,
       price: unit.price > 0 ? unit.price : undefined,
       regularPrice: unit.oldPrice > unit.price ? unit.oldPrice : undefined,
       pricePerM2: unit.price > 0 && unit.area > 0 ? Math.round(unit.price / unit.area) : undefined,

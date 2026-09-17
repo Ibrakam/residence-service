@@ -14,6 +14,7 @@ export type YangiBaxtSafeSnapshot = {
   units: Array<{
     id: string; sourceKey: string; number: string; rooms: number; area: number; floor: number; maxFloor: number;
     entrance: number; building: string; propertyType: string; status: 'available' | 'reserved' | 'sold' | 'unavailable';
+    repairIncluded?: boolean;
     price: number; regularPrice: number; pricePerM2: number; currency: string; plan: string; floorPositionPlan: string;
     promotion: { deadlineUtc?: string } | null;
   }>;
@@ -56,7 +57,7 @@ export function YangiBaxtUnifiedCatalog({ snapshot: embeddedSnapshot, initialLan
     return {
       id: String(unit.id), unitKey: unit.sourceKey || undefined, number: String(unit.number), rooms: unit.rooms,
       area: unit.area, floor: unit.floor, maxFloor: unit.maxFloor, entrance: unit.entrance ? String(unit.entrance) : undefined,
-      building: unit.building || undefined, propertyType: 'apartment', status: unit.status,
+      building: unit.building || undefined, propertyType: 'apartment', status: unit.status, repairIncluded: unit.repairIncluded,
       price: price > 0 ? price : undefined, regularPrice: campaignActive && unit.regularPrice > price ? unit.regularPrice : undefined,
       pricePerM2: price > 0 && unit.area > 0 ? price / unit.area : unit.pricePerM2 || undefined, currency: unit.currency, plans,
     };

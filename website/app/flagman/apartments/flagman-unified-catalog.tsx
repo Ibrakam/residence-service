@@ -15,6 +15,7 @@ export type FlagmanSafeUnit = {
   maxFloor: number;
   entrance: number;
   status: 'available';
+  repairIncluded?: boolean;
   price: number;
   regularPrice: number;
   pricePerM2: number;
@@ -96,6 +97,7 @@ export function FlagmanUnifiedCatalog({ snapshot: embeddedSnapshot, initialLangu
     entrance: unit.entrance ? String(unit.entrance) : undefined,
     propertyType: 'apartment',
     status: unit.status,
+    repairIncluded: unit.repairIncluded,
     price: unit.price > 0 ? unit.price : undefined,
     regularPrice: unit.regularPrice > 0 ? unit.regularPrice : undefined,
     pricePerM2: unit.pricePerM2 > 0 ? unit.pricePerM2 : undefined,

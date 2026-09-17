@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { readFile, readdir, stat } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import sharp from 'sharp';
 
 const websiteRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const fullBundle = process.argv.includes('--full-bundle');
@@ -54,6 +55,13 @@ for (const unit of catalog.units) {
   assert.equal(unit.campaignDeadline, null);
   assert(Number.isSafeInteger(unit.price) && unit.price > 0);
   assert(Number.isSafeInteger(unit.pricePerM2) && unit.pricePerM2 > 0);
+  assert.equal(unit.planWidth, unit.secondPlanWidth, `${unit.unitKey}: exact plan width must describe the second sheet`);
+  assert.equal(unit.planHeight, unit.secondPlanHeight, `${unit.unitKey}: exact plan height must describe the second sheet`);
+  assert.equal(unit.primaryPlanWidth, 1100, `${unit.unitKey}: primary plan width changed`);
+  assert.equal(unit.primaryPlanHeight, 1100, `${unit.unitKey}: primary plan height changed`);
+  assert.equal(unit.secondPlanWidth, 1100, `${unit.unitKey}: second plan width changed`);
+  assert.equal(unit.secondPlanHeight, 1100, `${unit.unitKey}: second plan height changed`);
+  assert.notEqual(unit.primaryPlanPath, unit.secondPlanPath, `${unit.unitKey}: floor-position and exact plan sheets must remain distinct`);
   for (const path of [unit.primaryPlanPath, unit.secondPlanPath]) {
     assert.match(path, /^\/sun\/plans\/[a-f0-9]{16}-(?:primary|second)\.webp$/);
     assert(await exists(resolve(publicRoot, path.slice(1))), `Missing public SUN plan ${path}`);
@@ -61,6 +69,11 @@ for (const unit of catalog.units) {
   }
 }
 assert.equal(planPaths.size, 32);
+for (const path of planPaths) {
+  const metadata = await sharp(resolve(publicRoot, path.slice(1))).metadata();
+  assert.equal(metadata.width, 1100, `${path}: rendered width changed`);
+  assert.equal(metadata.height, 1100, `${path}: rendered height changed`);
+}
 
 for (const row of catalog.matrixRows) {
   assert(Array.isArray(row.unitIds));

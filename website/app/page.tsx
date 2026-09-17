@@ -13,6 +13,7 @@ type HotspotId = 'metro' | 'mall' | 'avalon';
 type BuildingId = 'B1' | 'A' | 'B2';
 type UnitStatus = 'free' | 'occupied' | 'sold';
 type RoomFilter = 'all' | 2 | 3;
+type RepairFilter = 'all' | 'without' | 'with';
 type CatalogMode = 'plan' | 'chess' | 'list';
 type AmenityId = 'playground' | 'bbq' | 'cinema' | 'parking';
 type Language = 'ru' | 'uz';
@@ -30,6 +31,7 @@ type Apartment = {
   pricePerM2: number | null;
   price: number | null;
   repair: string;
+  repairIncluded?: boolean;
   status: UnitStatus;
   rawStatus: string;
 };
@@ -87,6 +89,9 @@ const ui = {
     list: 'Список',
     clickApartment: 'Нажмите на квартиру на плане',
     all: 'Все',
+    finishing: 'Ремонт',
+    withoutRepair: 'Без ремонта',
+    withRepair: 'С ремонтом',
     courtyardView: 'Вид на двор',
     priceM2: 'Цена за м²',
     cost: 'Стоимость',
@@ -159,6 +164,9 @@ const ui = {
     list: 'Ro‘yxat',
     clickApartment: 'Rejadagi kvartirani bosing',
     all: 'Barchasi',
+    finishing: 'Ta’mir',
+    withoutRepair: 'Ta’mirsiz',
+    withRepair: 'Ta’mirlangan',
     courtyardView: 'Hovli tomoni',
     priceM2: '1 m² narxi',
     cost: 'Qiymati',
@@ -209,7 +217,11 @@ function formatMoney(value: number | null) {
   return value !== null ? `${new Intl.NumberFormat('ru-RU').format(value)} UZS` : 'По запросу';
 }
 
-function repairLabel(value: string, language: Language) {
+function repairLabel(value: string, language: Language, repairIncluded?: boolean) {
+  if (typeof repairIncluded === 'boolean') {
+    if (language === 'ru') return repairIncluded ? 'С ремонтом' : 'Без ремонта';
+    return repairIncluded ? 'Ta’mirlangan' : 'Ta’mirsiz';
+  }
   if (language === 'ru') return value;
   return value.toLowerCase().includes('без') ? 'Ta’mirsiz' : value;
 }
@@ -235,6 +247,7 @@ export default function Home() {
   const [selectedFloor, setSelectedFloor] = useState(9);
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
   const [roomFilter, setRoomFilter] = useState<RoomFilter>('all');
+  const [repairFilter, setRepairFilter] = useState<RepairFilter>('all');
   const [catalogMode, setCatalogMode] = useState<CatalogMode>('plan');
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [printOpen, setPrintOpen] = useState(false);
@@ -257,7 +270,9 @@ export default function Home() {
   const floorLayout = floorLayouts[selectedBuilding];
   const freeCount = availableBuildingUnits.length;
   const maxUnitsOnFloor = Math.max(1, ...floors.map((floor) => availableBuildingUnits.filter((unit) => unit.floor === floor).length));
-  const filteredUnits = availableBuildingUnits.filter((unit) => roomFilter === 'all' || unit.rooms === roomFilter);
+  const hasRepairData = availableUnits.some((unit) => typeof unit.repairIncluded === 'boolean');
+  const matchesRepair = (unit: Apartment) => repairFilter === 'all' || unit.repairIncluded === (repairFilter === 'with');
+  const filteredUnits = availableBuildingUnits.filter((unit) => (roomFilter === 'all' || unit.rooms === roomFilter) && matchesRepair(unit));
 
   const changeLanguage = (next: Language) => {
     setLanguage(next);
@@ -371,7 +386,7 @@ export default function Home() {
     setDetailsOpen(true);
   };
 
-  const matchesFilter = (unit: Apartment) => unit.status === 'free' && (roomFilter === 'all' || unit.rooms === roomFilter);
+  const matchesFilter = (unit: Apartment) => unit.status === 'free' && (roomFilter === 'all' || unit.rooms === roomFilter) && matchesRepair(unit);
 
   const openAmenity = (id: AmenityId) => {
     setAmenitySlide(0);
@@ -454,7 +469,10 @@ export default function Home() {
           <SiteHeader light language={language} onLanguageChange={changeLanguage} onHome={() => setView('city')} onApartments={() => setView('facade')} />
           <div className="showroom-shell showroom-shell--visual">
             <div className="showroom-topbar"><button className="screen-back screen-back--static" type="button" onClick={() => setView('facade')}>← <span>{t.facade}</span></button><div className="showroom-title"><p className="eyebrow eyebrow--dark">AVALON RESIDENCE · {t.building.toLowerCase()} {selectedBuilding}</p><h1 id="apartments-title">{selectedFloor} {t.floor.toLowerCase()}</h1></div></div>
-            <div className="visual-modebar"><div className="catalog-tabs"><button type="button" className={catalogMode === 'plan' ? 'is-active' : ''} onClick={() => setCatalogMode('plan')}>◆ {t.floorPlan}</button><button type="button" className={catalogMode === 'chess' ? 'is-active' : ''} onClick={() => setCatalogMode('chess')}>▦ {t.chess}</button><button type="button" className={catalogMode === 'list' ? 'is-active' : ''} onClick={() => setCatalogMode('list')}>☷ {t.list}</button></div>{catalogMode !== 'plan' ? <div className="filter-pills"><span>{t.rooms}</span>{(['all', 2, 3] as RoomFilter[]).map((room) => <button key={room} type="button" className={roomFilter === room ? 'is-active' : ''} onClick={() => setRoomFilter(room)}>{room === 'all' ? t.all : room}</button>)}</div> : <div className="plan-hint"><i /> {t.clickApartment}</div>}</div>
+            <div className="visual-modebar">
+              <div className="catalog-tabs"><button type="button" className={catalogMode === 'plan' ? 'is-active' : ''} onClick={() => setCatalogMode('plan')}>◆ {t.floorPlan}</button><button type="button" className={catalogMode === 'chess' ? 'is-active' : ''} onClick={() => setCatalogMode('chess')}>▦ {t.chess}</button><button type="button" className={catalogMode === 'list' ? 'is-active' : ''} onClick={() => setCatalogMode('list')}>☷ {t.list}</button></div>
+              {catalogMode !== 'plan' ? <div className="filter-pills"><span>{t.rooms}</span>{(['all', 2, 3] as RoomFilter[]).map((room) => <button key={room} type="button" className={roomFilter === room ? 'is-active' : ''} onClick={() => setRoomFilter(room)}>{room === 'all' ? t.all : room}</button>)}{hasRepairData ? <><span>{t.finishing}</span>{(['all', 'without', 'with'] as RepairFilter[]).map((repair) => <button key={repair} type="button" className={repairFilter === repair ? 'is-active' : ''} onClick={() => setRepairFilter(repair)}>{repair === 'all' ? t.all : repair === 'with' ? t.withRepair : t.withoutRepair}</button>)}</> : null}</div> : <div className="plan-hint"><i /> {t.clickApartment}</div>}
+            </div>
 
             {catalogMode === 'plan' ? (
               <div className={`floor-plan-layout ${selectedUnit ? 'has-selection' : 'is-empty'}`}>
@@ -466,7 +484,7 @@ export default function Home() {
             ) : (
               <div className="crm-layout crm-layout--screen crm-layout--catalog">
                 <div className="crm-board"><div className="crm-board__head"><div><strong>{catalogMode === 'chess' ? `${t.chess} · ${t.building} ${selectedBuilding}` : `${filteredUnits.length} ${t.apartments.toLowerCase()}`}</strong><span>{freeCount} {t.available.toLowerCase()}</span></div></div>
-                  {catalogMode === 'chess' ? <div className="floor-scroll"><div className="floor-grid" style={{ '--unit-columns': maxUnitsOnFloor } as React.CSSProperties}>{floors.map((floor) => <div className="floor-row" key={floor}><div className="floor-number"><strong>{floor}</strong><span>{t.floor.toLowerCase()}</span></div>{availableBuildingUnits.filter((unit) => unit.floor === floor).sort((a, b) => a.number - b.number).map((unit) => <button key={unit.id} type="button" className={`unit-cell unit-cell--${unit.status} ${selectedUnit?.id === unit.id ? 'is-selected' : ''} ${matchesFilter(unit) ? '' : 'is-filtered'}`} onClick={() => chooseUnit(unit)}><span><small>№</small>{unit.number}</span><strong>{unit.rooms}к · {unit.area} м²</strong><em>{unit.price ? `${Math.round(unit.price / 1_000_000)} mln` : t.statuses.free}</em></button>)}</div>)}</div></div> : <div className="unit-table-wrap"><table className="unit-table"><thead><tr><th>№</th><th>{t.floor}</th><th>{t.rooms}</th><th>m²</th><th>{t.priceM2}</th><th>{t.cost}</th><th>{t.repair}</th></tr></thead><tbody>{filteredUnits.map((unit) => <tr key={unit.id} className={selectedUnit?.id === unit.id ? 'is-selected' : ''} onClick={() => chooseUnit(unit)}><td>{unit.number}</td><td>{unit.floor}</td><td>{unit.rooms}</td><td>{unit.area} m²</td><td>{formatMoney(unit.pricePerM2)}</td><td>{formatMoney(unit.price)}</td><td>{repairLabel(unit.repair, language)}</td></tr>)}</tbody></table></div>}
+                  {catalogMode === 'chess' ? <div className="floor-scroll"><div className="floor-grid" style={{ '--unit-columns': maxUnitsOnFloor } as React.CSSProperties}>{floors.map((floor) => <div className="floor-row" key={floor}><div className="floor-number"><strong>{floor}</strong><span>{t.floor.toLowerCase()}</span></div>{availableBuildingUnits.filter((unit) => unit.floor === floor).sort((a, b) => a.number - b.number).map((unit) => <button key={unit.id} type="button" className={`unit-cell unit-cell--${unit.status} ${selectedUnit?.id === unit.id ? 'is-selected' : ''} ${matchesFilter(unit) ? '' : 'is-filtered'}`} onClick={() => chooseUnit(unit)}><span><small>№</small>{unit.number}</span><strong>{unit.rooms}к · {unit.area} м²</strong><em>{unit.price ? `${Math.round(unit.price / 1_000_000)} mln` : t.statuses.free}</em></button>)}</div>)}</div></div> : <div className="unit-table-wrap"><table className="unit-table"><thead><tr><th>№</th><th>{t.floor}</th><th>{t.rooms}</th><th>m²</th><th>{t.priceM2}</th><th>{t.cost}</th><th>{t.repair}</th></tr></thead><tbody>{filteredUnits.map((unit) => <tr key={unit.id} className={selectedUnit?.id === unit.id ? 'is-selected' : ''} onClick={() => chooseUnit(unit)}><td>{unit.number}</td><td>{unit.floor}</td><td>{unit.rooms}</td><td>{unit.area} m²</td><td>{formatMoney(unit.pricePerM2)}</td><td>{formatMoney(unit.price)}</td><td>{repairLabel(unit.repair, language, unit.repairIncluded)}</td></tr>)}</tbody></table></div>}
                 </div>
                 {selectedUnit ? <ApartmentDetail unit={selectedUnit} language={language} onDetails={openApartmentDetails} onPlan={() => setPrintOpen(true)} /> : null}
               </div>
@@ -498,7 +516,7 @@ function ProjectModal({ language, onClose }: { language: Language; onClose: () =
 function ApartmentDetail({ unit, language, onDetails, onPlan }: { unit: Apartment; language: Language; onDetails: () => void; onPlan: () => void }) {
   const t = ui[language];
   const enlarge = language === 'ru' ? 'Увеличить планировку' : 'Rejani kattalashtirish';
-  return <aside className="unit-detail unit-detail--visual" aria-live="polite"><div className="unit-detail__top"><p>{t.apartment} №{unit.number}</p><span className={`status-chip status-chip--${unit.status}`}>{t.statuses[unit.status]}</span></div><button className="unit-plan-preview" type="button" onClick={onPlan} aria-label={`${enlarge} №${unit.number}`}><picture><source media="(max-width: 850px)" srcSet={assetPath('/avalon-apartment-plan-mobile.webp')} /><img src={assetPath('/avalon-apartment-plan.png')} alt={`${t.floorPlan} №${unit.number}`} loading="lazy" decoding="async" /></picture><span className="plan-zoom-hint">⤢ {enlarge}</span></button><div className="plan-format-label">▦ {t.layout2d}</div><h3>{unit.rooms} {t.rooms.toLowerCase()} · {unit.area} m²</h3><dl><div><dt>{t.building}</dt><dd>{unit.building}</dd></div><div><dt>{t.floor}</dt><dd>{unit.floor}</dd></div><div><dt>{t.condition}</dt><dd>{repairLabel(unit.repair, language)}</dd></div><div><dt>{t.status}</dt><dd>{t.statuses[unit.status]}</dd></div></dl><div className="unit-price"><span>{t.price}</span><strong>{formatMoney(unit.price)}</strong><small>{formatMoney(unit.pricePerM2)} / m²</small></div><button className="unit-detail__details" type="button" onClick={onDetails}>{t.details} <span>↗</span></button><small className="unit-detail__source">{t.statusSource}</small></aside>;
+  return <aside className="unit-detail unit-detail--visual" aria-live="polite"><div className="unit-detail__top"><p>{t.apartment} №{unit.number}</p><span className={`status-chip status-chip--${unit.status}`}>{t.statuses[unit.status]}</span></div><button className="unit-plan-preview" type="button" onClick={onPlan} aria-label={`${enlarge} №${unit.number}`}><picture><source media="(max-width: 850px)" srcSet={assetPath('/avalon-apartment-plan-mobile.webp')} /><img src={assetPath('/avalon-apartment-plan.png')} alt={`${t.floorPlan} №${unit.number}`} loading="lazy" decoding="async" /></picture><span className="plan-zoom-hint">⤢ {enlarge}</span></button><div className="plan-format-label">▦ {t.layout2d}</div><h3>{unit.rooms} {t.rooms.toLowerCase()} · {unit.area} m²</h3><dl><div><dt>{t.building}</dt><dd>{unit.building}</dd></div><div><dt>{t.floor}</dt><dd>{unit.floor}</dd></div><div><dt>{t.condition}</dt><dd>{repairLabel(unit.repair, language, unit.repairIncluded)}</dd></div><div><dt>{t.status}</dt><dd>{t.statuses[unit.status]}</dd></div></dl><div className="unit-price"><span>{t.price}</span><strong>{formatMoney(unit.price)}</strong><small>{formatMoney(unit.pricePerM2)} / m²</small></div><button className="unit-detail__details" type="button" onClick={onDetails}>{t.details} <span>↗</span></button><small className="unit-detail__source">{t.statusSource}</small></aside>;
 }
 
 function ApartmentModal({ unit, language, onClose, onPrint, onLead }: { unit: Apartment; language: Language; onClose: () => void; onPrint: () => void; onLead: () => void }) {
@@ -525,7 +543,7 @@ function PrintProposal({ unit, language, onClose }: { unit: Apartment; language:
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [onClose]);
-  return <div className="proposal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}><div className="proposal-controls"><button type="button" onClick={onClose}>× {uz ? 'Yopish' : 'Закрыть'}</button><button type="button" onClick={() => window.print()}>⌁ {uz ? 'Chop etish' : 'Печать'} / PDF</button></div><article className="print-proposal" id="print-proposal" role="dialog" aria-modal="true" aria-labelledby="proposal-title"><aside className="proposal-brand"><div className="proposal-logo"><span>A</span><strong>AVALON</strong><small>RESIDENCE</small></div><p>{uz ? 'Turar-joy majmuasi' : 'Жилой комплекс'}</p><h2 id="proposal-title">AVALON<br />RESIDENCE</h2><div className="proposal-location"><span>{uz ? 'Joylashuv' : 'Расположение'}</span><strong>{uz ? 'Toshkent · Tuzel' : 'Ташкент · Тузель'}</strong><small>{uz ? 'Yashnobod tumani' : 'Яшнободский район'}</small></div><div className="proposal-tencorp"><span>TENCORP</span><small>{uz ? 'Ko‘chmas mulk — strategiya sifatida' : 'Недвижимость как стратегия'}</small></div></aside><div className="proposal-main"><header><div><span>{t.building}</span><strong>{unit.building}</strong></div><div><span>{uz ? 'Kirish' : 'Подъезд'}</span><strong>1</strong></div><div><span>{t.floor}</span><strong>{unit.floor}</strong></div><div><span>{t.apartment}</span><strong>№{unit.number}</strong></div><div><span>{t.condition}</span><strong>{repairLabel(unit.repair, language)}</strong></div></header><div className="proposal-address"><span>{uz ? 'Majmua manzili' : 'Адрес комплекса'}</span><strong>{uz ? 'Toshkent shahri, Yashnobod tumani, Tuzel massivi' : 'город Ташкент, Яшнободский район, массив Тузель'}</strong></div><div className="proposal-plan"><span>{t.floorPlan}</span><img src={assetPath('/avalon-apartment-plan.png')} alt={`${t.floorPlan} №${unit.number}`} /></div><footer><span>{uz ? `Taklif ${date} sanasida shakllantirildi` : `Предложение сформировано ${date}`}</span><strong>{uz ? 'Dolzarb ma’lumotlar' : 'Актуальные данные'}</strong></footer></div><aside className="proposal-summary"><div className="proposal-room">{unit.rooms}к</div><dl><div><dt>{uz ? 'Umumiy maydon' : 'Общая площадь'}</dt><dd>{unit.area} m²</dd></div><div><dt>{t.price}</dt><dd>{formatMoney(unit.price)}</dd></div></dl><div className="proposal-payment"><span>{t.downPayment}</span><strong>0 UZS</strong><span>{t.priceM2}</span><strong>{formatMoney(unit.pricePerM2)}</strong><span>{t.monthly} · 24 {t.months}</span><strong>{formatMoney(monthly)}</strong></div><div className="proposal-contact"><span>{uz ? 'Tencorp savdo ofisi' : 'Офис продаж Tencorp'}</span><strong>{uz ? 'Toshkent, Oybek ko‘chasi, 20' : 'Ташкент, ул. Ойбек, 20'}</strong><span>{uz ? 'Telefon' : 'Телефон'}</span><a href="tel:+998781137712">+998 78 113 77 12</a><span>E-mail</span><a href="mailto:tencorp.uzb@gmail.com">tencorp.uzb@gmail.com</a><small>{uz ? 'Taklif ommaviy oferta emas. Amaldagi shartlarni Tencorp menejeridan aniqlang.' : 'Предложение не является публичной офертой. Актуальные условия уточняйте у менеджера Tencorp.'}</small></div></aside></article></div>;
+  return <div className="proposal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}><div className="proposal-controls"><button type="button" onClick={onClose}>× {uz ? 'Yopish' : 'Закрыть'}</button><button type="button" onClick={() => window.print()}>⌁ {uz ? 'Chop etish' : 'Печать'} / PDF</button></div><article className="print-proposal" id="print-proposal" role="dialog" aria-modal="true" aria-labelledby="proposal-title"><aside className="proposal-brand"><div className="proposal-logo"><span>A</span><strong>AVALON</strong><small>RESIDENCE</small></div><p>{uz ? 'Turar-joy majmuasi' : 'Жилой комплекс'}</p><h2 id="proposal-title">AVALON<br />RESIDENCE</h2><div className="proposal-location"><span>{uz ? 'Joylashuv' : 'Расположение'}</span><strong>{uz ? 'Toshkent · Tuzel' : 'Ташкент · Тузель'}</strong><small>{uz ? 'Yashnobod tumani' : 'Яшнободский район'}</small></div><div className="proposal-tencorp"><span>TENCORP</span><small>{uz ? 'Ko‘chmas mulk — strategiya sifatida' : 'Недвижимость как стратегия'}</small></div></aside><div className="proposal-main"><header><div><span>{t.building}</span><strong>{unit.building}</strong></div><div><span>{uz ? 'Kirish' : 'Подъезд'}</span><strong>1</strong></div><div><span>{t.floor}</span><strong>{unit.floor}</strong></div><div><span>{t.apartment}</span><strong>№{unit.number}</strong></div><div><span>{t.condition}</span><strong>{repairLabel(unit.repair, language, unit.repairIncluded)}</strong></div></header><div className="proposal-address"><span>{uz ? 'Majmua manzili' : 'Адрес комплекса'}</span><strong>{uz ? 'Toshkent shahri, Yashnobod tumani, Tuzel massivi' : 'город Ташкент, Яшнободский район, массив Тузель'}</strong></div><div className="proposal-plan"><span>{t.floorPlan}</span><img src={assetPath('/avalon-apartment-plan.png')} alt={`${t.floorPlan} №${unit.number}`} /></div><footer><span>{uz ? `Taklif ${date} sanasida shakllantirildi` : `Предложение сформировано ${date}`}</span><strong>{uz ? 'Dolzarb ma’lumotlar' : 'Актуальные данные'}</strong></footer></div><aside className="proposal-summary"><div className="proposal-room">{unit.rooms}к</div><dl><div><dt>{uz ? 'Umumiy maydon' : 'Общая площадь'}</dt><dd>{unit.area} m²</dd></div><div><dt>{t.price}</dt><dd>{formatMoney(unit.price)}</dd></div></dl><div className="proposal-payment"><span>{t.downPayment}</span><strong>0 UZS</strong><span>{t.priceM2}</span><strong>{formatMoney(unit.pricePerM2)}</strong><span>{t.monthly} · 24 {t.months}</span><strong>{formatMoney(monthly)}</strong></div><div className="proposal-contact"><span>{uz ? 'Tencorp savdo ofisi' : 'Офис продаж Tencorp'}</span><strong>{uz ? 'Toshkent, Oybek ko‘chasi, 20' : 'Ташкент, ул. Ойбек, 20'}</strong><span>{uz ? 'Telefon' : 'Телефон'}</span><a href="tel:+998781137712">+998 78 113 77 12</a><span>E-mail</span><a href="mailto:tencorp.uzb@gmail.com">tencorp.uzb@gmail.com</a><small>{uz ? 'Taklif ommaviy oferta emas. Amaldagi shartlarni Tencorp menejeridan aniqlang.' : 'Предложение не является публичной офертой. Актуальные условия уточняйте у менеджера Tencorp.'}</small></div></aside></article></div>;
 }
 
 function SiteHeader({ language, onLanguageChange, onHome, onApartments, light = false }: { language: Language; onLanguageChange: (language: Language) => void; onHome: () => void; onApartments: () => void; light?: boolean }) {

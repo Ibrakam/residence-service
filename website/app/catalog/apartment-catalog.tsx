@@ -19,6 +19,7 @@ import './apartment-catalog.css';
 
 type CatalogMode = 'cards' | 'chess';
 type FilterValue = 'all' | string;
+type RepairFilter = 'all' | 'without' | 'with';
 
 const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
 const languages: CatalogLanguage[] = ['ru', 'uz', 'en'];
@@ -29,7 +30,7 @@ const ui = {
     visual: 'Визуальный выбор', visualHint: 'Доступен на большом экране', catalog: 'Каталог квартир',
     cards: 'Карточки', chess: 'Шахматка', view: 'Режим каталога', filters: 'Фильтры', reset: 'Сбросить',
     rooms: 'Комнаты', allRooms: 'Все', building: 'Корпус', allBuildings: 'Все корпуса', queue: 'Очередь', allQueues: 'Все очереди', phase: 'Этап', allPhases: 'Все этапы',
-    entrance: 'Подъезд', allEntrances: 'Все подъезды', floor: 'Этаж', allFloors: 'Все этажи', status: 'Статус', allStatuses: 'Все статусы',
+    entrance: 'Подъезд', allEntrances: 'Все подъезды', floor: 'Этаж', allFloors: 'Все этажи', finishing: 'Ремонт', allRepairs: 'Все', withoutRepair: 'Без ремонта', withRepair: 'С ремонтом', status: 'Статус',
     areaFrom: 'Площадь от', areaTo: 'Площадь до', sort: 'Сортировка', found: 'Найдено', offers: 'предложений',
     sorts: { status: 'По умолчанию', 'price-asc': 'Сначала дешевле', 'price-desc': 'Сначала дороже', 'area-asc': 'Площадь по возрастанию', 'area-desc': 'Площадь по убыванию', 'floor-asc': 'С нижних этажей', 'floor-desc': 'С верхних этажей' },
     statuses: { available: 'Свободна', reserved: 'Бронь', sold: 'Продана', unavailable: 'Недоступна' },
@@ -46,7 +47,7 @@ const ui = {
     visual: 'Vizual tanlov', visualHint: 'Katta ekranda mavjud', catalog: 'Xonadonlar katalogi',
     cards: 'Kartalar', chess: 'Shaxmatka', view: 'Katalog ko‘rinishi', filters: 'Filtrlar', reset: 'Tozalash',
     rooms: 'Xonalar', allRooms: 'Barchasi', building: 'Korpus', allBuildings: 'Barcha korpuslar', queue: 'Navbat', allQueues: 'Barcha navbatlar', phase: 'Bosqich', allPhases: 'Barcha bosqichlar',
-    entrance: 'Kirish', allEntrances: 'Barcha kirishlar', floor: 'Qavat', allFloors: 'Barcha qavatlar', status: 'Holat', allStatuses: 'Barcha holatlar',
+    entrance: 'Kirish', allEntrances: 'Barcha kirishlar', floor: 'Qavat', allFloors: 'Barcha qavatlar', finishing: 'Ta’mir', allRepairs: 'Barchasi', withoutRepair: 'Ta’mirsiz', withRepair: 'Ta’mirlangan', status: 'Holat',
     areaFrom: 'Maydon, dan', areaTo: 'Maydon, gacha', sort: 'Saralash', found: 'Topildi', offers: 'ta taklif',
     sorts: { status: 'Standart', 'price-asc': 'Avval arzonlari', 'price-desc': 'Avval qimmatlari', 'area-asc': 'Maydon o‘sishi bo‘yicha', 'area-desc': 'Maydon kamayishi bo‘yicha', 'floor-asc': 'Quyi qavatlardan', 'floor-desc': 'Yuqori qavatlardan' },
     statuses: { available: 'Mavjud', reserved: 'Band', sold: 'Sotilgan', unavailable: 'Mavjud emas' },
@@ -63,7 +64,7 @@ const ui = {
     visual: 'Visual selection', visualHint: 'Available on larger screens', catalog: 'Apartment catalogue',
     cards: 'Cards', chess: 'Availability grid', view: 'Catalogue view', filters: 'Filters', reset: 'Reset',
     rooms: 'Rooms', allRooms: 'All', building: 'Building', allBuildings: 'All buildings', queue: 'Construction phase', allQueues: 'All construction phases', phase: 'Stage', allPhases: 'All stages',
-    entrance: 'Entrance', allEntrances: 'All entrances', floor: 'Floor', allFloors: 'All floors', status: 'Status', allStatuses: 'All statuses',
+    entrance: 'Entrance', allEntrances: 'All entrances', floor: 'Floor', allFloors: 'All floors', finishing: 'Finishing', allRepairs: 'All', withoutRepair: 'Without finishing', withRepair: 'With finishing', status: 'Status',
     areaFrom: 'Area from', areaTo: 'Area to', sort: 'Sort', found: 'Found', offers: 'listings',
     sorts: { status: 'Default', 'price-asc': 'Lowest price first', 'price-desc': 'Highest price first', 'area-asc': 'Area ascending', 'area-desc': 'Area descending', 'floor-asc': 'Lower floors first', 'floor-desc': 'Higher floors first' },
     statuses: { available: 'Available', reserved: 'Reserved', sold: 'Sold', unavailable: 'Unavailable' },
@@ -342,6 +343,7 @@ export function ApartmentCatalog({ project, units: sourceUnits, capabilities, pr
   const [phase, setPhase] = useState<FilterValue>('all');
   const [entrance, setEntrance] = useState<FilterValue>('all');
   const [floor, setFloor] = useState<FilterValue>('all');
+  const [repair, setRepair] = useState<RepairFilter>('all');
   const [areaFrom, setAreaFrom] = useState('');
   const [areaTo, setAreaTo] = useState('');
   const [sort, setSort] = useState<CatalogSort>(presentation.defaultSort ?? 'status');
@@ -361,6 +363,7 @@ export function ApartmentCatalog({ project, units: sourceUnits, capabilities, pr
   }, [project.queues]);
   const entranceOptions = useMemo(() => uniqueStrings(units.map((unit) => unit.entrance)), [units]);
   const floorOptions = useMemo(() => [...new Set(units.map((unit) => unit.floor))].sort((a, b) => b - a), [units]);
+  const hasRepairData = units.some((unit) => typeof unit.repairIncluded === 'boolean');
   const hasPrices = capabilities.pricesVisible && units.some((unit) => typeof unit.price === 'number' && unit.price > 0);
 
   const updateQuery = (changes: Record<string, string | undefined>) => {
@@ -393,6 +396,8 @@ export function ApartmentCatalog({ project, units: sourceUnits, capabilities, pr
       setPhase(valid(params.get('phase'), phaseOptions));
       setEntrance(valid(params.get('entrance'), entranceOptions));
       setFloor(valid(params.get('floor'), floorOptions));
+      const repairParam = params.get('repair');
+      setRepair(hasRepairData && (repairParam === 'with' || repairParam === 'without') ? repairParam : 'all');
       setAreaFrom(params.get('areaFrom') ?? '');
       setAreaTo(params.get('areaTo') ?? '');
       const sortParam = params.get('sort') as CatalogSort | null;
@@ -406,7 +411,7 @@ export function ApartmentCatalog({ project, units: sourceUnits, capabilities, pr
       window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
     }
     return () => window.cancelAnimationFrame(frame);
-  }, [buildingOptions, entranceOptions, floorOptions, phaseOptions, queueOptions, roomOptions, units]);
+  }, [buildingOptions, entranceOptions, floorOptions, hasRepairData, phaseOptions, queueOptions, roomOptions, units]);
 
   const filtered = useMemo(() => {
     const min = Number(areaFrom) || 0;
@@ -418,6 +423,7 @@ export function ApartmentCatalog({ project, units: sourceUnits, capabilities, pr
       && (phase === 'all' || unit.phase === phase)
       && (entrance === 'all' || unit.entrance === entrance)
       && (floor === 'all' || unit.floor === Number(floor))
+      && (repair === 'all' || unit.repairIncluded === (repair === 'with'))
       && unit.area >= min
       && unit.area <= max
     ));
@@ -431,7 +437,7 @@ export function ApartmentCatalog({ project, units: sourceUnits, capabilities, pr
       if (sort === 'floor-desc') return right.floor - left.floor || byNumber;
       return statusRank(left.status) - statusRank(right.status) || right.floor - left.floor || byNumber;
     });
-  }, [areaFrom, areaTo, building, entrance, floor, phase, queue, rooms, sort, units]);
+  }, [areaFrom, areaTo, building, entrance, floor, phase, queue, repair, rooms, sort, units]);
 
   const selected = filtered.find((unit) => unit.id === selectedId) ?? filtered[0];
   const activeLightbox = lightbox
@@ -469,10 +475,15 @@ export function ApartmentCatalog({ project, units: sourceUnits, capabilities, pr
     setVisibleCount(pageSize);
     updateQuery({ queue: value === 'all' ? undefined : value, unitKey: undefined, unit: undefined, unitEntrance: undefined, unitFloor: undefined });
   };
+  const setRepairFilter = (value: RepairFilter) => {
+    setRepair(value);
+    setVisibleCount(pageSize);
+    updateQuery({ repair: value === 'all' ? undefined : value, unitKey: undefined, unit: undefined, unitEntrance: undefined, unitFloor: undefined });
+  };
   const reset = () => {
     const defaultSort = presentation.defaultSort ?? 'status';
-    setRooms('all'); setQueue('all'); setBuilding('all'); setPhase('all'); setEntrance('all'); setFloor('all'); setAreaFrom(''); setAreaTo(''); setSort(defaultSort); setVisibleCount(pageSize);
-    updateQuery({ rooms: undefined, queue: undefined, building: undefined, phase: undefined, entrance: undefined, floor: undefined, status: undefined, areaFrom: undefined, areaTo: undefined, sort: defaultSort === 'status' ? undefined : defaultSort, unitKey: undefined, unit: undefined, unitEntrance: undefined, unitFloor: undefined });
+    setRooms('all'); setQueue('all'); setBuilding('all'); setPhase('all'); setEntrance('all'); setFloor('all'); setRepair('all'); setAreaFrom(''); setAreaTo(''); setSort(defaultSort); setVisibleCount(pageSize);
+    updateQuery({ rooms: undefined, queue: undefined, building: undefined, phase: undefined, entrance: undefined, floor: undefined, repair: undefined, status: undefined, areaFrom: undefined, areaTo: undefined, sort: defaultSort === 'status' ? undefined : defaultSort, unitKey: undefined, unit: undefined, unitEntrance: undefined, unitFloor: undefined });
   };
   const chooseUnit = (unit: CatalogUnit, scrollToDetail = false) => {
     setSelectedId(unit.id);
@@ -526,6 +537,7 @@ export function ApartmentCatalog({ project, units: sourceUnits, capabilities, pr
           {capabilities.buildings && buildingOptions.length > 1 ? <label><span>{buildingLabel}</span><select value={building} onChange={(event) => setFilter('building', event.target.value)}><option value="all">{allBuildingsLabel}</option>{buildingOptions.map((value) => <option key={value} value={value}>{value}</option>)}</select></label> : null}
           {capabilities.entrances && entranceOptions.length > 1 ? <label><span>{t.entrance}</span><select value={entrance} onChange={(event) => setFilter('entrance', event.target.value)}><option value="all">{t.allEntrances}</option>{entranceOptions.map((value) => <option key={value} value={value}>{value}</option>)}</select></label> : null}
           <label><span>{t.rooms}</span><select value={rooms} onChange={(event) => setFilter('rooms', event.target.value)}><option value="all">{t.allRooms}</option>{roomOptions.map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
+          {hasRepairData ? <label><span>{t.finishing}</span><select value={repair} onChange={(event) => setRepairFilter(event.target.value as RepairFilter)}><option value="all">{t.allRepairs}</option><option value="without">{t.withoutRepair}</option><option value="with">{t.withRepair}</option></select></label> : null}
           <label><span>{t.floor}</span><select value={floor} onChange={(event) => setFilter('floor', event.target.value)}><option value="all">{t.allFloors}</option>{floorOptions.map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
           <label><span>{t.areaFrom}</span><input type="number" min="0" inputMode="decimal" value={areaFrom} onChange={(event) => { setAreaFrom(event.target.value); setVisibleCount(pageSize); updateQuery({ areaFrom: event.target.value || undefined }); }} /></label>
           <label><span>{t.areaTo}</span><input type="number" min="0" inputMode="decimal" value={areaTo} onChange={(event) => { setAreaTo(event.target.value); setVisibleCount(pageSize); updateQuery({ areaTo: event.target.value || undefined }); }} /></label>

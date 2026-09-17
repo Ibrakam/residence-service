@@ -57,6 +57,7 @@ export type LiveCatalogUnit = {
   currency: string;
   planImageUrl?: string;
   completion?: string;
+  repairIncluded?: boolean;
   isActive: boolean;
   sourceUpdatedAt: string;
   updatedAt: string;
@@ -112,6 +113,7 @@ const cachedPayloadMaxAgeMs = 7 * 24 * 60 * 60 * 1_000;
 const cacheVersion = 2;
 const availableOnlyCatalogues = new Set([
   '4u',
+  'avalon-residence',
   'bayterak',
   'botanika-saroyi',
   'c1',
@@ -209,6 +211,7 @@ function isLiveUnit(value: unknown, projectSlug: string): value is LiveCatalogUn
     && Number.isFinite(Date.parse(value.sourceUpdatedAt))
     && (value.completion === undefined
       || (typeof value.completion === 'string' && value.completion.trim().length > 0 && value.completion.length <= 64))
+    && (value.repairIncluded === undefined || typeof value.repairIncluded === 'boolean')
     && typeof value.status === 'string'
     && ['available', 'reserved', 'sold', 'unavailable'].includes(value.status);
 }
@@ -563,6 +566,8 @@ function adaptUnit(
   result.area = live.area;
   if (live.rooms !== undefined) result.rooms = live.rooms;
   result.currency = live.currency || 'UZS';
+  if (typeof live.repairIncluded === 'boolean') result.repairIncluded = live.repairIncluded;
+  else delete result.repairIncluded;
 
   assignIfPresent(result, 'sourceKey', live.sourceKey);
   assignIfPresent(result, 'unitKey', live.sourceKey);
@@ -686,7 +691,7 @@ function updateFilterMetadata(snapshot: Record<string, unknown>, units: Record<s
     if (Array.isArray(filters.statuses)) filters.statuses = summary(units.map((unit) => unit.statusOriginal ?? unit.rawStatus ?? unit.status));
     if (Array.isArray(filters.isSale)) filters.isSale = summary(units.map((unit) => Boolean(unit.isSale)));
     if (Array.isArray(filters.canBuy)) filters.canBuy = summary(units.map((unit) => Boolean(unit.canBuy)));
-    if (isRecord(filters.repairIncluded)) filters.repairIncluded = { true: units.filter((unit) => unit.repairIncluded === true).length, false: units.filter((unit) => unit.repairIncluded !== true).length };
+    if (isRecord(filters.repairIncluded)) filters.repairIncluded = { true: units.filter((unit) => unit.repairIncluded === true).length, false: units.filter((unit) => unit.repairIncluded === false).length };
     if (isRecord(filters.studio)) filters.studio = { true: units.filter((unit) => unit.studio === true).length, false: units.filter((unit) => unit.studio !== true).length };
 
     const areaRange = numericRange(areas);

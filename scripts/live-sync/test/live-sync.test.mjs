@@ -709,7 +709,7 @@ test('Uysot normalization requires and emits a complete 268-row universe', () =>
     const building = index < 90 ? ['B1', 1] : index < 180 ? ['A', 2] : ['B2', 3];
     return {
       id: index + 1, number: String(index + 1), floor: 1, rooms: '1', area: 40, totalArea: 40,
-      apartment: true, repaired: false, commerceStatus: index === 0 ? 'BOOKED' : 'SALE',
+      apartment: true, repaired: index % 2 === 0, commerceStatus: index === 0 ? 'BOOKED' : 'SALE',
       pricePeraAreaRepaired: 1, pricePerAreaNotRepaired: 1, priceRepaired: 40, priceNotRepaired: 40,
       buildingName: building[0], buildingId: building[1], houseName: 'Avalon', houseId: 1074,
       currency: { ccy: 'UZS' }, companyId: 504, entrance: 1,
@@ -718,6 +718,8 @@ test('Uysot normalization requires and emits a complete 268-row universe', () =>
   const result = normalizeUysotTable({ accept: true, errors: [], errorMessage: null, data: { data: rows, totalPages: 1, currentPage: 1, totalElements: 268 } });
   assert.equal(result.audit.complete, true);
   assert.equal(result.artifact.units.length, 268);
+  assert.equal(result.artifact.units[0].repairIncluded, true);
+  assert.equal(result.artifact.units[1].repairIncluded, false);
 });
 
 test('Regnum normalization enforces both public and CRM identities', () => {
@@ -1365,16 +1367,24 @@ test('KAYAN maps only Ofiyat residential phases to queues and keeps parking inde
         number: house.number,
         sectionName: '1',
         area: { area_total: 50 + index },
-        status: 'AVAILABLE',
+        status: index === 0 ? 'BOOKED' : 'AVAILABLE',
         price: { value: 500_000_000 + index, pricePerMeter: 10_000_000 },
         propertyType: house.propertyType,
       }],
     },
   }));
-  const result = normalizeKayanPropertyResponses(responses, '2026-09-15T07:00:00.000Z');
+  const template = { projects: [
+    { project: { slug: 'mirador' }, units: [{ sourceKey: '154813:apartment:1:1:m-1', planImageUrl: '/kayan/mirador/plans/exact/verified.webp' }], layouts: [] },
+    { project: { slug: 'ofiyat' }, units: [], layouts: [] },
+  ] };
+  const result = normalizeKayanPropertyResponses(responses, '2026-09-15T07:00:00.000Z', template);
   const mirador = result.artifact.projects.find((item) => item.project.slug === 'mirador');
   const ofiyat = result.artifact.projects.find((item) => item.project.slug === 'ofiyat');
   assert.deepEqual(mirador.project.queues, []);
+  assert.equal(mirador.project.availableUnits, 0);
+  assert.equal(mirador.units[0].status, 'reserved');
+  assert.equal(mirador.units[0].price, null, 'a booked Mirador apartment must not expose an availability price');
+  assert.equal(mirador.units[0].planImageUrl, '/kayan/mirador/plans/exact/verified.webp');
   assert.deepEqual(ofiyat.project.queues.map(({ queueKey, queueLabel, queueOrder }) => ({ queueKey, queueLabel, queueOrder })), [
     { queueKey: 'phase-1', queueLabel: 'I очередь', queueOrder: 1 },
     { queueKey: 'phase-2', queueLabel: 'II очередь', queueOrder: 2 },
@@ -1382,6 +1392,45 @@ test('KAYAN maps only Ofiyat residential phases to queues and keeps parking inde
   assert.equal(ofiyat.units.find((unit) => unit.phaseSlug === 'phase-1').queueLabel, 'I очередь');
   assert.equal(ofiyat.units.find((unit) => unit.phaseSlug === 'phase-2').queueLabel, 'II очередь');
   assert.equal(ofiyat.units.find((unit) => unit.phaseSlug === 'parking').queueKey, undefined);
+});
+
+test('KAYAN keeps Ofiyat BOOKED and AVAILABLE rows distinct by stable CRM identity', () => {
+  const property = ({ id, houseId, number, floor = 2, entrance = '1', status = 'AVAILABLE', rooms = 1, area = 40, price = 400_000_000, pricePerMeter = 10_000_000 }) => ({
+    id,
+    house_id: houseId,
+    floor,
+    rooms_amount: rooms,
+    number,
+    sectionName: entrance,
+    area: { area_total: area },
+    status,
+    propertyType: rooms === null ? 'Паркинг' : 'Квартира',
+    price: { value: price, pricePerMeter },
+  });
+  const response = (properties) => ({
+    status: 'success',
+    data: { filteredCount: properties.length, properties },
+  });
+  const result = normalizeKayanPropertyResponses([
+    response([property({ id: 90_000_001, houseId: 154813, number: '1' })]),
+    response([
+      property({ id: 17_084_880, houseId: 153505, number: '73', floor: 15, entrance: 'А', status: 'BOOKED', rooms: 2, area: 62.29, price: 0, pricePerMeter: 0 }),
+      property({ id: 17_084_883, houseId: 153505, number: '76', floor: 15, entrance: 'А', rooms: 3, area: 65.32, price: 1_493_295_504, pricePerMeter: 22_860_000 }),
+    ]),
+    response([property({ id: 90_000_002, houseId: 153506, number: '2', entrance: 'В1' })]),
+    response([property({ id: 90_000_003, houseId: 154273, number: 'P1', floor: -1, rooms: null })]),
+  ], '2026-09-17T16:28:02.214Z');
+
+  const ofiyat = result.artifact.projects.find((project) => project.project.slug === 'ofiyat');
+  const booked = ofiyat.units.find((unit) => unit.sourceKey === '153505:apartment:а:15:73');
+  const available = ofiyat.units.find((unit) => unit.sourceKey === '153505:apartment:а:15:76');
+  assert.equal(booked.status, 'reserved');
+  assert.equal(booked.rawStatus, 'BOOKED');
+  assert.equal(booked.price, null, 'Booked apartments must not retain a public price');
+  assert.equal(available.status, 'available');
+  assert.equal(available.rawStatus, 'AVAILABLE');
+  assert.equal(available.price, 1_493_295_504);
+  assert.notEqual(booked.sourceKey, available.sourceKey, 'Different CRM rows must never collapse by room count or area');
 });
 
 function sunRow(id, number) {
@@ -1405,6 +1454,39 @@ test('SUN normalization accepts intentional page overlap but rejects conflicts',
   ]), /conflicting duplicate/);
 });
 
+test('SUN normalization preserves the ASCII public identity and exact official plan sheet', () => {
+  const row = sunRow(1, 'А2');
+  const template = { units: [{
+    id: 'sun-a-a2-f2', unitKey: 'sun-a-a2-f2', block: 'A', number: 'А2', rooms: 1, area: 40.5,
+    primaryPlanPath: '/sun/plans/floor-primary.webp', secondPlanPath: '/sun/plans/apartment-second.webp',
+    primaryPlanWidth: 1100, primaryPlanHeight: 1100, secondPlanWidth: 1100, secondPlanHeight: 1100,
+  }] };
+  const result = normalizeSunPages([{ objects: [row], count: 1, isLastPage: true }], '2026-09-17T00:00:00.000Z', template);
+  const [unit] = result.artifact.units;
+  assert.equal(unit.sourceKey, 'sun-a-a2-f2');
+  assert.equal(unit.planImageUrl, '/sun/plans/apartment-second.webp');
+  assert.equal(unit.planWidth, 1100);
+  assert.equal(unit.planHeight, 1100);
+  assert.notEqual(unit.planImageUrl, template.units[0].primaryPlanPath, 'the floor-position sheet must not replace the apartment plan');
+});
+
+test('SUN normalization safely reuses a unique official layout for a newly available unit', () => {
+  const template = { units: [{
+    id: 'sun-a-a46-f8', unitKey: 'sun-a-a46-f8', block: 'A', number: 'А46', rooms: 1, area: 40.5,
+    primaryPlanPath: '/sun/plans/floor-primary.webp', secondPlanPath: '/sun/plans/apartment-second.webp',
+    secondPlanWidth: 1100, secondPlanHeight: 1100,
+  }] };
+  const result = normalizeSunPages([{ objects: [sunRow(1, 'А11')], count: 1, isLastPage: true }], '2026-09-17T00:00:00.000Z', template);
+  assert.equal(result.artifact.units[0].planImageUrl, '/sun/plans/apartment-second.webp');
+
+  const ambiguous = { units: [
+    ...template.units,
+    { ...template.units[0], id: 'other', unitKey: 'other', secondPlanPath: '/sun/plans/different-second.webp' },
+  ] };
+  const rejected = normalizeSunPages([{ objects: [sunRow(1, 'А11')], count: 1, isLastPage: true }], '2026-09-17T00:00:00.000Z', ambiguous);
+  assert.equal(rejected.artifact.units[0].planImageUrl, undefined, 'ambiguous layout fallback must not publish an unrelated plan');
+});
+
 test('NRG normalization covers all eleven project adapters and requires an empty terminal page', () => {
   const provider = getProvider('nrg-bi');
   const groups = provider.projectDefinitions.map((project, index) => {
@@ -1420,7 +1502,7 @@ test('NRG normalization covers all eleven project adapters and requires an empty
     const matrixPlacement = (offset, placementUIStatus, isSale) => ({
       placementUUID: `20000000-0000-4000-8000-${String(index + 1 + offset).padStart(12, '0')}`,
       placementName: String(offset + 1), square: 40 + offset, price: 10, totalPrice: 400 + offset,
-      repairSum: 0, repairPrice: 0, isRepaired: false,
+      repairSum: 0, repairPrice: 0, isRepaired: offset === 0,
       blockUUID: blockId, blockName: 'Block 1', floor: 2, entrance: 1, roomCount: 1,
       isSale, propertyTypeUUID: provider.apartmentPropertyTypeUUID, propertyTypeName: 'Квартира',
       propertyType: { uuid: provider.apartmentPropertyTypeUUID, name: 'Квартира' },
@@ -1465,6 +1547,8 @@ test('NRG normalization covers all eleven project adapters and requires an empty
   assert.equal(fourU.planImageUrl, expectedNrgOriginalUrl(groups[0].pages[0].placements[0]));
   assert.equal(fourU.price, 360, '4U publishes the official active campaign price');
   assert.equal(fourU.pricePerM2, 9, '4U per-m² price follows the selected campaign total');
+  assert.equal(fourU.repairIncluded, true, 'the NRG blockMatrix hammer flag must reach the public catalogue');
+  assert.equal(fourUArtifact.units.find((unit) => unit.status === 'reserved').repairIncluded, false);
   assert.equal(fourUArtifact.sourceCount, 3);
   assert.equal(fourUArtifact.historicalSaleDates, null);
   assert.equal(fourUArtifact.units.find((unit) => unit.status === 'sold').price, null);

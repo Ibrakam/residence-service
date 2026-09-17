@@ -25,6 +25,7 @@ export type MaftunMakonSafeSnapshot = {
     entrance: number;
     building: string;
     status: 'available';
+    repairIncluded?: boolean;
     plan: string | null;
   }>;
 };
@@ -91,6 +92,7 @@ export function MaftunMakonUnifiedCatalog({ snapshot: embeddedSnapshot, initialL
       building: unit.building || undefined,
       propertyType: 'apartment',
       status: 'available',
+      repairIncluded: unit.repairIncluded,
       price: unit.price > 0 ? unit.price : undefined,
       regularPrice: typeof unit.oldPrice === 'number' && unit.oldPrice > unit.price ? unit.oldPrice : undefined,
       pricePerM2: unit.pricePerM2 > 0 ? unit.pricePerM2 : undefined,

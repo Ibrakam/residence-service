@@ -475,6 +475,9 @@ func normalizeCatalogUnit(projectSlug, phaseSlug string, raw json.RawMessage, va
 		PlanImageURL:  firstString(values, "planImageUrl", "plan", "planUrl", "thumbnail", "planPublicPath", "primaryPlanPath", "planSource"),
 		SourcePayload: append(json.RawMessage(nil), raw...),
 	}
+	if repairIncluded, ok := optionalRepairIncluded(values); ok {
+		unit.RepairIncluded = &repairIncluded
+	}
 	if unit.RawPropertyType == "" {
 		unit.RawPropertyType = "Квартира"
 	}
@@ -997,4 +1000,25 @@ func optionalBoolDefault(values map[string]json.RawMessage, fallback bool, keys 
 		}
 	}
 	return fallback
+}
+
+func optionalRepairIncluded(values map[string]json.RawMessage) (bool, bool) {
+	for _, key := range []string{"repairIncluded", "isRepaired", "repaired"} {
+		value := values[key]
+		if len(value) == 0 || string(value) == "null" {
+			continue
+		}
+		var result bool
+		if err := json.Unmarshal(value, &result); err == nil {
+			return result, true
+		}
+	}
+	switch strings.ToLower(strings.TrimSpace(firstString(values, "repair"))) {
+	case "с ремонтом", "с отделкой", "with repair", "with finishing":
+		return true, true
+	case "без ремонта", "без отделки", "without repair", "without finishing":
+		return false, true
+	default:
+		return false, false
+	}
 }

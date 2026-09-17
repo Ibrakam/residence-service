@@ -181,6 +181,7 @@ const live = [{
   rooms: 3,
   price: 990_000_000,
   pricePerM2: 12_452_830,
+  repairIncluded: true,
   currency: 'UZS',
   isActive: true,
   sourceUpdatedAt: '2026-09-03T00:00:00.000Z',
@@ -197,6 +198,7 @@ assert.equal(unmatched.status, 'reserved');
 assert.equal(unmatched.price, 990_000_000);
 assert.equal(unmatched.oldPrice, 0, 'a second price must not be invented from the single normalized price');
 assert.equal(unmatched.regularPrice, 0, 'a regular price must remain absent until the API models it');
+assert.equal(unmatched.repairIncluded, true, 'the authoritative CRM repair flag must reach a newly discovered unit');
 assert.equal(unmatched.completionDate, '', 'an unmatched live unit must not inherit another unit completion date');
 assert.equal(unmatched.plan, '');
 assert.equal(unmatched.sourcePlan, '');
@@ -204,6 +206,13 @@ assert.equal(unmatched.thumbnail, '');
 assert.equal(unmatched.sheetPage1, '');
 assert.deepEqual(unmatched.coordinates, { x: 0, y: 0 });
 assert.deepEqual(unmatched.provenance, { api: '', sourceSha256: '' });
+
+const [unknownRepair] = mergeLiveCatalogUnits('safe-project', [{
+  ...embedded[0],
+  sourceKey: live[0].sourceKey,
+  repairIncluded: true,
+}], [{ ...live[0], repairIncluded: undefined }]);
+assert.equal(unknownRepair.repairIncluded, undefined, 'a provider that omits repair data must not inherit a stale embedded true/false value');
 
 const merosBlockId = '08bccd05-81ee-4934-8652-5d40474e07be';
 const merosUnitId = 'e209805e-662d-4d34-9b01-27b309e9a609';
@@ -284,6 +293,7 @@ assert.deepEqual(initialCatalogUnits('4u', embedded), [], 'available-only UI mus
 assert.deepEqual(initialCatalogUnits('maftun-makon', embedded), [], 'an embedded NRG snapshot must never be used as current availability');
 assert.deepEqual(initialCatalogUnits('mirador', embedded), [], 'Kayan catalogues must not expose stale embedded availability');
 assert.deepEqual(initialCatalogUnits('ofiyat', embedded), [], 'Kayan catalogues must not expose stale embedded availability');
+assert.deepEqual(initialCatalogUnits('avalon-residence', embedded), [], 'Avalon must fail closed until current Uysot availability is loaded');
 assert.deepEqual(initialCatalogUnits('safe-project', embedded), embedded, 'status-aware catalogues may keep their embedded presentation fallback');
 for (const projectSlug of ['4u', 'bayterak', 'botanika-saroyi', 'flagman', 'jomiy', 'maftun-makon', 'meros', 'mirador', 'ofiyat', 'sado', 'voha', 'yangibaxt', 'zamon']) {
   const sold = { ...live[0], projectSlug, status: 'sold', price: undefined };

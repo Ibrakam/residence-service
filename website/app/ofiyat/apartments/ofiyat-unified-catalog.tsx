@@ -12,7 +12,14 @@ import type {
 } from '@/app/catalog/types';
 import { useLiveCatalogUnits } from '@/app/live-catalog';
 import { projectConfigs } from '@/app/kayan/project-data';
-import type { OfiyatPublicBundle, OfiyatPublicUnit } from './ofiyat-public-bundle';
+import {
+  isOfiyatApartmentPhase,
+  ofiyatExactPlanPath,
+  ofiyatRepresentativePlanPath,
+  selectOfiyatPublicApartments,
+  type OfiyatPublicBundle,
+  type OfiyatPublicUnit,
+} from './ofiyat-public-bundle';
 
 type Props = {
   initialBundle: OfiyatPublicBundle;
@@ -75,22 +82,20 @@ function propertyType(value: string): CatalogPropertyType {
   return 'apartment';
 }
 
-function localPlanPath(value: string | undefined) {
-  return value?.startsWith('/kayan/ofiyat/plans/') && !value.startsWith('//') ? value : undefined;
-}
-
 export function OfiyatUnifiedCatalog({ initialBundle, snapshotGeneratedAt, initialLanguage = 'ru' }: Props) {
   const currentSearch = useSearchParams().toString();
   const { data: liveUnits, dataSource, refreshedAt, project: liveProject } = useLiveCatalogUnits<OfiyatPublicUnit>('ofiyat', initialBundle.units);
   const maxFloors = useMemo(() => new Map(initialBundle.project.phases.map((phase) => [phase.slug, phase.floorsTotal])), [initialBundle.project.phases]);
-  const representativePlans = useMemo(() => new Map(initialBundle.representativePlans.map((plan) => [`${plan.phaseSlug}:${plan.rooms}`, plan.imageUrl])), [initialBundle.representativePlans]);
+  const representativePlans = useMemo(() => new Map(initialBundle.representativePlans
+    .filter((plan) => isOfiyatApartmentPhase(plan.phaseSlug) && ofiyatRepresentativePlanPath(plan.imageUrl))
+    .map((plan) => [`${plan.phaseSlug}:${plan.rooms}`, plan.imageUrl])), [initialBundle.representativePlans]);
+  const publicApartments = useMemo(() => selectOfiyatPublicApartments(liveUnits), [liveUnits]);
 
-  const units = useMemo<CatalogUnit[]>(() => liveUnits.map((unit) => {
-    const exactPlan = localPlanPath(unit.planImageUrl);
-    const representativePlan = !exactPlan && unit.propertyType !== 'parking' && typeof unit.rooms === 'number'
+  const units = useMemo<CatalogUnit[]>(() => publicApartments.map((unit) => {
+    const exactPlan = ofiyatExactPlanPath(unit.planImageUrl) || undefined;
+    const representativePlan = !exactPlan && typeof unit.rooms === 'number'
       ? representativePlans.get(`${unit.phaseSlug}:${unit.rooms}`)
       : undefined;
-    const priceIsPublic = unit.status === 'available';
 
     return {
       id: String(unit.id),
@@ -104,8 +109,8 @@ export function OfiyatUnifiedCatalog({ initialBundle, snapshotGeneratedAt, initi
       phase: phaseLabel(unit.phaseSlug),
       propertyType: propertyType(unit.propertyType),
       status: unit.status,
-      price: priceIsPublic && unit.price > 0 ? unit.price : undefined,
-      pricePerM2: priceIsPublic && unit.pricePerM2 > 0 ? unit.pricePerM2 : undefined,
+      price: unit.price > 0 ? unit.price : undefined,
+      pricePerM2: unit.pricePerM2 > 0 ? unit.pricePerM2 : undefined,
       currency: unit.currency,
       plans: exactPlan
         ? [{ src: exactPlan, kind: 'unit' as const }]
@@ -113,7 +118,7 @@ export function OfiyatUnifiedCatalog({ initialBundle, snapshotGeneratedAt, initi
           ? [{ src: representativePlan, kind: 'representative' as const }]
           : [],
     };
-  }), [liveUnits, maxFloors, representativePlans]);
+  }), [publicApartments, maxFloors, representativePlans]);
 
   const presentation = useMemo<CatalogPresentation>(() => ({
     brand: 'OFIYAT',
@@ -166,8 +171,11 @@ export function OfiyatUnifiedCatalog({ initialBundle, snapshotGeneratedAt, initi
     },
   }), [currentSearch]);
 
-  const availableCount = liveProject?.availableUnits ?? units.filter((unit) => unit.status === 'available').length;
-  const totalCount = liveProject?.totalUnits ?? initialBundle.project.totalUnits;
+  const liveApartmentTotal = liveProject?.phases
+    ?.filter((phase) => isOfiyatApartmentPhase(phase.slug))
+    .reduce((total, phase) => total + phase.totalUnits, 0);
+  const availableCount = units.length;
+  const totalCount = liveApartmentTotal || initialBundle.project.totalUnits;
 
   return <ApartmentCatalog
     project={{

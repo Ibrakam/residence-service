@@ -92,6 +92,7 @@ type Unit struct {
 	Currency         string    `json:"currency"`
 	PlanImageURL     string    `json:"planImageUrl,omitempty"`
 	Completion       *string   `json:"completion,omitempty"`
+	RepairIncluded   *bool     `json:"repairIncluded,omitempty"`
 	IsActive         bool      `json:"isActive"`
 	SourceUpdatedAt  time.Time `json:"sourceUpdatedAt"`
 	UpdatedAt        time.Time `json:"updatedAt"`

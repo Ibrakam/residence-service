@@ -24,6 +24,7 @@ export type MerosSafeSnapshot = {
     phaseSlug: string;
     propertyType: string;
     status: 'available' | 'reserved' | 'sold' | 'unavailable';
+    repairIncluded?: boolean;
     price: number;
     pricePerM2: number;
     currency: string;
@@ -91,6 +92,7 @@ export function MerosUnifiedCatalog({ snapshot: embeddedSnapshot, initialLanguag
     building: unit.phase || undefined,
     propertyType: 'apartment',
     status: unit.status,
+    repairIncluded: unit.repairIncluded,
     price: unit.price > 0 ? unit.price : undefined,
     pricePerM2: unit.pricePerM2 > 0 ? unit.pricePerM2 : undefined,
     currency: unit.currency,

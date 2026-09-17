@@ -537,6 +537,9 @@ components:
         pricePerM2: { type: number, format: double }
         currency: { type: string, const: UZS }
         planImageUrl: { type: string, format: uri }
+        repairIncluded:
+          type: boolean
+          description: Authoritative CRM flag. true means with repair, false means without repair; omitted when the provider does not expose this fact.
         isActive: { type: boolean }
         sourceUpdatedAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }

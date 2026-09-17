@@ -226,7 +226,7 @@ func (s *Store) ListUnits(ctx context.Context, filter domain.UnitFilter) (domain
 		            COALESCE(q.queue_key,''),COALESCE(q.queue_label,''),COALESCE(q.display_code,''),COALESCE(q.sort_order,0),
                     u.property_type, u.raw_property_type, u.status, u.raw_status,
                     u.number, u.entrance, u.floor, u.area::float8, u.rooms,
-                    u.price, u.price_per_m2::float8, u.currency, u.plan_image_url,
+                    u.price, u.price_per_m2::float8, u.currency, u.plan_image_url, u.repair_included,
                     ` + unitCompletionSelect + `,
                     u.is_active, u.source_updated_at, u.updated_at ` + where + `
 		      ORDER BY COALESCE(q.sort_order,2147483647),ph.id,u.entrance,u.floor,u.number
@@ -253,7 +253,7 @@ func (s *Store) GetUnit(ctx context.Context, id int64) (domain.Unit, error) {
 		       COALESCE(q.queue_key,''),COALESCE(q.queue_label,''),COALESCE(q.display_code,''),COALESCE(q.sort_order,0),
                u.property_type, u.raw_property_type, u.status, u.raw_status,
                u.number, u.entrance, u.floor, u.area::float8, u.rooms,
-               u.price, u.price_per_m2::float8, u.currency, u.plan_image_url,
+               u.price, u.price_per_m2::float8, u.currency, u.plan_image_url, u.repair_included,
                `+unitCompletionSelect+`,
                u.is_active, u.source_updated_at, u.updated_at
         FROM units u
@@ -278,12 +278,13 @@ func scanUnit(row rowScanner) (domain.Unit, error) {
 	var price sql.NullInt64
 	var pricePerM2 sql.NullFloat64
 	var completion sql.NullString
+	var repairIncluded sql.NullBool
 	err := row.Scan(
 		&item.ID, &item.SourceKey, &item.ProjectSlug, &item.PhaseSlug, &item.PhaseName,
 		&item.QueueKey, &item.QueueLabel, &item.QueueDisplayCode, &item.QueueOrder,
 		&item.PropertyType, &item.RawPropertyType, &item.Status, &item.RawStatus,
 		&item.Number, &item.Entrance, &item.Floor, &item.Area, &rooms,
-		&price, &pricePerM2, &item.Currency, &item.PlanImageURL, &completion,
+		&price, &pricePerM2, &item.Currency, &item.PlanImageURL, &repairIncluded, &completion,
 		&item.IsActive, &item.SourceUpdatedAt, &item.UpdatedAt,
 	)
 	if err != nil {
@@ -304,6 +305,10 @@ func scanUnit(row rowScanner) (domain.Unit, error) {
 	if completion.Valid {
 		value := completion.String
 		item.Completion = &value
+	}
+	if repairIncluded.Valid {
+		value := repairIncluded.Bool
+		item.RepairIncluded = &value
 	}
 	return item, nil
 }

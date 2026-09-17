@@ -23,6 +23,7 @@ export type VohaSafeSnapshot = {
     phase: string;
     propertyType: string;
     status: 'available' | 'reserved' | 'sold' | 'unavailable';
+    repairIncluded?: boolean;
     price: number;
     regularPrice: number;
     pricePerM2: number;
@@ -79,7 +80,7 @@ export function VohaUnifiedCatalog({ snapshot: embeddedSnapshot, initialLanguage
   const units = useMemo<CatalogUnit[]>(() => snapshot.units.map((unit) => ({
     id: String(unit.id), unitKey: unit.sourceKey || undefined, number: String(unit.number), rooms: unit.rooms,
     area: unit.area, floor: unit.floor, maxFloor: unit.maxFloor, entrance: unit.entrance || undefined,
-    phase: unit.phase || undefined, propertyType: 'apartment', status: unit.status,
+    phase: unit.phase || undefined, propertyType: 'apartment', status: unit.status, repairIncluded: unit.repairIncluded,
     price: unit.price > 0 ? unit.price : undefined,
     regularPrice: unit.regularPrice > 0 ? unit.regularPrice : undefined,
     pricePerM2: unit.pricePerM2 > 0 ? unit.pricePerM2 : undefined,

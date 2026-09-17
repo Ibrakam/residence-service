@@ -24,6 +24,7 @@ export type SadoSafeSnapshot = {
     maxFloor: number;
     entrance: number;
     status: 'available';
+    repairIncluded?: boolean;
     plan: string;
   }>;
 };
@@ -95,6 +96,7 @@ export function SadoUnifiedCatalog({ snapshot: embeddedSnapshot, initialLanguage
       building: unit.block || undefined,
       propertyType: 'apartment',
       status: 'available',
+      repairIncluded: unit.repairIncluded,
       price: typeof unit.price === 'number' && unit.price > 0 ? unit.price : undefined,
       regularPrice: typeof unit.listPrice === 'number' && unit.listPrice > (unit.price ?? 0) ? unit.listPrice : undefined,
       pricePerM2: typeof unit.price === 'number' && unit.price > 0 && unit.area > 0 ? Math.round(unit.price / unit.area) : undefined,

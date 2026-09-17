@@ -126,6 +126,7 @@ export function normalizeUysotTable(root, capturedAt = new Date().toISOString())
       propertyType: row.apartment ? 'apartment' : 'commercial',
       repair: row.repaired ? 'С ремонтом' : 'Без ремонта',
       repaired: row.repaired,
+      repairIncluded: row.repaired,
       status: normalizedStatus,
       rawStatus: String(row.commerceStatus),
       pricePerM2,
@@ -879,6 +880,10 @@ export function normalizeNrgBiCapture(groups, capturedAt = new Date().toISOStrin
       assert(!identities.has(id), `NRG ${slug} duplicate apartment placement UUID ${id}`);
       identities.add(id);
       const row = listedById.get(id) ?? null;
+      assert(typeof placement.isRepaired === 'boolean', `NRG ${slug} matrix apartment ${id}.isRepaired must be boolean`);
+      if (row && typeof row.isRepaired === 'boolean') {
+        assert(row.isRepaired === placement.isRepaired, `NRG ${slug} apartment ${id} repair flag mismatch`);
+      }
       const number = numberText(placement.placementName, `NRG ${slug} matrix apartment ${id}.placementName`);
       const rooms = integer(placement.roomCount);
       const area = positive(placement.square);
@@ -916,6 +921,7 @@ export function normalizeNrgBiCapture(groups, capturedAt = new Date().toISOStrin
         status: normalizedStatus,
         rawStatus: placement.placementUIStatus,
         isSale: placement.isSale,
+        repairIncluded: placement.isRepaired,
         price,
         pricePerM2,
         currency: 'UZS',
@@ -984,8 +990,32 @@ function sunBlock(row) {
 }
 
 function sunKey(block, number, floor) {
-  const unit = String(number).toLowerCase().replaceAll(/[^a-zа-яё0-9]+/giu, '-').replace(/^[-]+|[-]+$/g, '');
+  // Keep this identity byte-for-byte compatible with the sanitized public
+  // bundle. MacroCRM returns apartment letters in Cyrillic (for example
+  // "А2"), while the public unit key intentionally uses ASCII ("a2").
+  const unit = String(number)
+    .normalize('NFKC')
+    .toLowerCase()
+    .replaceAll('а', 'a')
+    .replaceAll('б', 'b')
+    .replaceAll('в', 'v')
+    .replaceAll('г', 'g')
+    .replaceAll('д', 'd')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^[-]+|[-]+$/g, '');
+  assert(unit, `SUN unit number ${JSON.stringify(number)} cannot form a public key`);
   return `sun-${block.toLowerCase()}-${unit}-f${floor}`;
+}
+
+const sunUnitsPerFloor = Object.freeze({ A: 7, V: 8, G: 6, D: 5 });
+
+function sunLayoutKey(block, number, rooms, area) {
+  const unitsPerFloor = sunUnitsPerFloor[block];
+  const ordinal = integer(String(number).match(/\d+/)?.[0]);
+  const normalizedArea = positive(area);
+  if (!unitsPerFloor || ordinal === null || ordinal < 1 || rooms === null || normalizedArea === null) return '';
+  const position = ((ordinal - 1) % unitsPerFloor) + 1;
+  return `${block}:${position}:${rooms}:${normalizedArea.toFixed(2)}`;
 }
 
 function sunBusinessProjection(row) {
@@ -1027,7 +1057,21 @@ export function normalizeSunPages(pages, capturedAt = new Date().toISOString(), 
   assert(sawLastPage, 'SUN capture did not reach the last page');
   if (declaredCount === null) declaredCount = map.size;
   assert(map.size === declaredCount, `SUN captured ${map.size} of ${declaredCount} rows`);
-  const retainedByKey = new Map((template?.units ?? []).map((unit) => [String(unit.unitKey ?? unit.id), unit]));
+  const templateUnits = template?.units ?? [];
+  const retainedByKey = new Map(templateUnits.map((unit) => [String(unit.unitKey ?? unit.id), unit]));
+  const retainedByLayout = new Map();
+  const ambiguousLayouts = new Set();
+  for (const unit of templateUnits) {
+    const key = sunLayoutKey(String(unit.block ?? '').toUpperCase(), unit.number, integer(unit.rooms), unit.area);
+    if (!key || ambiguousLayouts.has(key)) continue;
+    const previous = retainedByLayout.get(key);
+    if (previous && (previous.primaryPlanPath !== unit.primaryPlanPath || previous.secondPlanPath !== unit.secondPlanPath)) {
+      retainedByLayout.delete(key);
+      ambiguousLayouts.add(key);
+    } else if (!previous) {
+      retainedByLayout.set(key, unit);
+    }
+  }
   const identities = new Set();
   const units = [...map.values()].sort((left, right) => Number(left.id) - Number(right.id)).map((row) => {
     const estate = row.estate;
@@ -1043,7 +1087,18 @@ export function normalizeSunPages(pages, capturedAt = new Date().toISOString(), 
     identities.add(unitKey);
     const normalizedStatus = status(row.status);
     assert(normalizedStatus !== 'unknown', `SUN row ${row.id} has unknown status ${row.status}`);
-    const retained = retainedByKey.get(unitKey) ?? {};
+    // A status transition can make a unit public after the checked-in snapshot
+    // was built. Reuse artwork only when block, repeated floor position and
+    // dimensions resolve to one verified official plan pair. Ambiguous layouts
+    // deliberately fail closed instead of showing another apartment's plan.
+    const retained = retainedByKey.get(unitKey)
+      ?? retainedByLayout.get(sunLayoutKey(block, number, rooms, area))
+      ?? {};
+    // `second` is the exact apartment sheet. `primary` shows its position on
+    // the floor and must not replace the exact plan in cards or the lightbox.
+    const exactPlanPath = retained.secondPlanPath ?? retained.planImageUrl;
+    const exactPlanWidth = integer(retained.secondPlanWidth ?? retained.planWidth);
+    const exactPlanHeight = integer(retained.secondPlanHeight ?? retained.planHeight);
     const rawPrice = normalizedStatus === 'available' ? optionalPositive(estate.estate_price) : null;
     const rawPricePerM2 = normalizedStatus === 'available' ? optionalPositive(estate.estate_price_m2) : null;
     return {
@@ -1070,7 +1125,8 @@ export function normalizeSunPages(pages, capturedAt = new Date().toISOString(), 
       rawStatus: String(row.status),
       isSale: normalizedStatus === 'available',
       currency: 'UZS',
-      ...(retained.primaryPlanPath ? { planImageUrl: retained.primaryPlanPath } : {}),
+      ...(typeof exactPlanPath === 'string' && exactPlanPath.startsWith('/sun/plans/') ? { planImageUrl: exactPlanPath } : {}),
+      ...(exactPlanWidth && exactPlanHeight ? { planWidth: exactPlanWidth, planHeight: exactPlanHeight } : {}),
     };
   });
   const audit = completeness({ expected: declaredCount, units, identities });

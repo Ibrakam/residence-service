@@ -508,7 +508,7 @@ export function ApartmentCatalog({ project, units: sourceUnits, capabilities, pr
   const availability = String(project.availableCount);
   const refreshedLabel = dateLabel(refreshedAt, language);
 
-  return <main className="apartment-catalog" lang={language} style={presentation.theme}>
+  return <main className="apartment-catalog" data-project={project.slug} lang={language} style={presentation.theme}>
     <a className="apartment-catalog__skip" href="#catalog">{t.skip}</a>
     <header className="apartment-catalog-header">
       <a className="apartment-catalog-header__brand" href={presentation.backHref(language)}>{presentation.brand}<small>{presentation.brandSubtitle}</small></a>

@@ -62,7 +62,9 @@ assert.match(catalogue, /params\.get\('unitKey'\)/);
 assert.match(catalogue, /unit\.unitKey === stableKey \|\| unit\.id === stableKey/);
 assert.match(catalogue, /unitKey: unit\.unitKey \?\? unit\.id/);
 assert.match(catalogue, /selectedCta: 'Уточнить условия по этой квартире'/);
+assert.match(catalogue, /data-project=\{project\.slug\}/, 'catalogue styles must be project-scopeable without affecting other projects');
 assert.match(styles, /\.apartment-catalog \.apartment-catalog__primary[\s\S]*?color:white/);
+assert.match(styles, /\.apartment-catalog\[data-project="4u"\] \.apartment-catalog-hero h1 \{[^}]*line-height:\.94;/, '4U catalogue heading must preserve readable line separation');
 assert.match(styles, /\.apartment-catalog-detail \{[\s\S]*?border:2px solid/);
 for (const selector of [
   '.apartment-catalog-card__select figure img',

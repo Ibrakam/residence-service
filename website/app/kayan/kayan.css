@@ -9,6 +9,13 @@ html:has(.kayan-site),body:has(.kayan-site) { overflow-x:clip; }
   font-family:var(--font-ui),Arial,sans-serif;
 }
 
+/* Shared Mirador / Ofiyat multiline typography guard. */
+.kayan-site h1,
+.kayan-site h2{line-height:1.04!important;letter-spacing:-.02em!important}
+.kayan-site h3{line-height:1.08!important;letter-spacing:-.01em!important}
+.kayan-site .kayan-menu nav a,
+.kayan-site .kayan-menu nav button{letter-spacing:-.02em!important}
+
 .kayan-site::before { position:absolute; z-index:0; inset:0; pointer-events:none; content:''; opacity:.22; background-image:radial-gradient(circle at 15% 8%,rgba(255,255,255,.34) 0 1px,transparent 1.5px),radial-gradient(circle at 78% 42%,rgba(24,32,29,.15) 0 1px,transparent 1.5px); background-size:31px 31px,43px 43px; mask-image:linear-gradient(180deg,transparent,black 14%,black 82%,transparent); }
 .kayan-site>*,.kayan-site section { position:relative; z-index:1; }
 .kayan-site>.lead-modal { position:fixed; z-index:650; }

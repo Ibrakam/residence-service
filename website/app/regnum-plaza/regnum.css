@@ -10,6 +10,11 @@
   --rp-line:rgba(31,34,33,.16);
 }
 
+/* Preserve a visible gap between wrapped lines in the project display face. */
+.rp-site h1,
+.rp-site h2{line-height:1.04!important;letter-spacing:-.02em!important}
+.rp-site h3{line-height:1.08!important;letter-spacing:-.01em!important}
+
 html { scroll-behavior:smooth; }
 body.rp-active { margin:0; background:var(--rp-graphite); }
 .rp-site,.rp-site * { box-sizing:border-box; }

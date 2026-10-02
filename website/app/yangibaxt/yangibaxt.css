@@ -16,6 +16,12 @@
   line-height: 1.55;
 }
 
+/* Wrapped headings retain their rhythm in RU, UZ and EN. */
+.yangibaxt-site h2{line-height:1.04!important;letter-spacing:-.02em!important}
+.yangibaxt-site h3{line-height:1.08!important;letter-spacing:-.01em!important}
+.yangibaxt-site .yb-hero__bottom>p,
+.yangibaxt-site .yb-materials li{letter-spacing:-.02em!important}
+
 .yangibaxt-site *, .yangibaxt-site *::before, .yangibaxt-site *::after { box-sizing: border-box; }
 .yangibaxt-site img { display: block; max-width: 100%; }
 .yangibaxt-site button, .yangibaxt-site a { -webkit-tap-highlight-color: transparent; }

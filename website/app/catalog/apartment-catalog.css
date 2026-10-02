@@ -11,6 +11,11 @@
   color:var(--catalog-ink);
   font-family:var(--font-ui),Arial,sans-serif;
 }
+
+/* Shared catalogue headings must not inherit the former compressed leading. */
+.apartment-catalog h1,
+.apartment-catalog h2{line-height:1.04!important;letter-spacing:-.02em!important}
+.apartment-catalog h3{line-height:1.08!important;letter-spacing:-.01em!important}
 .apartment-catalog button,.apartment-catalog select,.apartment-catalog input { font:inherit; }
 .apartment-catalog button,.apartment-catalog a { -webkit-tap-highlight-color:transparent; }
 .apartment-catalog button { color:inherit; cursor:pointer; }

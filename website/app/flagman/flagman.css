@@ -14,6 +14,11 @@
   font-family:var(--font-ui),Arial,sans-serif;
   font-variant-numeric:tabular-nums;
 }
+
+/* The former tight leading made the eyebrow and Cyrillic title lines collide. */
+.flagman-site .flagman-hero h1{margin-top:24px!important;line-height:.92!important;letter-spacing:-.02em!important}
+.flagman-site h2{line-height:1.04!important;letter-spacing:-.02em!important}
+.flagman-site h3{line-height:1.08!important;letter-spacing:-.01em!important}
 .flagman-site * { box-sizing:border-box; }
 .flagman-site button,.flagman-site a { font:inherit; }
 .flagman-site a { color:inherit; }

@@ -188,3 +188,8 @@ body:has(.sarbon) { margin:0; background:var(--sarbon-paper); color:var(--sarbon
   .sarbon-lightbox { padding:70px 10px; }.sarbon-lightbox__arrow--left { left:12px; }.sarbon-lightbox__arrow--right { right:12px; }
 }
 @media (prefers-reduced-motion:reduce) { html{scroll-behavior:auto}.sarbon *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important} }
+
+/* Safe leading for wrapped project headings. */
+.sarbon h1,
+.sarbon h2{line-height:1.04!important;letter-spacing:-.02em!important}
+.sarbon h3{line-height:1.08!important;letter-spacing:-.01em!important}

@@ -11,6 +11,10 @@
   background: linear-gradient(180deg, rgba(25,23,21,.78), rgba(25,23,21,.24));
   color: #fff; backdrop-filter: blur(16px);
 }
+
+/* Jomiy's display font has deep Cyrillic descenders; allow them to clear. */
+.jomiy-site h2{line-height:1.04!important;letter-spacing:-.02em!important}
+.jomiy-site h3{line-height:1.08!important;letter-spacing:-.01em!important}
 .jm-wordmark { display: inline-flex; align-items: baseline; gap: 10px; justify-self: start; font-size: 16px; font-weight: 800; letter-spacing: .24em; text-decoration: none; }
 .jm-wordmark small { color: rgba(255,255,255,.56); font-size: 7px; letter-spacing: .18em; }
 .jm-menu-toggle { min-width: 96px; min-height: 44px; padding: 0 16px; border: 1px solid rgba(255,255,255,.38) !important; background: rgba(25,23,21,.18); color: #fff; cursor: pointer; font-size: 9px; font-weight: 750; letter-spacing: .13em; text-transform: uppercase; }

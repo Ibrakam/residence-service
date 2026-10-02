@@ -28,3 +28,9 @@
 @media(max-width:480px){.fouru-hero__content h1 b{font-size:145px}.fouru-hero__content>p{max-width:320px;font-size:23px}.fouru-hero__actions{display:grid}.fouru-button{width:100%}.fouru-manifest h2,.fouru-copy h2,.fouru-courtyards h2,.fouru-amenities h2,.fouru-location h2,.fouru-catalog h2,.fouru-contact h2{font-size:49px}.fouru-facts article{min-height:165px}.fouru-facts strong{font-size:34px}.fouru-court-tabs button{min-height:115px}.fouru-halls__media{grid-template-columns:1fr 1fr;grid-template-rows:1.3fr .8fr;min-height:530px}.fouru-halls__media button:first-child{grid-column:1/3;grid-row:1}.fouru-build__grid{grid-template-columns:1fr 1fr;grid-template-rows:1.4fr .8fr;min-height:540px}.fouru-build__grid button:first-child{grid-column:1/3;grid-row:1}.fouru-catalog aside{padding:22px}.fouru-lightbox{grid-template-columns:1fr;align-content:center}.fouru-lightbox__arrow{position:absolute;z-index:2;top:50%}.fouru-lightbox__arrow.is-prev{left:10px}.fouru-lightbox__arrow.is-next{right:10px}.fouru-footer{grid-template-columns:1fr}.fouru-footer p,.fouru-footer>small{grid-column:1}.fouru-loader strong{font-size:120px}}
 @media(prefers-reduced-motion:reduce){.fouru-site *{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.fouru-loader{display:none}}
 .fouru-site .fouru-header__cta{color:var(--4u-ink)}
+
+/* Keep multiline display copy readable in Cyrillic at every breakpoint. */
+.fouru-site h2{line-height:1.04!important;letter-spacing:-.02em!important}
+.fouru-site .fouru-hero__content>p{letter-spacing:-.02em!important}
+.fouru-site .fouru-amenities li{padding-block:16px;line-height:1.35}
+.fouru-site .fouru-amenities li span{line-height:1}

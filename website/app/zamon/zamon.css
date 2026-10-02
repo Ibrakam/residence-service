@@ -19,6 +19,10 @@
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Readable leading for long multiline headings. */
+.zamon-site h2{line-height:1.04!important;letter-spacing:-.02em!important}
+.zamon-site h3{line-height:1.08!important;letter-spacing:-.01em!important}
+
 .zamon-site *,
 .zamon-site *::before,
 .zamon-site *::after { box-sizing: border-box; }

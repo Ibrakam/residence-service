@@ -12,6 +12,14 @@
   font-family:"Helvetica Neue",Arial,sans-serif;
   font-size:16px;
 }
+
+/* The condensed face needs extra leading whenever a title wraps. */
+.sun-site h1,
+.sun-site h2{line-height:1.04!important;letter-spacing:-.02em!important}
+.sun-site h3{line-height:1.08!important;letter-spacing:-.01em!important}
+.sun-site .sun-menu__links a,
+.sun-site .sun-gallery button>span strong,
+.sun-site .sun-contact__phone{letter-spacing:-.02em!important}
 .sun-site * { box-sizing:border-box; }
 .sun-site button,.sun-site input,.sun-site select { font:inherit; }
 .sun-site button,.sun-site a { -webkit-tap-highlight-color:transparent; }

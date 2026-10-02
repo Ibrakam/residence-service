@@ -153,6 +153,11 @@ html { scroll-behavior:smooth; }
   .sa-gallery { grid-template-columns:1fr 300px; }.sa-gallery__image img { height:540px; }
   .sa-contact { grid-template-columns:1fr 1fr; }.sa-contact > div { grid-column:1/-1; }.sa-contact > a { align-items:flex-end; }
 }
+
+/* Multiline headings stay legible in all three languages. */
+.sa-page h1,
+.sa-page h2{line-height:1.04!important;letter-spacing:-.02em!important}
+.sa-page h3{line-height:1.08!important;letter-spacing:-.01em!important}
 @media (max-width:800px) {
   .sa-header { min-height:74px; padding:0 20px; }.sa-brand { width:150px; }.sa-hero__content { padding:130px 24px 90px; }.sa-hero h1 { font-size:clamp(66px,17vw,112px); }.sa-hero__caption { left:24px; right:auto; }
   .sa-stats { grid-template-columns:1fr 1fr; padding:0 20px; }.sa-stats div { min-height:140px; padding:22px; }.sa-stats div:nth-child(3) { border-left:1px solid var(--sa-line); }.sa-stats div:nth-child(-n+2) { border-bottom:1px solid var(--sa-line); }

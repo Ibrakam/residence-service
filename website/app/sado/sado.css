@@ -14,6 +14,11 @@
   font-family: var(--font-ui), sans-serif;
 }
 
+/* Avoid collisions in large wrapped display copy. */
+.sado-site h1,
+.sado-site h2{line-height:1.04!important;letter-spacing:-.02em!important}
+.sado-site h3{line-height:1.08!important;letter-spacing:-.01em!important}
+
 .sado-site *, .sado-site *::before, .sado-site *::after { box-sizing: border-box; }
 .sado-site a { color: inherit; text-decoration: none; }
 .sado-site button, .sado-site input { font: inherit; }

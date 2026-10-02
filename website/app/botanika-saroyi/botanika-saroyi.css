@@ -18,6 +18,11 @@ body.botanika-overlay-locked { overflow: hidden; }
   font-family: var(--font-ui), sans-serif;
 }
 
+/* Prevent ascenders and descenders from touching in multiline headings. */
+.botanika-site h1,
+.botanika-site h2{line-height:1.04!important;letter-spacing:-.02em!important}
+.botanika-site h3{line-height:1.08!important;letter-spacing:-.01em!important}
+
 .botanika-site *, .botanika-site *::before, .botanika-site *::after { box-sizing: border-box; }
 .botanika-site :where(section, article, div, figure, header, footer, nav, aside) { min-width: 0; }
 .botanika-site :where(img) { display: block; max-width: 100%; }

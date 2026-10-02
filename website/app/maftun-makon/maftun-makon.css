@@ -19,6 +19,11 @@
   font-family: var(--font-ui), Arial, sans-serif;
 }
 
+/* Readable leading for wrapped editorial headings. */
+.maftun-site h1{line-height:1.02!important;letter-spacing:-.02em!important}
+.maftun-site h2{line-height:1.04!important;letter-spacing:-.02em!important}
+.maftun-site h3{line-height:1.08!important;letter-spacing:-.01em!important}
+
 .maftun-site *,
 .maftun-site *::before,
 .maftun-site *::after { box-sizing: border-box; min-width: 0; }

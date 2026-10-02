@@ -14,3 +14,8 @@
 @media(prefers-reduced-motion:reduce){.c1-site{scroll-behavior:auto}.c1-reveal{opacity:1;transform:none;transition:none}.c1-hero>picture{transform:none!important}.c1-site *{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 .c1-menu-button{display:block}.c1-contact footer img{width:54px;max-height:58px;object-fit:contain}
 .c1-life__rail{touch-action:pan-x pan-y;-webkit-overflow-scrolling:touch}
+
+/* Multiline title safety for the display serif. */
+.c1-site h1{line-height:1.02!important;letter-spacing:-.02em!important}
+.c1-site h2{line-height:1.04!important;letter-spacing:-.02em!important}
+.c1-site h3{line-height:1.08!important;letter-spacing:-.01em!important}

@@ -8,6 +8,7 @@ readonly BOT_SCRIPT="${TEST_DIR}/configure-tencorp-auth-bot.sh"
 readonly DEPLOYER="${TEST_DIR}/deploy-residence-root.sh"
 readonly NGINX_DIR="${TEST_DIR}/nginx"
 readonly NGINX_ASSET_PROXY="${NGINX_DIR}/tencorp-auth-assets-proxy.conf"
+readonly PUBLIC_ROOT_SNIPPET="${NGINX_DIR}/residence-root-route.conf"
 readonly SYSTEMD_UNIT="${TEST_DIR}/systemd/tencorp-auth-gateway.service"
 readonly BOT_SYSTEMD_DROPIN="${TEST_DIR}/systemd/tencorp-auth-gateway-bot-webhook.conf"
 readonly GRANTS_SQL="${TEST_DIR}/postgresql/tencorp-auth-gateway-grants.sql"
@@ -133,6 +134,19 @@ grep -Fq 'return 401 '\''{"error":"authentication_required"}\n'\'';' \
   || fail "non-HTML page requests do not receive the JSON 401 contract"
 grep -Fq 'auth_request off;' "$NGINX_DIR/tencorp-auth-exempt.conf" \
   || fail "explicit auth exemption is missing"
+grep -Fq 'location = / {' "$PUBLIC_ROOT_SNIPPET" \
+  || fail "public agency homepage location is missing"
+root_block="$(sed -n '/location = \/ {/,/^}/p' "$PUBLIC_ROOT_SNIPPET")"
+[[ "$root_block" == *'tencorp-auth-exempt.conf'* && "$root_block" != *'tencorp-auth-protect-page.conf'* ]] \
+  || fail "agency homepage is not explicitly public"
+map_module_block="$(sed -n '/location = \/tencorp\/assets\/projects-map.js {/,/^}/p' "$PUBLIC_ROOT_SNIPPET")"
+[[ "$map_module_block" == *'tencorp-auth-protect-api.conf'* ]] \
+  || fail "homepage map data module is not protected"
+for public_prefix in assets fonts images; do
+  prefix_block="$(sed -n "\\|location ^~ /tencorp/${public_prefix}/ {|,/^}/p" "$PUBLIC_ROOT_SNIPPET")"
+  [[ "$prefix_block" == *'tencorp-auth-exempt.conf'* ]] \
+    || fail "homepage static prefix is not public: ${public_prefix}"
+done
 for stripped_header in Cookie X-Auth-User-ID X-Auth-Telegram-ID X-Auth-Phone; do
   grep -Fq "proxy_set_header ${stripped_header} \"\";" "$NGINX_DIR/tencorp-auth-exempt.conf" \
     || fail "auth-exempt upstream receives the shared credential header: ${stripped_header}"
@@ -309,16 +323,24 @@ esac
 if [[ "$authenticated" == true ]]; then
   case "$path" in
     /residence-assets/_next/static/*) content_type='text/css' ;;
+    /tencorp/assets/projects-map.js) content_type='application/javascript'; body='map module' ;;
     /residence-api/catalog/) content_type='application/json'; body='{}' ;;
     /__auth/me) content_type='application/json'; body='{"telegramId":42,"phoneNumberVerified":true}' ;;
     /__auth/account) body='<form action="/__auth/logout"></form><form action="/__auth/logout-all"></form>' ;;
   esac
 else
   case "$path" in
-    /|/4u|/4u/apartments|/sanat/|/avalon/|/tencorp/|/tencrop/)
+    /)
+      body='<html><head><script type="module" src="/tencorp/assets/index-fixture.js"></script><script src="/tencorp/assets/projects-map-loader.js?v=fixture"></script><link rel="stylesheet" href="/tencorp/assets/index-fixture.css"><link rel="stylesheet" href="/tencorp/assets/projects-map.css?v=fixture"></head><body><div id="root"></div></body></html>'
+      ;;
+    /4u|/4u/apartments|/sanat/|/avalon/|/tencorp/|/tencrop/)
       body="<form method=\"post\" action=\"/__auth/telegram/start\"><input name=\"return_to\" value=\"${path}\"></form>"
       ;;
-    /residence-assets/_next/static/*|/residence-api/catalog/|/api/kayan/ofiyat-explorer)
+    /tencorp/assets/index-fixture.js|/tencorp/assets/projects-map-loader.js)
+      content_type='application/javascript'; body='fetch(`/__auth/me`); projects-map--locked Авторизоваться /tencorp/assets/projects-map.js' ;;
+    /tencorp/assets/index-fixture.css|/tencorp/assets/projects-map.css)
+      content_type='text/css'; body='body{}' ;;
+    /residence-assets/_next/static/*|/residence-api/catalog/|/api/kayan/ofiyat-explorer|/tencorp/assets/projects-map.js|/__auth/me)
       status=401; content_type='application/json'; body='{"error":"authentication_required"}'
       ;;
     /__tencorp-auth/check) status=404 ;;
@@ -345,6 +367,10 @@ if [[ -n "$headers" ]]; then
     printf 'Content-Type: %s\r\n' "$content_type"
     if [[ "$immutable" == true ]]; then
       printf 'Cache-Control: public, max-age=31536000, immutable\r\n'
+    elif [[ "$authenticated" == false && "$path" == /tencorp/assets/* && "$status" == 200 ]]; then
+      printf 'Cache-Control: public, max-age=86400\r\n'
+    elif [[ "$authenticated" == false && "$path" == / ]]; then
+      printf 'Cache-Control: public, max-age=0, must-revalidate\r\n'
     elif [[ "$status" == 401 || "$authenticated" == false && "$content_type" == text/html* ]]; then
       printf 'Cache-Control: private, no-store\r\n'
     fi

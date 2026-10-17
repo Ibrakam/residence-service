@@ -278,7 +278,6 @@ Add the page snippet inside these existing content locations:
 include /etc/nginx/snippets/tencorp-auth-protect-page.conf;
 ```
 
-- exact `/` in `/etc/nginx/snippets/residence-root-route.conf`;
 - `location ^~ /avalon/`;
 - `location ^~ /tencrop/`;
 - exact `/sanat/` and `/sanat/flats`;
@@ -321,6 +320,9 @@ Keep only these explicit exceptions outside browser SSO. Because the gate is
 at server scope, every proxied/static exception must include
 `tencorp-auth-exempt.conf` (or an equivalent reviewed `auth_request off`):
 
+- exact `/`, serving the public agency homepage from the reviewed static
+  release, plus only its `/tencorp/assets/`, `/tencorp/fonts/`, and
+  `/tencorp/images/` dependencies;
 - `/__auth/*`, including the secret-header-validated Telegram bot webhook and
   the six fixed, versioned UI assets under `/__auth/assets/`;
 - exact `/privacy` and its path-only `/privacy/` redirect;
@@ -332,6 +334,15 @@ at server scope, every proxied/static exception must include
   authentication and must not inherit browser SSO;
 - loopback-only health routes and any future server-to-server webhook with its
   own authenticated boundary.
+
+The homepage exception does not make the TENCORP project site public:
+`/tencorp/`, residence routes, catalogues, and all other project sites remain
+behind the page gate. The exact `/tencorp/assets/projects-map.js` module remains
+behind `tencorp-auth-protect-api.conf`, overriding the public asset prefix. A
+small public loader checks `/__auth/me`; it loads the map provider and protected
+project/coordinate module only for a valid session. Guests receive a static
+authorization panel instead, so neither map coordinates nor the provider are
+loaded in their browser.
 
 Do not remove the operator authorization from `/market-map` or `/analytics`,
 do not use `satisfy any`, and do not replace an operator
@@ -370,8 +381,9 @@ location = /robots.txt {
 Proxy exact `/privacy` to the auth gateway with
 `tencorp-auth-public-proxy.conf`; its localized legal HTML contains inline CSS,
 no JavaScript, and references only the six fixed auth assets. Keep the
-dedicated `/__auth/assets/` proxy public and immutable, but never exempt a main
-application asset prefix or JavaScript chunk that can contain catalog data.
+dedicated `/__auth/assets/` proxy public and immutable. Outside the reviewed
+agency-homepage dependencies described above, never exempt a main application
+asset prefix or JavaScript chunk that can contain catalog data.
 
 ## Rollout gate and smoke contract
 
@@ -384,9 +396,16 @@ and the deploy must still prove the service PID/cwd and late
 
 Required unauthenticated public checks:
 
-- `GET /`, `/sanat/`, `/avalon/`, `/tencorp/`, `/tencrop/`, and both routes for
-  every direct project, with `Accept: text/html`, return the self-contained
-  login page as 200 and contain
+- `GET /` returns the public agency homepage as 200, references only the
+  reviewed public static prefixes, does not load the map provider directly,
+  and uses `Cache-Control: public, max-age=0`;
+- its main JavaScript/CSS, map authorization loader, and map presentation CSS
+  remain public with explicit cache headers;
+- unauthenticated `/tencorp/assets/projects-map.js` and `/__auth/me` requests
+  return JSON 401, and the loader contains the fail-closed authorization panel;
+- `/sanat/`, `/avalon/`, `/tencorp/`, `/tencrop/`, and both routes for every
+  direct project, with `Accept: text/html`, return the self-contained login
+  page as 200 and contain
   `method="post" action="/__auth/telegram/start"`;
 - representative framework/image assets return 401 with
   `Cache-Control: private, no-store`;
@@ -453,8 +472,9 @@ fixture as `root:root` mode `0600`. It never enables or changes the public gate
 marker, never overwrites an existing fixture, and never prints the session or
 identity response.
 
-Authenticated checks prove all 31 direct/root routes and an exact framework
-asset return 2xx, the protected catalog API returns JSON, and `/__auth/me`
+Authenticated checks prove all 31 direct/root routes, an exact framework
+asset, and the protected homepage map module return 2xx, the protected catalog
+API returns JSON, and `/__auth/me`
 contains a Telegram identity plus `phoneNumberVerified: true` without exposing
 the phone number, profile-photo URL, or internal database ID to browser code.
 They also prove the self-contained `/__auth/account` page exposes both sign-out controls. As a

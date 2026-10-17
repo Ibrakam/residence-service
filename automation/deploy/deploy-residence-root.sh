@@ -43,6 +43,8 @@ SERVICE_UNIT_BACKUP=""
 AUTH_SMOKE_CURL_CONFIG=""
 AUTH_SMOKE_IDENTITY_FILE=""
 FRAMEWORK_ASSET_PATH=""
+PUBLIC_HOMEPAGE_SCRIPT_PATH=""
+PUBLIC_HOMEPAGE_STYLE_PATH=""
 
 declare -a SMOKE_ROUTES=()
 readonly -a DIRECT_PROJECTS=(
@@ -670,6 +672,107 @@ smoke_public_login_page() {
   die "public auth wall smoke failed: ${PUBLIC_ORIGIN}${route} (last status ${status})"
 }
 
+smoke_public_homepage() {
+  local status cache_control
+  local body_file headers_file
+
+  body_file="$(mktemp /run/residence-public-home.XXXXXX)"
+  headers_file="$(mktemp /run/residence-public-home-headers.XXXXXX)"
+  status="$(curl \
+    --disable \
+    --silent \
+    --show-error \
+    --output "$body_file" \
+    --dump-header "$headers_file" \
+    --write-out '%{http_code}' \
+    --connect-timeout 3 \
+    --max-time 15 \
+    --header "Host: ${HOST_HEADER}" \
+    --header 'Accept: text/html' \
+    "${PUBLIC_ORIGIN}/")" || {
+      rm -f -- "$body_file" "$headers_file"
+      die "could not query the public agency homepage"
+    }
+  cache_control="$(awk 'BEGIN { IGNORECASE=1 } /^Cache-Control:/ { value=$0 } END { sub(/^[^:]+:[[:space:]]*/, "", value); sub(/\r$/, "", value); print tolower(value) }' "$headers_file")"
+  PUBLIC_HOMEPAGE_SCRIPT_PATH="$(grep -Eo 'src="/tencorp/assets/index-[A-Za-z0-9_-]+\.js"' "$body_file" | head -n 1 | sed -E 's/^src="([^"]+)"$/\1/' || true)"
+  PUBLIC_HOMEPAGE_STYLE_PATH="$(grep -Eo 'href="/tencorp/assets/index-[A-Za-z0-9_-]+\.css"' "$body_file" | head -n 1 | sed -E 's/^href="([^"]+)"$/\1/' || true)"
+  if [[ "$status" != 200 ]] \
+    || [[ "$cache_control" != *max-age=0* ]] \
+    || [[ -z "$PUBLIC_HOMEPAGE_SCRIPT_PATH" || -z "$PUBLIC_HOMEPAGE_STYLE_PATH" ]] \
+    || ! grep -Fq '<div id="root"></div>' "$body_file" \
+    || ! grep -Fq '/tencorp/assets/projects-map-loader.js' "$body_file" \
+    || ! grep -Fq '/tencorp/assets/projects-map.css' "$body_file" \
+    || grep -Fq 'api-maps.yandex.ru' "$body_file" \
+    || grep -Fq 'method="post" action="/__auth/telegram/start"' "$body_file" \
+    || grep -Eiq '^Location:' "$headers_file" \
+    || grep -Eiq '^Set-Cookie:[[:space:]]*__Host-tencorp_session=' "$headers_file"; then
+    rm -f -- "$body_file" "$headers_file"
+    die "public agency homepage contract failed (${status})"
+  fi
+  rm -f -- "$body_file" "$headers_file"
+  log "Public agency homepage smoke passed (${status})"
+}
+
+smoke_public_home_asset() {
+  local path="$1"
+  local expected_content_type="$2"
+  local status content_type cache_control
+  local headers_file
+
+  headers_file="$(mktemp /run/residence-public-home-asset.XXXXXX)"
+  status="$(curl \
+    --disable \
+    --silent \
+    --show-error \
+    --output /dev/null \
+    --dump-header "$headers_file" \
+    --write-out '%{http_code}' \
+    --connect-timeout 3 \
+    --max-time 15 \
+    --header "Host: ${HOST_HEADER}" \
+    "${PUBLIC_ORIGIN}${path}")" || {
+      rm -f -- "$headers_file"
+      die "could not query public agency asset: ${path}"
+    }
+  content_type="$(awk 'BEGIN { IGNORECASE=1 } /^Content-Type:/ { value=$0 } END { sub(/^[^:]+:[[:space:]]*/, "", value); sub(/\r$/, "", value); print tolower(value) }' "$headers_file")"
+  cache_control="$(awk 'BEGIN { IGNORECASE=1 } /^Cache-Control:/ { value=$0 } END { sub(/^[^:]+:[[:space:]]*/, "", value); sub(/\r$/, "", value); print tolower(value) }' "$headers_file")"
+  rm -f -- "$headers_file"
+  if [[ "$status" != 200 ]] \
+    || [[ "$content_type" != "$expected_content_type"* ]] \
+    || [[ "$cache_control" != *public* || "$cache_control" != *max-age=* ]] \
+    || [[ "$cache_control" == *no-store* || "$cache_control" == *private* ]]; then
+    die "public agency asset contract failed: ${path} (${status}, ${content_type}, ${cache_control})"
+  fi
+}
+
+smoke_public_map_loader() {
+  local body_file status
+
+  body_file="$(mktemp /run/residence-public-map-loader.XXXXXX)"
+  status="$(curl \
+    --disable \
+    --silent \
+    --show-error \
+    --output "$body_file" \
+    --write-out '%{http_code}' \
+    --connect-timeout 3 \
+    --max-time 15 \
+    --header "Host: ${HOST_HEADER}" \
+    "${PUBLIC_ORIGIN}/tencorp/assets/projects-map-loader.js")" || {
+      rm -f -- "$body_file"
+      die "could not query the public map authorization loader"
+    }
+  if [[ "$status" != 200 ]] \
+    || ! grep -Fq '/__auth/me' "$body_file" \
+    || ! grep -Fq 'projects-map--locked' "$body_file" \
+    || ! grep -Fq 'Авторизоваться' "$body_file" \
+    || ! grep -Fq '/tencorp/assets/projects-map.js' "$body_file"; then
+    rm -f -- "$body_file"
+    die "public map authorization loader contract failed (${status})"
+  fi
+  rm -f -- "$body_file"
+}
+
 smoke_public_unauthorized_resource() {
   local path="$1"
   local accept="$2"
@@ -779,7 +882,9 @@ smoke_public_unauthenticated_contract() {
 
   [[ -n "$FRAMEWORK_ASSET_PATH" ]] \
     || die "framework asset path was not captured before public auth smoke"
+  smoke_public_homepage
   for route in "${SMOKE_ROUTES[@]}"; do
+    [[ "$route" == / ]] && continue
     smoke_public_login_page "$route" 5
   done
   for route in /sanat/ /sanat/flats /avalon/ /tencorp/ /tencrop/; do
@@ -793,12 +898,20 @@ smoke_public_unauthenticated_contract() {
   smoke_public_immutable_auth_asset '/__auth/assets/cormorant-cyrillic-v1.woff2' 'font/woff2'
   smoke_public_immutable_auth_asset '/__auth/assets/cormorant-italic-cyrillic-v1.woff2' 'font/woff2'
 
+  smoke_public_home_asset "$PUBLIC_HOMEPAGE_SCRIPT_PATH" 'application/javascript'
+  smoke_public_home_asset "$PUBLIC_HOMEPAGE_STYLE_PATH" 'text/css'
+  smoke_public_home_asset '/tencorp/assets/projects-map-loader.js' 'application/javascript'
+  smoke_public_home_asset '/tencorp/assets/projects-map.css' 'text/css'
+  smoke_public_map_loader
+
   smoke_public_unauthorized_resource "$FRAMEWORK_ASSET_PATH" 'text/css,*/*;q=0.1'
   # POSTing an empty body to a static framework asset cannot create a lead or
   # invoke a business webhook, but proves non-GET failures stay a plain 401.
   smoke_public_unauthorized_resource "$FRAMEWORK_ASSET_PATH" 'application/json' POST
   smoke_public_unauthorized_resource '/residence-api/catalog/' 'application/json'
   smoke_public_unauthorized_resource '/api/kayan/ofiyat-explorer' 'application/json'
+  smoke_public_unauthorized_resource '/tencorp/assets/projects-map.js' 'application/javascript'
+  smoke_public_unauthorized_resource '/__auth/me' 'application/json'
 
   smoke_public_exact_status '/__tencorp-auth/check' 404
   smoke_public_exact_status '/privacy' 200 'text/html'
@@ -911,6 +1024,21 @@ smoke_public_authenticated_contract() {
     status_is_healthy "$status" \
       || die "authenticated public page did not return 2xx: ${route} (${status})"
   done
+
+  status="$(curl \
+    --disable \
+    --config "$AUTH_SMOKE_CURL_CONFIG" \
+    --silent \
+    --show-error \
+    --output /dev/null \
+    --write-out '%{http_code}' \
+    --connect-timeout 3 \
+    --max-time 15 \
+    --header "Host: ${HOST_HEADER}" \
+    "${PUBLIC_ORIGIN}/tencorp/assets/projects-map.js")" \
+    || die "authenticated map-module request failed"
+  status_is_healthy "$status" \
+    || die "authenticated map module did not return 2xx (${status})"
 
   headers_file="$(mktemp /run/residence-auth-authenticated-headers.XXXXXX)"
   status="$(curl \

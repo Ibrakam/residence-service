@@ -340,8 +340,11 @@ else
       content_type='application/javascript'; body='fetch(`/__auth/me`); projects-map--locked Авторизоваться /tencorp/assets/projects-map.js' ;;
     /tencorp/assets/index-fixture.css|/tencorp/assets/projects-map.css)
       content_type='text/css'; body='body{}' ;;
-    /residence-assets/_next/static/*|/residence-api/catalog/|/api/kayan/ofiyat-explorer|/tencorp/assets/projects-map.js|/__auth/me)
+    /residence-assets/_next/static/*|/residence-api/catalog/|/api/kayan/ofiyat-explorer|/tencorp/assets/projects-map.js)
       status=401; content_type='application/json'; body='{"error":"authentication_required"}'
+      ;;
+    /__auth/me)
+      status=401; content_type='application/json'; body='{"error":"unauthorized"}'
       ;;
     /__tencorp-auth/check) status=404 ;;
     /privacy) status=200 ;;

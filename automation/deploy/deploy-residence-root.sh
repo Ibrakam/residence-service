@@ -777,6 +777,7 @@ smoke_public_unauthorized_resource() {
   local path="$1"
   local accept="$2"
   local method="${3:-GET}"
+  local expected_error="${4:-authentication_required}"
   local status cache_control
   local body_file headers_file
   local -a method_args=()
@@ -809,7 +810,7 @@ smoke_public_unauthorized_resource() {
   if [[ "$status" != 401 ]] \
     || [[ "$cache_control" != *no-store* ]] \
     || grep -Eiq '^Location:' "$headers_file" \
-    || ! grep -Fq '"error":"authentication_required"' "$body_file"; then
+    || ! grep -Fq "\"error\":\"${expected_error}\"" "$body_file"; then
     rm -f -- "$body_file" "$headers_file"
     die "protected public resource did not return the non-cacheable 401 contract: ${path} (${status})"
   fi
@@ -911,7 +912,7 @@ smoke_public_unauthenticated_contract() {
   smoke_public_unauthorized_resource '/residence-api/catalog/' 'application/json'
   smoke_public_unauthorized_resource '/api/kayan/ofiyat-explorer' 'application/json'
   smoke_public_unauthorized_resource '/tencorp/assets/projects-map.js' 'application/javascript'
-  smoke_public_unauthorized_resource '/__auth/me' 'application/json'
+  smoke_public_unauthorized_resource '/__auth/me' 'application/json' GET unauthorized
 
   smoke_public_exact_status '/__tencorp-auth/check' 404
   smoke_public_exact_status '/privacy' 200 'text/html'

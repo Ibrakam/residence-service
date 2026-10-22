@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
+import { CatalogSourceStatus } from '@/app/catalog-source-status';
 import { useEffect, useRef, useState } from 'react';
 import { LeadModal } from '@/app/lead-modal';
 import { useLiveCatalogProject } from '@/app/live-catalog';
@@ -161,17 +162,17 @@ function Lightbox({ state, onClose, previous, next, closeLabel }: { state: NonNu
 
 export function FlagmanPage({ initialLanguage = 'ru' }: { initialLanguage?: Language }) {
   const [language, setLanguage] = useLanguage(initialLanguage);
-  const { data: catalogProject, dataSource } = useLiveCatalogProject('flagman', { slug: 'flagman', name: 'Flagman', totalUnits: 0, availableUnits: 0 });
+  const { data: catalogProject, dataSource, ...catalogState } = useLiveCatalogProject('flagman', { slug: 'flagman', name: 'Flagman', totalUnits: 0, availableUnits: 0 });
   const loading = useLoader();
   const [menuOpen, setMenuOpen] = useState(false);
   const [leadOpen, setLeadOpen] = useState(false);
   const [lightbox, setLightbox] = useState<LightboxState>(null);
   const t = copy[language];
   const liveCatalogTitle = dataSource === 'embedded' ? t.catalogTitle : language === 'ru'
-    ? `${catalogProject.availableUnits} актуальных предложений в официальном каталоге.`
+    ? `${catalogProject.availableUnits} предложений в официальном каталоге.`
     : language === 'uz'
-      ? `Rasmiy katalogda ${catalogProject.availableUnits} ta dolzarb taklif.`
-      : `${catalogProject.availableUnits} current listings in the official catalogue.`;
+      ? `Rasmiy katalogda ${catalogProject.availableUnits} ta taklif.`
+      : `${catalogProject.availableUnits} listings in the official catalogue.`;
   useReveal(language);
 
   useEffect(() => {
@@ -296,7 +297,7 @@ export function FlagmanPage({ initialLanguage = 'ru' }: { initialLanguage?: Lang
 
       <section className="flagman-catalog-callout">
         <div className="flagman-section-label"><span>08</span><p>{t.catalogOverline}</p></div>
-        <div data-flagman-reveal><h2>{liveCatalogTitle}</h2><p>{t.catalogText}</p><a href={withLanguage('/flagman/apartments', language)}>{t.choose}<span>↗</span></a><small>{t.catalogNote}</small></div>
+        <div data-flagman-reveal><h2>{liveCatalogTitle}</h2><p>{t.catalogText}</p><CatalogSourceStatus language={language} dataSource={dataSource} {...catalogState} hasData={dataSource !== 'embedded'} onRetry={catalogState.retry} /><a href={withLanguage('/flagman/apartments', language)}>{t.choose}<span>↗</span></a><small>{t.catalogNote}</small></div>
         <strong aria-hidden="true">08</strong>
       </section>
 

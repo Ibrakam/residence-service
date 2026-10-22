@@ -1,0 +1,8 @@
+.catalog-source-status { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px 24px; padding:16px clamp(18px,4vw,64px); border-block:1px solid currentColor; background:#f3eee4; color:#29362f; font:400 13px/1.6 var(--font-ui),Arial,sans-serif; }
+.catalog-source-status.is-warning { background:#fff2d9; color:#664b24; }
+.catalog-source-status>div { min-width:0; flex:1 1 240px; overflow-wrap:anywhere; }
+.catalog-source-status strong { display:block; font-weight:600; }
+.catalog-source-status time { display:block; font-size:12px; }
+.catalog-source-status button { max-width:100%; min-height:44px; padding:8px 16px; border:1px solid currentColor; border-radius:4px; background:transparent; color:inherit; font:inherit; cursor:pointer; overflow-wrap:anywhere; }
+.catalog-source-status button:disabled { opacity:.65; cursor:wait; }
+.catalog-source-status button:focus-visible { outline:2px solid currentColor; outline-offset:3px; }

@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
+import { CatalogSourceStatus } from '@/app/catalog-source-status';
 import { useEffect, useRef, useState } from 'react';
 import { LeadModal } from '@/app/lead-modal';
 import { useLiveCatalogProject } from '@/app/live-catalog';
@@ -174,7 +175,7 @@ function Consultation({ open, language, context, onClose }: { open: boolean; lan
 
 export function VohaPage({ initialLanguage = 'ru' }: { initialLanguage?: Language }) {
   const [language, setLanguage] = useLanguage(initialLanguage); const loading = useLoader(); const t = copy[language]; useReveal(language);
-  const { data: catalogProject, dataSource } = useLiveCatalogProject('voha', { slug: 'voha', name: 'Voha', totalUnits: 0, availableUnits: 0 });
+  const { data: catalogProject, dataSource, ...catalogState } = useLiveCatalogProject('voha', { slug: 'voha', name: 'Voha', totalUnits: 0, availableUnits: 0 });
   const catalogCount = new Intl.NumberFormat(language === 'ru' ? 'ru-RU' : language === 'uz' ? 'uz-UZ' : 'en-US').format(catalogProject.availableUnits);
   const catalogTitle = dataSource === 'embedded' ? t.catalogTitle : language === 'ru'
     ? `${catalogCount} актуальных предложений.`
@@ -204,7 +205,7 @@ export function VohaPage({ initialLanguage = 'ru' }: { initialLanguage?: Languag
     <section className="voha-location" id="location" data-voha-reveal><div className="voha-location__copy"><p className="voha-overline">{t.locationTop}</p><h2>{t.locationTitle}</h2><p>{t.locationText}</p><a className="voha-button is-solid" href={mapLink} target="_blank" rel="noreferrer">{t.map}<span>↗</span></a></div><div className="voha-location__map"><span>VOHA</span><i /><small>Ташкент<br />Мирзо-Улугбекский район</small><a href={mapLink} target="_blank" rel="noreferrer">2GIS ↗</a></div><aside><small>{t.offices}</small><strong>ул. Нукус, 91/1</strong><strong>ул. Айбека, 38Б</strong><a href="tel:+998781137712">+998 78 113 77 12</a></aside></section>
     <section className="voha-media" data-voha-reveal><header><p className="voha-overline">{t.mediaTop}</p><h2>{t.mediaTitle}</h2></header><div><a href={panorama} target="_blank" rel="noreferrer"><span>360°</span><strong>{t.panorama}</strong><small>{t.panoramaNote}</small><b>↗</b></a><a href={camera} target="_blank" rel="noreferrer"><span>LIVE</span><strong>{t.camera}</strong><small>{t.cameraNote}</small><b>↗</b></a></div></section>
     <section className="voha-build" data-voha-reveal><header><div><p className="voha-overline">{t.buildTop}</p><h2>{t.buildTitle}</h2></div><p>{t.buildText}</p></header><div>{buildSlides.map((slide, index) => <PhotoButton key={slide.src} slide={slide} index={index} slides={buildSlides} onOpen={setLightbox} />)}</div><a className="voha-text-link" href={camera} target="_blank" rel="noreferrer">{t.camera} ↗</a></section>
-    <section className="voha-catalog-cta" data-voha-reveal><p className="voha-overline">{t.catalogTop}</p><div><h2>{catalogTitle}</h2><p>{t.catalogText}<small>{t.catalogNote}</small></p></div><a className="voha-button is-light" href={withLanguage('/voha/apartments', language)}>{t.choose}<span>↗</span></a></section>
+    <section className="voha-catalog-cta" data-voha-reveal><p className="voha-overline">{t.catalogTop}</p><div><h2>{catalogTitle}</h2><p>{t.catalogText}<small>{t.catalogNote}</small></p><CatalogSourceStatus language={language} dataSource={dataSource} {...catalogState} hasData={dataSource !== 'embedded'} onRetry={catalogState.retry} /></div><a className="voha-button is-light" href={withLanguage('/voha/apartments', language)}>{t.choose}<span>↗</span></a></section>
     <section className="voha-contact" data-voha-reveal><div><p className="voha-overline">{t.contactTop}</p><h2>{t.contactTitle}</h2><p>{t.contactText}</p><button className="voha-button is-solid" type="button" onClick={() => openConsult('voha:contact')}>{t.consult}<span>↗</span></button></div><figure><img src={asset('/voha/images/waterside.webp')} alt="Реальная фотография жизни у воды в Voha" loading="lazy" /><figcaption>LIVE · {t.photo}</figcaption></figure></section>
     <footer className="voha-footer"><a className="voha-wordmark" href={withLanguage('/voha', language)}>VOHA<small>by NRG-BI</small></a><div><a href="tel:+998781137712">{t.phone} · +998 78 113 77 12</a><a href={`${appBasePath}/privacy?project=voha&lang=${language}`}>{t.privacy}</a></div><p>© 2026 · Информация не является публичной офертой.</p></footer>
     {lightbox ? <Lightbox state={lightbox} language={language} onClose={() => setLightbox(null)} /> : null}{consult ? <Consultation open language={language} context={consult} onClose={() => setConsult('')} /> : null}

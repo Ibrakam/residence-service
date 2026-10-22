@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
+import { CatalogSourceStatus } from '@/app/catalog-source-status';
 import type { CSSProperties } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { LeadModal } from '@/app/lead-modal';
@@ -99,7 +100,7 @@ function Lightbox({ state, onClose, labels }: { state: NonNullable<LightboxState
 
 export function FourUPage({ initialLanguage = 'ru' }: { initialLanguage?: Language }) {
   const [language, setLanguage] = useLanguage(initialLanguage); const t = copy[language];
-  const { data: catalogProject, dataSource } = useLiveCatalogProject('4u', { slug: '4u', name: '4U Tashkent', totalUnits: 0, availableUnits: 0 });
+  const { data: catalogProject, dataSource, ...catalogState } = useLiveCatalogProject('4u', { slug: '4u', name: '4U Tashkent', totalUnits: 0, availableUnits: 0 });
   const locale = language === 'ru' ? 'ru-RU' : language === 'uz' ? 'uz-UZ' : 'en-US';
   const availableCount = dataSource === 'embedded' ? '—' : new Intl.NumberFormat(locale).format(catalogProject.availableUnits);
   const totalCount = dataSource === 'embedded' ? '—' : new Intl.NumberFormat(locale).format(catalogProject.totalUnits);
@@ -140,7 +141,7 @@ export function FourUPage({ initialLanguage = 'ru' }: { initialLanguage?: Langua
 
     <section className="fouru-build"><div className="fouru-copy"><span className="fouru-kicker is-blue">{t.buildKicker}</span><h2>{t.buildTitle}</h2><p>{t.buildText}</p><div className="fouru-camera"><span>{t.camera}</span><i />{t.cameraStatus}</div></div><div className="fouru-build__grid">{construction.map((slide, i) => <button key={slide.src} type="button" onClick={() => setLightbox({ slides: construction, index: i })}><img src={slide.src} alt={slide.label} loading="lazy" /><span>{t.photo} · 0{i + 1}</span></button>)}</div></section>
 
-    <section className="fouru-catalog"><div><span className="fouru-kicker">{t.catalogKicker}</span><h2>{t.catalogTitle}</h2><p>{t.catalogText}</p><div><a className="fouru-button is-coral" href={withLanguage('/4u/apartments', language)}>{t.catalogOpen}<span>↗</span></a></div></div><aside><span>{availableCount}</span><small>{countLabels[0]}</small><i /><span>{totalCount}</span><small>{countLabels[1]}</small></aside></section>
+    <section className="fouru-catalog"><div><span className="fouru-kicker">{t.catalogKicker}</span><h2>{t.catalogTitle}</h2><p>{t.catalogText}</p><CatalogSourceStatus language={language} dataSource={dataSource} {...catalogState} hasData={dataSource !== 'embedded'} onRetry={catalogState.retry} /><div><a className="fouru-button is-coral" href={withLanguage('/4u/apartments', language)}>{t.catalogOpen}<span>↗</span></a></div></div><aside><span>{availableCount}</span><small>{countLabels[0]}</small><i /><span>{totalCount}</span><small>{countLabels[1]}</small></aside></section>
 
     <section className="fouru-contact"><div><span className="fouru-kicker is-coral">{t.contactKicker}</span><h2>{t.contactTitle}</h2><p>{t.contactText}</p></div><div className="fouru-contact__actions"><button className="fouru-button is-coral" type="button" onClick={() => setLead(true)}>{t.consult}<span>↗</span></button><a className="fouru-button is-outline" href="tel:+998781137712">{t.phone}<span>↗</span></a></div></section>
     <footer className="fouru-footer"><a className="fouru-logo" href="#top"><b>4U</b><span>TASHKENT</span></a><p>{t.partner}</p><div><a href={`${appBasePath}/privacy?project=4u&lang=${language}`}>Privacy</a></div><small>{t.legal}</small></footer>

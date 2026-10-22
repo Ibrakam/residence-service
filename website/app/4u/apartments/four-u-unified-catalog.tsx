@@ -95,7 +95,7 @@ function trustedPlan(unit: SourceUnit, value: string, suffix: '' | '_1600' | '_2
 }
 
 export function FourUUnifiedCatalog({ snapshot: embeddedSnapshot, initialLanguage = 'ru' }: { snapshot: FourUSafeSnapshot; initialLanguage?: Language }) {
-  const { data: snapshot, dataSource, refreshedAt, project: liveProject } = useLiveCatalogSnapshot('4u', embeddedSnapshot);
+  const { data: snapshot, dataSource, isLoading, loadError, retry, refreshedAt, project: liveProject } = useLiveCatalogSnapshot('4u', embeddedSnapshot);
   const units = useMemo<CatalogUnit[]>(() => snapshot.units.map((rawUnit) => {
     const unit = rawUnit as SourceUnit;
     const original = trustedPlan(unit, unit.planOriginalUrl || unit.planImageUrl, '');
@@ -137,5 +137,8 @@ export function FourUUnifiedCatalog({ snapshot: embeddedSnapshot, initialLanguag
     initialLanguage={initialLanguage}
     refreshedAt={refreshedAt ?? snapshot.capturedAt}
     dataSource={dataSource}
+    isLoading={isLoading}
+    loadError={loadError}
+    retry={retry}
   />;
 }

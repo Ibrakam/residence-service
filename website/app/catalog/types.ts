@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
+import type { CatalogDataSource } from '../live-catalog';
 
 export type CatalogLanguage = 'ru' | 'uz' | 'en';
 
@@ -105,7 +106,10 @@ export type ApartmentCatalogProps = {
   presentation: CatalogPresentation;
   initialLanguage?: CatalogLanguage;
   refreshedAt?: string;
-  dataSource?: 'live' | 'cached' | 'embedded';
+  dataSource?: CatalogDataSource;
+  isLoading?: boolean;
+  loadError?: boolean;
+  retry?: () => void;
   visualFlow?: ReactNode | ((language: CatalogLanguage, actions: { openLead: (unitKey?: string) => void }) => ReactNode);
   visualFlowAvailable?: boolean;
 };

@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
+import { CatalogSourceStatus } from '@/app/catalog-source-status';
 import { useEffect, useRef, useState } from 'react';
 import { LeadModal } from '@/app/lead-modal';
 import { useLiveCatalogProject } from '@/app/live-catalog';
@@ -242,7 +243,7 @@ function useReveals(language: KayanLanguage) {
 }
 
 export function MerosPage({ initialAvailable = 0, initialLanguage = 'ru' }: { initialAvailable?: number; initialLanguage?: KayanLanguage }) {
-  const { data: catalogProject, dataSource } = useLiveCatalogProject('meros', { slug: 'meros', name: 'Meros', totalUnits: initialAvailable, availableUnits: initialAvailable });
+  const { data: catalogProject, dataSource, ...catalogState } = useLiveCatalogProject('meros', { slug: 'meros', name: 'Meros', totalUnits: initialAvailable, availableUnits: initialAvailable });
   const [language, setLanguage] = useLanguage(initialLanguage);
   const [menuOpen, setMenuOpen] = useState(false);
   const [leadOpen, setLeadOpen] = useState(false);
@@ -366,7 +367,7 @@ export function MerosPage({ initialAvailable = 0, initialLanguage = 'ru' }: { in
     </section>
 
     <section className="meros-selection">
-      <img src={asset('/meros/selection.webp')} alt="Meros" loading="lazy" /><div className="meros-selection__shade" /><div data-reveal><p>{c.selectionKicker}</p><h2>{c.selectionTitle}<em>{c.selectionAccent}</em></h2><span>{selectionCopy}</span><a href={withLanguage('/meros/apartments', language)}>{c.selectionButton}<b>{availableCount ?? '—'}</b><i>↗</i></a></div>
+      <img src={asset('/meros/selection.webp')} alt="Meros" loading="lazy" /><div className="meros-selection__shade" /><div data-reveal><p>{c.selectionKicker}</p><h2>{c.selectionTitle}<em>{c.selectionAccent}</em></h2><span>{selectionCopy}</span><CatalogSourceStatus language={language} dataSource={dataSource} {...catalogState} hasData={dataSource !== 'embedded'} onRetry={catalogState.retry} /><a href={withLanguage('/meros/apartments', language)}>{c.selectionButton}<b>{availableCount ?? '—'}</b><i>↗</i></a></div>
     </section>
 
     <section className="meros-contact">

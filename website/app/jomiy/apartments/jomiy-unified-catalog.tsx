@@ -47,7 +47,7 @@ const presentation: CatalogPresentation = {
 };
 
 export function JomiyUnifiedCatalog({ snapshot: embeddedSnapshot, initialLanguage = 'ru' }: { snapshot: JomiySafeSnapshot; initialLanguage?: Language }) {
-  const { data: snapshot, dataSource, refreshedAt, project: liveProject } = useLiveCatalogSnapshot('jomiy', embeddedSnapshot);
+  const { data: snapshot, dataSource, isLoading, loadError, retry, refreshedAt, project: liveProject } = useLiveCatalogSnapshot('jomiy', embeddedSnapshot);
   const units = useMemo<CatalogUnit[]>(() => snapshot.units.map((unit) => {
     const deadline = unit.promotion?.deadlineUtc ? Date.parse(unit.promotion.deadlineUtc) : Number.NaN;
     const campaignActive = Number.isFinite(deadline) && snapshot.evaluationTime < deadline;
@@ -67,5 +67,8 @@ export function JomiyUnifiedCatalog({ snapshot: embeddedSnapshot, initialLanguag
     project={{ slug: 'jomiy', name: snapshot.project, address: 'Ташкент, Алмазарский район, ул. Уста Ширин, 21', className: 'Business', availableCount: liveProject?.availableUnits ?? units.filter((unit) => unit.status === 'available').length, totalCount: liveProject?.totalUnits ?? snapshot.totalCount }}
     units={units} capabilities={capabilities} presentation={presentation} initialLanguage={initialLanguage}
     refreshedAt={refreshedAt ?? snapshot.capturedAt} dataSource={dataSource}
+    isLoading={isLoading}
+    loadError={loadError}
+    retry={retry}
   />;
 }

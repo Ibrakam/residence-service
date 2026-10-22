@@ -52,7 +52,8 @@ assert.match(catalogue, /repair === 'all' \|\| unit\.repairIncluded === \(repair
 assert.doesNotMatch(catalogue, /unit\.repairIncluded !== true/, 'unknown repair data must not be classified as without repair');
 assert.match(catalogue, /const activeLightbox = lightbox[\s\S]*?units\.find\(\(candidate\) => candidate\.id === lightbox\.unit\.id\)/);
 assert.match(catalogue, /const activeLeadUnit = leadUnit === null[\s\S]*?units\.find\(\(unit\) => unit\.id === leadUnit\.id\)/);
-assert.match(catalogue, /const availability = String\(project\.availableCount\)/);
+assert.match(catalogue, /const availability = dataSource === 'embedded' \? '—' : String\(project\.availableCount\)/, 'unknown availability must not be shown as a verified zero');
+assert.match(catalogue, /<CatalogSourceStatus/, 'catalogue must expose source freshness and request errors');
 assert.match(catalogue, /const \[selectedId, setSelectedId\] = useState<string>\(\)/);
 assert.match(catalogue, /matchMedia\('\(max-width: 1100px\)'\)/);
 assert.match(catalogue, /className="apartment-catalog-card__select"[\s\S]*?chooseUnit\(unit, true\)/);

@@ -81,7 +81,7 @@ export function SarbonUnifiedCatalog({
   basePath,
   initialUnitId,
 }: Props) {
-  const { data: snapshot, dataSource, refreshedAt, project: liveProject } = useLiveCatalogSnapshot("sarbon", embeddedSnapshot);
+  const { data: snapshot, dataSource, isLoading, loadError, retry, refreshedAt, project: liveProject } = useLiveCatalogSnapshot("sarbon", embeddedSnapshot);
   const units = useMemo<CatalogUnit[]>(() => snapshot.units.map((unit) => ({
     id: unit.id,
     unitKey: unit.unitKey,
@@ -175,5 +175,8 @@ export function SarbonUnifiedCatalog({
     initialLanguage={initialLanguage}
     refreshedAt={refreshedAt ?? snapshot.capturedAt}
     dataSource={dataSource}
+    isLoading={isLoading}
+    loadError={loadError}
+    retry={retry}
   />;
 }

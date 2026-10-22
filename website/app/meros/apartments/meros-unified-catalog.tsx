@@ -79,7 +79,7 @@ const presentation: CatalogPresentation = {
 };
 
 export function MerosUnifiedCatalog({ snapshot: embeddedSnapshot, initialLanguage = 'ru' }: { snapshot: MerosSafeSnapshot; initialLanguage?: Language }) {
-  const { data: snapshot, dataSource, refreshedAt, project: liveProject } = useLiveCatalogSnapshot('meros', embeddedSnapshot);
+  const { data: snapshot, dataSource, isLoading, loadError, retry, refreshedAt, project: liveProject } = useLiveCatalogSnapshot('meros', embeddedSnapshot);
   const units = useMemo<CatalogUnit[]>(() => snapshot.units.map((unit) => ({
     id: String(unit.id),
     unitKey: unit.sourceKey || undefined,
@@ -114,5 +114,8 @@ export function MerosUnifiedCatalog({ snapshot: embeddedSnapshot, initialLanguag
     initialLanguage={initialLanguage}
     refreshedAt={refreshedAt ?? snapshot.capturedAt}
     dataSource={dataSource}
+    isLoading={isLoading}
+    loadError={loadError}
+    retry={retry}
   />;
 }

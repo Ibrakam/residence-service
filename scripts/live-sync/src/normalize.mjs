@@ -895,9 +895,10 @@ export function normalizeNrgBiCapture(groups, capturedAt = new Date().toISOStrin
       const price = normalizedStatus === 'available'
         ? campaignPrice ?? optionalPositive(row?.totalPriceWithDiscount) ?? optionalPositive(row?.totalPrice) ?? optionalPositive(placement.totalPrice)
         : null;
-      const pricePerM2 = normalizedStatus === 'available'
-        ? (campaignPrice ? campaignPrice / area : optionalPositive(row?.priceBySquare) ?? optionalPositive(placement.price) ?? (price ? price / area : null))
-        : null;
+      // NRG's raw rate can exclude repair while its total includes it. Derive
+      // the displayed rate from the same selected total (including a campaign
+      // when applicable), so the two public price fields never contradict.
+      const pricePerM2 = price ? price / area : null;
       const planImageUrl = planAudit?.selectedById.get(id)
         ?? (slug !== '4u' && typeof row?.photoURL1600 === 'string' && row.photoURL1600.startsWith('https://') ? row.photoURL1600 : null);
       return {

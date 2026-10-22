@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export type LiveCatalogStatus = 'available' | 'reserved' | 'sold' | 'unavailable';
 
@@ -74,7 +74,31 @@ type LiveProjectPayload = {
   refreshedAt: string;
 };
 
-export type CatalogDataSource = 'live' | 'cached' | 'embedded';
+export type CatalogDataSource = 'live' | 'cached' | 'embedded' | 'stale' | 'unverified';
+
+export type CatalogSyncProject = {
+  projectSlug: string;
+  status?: string;
+  freshness?: string;
+  lastCapturedAt?: string;
+  freshUntil?: string;
+};
+
+/** A successful HTTP request is not evidence that the CRM capture is fresh. */
+export function catalogFreshness(sourceUpdatedAt: string | undefined, health?: CatalogSyncProject, now = Date.now()): CatalogDataSource {
+  const captured = Date.parse(sourceUpdatedAt ?? '');
+  if (!Number.isFinite(captured) || captured > now + 5 * 60_000) return 'unverified';
+  if (now - captured > 45 * 60_000) return 'stale';
+  if (!health) return 'unverified';
+  const until = Date.parse(health.freshUntil ?? '');
+  const latestCapture = Date.parse(health.lastCapturedAt ?? '');
+  if (health.freshness === 'stale' || (Number.isFinite(until) && until <= now)
+    || (Number.isFinite(latestCapture) && latestCapture - captured > 60_000)) return 'stale';
+  // A new capture may be running while the previous successful generation is
+  // still inside its freshness window. The loaded timestamp must agree with it.
+  const confirmedGeneration = health.status === 'succeeded' || (health.status === 'running' && Number.isFinite(latestCapture));
+  return health.freshness === 'fresh' && confirmedGeneration && until > now ? 'live' : 'unverified';
+}
 
 export function catalogLeadIdentity(unit: unknown): { unitKey?: string } {
   if (!isRecord(unit)) return {};
@@ -100,6 +124,9 @@ type CatalogState<T> = {
   dataSource: CatalogDataSource;
   refreshedAt?: string;
   project?: LiveCatalogProject;
+  isLoading: boolean;
+  loadError: boolean;
+  retry: () => void;
 };
 
 const configuredAPI = process.env.NEXT_PUBLIC_CATALOG_API_URL?.trim().replace(/\/+$/, '');
@@ -113,6 +140,33 @@ const maxRefreshBackoffMs = 5 * 60_000;
 const requestTimeoutMs = 15_000;
 const cachedPayloadMaxAgeMs = 7 * 24 * 60 * 60 * 1_000;
 const cacheVersion = 2;
+let syncHealthCache: { expires: number; projects: CatalogSyncProject[] } | undefined;
+let syncHealthRequest: Promise<CatalogSyncProject[]> | undefined;
+
+// One request shared by landing counters and catalogue hooks, never one per card.
+export async function fetchCatalogSyncHealth(): Promise<CatalogSyncProject[]> {
+  if (syncHealthCache && syncHealthCache.expires > Date.now()) return syncHealthCache.projects;
+  if (syncHealthRequest) return syncHealthRequest;
+  syncHealthRequest = (async () => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), requestTimeoutMs);
+    try {
+      const response = await fetchJSON<{ items?: Array<{ projects?: CatalogSyncProject[] }> }>(`${catalogAPI}/v1/sync/catalog-status`, controller.signal);
+      const projects = (Array.isArray(response.items) ? response.items : []).flatMap((item) => Array.isArray(item.projects) ? item.projects : [])
+        .filter((project) => typeof project.projectSlug === 'string');
+      syncHealthCache = { projects, expires: Date.now() + 30_000 };
+      return projects;
+    } catch {
+      // Do not let a cached healthy response hide an outage of the health endpoint.
+      syncHealthCache = { projects: [], expires: Date.now() + 10_000 };
+      return [];
+    } finally {
+      clearTimeout(timeout);
+      syncHealthRequest = undefined;
+    }
+  })();
+  return syncHealthRequest;
+}
 const availableOnlyCatalogues = new Set([
   '4u',
   'avalon-residence',
@@ -399,13 +453,17 @@ async function fetchLivePayload(
   const sourceTimes = units.map((unit) => Date.parse(unit.sourceUpdatedAt)).filter(Number.isFinite);
   const projectTime = project.updatedAt ? Date.parse(project.updatedAt) : Number.NaN;
   const sourceTimestamps = [...sourceTimes, ...(Number.isFinite(projectTime) ? [projectTime] : [])];
-  const refreshedAt = new Date(sourceTimestamps.length ? Math.max(...sourceTimestamps) : Date.now()).toISOString();
+  const refreshedAt = sourceTimestamps.length ? new Date(Math.max(...sourceTimestamps)).toISOString() : '';
   return { project, units, refreshedAt };
 }
 
 function useLivePayload(projectSlug: string) {
   const [payload, setPayload] = useState<LivePayload | null>(null);
   const [dataSource, setDataSource] = useState<CatalogDataSource>('embedded');
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [requestVersion, setRequestVersion] = useState(0);
+  const retry = useCallback(() => setRequestVersion((version) => version + 1), []);
 
   useEffect(() => {
     let disposed = false;
@@ -446,21 +504,31 @@ function useLivePayload(projectSlug: string) {
       if (activeRequest) return;
       const controller = new AbortController();
       activeRequest = controller;
+      setIsLoading(true);
       const timeout = window.setTimeout(() => controller.abort(), requestTimeoutMs);
       try {
-        const next = await fetchLivePayload(projectSlug, controller.signal, latestPayload);
+        const [next, health] = await Promise.all([
+          fetchLivePayload(projectSlug, controller.signal, latestPayload),
+          fetchCatalogSyncHealth(),
+        ]);
         if (disposed) return;
         if (next) {
           latestPayload = next;
           setPayload(next);
           if (!requiresCurrentAvailability) saveCachedPayload(projectSlug, next);
         }
-        setDataSource('live');
+        setDataSource(catalogFreshness(latestPayload?.refreshedAt, health.find((item) => item.projectSlug === projectSlug)));
+        setLoadError(false);
         consecutiveFailures = 0;
       } catch {
         // Keep the last complete API response, then the embedded catalogue.
-        if (!disposed) consecutiveFailures += 1;
+        if (!disposed) {
+          consecutiveFailures += 1;
+          setLoadError(true);
+          setDataSource((previous) => previous === 'embedded' ? 'embedded' : 'cached');
+        }
       } finally {
+        if (!disposed) setIsLoading(false);
         window.clearTimeout(timeout);
         if (activeRequest === controller) activeRequest = null;
         scheduleNext();
@@ -490,9 +558,9 @@ function useLivePayload(projectSlug: string) {
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('online', onOnline);
     };
-  }, [projectSlug]);
+  }, [projectSlug, requestVersion]);
 
-  return { payload, dataSource };
+  return { payload, dataSource, isLoading, loadError, retry };
 }
 
 function normalized(value: unknown) {
@@ -887,7 +955,7 @@ function mergeSnapshot<T extends { units: readonly object[] }>(projectSlug: stri
 }
 
 export function useLiveCatalogSnapshot<T extends { units: readonly object[] }>(projectSlug: string, embeddedSnapshot: T): CatalogState<T> {
-  const { payload, dataSource } = useLivePayload(projectSlug);
+  const { payload, ...state } = useLivePayload(projectSlug);
   const initialSnapshot = useMemo(
     () => ({ ...embeddedSnapshot, units: initialCatalogUnits(projectSlug, embeddedSnapshot.units) }) as T,
     [embeddedSnapshot, projectSlug],
@@ -896,22 +964,26 @@ export function useLiveCatalogSnapshot<T extends { units: readonly object[] }>(p
     () => payload ? mergeSnapshot(projectSlug, embeddedSnapshot, payload) : initialSnapshot,
     [embeddedSnapshot, initialSnapshot, payload, projectSlug],
   );
-  return { data, dataSource, refreshedAt: payload?.project.updatedAt ?? payload?.refreshedAt, project: payload?.project };
+  return { data, ...state, refreshedAt: payload?.refreshedAt, project: payload?.project };
 }
 
 export function useLiveCatalogUnits<T extends object>(projectSlug: string, embeddedUnits: readonly T[]): CatalogState<T[]> {
-  const { payload, dataSource } = useLivePayload(projectSlug);
+  const { payload, ...state } = useLivePayload(projectSlug);
   const data = useMemo(
     () => payload ? mergeLiveCatalogUnits(projectSlug, embeddedUnits, payload.units) : initialCatalogUnits(projectSlug, embeddedUnits),
     [embeddedUnits, payload, projectSlug],
   );
-  return { data, dataSource, refreshedAt: payload?.project.updatedAt ?? payload?.refreshedAt, project: payload?.project };
+  return { data, ...state, refreshedAt: payload?.refreshedAt, project: payload?.project };
 }
 
-export function useLiveCatalogProject(projectSlug: string, embeddedProject: LiveCatalogProject): CatalogState<LiveCatalogProject> {
+export function useLiveCatalogProject<T extends LiveCatalogProject>(projectSlug: string, embeddedProject: T): CatalogState<T> {
   const [project, setProject] = useState(embeddedProject);
   const [dataSource, setDataSource] = useState<CatalogDataSource>('embedded');
   const [refreshedAt, setRefreshedAt] = useState(embeddedProject.updatedAt);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [requestVersion, setRequestVersion] = useState(0);
+  const retry = useCallback(() => setRequestVersion((version) => version + 1), []);
 
   useEffect(() => {
     let disposed = false;
@@ -924,7 +996,7 @@ export function useLiveCatalogProject(projectSlug: string, embeddedProject: Live
       const cached = readCachedProject(projectSlug);
       if (!cached) return;
       latestProject = cached.project;
-      setProject(cached.project);
+      setProject({ ...embeddedProject, ...cached.project } as T);
       setRefreshedAt(cached.project.updatedAt ?? cached.refreshedAt);
       setDataSource('cached');
     }, 0);
@@ -944,11 +1016,15 @@ export function useLiveCatalogProject(projectSlug: string, embeddedProject: Live
       if (activeRequest) return;
       const controller = new AbortController();
       activeRequest = controller;
+      setIsLoading(true);
       const timeout = window.setTimeout(() => controller.abort(), requestTimeoutMs);
       try {
-        const next = await fetchJSON<LiveCatalogProject>(`${catalogAPI}/v1/projects/${encodeURIComponent(projectSlug)}`, controller.signal);
+        const [next, health] = await Promise.all([
+          fetchJSON<T>(`${catalogAPI}/v1/projects/${encodeURIComponent(projectSlug)}`, controller.signal),
+          fetchCatalogSyncHealth(),
+        ]);
         if (!isLiveProject(next, projectSlug)) throw new Error('catalog response has an invalid project');
-        const nextPayload = { project: next, refreshedAt: new Date().toISOString() };
+        const nextPayload = { project: next, refreshedAt: next.updatedAt ?? '' };
         if (disposed) return;
         if (!latestProject || catalogProjectRevision(latestProject) !== catalogProjectRevision(next)) {
           latestProject = next;
@@ -956,12 +1032,18 @@ export function useLiveCatalogProject(projectSlug: string, embeddedProject: Live
           setRefreshedAt(next.updatedAt ?? nextPayload.refreshedAt);
           saveCachedProject(projectSlug, nextPayload);
         }
-        setDataSource('live');
+        setDataSource(catalogFreshness(next.updatedAt, health.find((item) => item.projectSlug === projectSlug)));
+        setLoadError(false);
         consecutiveFailures = 0;
       } catch {
         // Keep the last complete project response, then the embedded summary.
-        if (!disposed) consecutiveFailures += 1;
+        if (!disposed) {
+          consecutiveFailures += 1;
+          setLoadError(true);
+          setDataSource((previous) => previous === 'embedded' ? 'embedded' : 'cached');
+        }
       } finally {
+        if (!disposed) setIsLoading(false);
         window.clearTimeout(timeout);
         if (activeRequest === controller) activeRequest = null;
         scheduleNext();
@@ -991,9 +1073,9 @@ export function useLiveCatalogProject(projectSlug: string, embeddedProject: Live
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('online', onOnline);
     };
-  }, [projectSlug]);
+  }, [projectSlug, requestVersion]);
 
-  return { data: project, dataSource, refreshedAt };
+  return { data: project, dataSource, refreshedAt, isLoading, loadError, retry };
 }
 
 export function liveCatalogAPIBase() {

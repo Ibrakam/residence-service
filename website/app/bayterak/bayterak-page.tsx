@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
+import { CatalogSourceStatus } from '@/app/catalog-source-status';
 import { useRouter } from 'next/navigation';
 import {
   type KeyboardEvent as ReactKeyboardEvent,
@@ -410,7 +411,7 @@ function InsideTabs({ language }: { language: Language }) {
 export function BayterakPage({ initialLanguage }: { initialLanguage: Language }) {
   const router = useRouter();
   const language = initialLanguage;
-  const { data: catalogProject, dataSource } = useLiveCatalogProject('bayterak', { slug: 'bayterak', name: 'Bayterak', totalUnits: 0, availableUnits: 0 });
+  const { data: catalogProject, dataSource, ...catalogState } = useLiveCatalogProject('bayterak', { slug: 'bayterak', name: 'Bayterak', totalUnits: 0, availableUnits: 0 });
   const catalogCount = dataSource === 'embedded' ? '—' : new Intl.NumberFormat(language === 'ru' ? 'ru-RU' : language === 'uz' ? 'uz-UZ' : 'en-US').format(catalogProject.availableUnits);
   const [menuOpen, setMenuOpen] = useState(false);
   const [leadContext, setLeadContext] = useState<string>();
@@ -528,7 +529,7 @@ export function BayterakPage({ initialLanguage }: { initialLanguage: Language })
 
       <section className="bayterak-gallery-section" id="gallery" tabIndex={-1}><header data-bayterak-reveal><p className="bayterak-overline">{t.galleryIndex}</p><h2>{t.galleryTitle}</h2><p>{t.galleryText}</p></header><Gallery language={language} /></section>
 
-      <section className="bayterak-catalog" data-bayterak-reveal><header><p className="bayterak-overline">{t.catalogIndex}</p><h2>{t.catalogTitle}</h2><p>{t.catalogText}</p></header><div className="bayterak-catalog__stats">{catalogStats.map(([value, label]) => <article key={label}><strong>{value}</strong><span>{label}</span></article>)}</div><footer><p>{t.catalogPrice}</p><a className="bayterak-button is-solid" href={withLanguage('/bayterak/apartments', language)}>{t.openCatalog}<span>↗</span></a></footer></section>
+      <section className="bayterak-catalog" data-bayterak-reveal><header><p className="bayterak-overline">{t.catalogIndex}</p><h2>{t.catalogTitle}</h2><p>{t.catalogText}</p><CatalogSourceStatus language={language} dataSource={dataSource} {...catalogState} hasData={dataSource !== 'embedded'} onRetry={catalogState.retry} /></header><div className="bayterak-catalog__stats">{catalogStats.map(([value, label]) => <article key={label}><strong>{value}</strong><span>{label}</span></article>)}</div><footer><p>{t.catalogPrice}</p><a className="bayterak-button is-solid" href={withLanguage('/bayterak/apartments', language)}>{t.openCatalog}<span>↗</span></a></footer></section>
 
       <section className="bayterak-contact" data-bayterak-reveal><div><p className="bayterak-overline">{t.contactIndex}</p><h2>{t.contactTitle}</h2><p>{t.contactText}</p></div><div className="bayterak-contact__actions"><button className="bayterak-button is-solid" type="button" data-lead-trigger onClick={() => openLead('contact-consultation')}>{t.consult}<span>↗</span></button><a className="bayterak-button" href="tel:+998781137712">{t.phone}<span>↗</span></a></div></section>
     </main>

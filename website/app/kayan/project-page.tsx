@@ -7,7 +7,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Lenis from 'lenis';
 import { LeadModal, rememberLastViewedApartment } from '@/app/lead-modal';
-import { liveCatalogAPIBase } from '@/app/live-catalog';
+import { liveCatalogAPIBase, useLiveCatalogProject } from '@/app/live-catalog';
+import { CatalogSourceStatus, catalogStatusMessage } from '@/app/catalog-source-status';
 import { catalogUnitAriaLabel } from './catalog-accessibility';
 import { selectCatalogTimestamp } from './catalog-timestamp';
 import { catalogUnitQuery, resolveCompositeCatalogUnit } from './catalog-url-state';
@@ -263,33 +264,8 @@ function useCatalogBundle(slug: KayanProjectSlug, initialBundle: CatalogBundle) 
 }
 
 function useProjectSummary(slug: KayanProjectSlug, initialProject: Project) {
-  const [project, setProject] = useState(initialProject);
-  const [dataSource, setDataSource] = useState<'embedded' | 'live'>('embedded');
-
-  useEffect(() => {
-    let controller: AbortController | null = null;
-    const refresh = () => {
-      if (document.visibilityState === 'hidden') return;
-      controller?.abort();
-      controller = new AbortController();
-      fetchJSON<Project>(`${liveAPI}/v1/projects/${slug}`, controller.signal)
-        .then((next) => { setProject(next); setDataSource('live'); })
-        .catch(() => undefined);
-    };
-    const onVisibility = () => { if (document.visibilityState === 'visible') refresh(); };
-    refresh();
-    const interval = window.setInterval(refresh, 60_000);
-    document.addEventListener('visibilitychange', onVisibility);
-    window.addEventListener('online', refresh);
-    return () => {
-      controller?.abort();
-      window.clearInterval(interval);
-      document.removeEventListener('visibilitychange', onVisibility);
-      window.removeEventListener('online', refresh);
-    };
-  }, [slug]);
-
-  return { project, dataSource };
+  const { data: project, ...state } = useLiveCatalogProject(slug, initialProject);
+  return { ...state, project };
 }
 
 function useProjectLanguage(initialLanguage: KayanLanguage = 'ru') {
@@ -676,7 +652,7 @@ function OfiyatLoader({ visible, image }: { visible: boolean; image: string }) {
 function OfiyatProjectPage({ initialProject, initialLanguage }: { initialProject: Project; initialLanguage: KayanLanguage }) {
   const slug: KayanProjectSlug = 'ofiyat';
   const config = projectConfigs.ofiyat;
-  const { project, dataSource } = useProjectSummary(slug, initialProject);
+  const { project, dataSource, ...catalogState } = useProjectSummary(slug, initialProject);
   const [language, setLanguage] = useProjectLanguage(initialLanguage);
   const { loading, menuOpen, setMenuOpen } = useOverlayState(true, 2100, 'kayan-loader-seen-ofiyat');
   const [leadOpen, setLeadOpen] = useState(false);
@@ -820,7 +796,7 @@ function OfiyatProjectPage({ initialProject, initialLanguage }: { initialProject
 
     <section id="catalogue" className="ofiyat-catalog-teaser">
       <div className="ofiyat-catalog-teaser__visual" data-reveal><ProjectImage src="/kayan/ofiyat/hero.webp" alt={`${o.renderLabel} · ${copy.chapters[1].title}`} /><span>OFIYAT<br />CATALOGUE</span></div>
-      <div className="ofiyat-catalog-teaser__copy" data-reveal><p>{o.catalogKicker}</p><h2>{o.catalogTitle}<br /><em>{o.catalogAccent}</em></h2><span>{o.catalogLead}</span><ul><li>{dataSource === 'live' ? o.dataLive : o.dataSnapshot}</li><li>{o.plansMarked}</li></ul><a href={routeTo(slug, '/apartments', language)}>{o.catalogCta}<b>↗</b></a></div>
+      <div className="ofiyat-catalog-teaser__copy" data-reveal><p>{o.catalogKicker}</p><h2>{o.catalogTitle}<br /><em>{o.catalogAccent}</em></h2><span>{o.catalogLead}</span><CatalogSourceStatus language={language} dataSource={dataSource} {...catalogState} hasData={dataSource !== 'embedded'} onRetry={catalogState.retry} /><ul><li>{catalogStatusMessage(language, dataSource)}</li><li>{o.plansMarked}</li></ul><a href={routeTo(slug, '/apartments', language)}>{o.catalogCta}<b>↗</b></a></div>
     </section>
 
     <section id="location" className="ofiyat-location">
@@ -851,7 +827,7 @@ function DefaultKayanProjectPage({
   initialAvailableUnitKeys: readonly string[];
 }) {
   const config = projectConfigs[slug];
-  const { project, dataSource } = useProjectSummary(slug, initialProject);
+  const { project, dataSource, ...catalogState } = useProjectSummary(slug, initialProject);
   const [language, setLanguage] = useProjectLanguage(initialLanguage);
   const { loading, menuOpen, setMenuOpen } = useOverlayState(true, slug === 'mirador' ? 2650 : 950, `kayan-loader-seen-${slug}`);
   const [leadOpen, setLeadOpen] = useState(false);
@@ -983,7 +959,7 @@ function DefaultKayanProjectPage({
 
     <section className="kayan-proofbar" aria-label={language === 'ru' ? 'Актуальность данных' : language === 'uz' ? 'Ma’lumotlar dolzarbligi' : 'Data confidence'}>
       <article><small>01</small><strong>{objectCountLabel(project.availableUnits, language)}</strong><span>{language === 'ru' ? 'доступно сейчас' : language === 'uz' ? 'hozir mavjud' : 'available now'}</span></article>
-      <article><small>02</small><strong>{dataSource === 'live' ? t.sourceLive : t.sourceSnapshot}</strong><span>{language === 'ru' ? 'цены и статусы' : language === 'uz' ? 'narxlar va holatlar' : 'prices and statuses'}</span></article>
+      <article><small>02</small><CatalogSourceStatus language={language} dataSource={dataSource} {...catalogState} hasData={dataSource !== 'embedded'} onRetry={catalogState.retry} /><span>{language === 'ru' ? 'цены и статусы' : language === 'uz' ? 'narxlar va holatlar' : 'prices and statuses'}</span></article>
       <article><small>03</small><strong>{language === 'ru' ? 'Прозрачная маркировка' : language === 'uz' ? 'Aniq belgilash' : 'Clear disclosure'}</strong><span>{language === 'ru' ? 'типовые планы отмечены как примеры' : language === 'uz' ? 'namunaviy rejalar alohida ko‘rsatiladi' : 'representative layouts are clearly labelled'}</span></article>
     </section>
 
@@ -1287,7 +1263,7 @@ export function KayanCatalogPage({ slug, initialBundle, snapshotGeneratedAt, ini
 
     <section className="kayan-selector-hero">
       <div><p>{t.selectorKicker}</p><h1>{t.selectorTitle}<br /><em>{t.selectorAccent}</em></h1></div>
-      <span>{t.selectorLead}<small>{dataSource === 'live' ? t.sourceLive : t.sourceSnapshot}. {updateTimestamp(displayCatalogTimestamp, language)}</small></span>
+      <span>{t.selectorLead}<small>{catalogStatusMessage(language, dataSource)}. {updateTimestamp(displayCatalogTimestamp, language)}</small></span>
       <strong>{bundle.project.availableUnits}<small>{t.availableLong}</small></strong>
     </section>
 

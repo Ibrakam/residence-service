@@ -77,7 +77,7 @@ const presentation: CatalogPresentation = {
 };
 
 export function MaftunMakonUnifiedCatalog({ snapshot: embeddedSnapshot, initialLanguage = 'ru' }: { snapshot: MaftunMakonSafeSnapshot; initialLanguage?: Language }) {
-  const { data: snapshot, dataSource, refreshedAt, project: liveProject } = useLiveCatalogSnapshot('maftun-makon', embeddedSnapshot);
+  const { data: snapshot, dataSource, isLoading, loadError, retry, refreshedAt, project: liveProject } = useLiveCatalogSnapshot('maftun-makon', embeddedSnapshot);
   const units = useMemo<CatalogUnit[]>(() => snapshot.units.map((rawUnit) => {
     const unit = rawUnit as SourceUnit;
     return {
@@ -116,5 +116,8 @@ export function MaftunMakonUnifiedCatalog({ snapshot: embeddedSnapshot, initialL
     initialLanguage={initialLanguage}
     refreshedAt={refreshedAt ?? snapshot.capturedAt}
     dataSource={dataSource}
+    isLoading={isLoading}
+    loadError={loadError}
+    retry={retry}
   />;
 }

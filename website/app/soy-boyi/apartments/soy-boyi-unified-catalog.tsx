@@ -103,7 +103,7 @@ function localizedHref(
 export function SoyBoyiUnifiedCatalog({ snapshot: embeddedSnapshot, initialLanguage = 'ru' }: Props) {
   const searchParams = useSearchParams();
   const currentSearch = searchParams.toString();
-  const { data: snapshot, dataSource, refreshedAt, project: liveProject } = useLiveCatalogSnapshot('soy-boyi', embeddedSnapshot);
+  const { data: snapshot, dataSource, isLoading, loadError, retry, refreshedAt, project: liveProject } = useLiveCatalogSnapshot('soy-boyi', embeddedSnapshot);
   const queueDefinitions = useMemo<SoyQueueDefinition[]>(
     () => soyQueueOptions(snapshot.units, liveProject?.queues) as SoyQueueDefinition[],
     [liveProject?.queues, snapshot.units],
@@ -209,5 +209,8 @@ export function SoyBoyiUnifiedCatalog({ snapshot: embeddedSnapshot, initialLangu
     initialLanguage={initialLanguage}
     refreshedAt={refreshedAt ?? snapshot.serverDate ?? snapshot.capturedAt}
     dataSource={dataSource}
+    isLoading={isLoading}
+    loadError={loadError}
+    retry={retry}
   />;
 }

@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
+import { CatalogSourceStatus } from '@/app/catalog-source-status';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   type KeyboardEvent as ReactKeyboardEvent,
@@ -283,7 +284,7 @@ function useLanguage(initialLanguage: Language) {
 
 export function YangiBaxtPage({ initialLanguage }: { initialLanguage: Language }) {
   const [language, setLanguage] = useLanguage(initialLanguage);
-  const { data: catalogProject, dataSource } = useLiveCatalogProject('yangibaxt', { slug: 'yangibaxt', name: 'Yangi Baxt', totalUnits: 0, availableUnits: 0 });
+  const { data: catalogProject, dataSource, ...catalogState } = useLiveCatalogProject('yangibaxt', { slug: 'yangibaxt', name: 'Yangi Baxt', totalUnits: 0, availableUnits: 0 });
   const [menuOpen, setMenuOpen] = useState(false);
   const mobile = useMobileNavigation();
   const menuToggleRef = useRef<HTMLButtonElement>(null);
@@ -444,7 +445,7 @@ export function YangiBaxtPage({ initialLanguage }: { initialLanguage: Language }
         </section>
 
         <section className="yb-section yb-catalog-preview" id="catalog" data-reveal>
-          <header className="yb-section__header"><span>{t.catalogIndex}</span><h2>{t.catalogTitle}</h2><p>{t.catalogText}</p></header>
+          <header className="yb-section__header"><span>{t.catalogIndex}</span><h2>{t.catalogTitle}</h2><p>{t.catalogText}</p><CatalogSourceStatus language={language} dataSource={dataSource} {...catalogState} hasData={dataSource !== 'embedded'} onRetry={catalogState.retry} /></header>
           <div className="yb-catalog-preview__panel">
             <dl>{catalogStats.map(([value, label]) => <div key={label}><dt>{value}</dt><dd>{label}</dd></div>)}</dl>
             <ul>{t.catalogGroups.map((group) => <li key={group}>{group}</li>)}</ul>

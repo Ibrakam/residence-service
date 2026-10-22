@@ -73,6 +73,11 @@ public BI sales-picker source.
   floor, rooms, area, and property type. Missing matrices, unknown statuses,
   duplicate placement UUIDs, or a FREE/list mismatch reject all eleven NRG
   artifacts. Non-apartment matrix rows are validated but not published.
+- NRG publishes the per-square-metre price as the selected effective total
+  divided by the apartment area. The upstream `priceBySquare` can exclude
+  repair while `totalPriceWithDiscount` includes it; copying that rate would
+  contradict the displayed total. This does not change the existing campaign
+  eligibility policy or expose prices for booked/sold apartments.
 - The built-in NRG block registry is a reviewed 64-block snapshot of the
   official `realEstateList`. Every capture takes the union of that registry,
   the last successfully normalized mode-0600 registry, and the current

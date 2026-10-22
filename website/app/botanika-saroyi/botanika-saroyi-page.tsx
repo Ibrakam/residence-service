@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
+import { CatalogSourceStatus } from '@/app/catalog-source-status';
 import { useRouter } from 'next/navigation';
 import {
   type KeyboardEvent as ReactKeyboardEvent,
@@ -140,7 +141,7 @@ function Gallery({ id, slides, captions, language }: { id: string; slides: Slide
 export function BotanikaSaroyiPage({ initialLanguage }: { initialLanguage: Language }) {
   const router = useRouter();
   const language = initialLanguage;
-  const { data: catalogProject, dataSource } = useLiveCatalogProject('botanika-saroyi', { slug: 'botanika-saroyi', name: 'Botanika Saroyi', totalUnits: 0, availableUnits: 0 });
+  const { data: catalogProject, dataSource, ...catalogState } = useLiveCatalogProject('botanika-saroyi', { slug: 'botanika-saroyi', name: 'Botanika Saroyi', totalUnits: 0, availableUnits: 0 });
   const catalogCount = dataSource === 'embedded' ? '—' : new Intl.NumberFormat(language === 'ru' ? 'ru-RU' : language === 'uz' ? 'uz-UZ' : 'en-US').format(catalogProject.availableUnits);
   const [menuOpen, setMenuOpen] = useState(false);
   const [headerScrolled, setHeaderScrolled] = useState(false);
@@ -202,7 +203,7 @@ export function BotanikaSaroyiPage({ initialLanguage }: { initialLanguage: Langu
 
     <section className="botanika-location" id="botanika-location" tabIndex={-1}><figure><img src={asset('/botanika-saroyi/images/aerial-composite.webp')} alt={t.compositeCaption} loading="lazy" /><figcaption>{t.kind.composite} · {t.compositeCaption}</figcaption></figure><div data-botanika-reveal><small>{t.locationTop}</small><h2>{t.locationTitle}</h2><p>{t.locationText}</p><em>{t.locationWarning}</em><nav><a href={mapUrl} target="_blank" rel="noreferrer">{t.map}<span>↗</span></a><a href={panorama} target="_blank" rel="noreferrer">{t.panorama}<span>360°</span></a></nav></div></section>
 
-    <section className="botanika-catalog-callout"><header data-botanika-reveal><small>{t.catalogTop}</small><h2>{t.catalogTitle}</h2><p>{t.catalogText}</p></header><div className="botanika-catalog-callout__facts">{catalogFacts.map(([value, label]) => <article key={label}><strong>{value}</strong><span>{label}</span></article>)}</div><div className="botanika-catalog-callout__actions"><p>{t.catalogNote}</p><a href={withLanguage('/botanika-saroyi/apartments', language)}>{t.openCatalog}<span>↗</span></a></div></section>
+    <section className="botanika-catalog-callout"><header data-botanika-reveal><small>{t.catalogTop}</small><h2>{t.catalogTitle}</h2><p>{t.catalogText}</p><CatalogSourceStatus language={language} dataSource={dataSource} {...catalogState} hasData={dataSource !== 'embedded'} onRetry={catalogState.retry} /></header><div className="botanika-catalog-callout__facts">{catalogFacts.map(([value, label]) => <article key={label}><strong>{value}</strong><span>{label}</span></article>)}</div><div className="botanika-catalog-callout__actions"><p>{t.catalogNote}</p><a href={withLanguage('/botanika-saroyi/apartments', language)}>{t.openCatalog}<span>↗</span></a></div></section>
 
     <section className="botanika-build"><header data-botanika-reveal><small>{t.buildTop}</small><h2>{t.buildTitle}</h2><p>{t.buildText}</p></header><div className="botanika-build__grid">{buildSlides.map((slide, index) => <figure key={slide.src}><img src={asset(slide.src)} alt={`${t.kind.archive} · ${t.months[index]}`} loading="lazy" /><figcaption><span>{t.kind.archive}</span><strong>{t.months[index]}</strong><small>{String(index + 1).padStart(2, '0')}</small></figcaption></figure>)}</div><nav><a href={panorama} target="_blank" rel="noreferrer">{t.panorama}<span>360°</span></a></nav></section>
 

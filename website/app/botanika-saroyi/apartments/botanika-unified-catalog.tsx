@@ -88,7 +88,7 @@ function statusFor(unit: SourceUnit): CatalogStatus {
 }
 
 export function BotanikaUnifiedCatalog({ snapshot: embeddedSnapshot, initialLanguage = 'ru' }: { snapshot: BotanikaSafeSnapshot; initialLanguage?: Language }) {
-  const { data: snapshot, dataSource, refreshedAt, project: liveProject } = useLiveCatalogSnapshot('botanika-saroyi', embeddedSnapshot);
+  const { data: snapshot, dataSource, isLoading, loadError, retry, refreshedAt, project: liveProject } = useLiveCatalogSnapshot('botanika-saroyi', embeddedSnapshot);
   const units = useMemo<CatalogUnit[]>(() => snapshot.units.map((rawUnit) => {
     const unit = rawUnit as SourceUnit;
     return {
@@ -128,5 +128,8 @@ export function BotanikaUnifiedCatalog({ snapshot: embeddedSnapshot, initialLang
     initialLanguage={initialLanguage}
     refreshedAt={refreshedAt ?? snapshot.capturedAt}
     dataSource={dataSource}
+    isLoading={isLoading}
+    loadError={loadError}
+    retry={retry}
   />;
 }

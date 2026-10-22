@@ -1553,6 +1553,23 @@ test('NRG normalization covers all eleven project adapters and requires an empty
   assert.equal(fourUArtifact.historicalSaleDates, null);
   assert.equal(fourUArtifact.units.find((unit) => unit.status === 'sold').price, null);
   assert.ok(fourUArtifact.units.every((unit) => unit.id === unit.sourceId && unit.sourceKey === `nrg-bi:4u:${unit.id}`));
+  const repairedPricing = structuredClone(groups);
+  const repairedListing = repairedPricing[1].pages[0].placements[0];
+  repairedListing.totalPrice = 800;
+  repairedListing.totalPriceWithDiscount = 600;
+  repairedListing.priceBySquare = 10;
+  const repairedUnit = normalizeNrgBiCapture(repairedPricing).artifacts
+    .find((item) => item.filename === 'bayterak-catalog.json').artifact.units
+    .find((unit) => unit.status === 'available');
+  assert.equal(repairedUnit.repairIncluded, true);
+  assert.equal(repairedUnit.price, 600, 'the existing effective-total selection is preserved');
+  assert.equal(repairedUnit.pricePerM2, 15, 'repair-inclusive total, not the raw repair-exclusive rate, defines price per m²');
+  assert.equal(repairedUnit.pricePerM2 * repairedUnit.area, repairedUnit.price);
+  for (const artifact of result.artifacts) {
+    for (const unit of artifact.artifact.units) {
+      assert.equal(unit.pricePerM2, unit.status === 'available' ? unit.price / unit.area : null);
+    }
+  }
   const invalidAudit = structuredClone(groups);
   invalidAudit[0].planAssets.units[0].original.width = 400;
   assert.throws(() => normalizeNrgBiCapture(invalidAudit), /dimensions are invalid/);

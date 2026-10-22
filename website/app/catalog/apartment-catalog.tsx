@@ -5,6 +5,7 @@
 import type { KeyboardEvent as ReactKeyboardEvent, RefObject } from 'react';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { LeadModal, rememberLiveCatalogUnit } from '@/app/lead-modal';
+import { CatalogSourceStatus, catalogStatusMessage } from '@/app/catalog-source-status';
 import type {
   ApartmentCatalogProps,
   CatalogLanguage,
@@ -327,7 +328,7 @@ function ChessGroup({ label, units, language, selectedId, detailId, onSelect }: 
   </section>;
 }
 
-export function ApartmentCatalog({ project, units: sourceUnits, capabilities, presentation, initialLanguage = 'ru', refreshedAt, dataSource = 'embedded', visualFlow, visualFlowAvailable = false }: ApartmentCatalogProps) {
+export function ApartmentCatalog({ project, units: sourceUnits, capabilities, presentation, initialLanguage = 'ru', refreshedAt, dataSource = 'embedded', isLoading = false, loadError = false, retry, visualFlow, visualFlowAvailable = false }: ApartmentCatalogProps) {
   const units = useMemo(() => sourceUnits
     .filter((unit) => unit.status === 'available')
     .map((unit) => capabilities.pricesVisible
@@ -504,9 +505,9 @@ export function ApartmentCatalog({ project, units: sourceUnits, capabilities, pr
       })
       : visualFlow
     : null;
-  const sourceLabel = dataSource === 'live' ? t.sourceLive : dataSource === 'cached' ? t.sourceCached : t.sourceEmbedded;
-  const availability = String(project.availableCount);
-  const refreshedLabel = dateLabel(refreshedAt, language);
+  const sourceLabel = catalogStatusMessage(language, dataSource);
+  const availability = dataSource === 'embedded' ? '—' : String(project.availableCount);
+  const refreshedLabel = dataSource === 'embedded' ? '' : dateLabel(refreshedAt, language);
 
   return <main className="apartment-catalog" data-project={project.slug} lang={language} style={presentation.theme}>
     <a className="apartment-catalog__skip" href="#catalog">{t.skip}</a>
@@ -524,6 +525,8 @@ export function ApartmentCatalog({ project, units: sourceUnits, capabilities, pr
       <div><p>{localized(presentation.eyebrow, language, project.className ?? project.name)}</p><h1>{title}{accent ? <> <em>{accent}</em></> : null}</h1><span>{localized(presentation.lead, language, project.address ?? '')}</span></div>
       <aside><strong>{availability}</strong><span>{t.available}</span><small>{sourceLabel}{refreshedLabel ? <time dateTime={refreshedAt}>{refreshedLabel}</time> : null}</small></aside>
     </section>
+
+    <CatalogSourceStatus language={language} dataSource={dataSource} refreshedAt={refreshedAt} isLoading={isLoading} loadError={loadError} hasData={dataSource !== 'embedded'} onRetry={retry} />
 
     {capabilities.visualFlow && visualFlowAvailable && renderedVisualFlow ? <section className="apartment-catalog__visual" aria-label={t.visual}><header><p>{t.visual}</p><span>{t.visualHint}</span></header>{renderedVisualFlow}</section> : null}
 
@@ -545,10 +548,10 @@ export function ApartmentCatalog({ project, units: sourceUnits, capabilities, pr
         <button className="apartment-catalog-filters__reset" type="button" onClick={reset}>{t.reset}<span aria-hidden="true">↺</span></button>
       </div>
 
-      <div className="apartment-catalog-resultsbar"><div><strong>{filtered.length}</strong><span>{t.found} · {t.offers}</span></div><label><span>{t.sort}</span><select value={sort} onChange={(event) => { const next = event.target.value as CatalogSort; setSort(next); setVisibleCount(pageSize); updateQuery({ sort: next === (presentation.defaultSort ?? 'status') ? undefined : next }); }}>{(Object.keys(t.sorts) as CatalogSort[]).filter((item) => hasPrices || !item.startsWith('price')).map((item) => <option key={item} value={item}>{t.sorts[item]}</option>)}</select></label></div>
+      <div className="apartment-catalog-resultsbar"><div><strong>{dataSource === 'embedded' ? '—' : filtered.length}</strong><span>{t.found} · {t.offers}</span></div><label><span>{t.sort}</span><select value={sort} onChange={(event) => { const next = event.target.value as CatalogSort; setSort(next); setVisibleCount(pageSize); updateQuery({ sort: next === (presentation.defaultSort ?? 'status') ? undefined : next }); }}>{(Object.keys(t.sorts) as CatalogSort[]).filter((item) => hasPrices || !item.startsWith('price')).map((item) => <option key={item} value={item}>{t.sorts[item]}</option>)}</select></label></div>
       {presentation.disclaimer ? <p className="apartment-catalog-disclaimer">{localized(presentation.disclaimer, language)}</p> : null}
 
-      {!filtered.length ? <div className="apartment-catalog-empty"><h3>{t.empty}</h3><button type="button" onClick={reset}>{t.clearFilters}</button></div> : <div className="apartment-catalog-layout">
+      {!filtered.length ? (dataSource === 'embedded' && (isLoading || loadError) ? null : <div className="apartment-catalog-empty"><h3>{t.empty}</h3><button type="button" onClick={reset}>{t.clearFilters}</button></div>) : <div className="apartment-catalog-layout">
         <div className="apartment-catalog-layout__main">
           {mode === 'cards' ? <><div className="apartment-catalog-cards">{visibleUnits.map((unit) => {
             const plan = unitPlan(unit);

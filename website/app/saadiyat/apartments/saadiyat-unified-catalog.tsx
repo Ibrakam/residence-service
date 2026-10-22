@@ -87,7 +87,7 @@ function localizedHref(
 
 export function SaadiyatUnifiedCatalog({ snapshot: embeddedSnapshot, initialLanguage = 'ru' }: Props) {
   const currentSearch = useSearchParams().toString();
-  const { data: snapshot, dataSource, refreshedAt, project: liveProject } = useLiveCatalogSnapshot('saadiyat', embeddedSnapshot);
+  const { data: snapshot, dataSource, isLoading, loadError, retry, refreshedAt, project: liveProject } = useLiveCatalogSnapshot('saadiyat', embeddedSnapshot);
   const units = useMemo<CatalogUnit[]>(() => snapshot.units.map((unit) => ({
     id: unit.id,
     unitKey: unit.sourceKey || undefined,
@@ -180,5 +180,8 @@ export function SaadiyatUnifiedCatalog({ snapshot: embeddedSnapshot, initialLang
     initialLanguage={initialLanguage}
     refreshedAt={refreshedAt ?? snapshot.serverDate ?? snapshot.capturedAt}
     dataSource={dataSource}
+    isLoading={isLoading}
+    loadError={loadError}
+    retry={retry}
   />;
 }

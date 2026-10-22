@@ -1,0 +1,33 @@
+/* Shared safety net for translated editorial titles. A long word must not
+   increase a grid's minimum track size or disappear behind overflow:clip. */
+body :where(main, [class$="-site"], .sa-page) :where(h1, h2, h3) {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  hyphens: auto;
+}
+body :where(main, [class$="-site"], .sa-page) :where(section, article, header, footer, aside, figure, div) {
+  min-inline-size: 0;
+}
+.flagman-catalog-callout>div:nth-child(2) { min-width:0; }
+.experience-shell .facade-screen { height:auto; overflow:visible; }
+.experience-shell .apartments-section.apartments-screen,
+.experience-shell .showroom-shell { height:auto; overflow:visible; }
+.experience-shell .catalog-source-status { margin-block:12px; padding:12px 16px; }
+.avalon-plan-unavailable { display:grid; align-content:center; min-height:180px; padding:24px; border:1px dashed #b5aa99; border-radius:8px; background:#f4efe6; color:#403d36; text-align:center; font:400 13px/1.6 var(--font-ui),Arial,sans-serif; }
+.avalon-plan-unavailable strong { font-weight:600; }
+.avalon-plan-unavailable p { margin:12px 0 0; }
+
+@media (max-width: 560px) {
+  .flagman-site .flagman-catalog-callout { grid-template-columns:minmax(0,1fr); }
+  .flagman-site .flagman-catalog-callout h2 { font-size:clamp(2.5rem,12.5vw,3.25rem); }
+  .botanika-site section>header h2,
+  .botanika-site .botanika-location h2,
+  .botanika-site .botanika-contact h2 { font-size:clamp(2.25rem,11.5vw,3rem); }
+  .maftun-site .maftun-hero h1 { font-size:clamp(2.75rem,13.5vw,3.75rem); }
+  .maftun-site :is(.maftun-story,.maftun-classes,.maftun-architecture,.maftun-garden,.maftun-halls,.maftun-environment,.maftun-gallery,.maftun-contact) h2 { font-size:clamp(2.25rem,11.5vw,3rem); }
+  .meros-site .meros-contact h2 { font-size:clamp(2.25rem,11.5vw,3rem); }
+  .sa-page .sa-copy h2 { font-size:clamp(2.25rem,11.5vw,2.8rem); }
+  .apartment-catalog .apartment-catalog-hero h1 { font-size:clamp(2.5rem,12vw,3.25rem); }
+}

@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
+import { CatalogSourceStatus } from '@/app/catalog-source-status';
 import {
   type PointerEvent as ReactPointerEvent,
   useCallback,
@@ -240,7 +241,7 @@ function MediaLightbox({ state, language, covered, onClose, onChange, onLead }: 
 }
 
 export function SunPage({ initialLanguage }: { initialLanguage: Language }) {
-  const { data: snapshot } = useLiveCatalogSnapshot('sun', embeddedSnapshot);
+  const { data: snapshot, dataSource, ...catalogState } = useLiveCatalogSnapshot('sun', embeddedSnapshot);
   const [language, setLanguage] = useSunLanguage(initialLanguage);
   const [menuOpen, setMenuOpen] = useState(false);
   const [lead, setLead] = useState<LeadRequest | null>(null);
@@ -374,7 +375,7 @@ export function SunPage({ initialLanguage }: { initialLanguage: Language }) {
       </section>
 
       <section id="apartments" className="sun-section sun-inventory">
-        <header className="sun-section__header sun-section__header--dark" data-reveal><span>{t.catalogEyebrow}</span><h2>{t.catalogTitle}</h2><p>{t.catalogText}</p></header>
+        <header className="sun-section__header sun-section__header--dark" data-reveal><span>{t.catalogEyebrow}</span><h2>{t.catalogTitle}</h2><p>{t.catalogText}</p><CatalogSourceStatus language={language} dataSource={dataSource} {...catalogState} hasData={dataSource !== 'embedded'} onRetry={catalogState.retry} /></header>
         <dl className="sun-inventory__facts">{t.catalogFacts.map(([, label], index) => <div key={label}><dt>{landingFacts[index]}</dt><dd>{label}</dd></div>)}</dl>
         <div className="sun-inventory__range"><span>MIN</span><strong>{formatSunPrice(minPrice, language)}</strong><i /><span>MAX</span><strong>{formatSunPrice(maxPrice, language)}</strong></div>
         <div className="sun-inventory__cards">{previewUnits.map((unit) => <article key={unit.id} data-reveal>

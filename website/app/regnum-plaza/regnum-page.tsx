@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
+import { CatalogSourceStatus } from '@/app/catalog-source-status';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   type PointerEvent as ReactPointerEvent,
@@ -221,7 +222,7 @@ function Lightbox({ state, language, onClose, onChange }: { state: LightboxState
 }
 
 export function RegnumPlazaPage({ initialLanguage, previewUnits }: { initialLanguage: Language; previewUnits: RegnumUnit[] }) {
-  const { data: liveUnits, project } = useLiveCatalogUnits('regnum-plaza', previewUnits);
+  const { data: liveUnits, project, dataSource, ...catalogState } = useLiveCatalogUnits('regnum-plaza', previewUnits);
   const queueOptions = liveCatalogQueueOptions(project);
   const [language, setLanguage] = useLanguage(initialLanguage);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -359,7 +360,7 @@ export function RegnumPlazaPage({ initialLanguage, previewUnits }: { initialLang
       </section>
 
       <section id="apartments" className="rp-section rp-apartments-preview">
-        <header className="rp-section__header rp-section__header--dark" data-reveal><span>{t.catalogEyebrow}</span><h2>{t.catalogTitle}</h2><p>{t.catalogText}</p></header>
+        <header className="rp-section__header rp-section__header--dark" data-reveal><span>{t.catalogEyebrow}</span><h2>{t.catalogTitle}</h2><p>{t.catalogText}</p><CatalogSourceStatus language={language} dataSource={dataSource} {...catalogState} hasData={dataSource !== 'embedded'} onRetry={catalogState.retry} /></header>
         <dl className="rp-apartments-preview__stats">{t.catalogStats.map(([value, label]) => <div key={value}><dt>{value}</dt><dd>{label}</dd></div>)}</dl>
         <div className="rp-apartments-preview__grid">{livePreviewUnits.map((unit) => <article key={unit.id} data-reveal>
           <div className="rp-preview-plan">{unit.planPublicPath ? <img src={asset(unit.planPublicPath)} width={unit.planWidth!} height={unit.planHeight!} loading="lazy" alt={`${mediaLabels['official-plan'][language]} · ${t.number}${unit.number}`} /> : <div><i /><span>{t.missingPlan}</span></div>}</div>

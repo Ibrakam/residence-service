@@ -4,6 +4,7 @@ import { headers } from 'next/headers';
 import ConstructionPassportControl from './construction-passport-control';
 import SessionRevocationGuard from './session-revocation-guard';
 import './globals.css';
+import './responsive-typography.css';
 
 const appBasePath = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
 const siteOrigin = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://form.tencorp.uz').replace(/\/+$/, '');

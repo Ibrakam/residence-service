@@ -114,7 +114,7 @@ const explorerStyle = {
 } as CSSProperties;
 
 export function MiradorUnifiedCatalog({ initialBundle, snapshotGeneratedAt, initialLanguage = 'ru' }: { initialBundle: CatalogBundle; snapshotGeneratedAt?: string; initialLanguage?: KayanLanguage }) {
-  const { data: liveUnits, dataSource, refreshedAt, project: liveProject } = useLiveCatalogUnits('mirador', initialBundle.units);
+  const { data: liveUnits, dataSource, isLoading, loadError, retry, refreshedAt, project: liveProject } = useLiveCatalogUnits('mirador', initialBundle.units);
   const { Explorer, available: visualAvailable } = useMiradorVisualFlow();
   const maxFloors = useMemo(() => new Map(initialBundle.project.phases.map((phase) => [phase.slug, phase.floorsTotal])), [initialBundle.project.phases]);
   const units = useMemo<CatalogUnit[]>(() => liveUnits.map((unit) => {
@@ -164,6 +164,9 @@ export function MiradorUnifiedCatalog({ initialBundle, snapshotGeneratedAt, init
     initialLanguage={initialLanguage}
     refreshedAt={refreshedAt ?? liveProject?.updatedAt ?? snapshotGeneratedAt ?? initialBundle.project.updatedAt}
     dataSource={dataSource}
+    isLoading={isLoading}
+    loadError={loadError}
+    retry={retry}
     visualFlowAvailable={visualAvailable && availableUnitKeys.length > 0}
     visualFlow={(language, actions) => Explorer ? <div className="kayan-site--mirador mirador-unified-flow" style={explorerStyle}><Explorer language={language} catalogHref={`${appBasePath}/mirador/apartments?lang=${language}#catalog`} availableUnitKeys={availableUnitKeys} variant="catalog" onLead={(selection) => actions.openLead(selection.unitKey)} /></div> : null}
   />;

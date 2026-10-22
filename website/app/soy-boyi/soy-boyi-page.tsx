@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import mediaManifest from "@/data/soy-boyi-media-manifest.json";
 import { LeadModal, rememberLiveCatalogUnit } from "@/app/lead-modal";
+import { CatalogSourceStatus } from '@/app/catalog-source-status';
 import {
   catalogLeadIdentity,
   useLiveCatalogUnits,
@@ -1131,6 +1132,7 @@ export function SoyBoyiPage({
                 <p className="soy-kicker">{t.apartmentsEyebrow}</p>
                 <h2>{t.apartmentsTitle}</h2>
                 <p>{t.apartmentsText(currentAvailableCount)}</p>
+                <CatalogSourceStatus language={language} {...liveCatalog} hasData={liveCatalog.dataSource !== 'embedded'} onRetry={liveCatalog.retry} />
               </header>
               <div className="soy-preview-grid">
                 {currentPreviewUnits.map((unit) => (

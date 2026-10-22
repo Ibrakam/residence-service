@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
+import { CatalogSourceStatus } from '@/app/catalog-source-status';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   type CSSProperties,
@@ -258,7 +259,7 @@ function useMobileNavigation() {
 
 export function JomiyPage({ initialLanguage }: { initialLanguage: Language }) {
   const [language, setLanguage] = useLanguage(initialLanguage);
-  const { data: catalogProject, dataSource } = useLiveCatalogProject('jomiy', { slug: 'jomiy', name: 'Jomiy', totalUnits: 0, availableUnits: 0 });
+  const { data: catalogProject, dataSource, ...catalogState } = useLiveCatalogProject('jomiy', { slug: 'jomiy', name: 'Jomiy', totalUnits: 0, availableUnits: 0 });
   const [menuOpen, setMenuOpen] = useState(false);
   const [lightbox, setLightbox] = useState<LightboxState | null>(null);
   const [leadSurface, setLeadSurface] = useState<string | null>(null);
@@ -413,7 +414,7 @@ export function JomiyPage({ initialLanguage }: { initialLanguage: Language }) {
         </section>
 
         <section className="jm-chapter jm-catalog" id="catalog" data-chapter="7" data-reveal>
-          <header><span>{t.catalogIndex}</span><h2>{catalogTitle}</h2><p>{t.catalogText}</p></header>
+          <header><span>{t.catalogIndex}</span><h2>{catalogTitle}</h2><p>{t.catalogText}</p><CatalogSourceStatus language={language} dataSource={dataSource} {...catalogState} hasData={dataSource !== 'embedded'} onRetry={catalogState.retry} /></header>
           <div className="jm-catalog__panel"><dl>{catalogStats.map(([value, label]) => <div key={label}><dt>{value}</dt><dd>{label}</dd></div>)}</dl><ul>{t.catalogGroups.map((group) => <li key={group}>{group}</li>)}</ul><div><p>{t.catalogNote}</p><a href={withLanguage('/jomiy/apartments', language)}>{t.openCatalog}<span>↗</span></a><button type="button" data-lead-trigger onClick={() => setLeadSurface('catalog-preview')}>{t.consult}</button></div></div>
         </section>
 

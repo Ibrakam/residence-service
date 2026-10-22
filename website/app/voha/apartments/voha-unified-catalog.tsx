@@ -76,7 +76,7 @@ const presentation: CatalogPresentation = {
 };
 
 export function VohaUnifiedCatalog({ snapshot: embeddedSnapshot, initialLanguage = 'ru' }: { snapshot: VohaSafeSnapshot; initialLanguage?: Language }) {
-  const { data: snapshot, dataSource, refreshedAt, project: liveProject } = useLiveCatalogSnapshot('voha', embeddedSnapshot);
+  const { data: snapshot, dataSource, isLoading, loadError, retry, refreshedAt, project: liveProject } = useLiveCatalogSnapshot('voha', embeddedSnapshot);
   const units = useMemo<CatalogUnit[]>(() => snapshot.units.map((unit) => ({
     id: String(unit.id), unitKey: unit.sourceKey || undefined, number: String(unit.number), rooms: unit.rooms,
     area: unit.area, floor: unit.floor, maxFloor: unit.maxFloor, entrance: unit.entrance || undefined,
@@ -90,5 +90,8 @@ export function VohaUnifiedCatalog({ snapshot: embeddedSnapshot, initialLanguage
     project={{ slug: 'voha', name: snapshot.project, address: 'Ташкент, ул. Кайнарсой, 136А', className: 'Business', availableCount: liveProject?.availableUnits ?? units.filter((unit) => unit.status === 'available').length, totalCount: liveProject?.totalUnits ?? snapshot.totalCount }}
     units={units} capabilities={capabilities} presentation={presentation} initialLanguage={initialLanguage}
     refreshedAt={refreshedAt ?? snapshot.capturedAt} dataSource={dataSource}
+    isLoading={isLoading}
+    loadError={loadError}
+    retry={retry}
   />;
 }

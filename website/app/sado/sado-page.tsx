@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
+import { CatalogSourceStatus } from '@/app/catalog-source-status';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { LeadModal } from '@/app/lead-modal';
 import { useLiveCatalogProject } from '@/app/live-catalog';
@@ -159,7 +160,7 @@ function SadoInlineForm({ language }: { language: Language }) {
 }
 
 export function SadoPage({ initialAvailable, snapshotGeneratedAt }: { initialAvailable: number; snapshotGeneratedAt: string }) {
-  const { data: catalogProject, refreshedAt } = useLiveCatalogProject('sado', { slug: 'sado', name: "Sad'O", totalUnits: initialAvailable, availableUnits: initialAvailable, updatedAt: snapshotGeneratedAt });
+  const { data: catalogProject, dataSource, ...catalogState } = useLiveCatalogProject('sado', { slug: 'sado', name: "Sad'O", totalUnits: initialAvailable, availableUnits: initialAvailable, updatedAt: snapshotGeneratedAt });
   const [language, setLanguageState] = useState<Language>('ru');
   const [menuOpen, setMenuOpen] = useState(false);
   const [leadOpen, setLeadOpen] = useState(false);
@@ -199,7 +200,6 @@ export function SadoPage({ initialAvailable, snapshotGeneratedAt }: { initialAva
   const gallery = (paths: string[], label: string) => paths.map((src, index) => ({ src, alt: `${label} · ${index + 1}` }));
   const openGallery = (paths: string[], index: number, label: string) => setLightbox({ images: gallery(paths, label), index });
   const moveLightbox = (step: number) => setLightbox((current) => current ? ({ ...current, index: (current.index + step + current.images.length) % current.images.length }) : null);
-  const formattedUpdate = new Intl.DateTimeFormat(language === 'ru' ? 'ru-RU' : language === 'uz' ? 'uz-UZ' : 'en-GB', { dateStyle: 'medium', timeZone: 'Asia/Tashkent' }).format(new Date(refreshedAt ?? snapshotGeneratedAt));
 
   return <main className="sado-site">
     <div className={`sado-intro ${intro ? 'is-visible' : ''} ${skipIntro ? 'is-skip' : ''}`} aria-hidden={!intro}><div className="sado-intro__line" /><span>SAD’O</span><small>{t.heroAccent}</small></div>
@@ -237,7 +237,7 @@ export function SadoPage({ initialAvailable, snapshotGeneratedAt }: { initialAva
 
     <section id="progress" className="sado-section sado-progress"><div className="sado-section__head"><p className="sado-kicker is-dark">{t.progressKicker}</p><h2>{t.progressTitle}<em>{t.progressAccent}</em></h2><p>{t.progressCopy}</p></div><div className="sado-progress__gallery">{constructionImages.map((src, index) => <button key={src} type="button" onClick={() => openGallery(constructionImages, index, t.progressTitle)} aria-label={`${t.galleryOpen}: ${index + 1}`}><img src={asset(src)} alt="Sad'O" loading="lazy" /><span>0{index + 1}</span></button>)}</div><div className="sado-progress__links"><a href={panoramaUrl} target="_blank" rel="noreferrer"><small>LIVE 360</small>{t.panorama}<span>↗</span></a><div aria-disabled="true"><small>{t.camera}</small>{t.cameraUnavailable}<span>—</span></div></div></section>
 
-    <section className="sado-catalog-cta"><div><p className="sado-kicker">{t.catalogKicker}</p><h2>{t.catalogTitle}<em>{t.catalogAccent}</em></h2><p>{t.catalogCopy(catalogProject.availableUnits)}</p><small>{t.checked}: {formattedUpdate}</small><a className="sado-button is-light" href={withLanguage('/sado/apartments', language)}>{t.catalogButton}<span>→</span></a></div><img src={asset('/sado/terrace.webp')} alt="Sad'O" loading="lazy" /></section>
+    <section className="sado-catalog-cta"><div><p className="sado-kicker">{t.catalogKicker}</p><h2>{t.catalogTitle}<em>{t.catalogAccent}</em></h2><p>{t.catalogCopy(catalogProject.availableUnits)}</p><CatalogSourceStatus language={language} dataSource={dataSource} {...catalogState} hasData={dataSource !== 'embedded'} onRetry={catalogState.retry} /><a className="sado-button is-light" href={withLanguage('/sado/apartments', language)}>{t.catalogButton}<span>→</span></a></div><img src={asset('/sado/terrace.webp')} alt="Sad'O" loading="lazy" /></section>
 
     <section className="sado-contact"><div><p className="sado-kicker">{t.formKicker}</p><h2>{t.formTitle}<em>{t.formAccent}</em></h2><p>{t.formCopy}</p></div><SadoInlineForm language={language} /></section>
     <footer className="sado-footer"><a className="sado-logo is-footer" href={withLanguage('/sado', language)}><span>SAD</span><i>’</i><span>O</span></a><div><a href="tel:+998781137712">+998 78 113 77 12</a><a href={withLanguage('/sado/apartments', language)}>{t.choose}</a><a href={`${appBasePath}/privacy?project=sado&lang=${language}`}>{t.privacyLink}</a></div><p>{t.footerNote}</p><small>© NRG-BI · SAD’O · 2026</small></footer>

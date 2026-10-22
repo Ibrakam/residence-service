@@ -75,7 +75,7 @@ function isSafeAvailableUnit(unit: C1SafeUnit) {
 export function C1UnifiedCatalog({ snapshot: embeddedSnapshot, initialLanguage = 'ru' }: { snapshot: C1SafeSnapshot; initialLanguage?: Language }) {
   const params = useSearchParams();
   const currentQuery = params.toString();
-  const { data: snapshot, dataSource, refreshedAt } = useLiveCatalogSnapshot('c1', embeddedSnapshot);
+  const { data: snapshot, dataSource, isLoading, loadError, retry, refreshedAt } = useLiveCatalogSnapshot('c1', embeddedSnapshot);
 
   const units = useMemo<CatalogUnit[]>(() => snapshot.units
     .filter(isSafeAvailableUnit)
@@ -141,5 +141,8 @@ export function C1UnifiedCatalog({ snapshot: embeddedSnapshot, initialLanguage =
     initialLanguage={initialLanguage}
     refreshedAt={refreshedAt ?? snapshot.capturedAt}
     dataSource={dataSource}
+    isLoading={isLoading}
+    loadError={loadError}
+    retry={retry}
   />;
 }

@@ -45,7 +45,7 @@ const presentation: CatalogPresentation = {
 };
 
 export function SunUnifiedCatalog({ snapshot: embeddedSnapshot, initialLanguage = 'ru' }: { snapshot: SunSafeSnapshot; initialLanguage?: Language }) {
-  const { data: snapshot, dataSource, refreshedAt, project: liveProject } = useLiveCatalogSnapshot('sun', embeddedSnapshot);
+  const { data: snapshot, dataSource, isLoading, loadError, retry, refreshedAt, project: liveProject } = useLiveCatalogSnapshot('sun', embeddedSnapshot);
   const units = useMemo<CatalogUnit[]>(() => snapshot.units.map((unit) => {
     const plans: CatalogPlan[] = [];
     if (unit.plan) plans.push({ src: unit.plan, kind: 'unit' });
@@ -62,5 +62,8 @@ export function SunUnifiedCatalog({ snapshot: embeddedSnapshot, initialLanguage 
     project={{ slug: 'sun', name: snapshot.project, address: snapshot.address[initialLanguage] ?? snapshot.address.ru, className: 'Club residence', availableCount: liveProject?.availableUnits ?? units.filter((unit) => unit.status === 'available').length, totalCount: liveProject?.totalUnits ?? snapshot.totalCount }}
     units={units} capabilities={capabilities} presentation={presentation} initialLanguage={initialLanguage}
     refreshedAt={refreshedAt ?? snapshot.capturedAt} dataSource={dataSource}
+    isLoading={isLoading}
+    loadError={loadError}
+    retry={retry}
   />;
 }

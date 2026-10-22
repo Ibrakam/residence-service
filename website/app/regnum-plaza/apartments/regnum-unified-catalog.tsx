@@ -45,7 +45,7 @@ const presentation: CatalogPresentation = {
 };
 
 export function RegnumUnifiedCatalog({ snapshot: embeddedSnapshot, initialLanguage = 'ru' }: { snapshot: RegnumSafeSnapshot; initialLanguage?: Language }) {
-  const { data: snapshot, dataSource, refreshedAt, project: liveProject } = useLiveCatalogSnapshot('regnum-plaza', embeddedSnapshot);
+  const { data: snapshot, dataSource, isLoading, loadError, retry, refreshedAt, project: liveProject } = useLiveCatalogSnapshot('regnum-plaza', embeddedSnapshot);
   const queueMetadata = useMemo(() => liveProject?.queues ?? [], [liveProject?.queues]);
   const units = useMemo<CatalogUnit[]>(() => snapshot.units.map((unit) => {
     const queueKey = regnumQueueKey(unit);
@@ -74,5 +74,8 @@ export function RegnumUnifiedCatalog({ snapshot: embeddedSnapshot, initialLangua
     project={{ slug: 'regnum-plaza', name: snapshot.project, address: snapshot.projectFacts.address[initialLanguage] ?? snapshot.projectFacts.address.ru, className: snapshot.projectFacts.class[initialLanguage] ?? snapshot.projectFacts.class.ru, availableCount: liveProject?.availableUnits ?? units.filter((unit) => unit.status === 'available').length, totalCount: liveProject?.totalUnits ?? snapshot.officialTotalAtCapture, queues }}
     units={units} capabilities={capabilities} presentation={presentation} initialLanguage={initialLanguage}
     refreshedAt={refreshedAt ?? snapshot.capturedAt} dataSource={dataSource}
+    isLoading={isLoading}
+    loadError={loadError}
+    retry={retry}
   />;
 }

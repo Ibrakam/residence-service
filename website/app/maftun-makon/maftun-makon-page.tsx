@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
+import { CatalogSourceStatus } from '@/app/catalog-source-status';
 import {
   type KeyboardEvent as ReactKeyboardEvent,
   useCallback,
@@ -356,7 +357,7 @@ function GalleryRail({ slides, language, label, onOpen }: { slides: Slide[]; lan
 
 export function MaftunMakonPage({ initialLanguage }: { initialLanguage: Language }) {
   const [language, setLanguage] = useLanguage(initialLanguage);
-  const { data: catalogProject, dataSource } = useLiveCatalogProject('maftun-makon', { slug: 'maftun-makon', name: 'Maftun Makon', totalUnits: 0, availableUnits: 0 });
+  const { data: catalogProject, dataSource, ...catalogState } = useLiveCatalogProject('maftun-makon', { slug: 'maftun-makon', name: 'Maftun Makon', totalUnits: 0, availableUnits: 0 });
   const [menuOpen, setMenuOpen] = useState(false);
   const [lightbox, setLightbox] = useState<LightboxState>(null);
   const [leadContext, setLeadContext] = useState<string>();
@@ -487,7 +488,7 @@ export function MaftunMakonPage({ initialLanguage }: { initialLanguage: Language
         </section>
 
         <section className="maftun-contact">
-          <div className="maftun-contact__copy" data-maftun-reveal data-maftun-stagger><p className="maftun-overline">{t.contactTop}</p><h2>{t.contactTitle}</h2><p>{t.contactText}</p><div><a className="maftun-button maftun-button--gold" href={withLanguage('/maftun-makon/apartments', language)}>{t.catalog}<b>↗</b></a><a className="maftun-text-link" href="tel:+998781137712">{t.phone}</a></div></div>
+          <div className="maftun-contact__copy" data-maftun-reveal data-maftun-stagger><p className="maftun-overline">{t.contactTop}</p><h2>{t.contactTitle}</h2><p>{t.contactText}</p><CatalogSourceStatus language={language} dataSource={dataSource} {...catalogState} hasData={dataSource !== 'embedded'} onRetry={catalogState.retry} /><div><a className="maftun-button maftun-button--gold" href={withLanguage('/maftun-makon/apartments', language)}>{t.catalog}<b>↗</b></a><a className="maftun-text-link" href="tel:+998781137712">{t.phone}</a></div></div>
           <div className="maftun-contact__form" data-maftun-reveal data-maftun-stagger><small>MAFTUN MAKON · NRG-BI × AL-BINA</small><h3>{t.formTitle}</h3><p>{t.formText}</p><button className="maftun-contact__lead-button" type="button" data-lead-trigger onClick={() => setLeadContext('maftun-makon:landing:contact-panel:consultation-cta')}>{t.consultation}<span>↗</span></button></div>
         </section>
       </div>

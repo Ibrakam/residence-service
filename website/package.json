@@ -67,6 +67,7 @@
     "verify:unified-catalog": "node --no-warnings --experimental-strip-types scripts/test-unified-apartment-catalog.mjs",
     "test:lead-client": "node scripts/test-lead-client-contract.mjs",
     "test:live-catalog": "node --no-warnings --experimental-strip-types scripts/test-live-catalog-client.mjs",
+    "test:audit-frontend": "node --no-warnings --experimental-strip-types scripts/test-audit-frontend-regressions.mjs",
     "test:frontend-cluster": "node scripts/test-standalone-cluster.mjs",
     "test:lead-proxy": "node --no-warnings --experimental-strip-types scripts/test-residence-lead-proxy.mjs",
     "build:sado-assets": "node scripts/build-sado-assets.mjs"

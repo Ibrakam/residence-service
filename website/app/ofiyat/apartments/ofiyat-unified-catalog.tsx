@@ -84,7 +84,7 @@ function propertyType(value: string): CatalogPropertyType {
 
 export function OfiyatUnifiedCatalog({ initialBundle, snapshotGeneratedAt, initialLanguage = 'ru' }: Props) {
   const currentSearch = useSearchParams().toString();
-  const { data: liveUnits, dataSource, refreshedAt, project: liveProject } = useLiveCatalogUnits<OfiyatPublicUnit>('ofiyat', initialBundle.units);
+  const { data: liveUnits, dataSource, isLoading, loadError, retry, refreshedAt, project: liveProject } = useLiveCatalogUnits<OfiyatPublicUnit>('ofiyat', initialBundle.units);
   const maxFloors = useMemo(() => new Map(initialBundle.project.phases.map((phase) => [phase.slug, phase.floorsTotal])), [initialBundle.project.phases]);
   const representativePlans = useMemo(() => new Map(initialBundle.representativePlans
     .filter((plan) => isOfiyatApartmentPhase(plan.phaseSlug) && ofiyatRepresentativePlanPath(plan.imageUrl))
@@ -190,5 +190,8 @@ export function OfiyatUnifiedCatalog({ initialBundle, snapshotGeneratedAt, initi
     initialLanguage={initialLanguage}
     refreshedAt={refreshedAt ?? liveProject?.updatedAt ?? initialBundle.project.updatedAt ?? snapshotGeneratedAt}
     dataSource={dataSource}
+    isLoading={isLoading}
+    loadError={loadError}
+    retry={retry}
   />;
 }

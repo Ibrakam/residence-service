@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
+import { CatalogSourceStatus } from '@/app/catalog-source-status';
 import { useRouter } from 'next/navigation';
 import {
   type KeyboardEvent as ReactKeyboardEvent,
@@ -293,7 +294,7 @@ function MediaLayer({ layer, language }: { layer: Layer; language: Language }) {
 export function ZamonPage({ initialLanguage }: { initialLanguage: Language }) {
   const router = useRouter();
   const language = initialLanguage;
-  const { data: catalogProject, dataSource } = useLiveCatalogProject('zamon', { slug: 'zamon', name: 'Zamon', totalUnits: 0, availableUnits: 0 });
+  const { data: catalogProject, dataSource, ...catalogState } = useLiveCatalogProject('zamon', { slug: 'zamon', name: 'Zamon', totalUnits: 0, availableUnits: 0 });
   const [menuOpen, setMenuOpen] = useState(false);
   const [leadContext, setLeadContext] = useState<string>();
   const introPhase = useIntro();
@@ -400,7 +401,7 @@ export function ZamonPage({ initialLanguage }: { initialLanguage: Language }) {
 
       <section className="zamon-environment" tabIndex={-1}><div data-zamon-reveal><p className="zamon-overline">{t.environmentIndex}</p><h2>{t.environmentTitle}</h2><p>{t.environmentText}</p></div><ol>{t.environment.map((place, index) => <li key={place}><span>{String(index + 1).padStart(2, '0')}</span>{place}</li>)}</ol></section>
 
-      <section id="catalog" className="zamon-catalog-teaser" tabIndex={-1} data-zamon-reveal><header><p className="zamon-overline">{t.catalogIndex}</p><h2>{t.catalogTitle}</h2><p>{t.catalogText}</p></header><div>{catalogStats.map(([value, label]) => <article key={label}><strong>{value}</strong><span>{label}</span></article>)}</div><details className="zamon-data-note"><summary>{t.dataNoteTitle}<span aria-hidden="true">＋</span></summary><p>{t.dataNoteText}</p></details><footer><p>{t.catalogNote}</p><a className="zamon-button is-solid" href={withLanguage('/zamon/apartments', language)}>{t.openCatalog}<span>↗</span></a></footer></section>
+      <section id="catalog" className="zamon-catalog-teaser" tabIndex={-1} data-zamon-reveal><header><p className="zamon-overline">{t.catalogIndex}</p><h2>{t.catalogTitle}</h2><p>{t.catalogText}</p><CatalogSourceStatus language={language} dataSource={dataSource} {...catalogState} hasData={dataSource !== 'embedded'} onRetry={catalogState.retry} /></header><div>{catalogStats.map(([value, label]) => <article key={label}><strong>{value}</strong><span>{label}</span></article>)}</div><details className="zamon-data-note"><summary>{t.dataNoteTitle}<span aria-hidden="true">＋</span></summary><p>{t.dataNoteText}</p></details><footer><p>{t.catalogNote}</p><a className="zamon-button is-solid" href={withLanguage('/zamon/apartments', language)}>{t.openCatalog}<span>↗</span></a></footer></section>
 
       <section id="contacts" className="zamon-contacts" tabIndex={-1}><div data-zamon-reveal><p className="zamon-overline">{t.contactsIndex}</p><h2>{t.contactsTitle}</h2><p>{t.contactsText}</p></div><address><small>{t.offices}</small><span>{t.officeOne}</span><span>{t.officeTwo}</span><a href="tel:+998781137712">+998 78 113 77 12</a></address><div className="zamon-contacts__actions"><button className="zamon-button is-solid" type="button" data-lead-trigger onClick={() => openLead('contacts-consultation')}>{t.consult}<span>↗</span></button><a className="zamon-button" href="tel:+998781137712">{t.phone}<span>↗</span></a></div></section>
     </main>

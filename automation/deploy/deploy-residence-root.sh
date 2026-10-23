@@ -888,7 +888,7 @@ smoke_public_unauthenticated_contract() {
     [[ "$route" == / ]] && continue
     smoke_public_login_page "$route" 5
   done
-  for route in /sanat/ /sanat/flats /avalon/ /tencorp/ /tencrop/; do
+  for route in /sanat/ /sanat/flats /avalon /tencorp/ /tencrop/; do
     smoke_public_login_page "$route" 5
   done
 
@@ -1008,7 +1008,7 @@ smoke_public_authenticated_contract() {
       || die "authenticated public page did not return 2xx: ${route} (${status})"
   done
 
-  for route in /sanat/ /sanat/flats /avalon/ /tencorp/ /tencrop/; do
+  for route in /sanat/ /sanat/flats /avalon /tencorp/ /tencrop/; do
     status="$(curl \
       --disable \
       --config "$AUTH_SMOKE_CURL_CONFIG" \

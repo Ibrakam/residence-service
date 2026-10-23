@@ -266,6 +266,7 @@ test("root deployer preserves nginx-readable immutable releases and disk reserve
   assert.match(script, /smoke_asset_contract "http:\/\/127\.0\.0\.1:\$\{CANDIDATE_PORT\}" "\/4u\/apartments" "\$FINAL_RELEASE\/frontend"/);
   assert.match(script, /smoke_asset_contract "\$PUBLIC_ORIGIN" "\/4u\/apartments"/);
   assert.match(script, /Rechecking origin\/main immediately before the production switch/);
+  assert.equal((script.match(/for route in \/sanat\/ \/sanat\/flats \/avalon \/tencorp\/ \/tencrop\/; do/g) ?? []).length, 2, 'guest and authenticated smoke must use canonical Avalon, not its trailing-slash redirect');
   assert.ok(script.indexOf('smoke_routes "$PUBLIC_ORIGIN" 5') < script.indexOf('"$FINAL_RELEASE/DEPLOY_CONFIRMED"'));
   for (const project of ["4u", "bayterak", "botanika-saroyi", "c1", "flagman", "jomiy", "maftun-makon", "meros", "mirador", "ofiyat", "regnum-plaza", "saadiyat", "sarbon", "sado", "soy-boyi", "sun", "voha", "yangibaxt", "zamon"]) {
     assert.match(script, new RegExp(`\\n  ${project.replaceAll("-", "\\-")}\\n`));

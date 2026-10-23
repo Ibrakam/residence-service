@@ -390,6 +390,27 @@ async function bootstrapProviderTarget(provider, targets, cdpEndpoint) {
   }
 }
 
+export async function selectOwnedOverview(provider, targets, overviews, cdpEndpoint, connect = connectTargetClient) {
+  const bootstrap = provider.browserBootstrap;
+  const pages = targets.filter((target) => target.type === 'page'
+    && target.webSocketDebuggerUrl
+    && target.url?.origin === bootstrap.origin && target.url?.path === bootstrap.path);
+  if (pages.length !== 1) throw new Error(`${provider.id}: expected exactly one authorized account page, found ${pages.length}`);
+  const outer = await connect(pages[0], cdpEndpoint);
+  try {
+    await outer.call('DOM.enable');
+    const owned = [];
+    for (const target of overviews) {
+      // Both CRMs use the same iframe host and overview URL. Prove the frame
+      // belongs to this provider's authenticated outer page before selecting it.
+      // The DOM proof returns only a boolean, never the opaque iframe query.
+      if (await proveAttachedFrame(outer, target.id, bootstrap).catch(() => false)) owned.push(target);
+    }
+    if (owned.length > 1) throw new Error(`${provider.id}: multiple catalogue frames belong to the same account`);
+    return owned[0] ?? null;
+  } finally { outer.close(); }
+}
+
 export async function connectProviderTarget(provider, cdpEndpoint, explicitTargetId = null) {
   const targets = await listTargets(cdpEndpoint);
   const matches = targets.filter((target) => targetMatchesProvider(provider, target, explicitTargetId));
@@ -398,11 +419,9 @@ export async function connectProviderTarget(provider, cdpEndpoint, explicitTarge
       && target.webSocketDebuggerUrl
       && provider.targetPaths?.includes(target.url?.path)
       && targetMatchesProvider(provider, target, target.id));
-    if (overviews.length > 1) {
-      throw new Error(`${provider.id}: multiple catalogue overview targets; refusing an ambiguous account selection`);
-    }
-    if (overviews.length === 1) {
-      const target = selectProviderTarget(provider, targets, overviews[0].id);
+    const ownedOverview = overviews.length ? await selectOwnedOverview(provider, targets, overviews, cdpEndpoint) : null;
+    if (ownedOverview) {
+      const target = selectProviderTarget(provider, targets, ownedOverview.id);
       const client = await connectTargetClient(target, cdpEndpoint);
       return { client, target };
     }

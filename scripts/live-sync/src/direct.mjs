@@ -3,6 +3,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { makeBodyRecord } from './capture.mjs';
 import { mergeNrgBlockRegistries, nrgBiSeedBlockRegistry, normalizeNrgBlockRegistry } from './nrg-block-registry.mjs';
 import { refreshNrgPlanAssets } from './nrg-plan-assets.mjs';
+import { nrgProjectSourceUUIDs } from './providers.mjs';
 
 const MBC_ENDPOINT = 'https://mbc.uz/api/plans';
 const NRG_BASE = 'https://apigw.bi.group/sales-picker/microfe-v3';
@@ -167,7 +168,7 @@ function nrgPlacementBody(provider, project, pageNo) {
     pageNo,
     pageSize: provider.pageSize,
     companyIds: [provider.companyUUID],
-    realEstateUUIDs: [project.realEstateUUID],
+    realEstateUUIDs: nrgProjectSourceUUIDs(project),
     propertyTypes: [provider.apartmentPropertyTypeUUID],
     filterTags: {},
   };
@@ -176,7 +177,7 @@ function nrgPlacementBody(provider, project, pageNo) {
 }
 
 function nrgEstateBody(provider, project) {
-  const body = { pageNo: 1, pageSize: 300, companyIds: [provider.companyUUID], realEstateUUIDs: [project.realEstateUUID] };
+  const body = { pageNo: 1, pageSize: 300, companyIds: [provider.companyUUID], realEstateUUIDs: nrgProjectSourceUUIDs(project) };
   exactKeys(body, ['companyIds', 'pageNo', 'pageSize', 'realEstateUUIDs'], 'NRG realEstateList request');
   return body;
 }
@@ -345,16 +346,19 @@ async function captureNrgBi(provider, records, { planAssetCache = null, blockReg
   for (const project of provider.projectDefinitions) {
     const estate = await nrgPost('realEstateList', nrgEstateBody(provider, project), `NRG ${project.slug} realEstateList`);
     if (!Array.isArray(estate.value?.realEstates)) throw new Error(`NRG ${project.slug} realEstateList has no realEstates array`);
-    const targetEstate = estate.value.realEstates.find((item) => item?.uuid === project.realEstateUUID);
-    if (!targetEstate || typeof targetEstate !== 'object' || Array.isArray(targetEstate)) throw new Error(`NRG ${project.slug} realEstateList does not contain the requested project`);
-    if (!Array.isArray(targetEstate.blocks) || targetEstate.blocks.length === 0) throw new Error(`NRG ${project.slug} realEstateList has no blocks`);
+    const targetEstates = nrgProjectSourceUUIDs(project).map((id) => {
+      const item = estate.value.realEstates.find((candidate) => candidate?.uuid === id);
+      if (!item || !Array.isArray(item.blocks) || item.blocks.length === 0) throw new Error(`NRG ${project.slug} realEstateList is missing required estate ${id}`);
+      return item;
+    });
+    const currentBlocks = targetEstates.flatMap((item) => item.blocks);
     const savedProject = trustedRegistry.projects[project.slug];
     if (!savedProject || savedProject.realEstateUUID !== project.realEstateUUID) throw new Error(`NRG ${project.slug} trusted block registry identity mismatch`);
     const requiredBlocks = new Map(savedProject.blocks.map((block) => [block.id, block]));
-    for (const [index, block] of targetEstate.blocks.entries()) {
+    for (const [index, block] of currentBlocks.entries()) {
       const blockValue = assertObject(block, `NRG ${project.slug} block ${index + 1}`);
       const blockId = nrgBlockMatrixBody(blockValue.id).blockId;
-      if (targetEstate.blocks.slice(0, index).some((candidate) => candidate?.id === blockId)) throw new Error(`NRG ${project.slug} realEstateList duplicates block ${blockId}`);
+      if (currentBlocks.slice(0, index).some((candidate) => candidate?.id === blockId)) throw new Error(`NRG ${project.slug} realEstateList duplicates block ${blockId}`);
       const name = String(blockValue.name ?? '').trim();
       if (!name) throw new Error(`NRG ${project.slug} block ${blockId} has no name`);
       requiredBlocks.set(blockId, { id: blockId, name });

@@ -104,9 +104,9 @@ export function SarbonUnifiedCatalog({
     brand: "SARBON",
     brandSubtitle: "NEW TASHKENT",
     eyebrow: {
-      ru: "БИЗНЕС-КЛАСС · ПЕРВАЯ ОЧЕРЕДЬ",
-      uz: "BIZNES-KLASS · BIRINCHI NAVBAT",
-      en: "BUSINESS CLASS · PHASE ONE",
+      ru: "БИЗНЕС-КЛАСС · АКТУАЛЬНЫЙ КАТАЛОГ",
+      uz: "BIZNES-KLASS · DOLZARB KATALOG",
+      en: "BUSINESS CLASS · CURRENT CATALOGUE",
     },
     title: {
       ru: "Выберите квартиру",
@@ -119,9 +119,9 @@ export function SarbonUnifiedCatalog({
       en: "in the new city.",
     },
     lead: {
-      ru: "Актуальные предложения первой очереди с точными локальными планировками и автоматическим обновлением из CRM.",
-      uz: "Aniq lokal rejalar va CRM’dan avtomatik yangilanishga ega birinchi navbat takliflari.",
-      en: "Current phase-one listings with exact local plans and automatic CRM updates.",
+      ru: "Предложения из CRM по доступным очередям. Проверенные планировки показаны в карточках; недостающие схемы уточнит менеджер.",
+      uz: "Mavjud navbatlar bo‘yicha CRM takliflari. Tekshirilgan rejalar kartochkalarda; yetishmayotgan sxemalarni menejer aniqlashtiradi.",
+      en: "CRM listings across available phases. Verified plans appear on the cards; ask a manager about missing layouts.",
     },
     backLabel: {
       ru: "О проекте",
@@ -139,9 +139,9 @@ export function SarbonUnifiedCatalog({
     defaultSort: "status",
     availableOnlyDefault: true,
     disclaimer: {
-      ru: `Показано ${snapshot.availableResidentialTotal} доступных квартир первой очереди. Для ${snapshot.planCount} квартир опубликованы точные локальные планы (${snapshot.uniquePlanCount} уникальных схем). Цены не опубликованы — наличие и условия подтверждает менеджер. Шахматка не интерпретирует фасад или генплан.`,
-      uz: `Birinchi navbatdagi ${snapshot.availableResidentialTotal} ta mavjud xonadon ko‘rsatilgan. ${snapshot.planCount} ta xonadon uchun aniq lokal rejalar chop etilgan (${snapshot.uniquePlanCount} ta noyob sxema). Narxlar e’lon qilinmagan — mavjudlik va shartlarni menejer tasdiqlaydi. Shaxmatka fasad yoki bosh rejani talqin qilmaydi.`,
-      en: `${snapshot.availableResidentialTotal} available phase-one apartments are shown. Exact local plans are published for ${snapshot.planCount} apartments (${snapshot.uniquePlanCount} unique layouts). Prices are not published; a manager confirms availability and terms. The availability grid does not interpret the facade or masterplan.`,
+      ru: `Показано ${snapshot.availableResidentialTotal} доступных квартир. Для ${snapshot.planCount} квартир доступны проверенные планы. Цены не опубликованы — наличие, планировки и условия подтверждает менеджер. Шахматка не интерпретирует фасад или генплан.`,
+      uz: `${snapshot.availableResidentialTotal} ta mavjud xonadon ko‘rsatilgan. ${snapshot.planCount} ta xonadon uchun tekshirilgan rejalar mavjud. Narxlar e’lon qilinmagan — mavjudlik, rejalar va shartlarni menejer tasdiqlaydi. Shaxmatka fasad yoki bosh rejani talqin qilmaydi.`,
+      en: `${snapshot.availableResidentialTotal} available apartments are shown. Verified plans are available for ${snapshot.planCount} apartments. Prices are not published; a manager confirms availability, layouts and terms. The availability grid does not interpret the facade or masterplan.`,
     },
     theme: {
       "--catalog-ink": "#211d1b",
@@ -150,7 +150,7 @@ export function SarbonUnifiedCatalog({
       "--catalog-accent": "#3a0515",
       "--catalog-accent-soft": "#d0ad6b",
     },
-  }), [basePath, initialTracking, snapshot.availableResidentialTotal, snapshot.planCount, snapshot.uniquePlanCount]);
+  }), [basePath, initialTracking, snapshot.availableResidentialTotal, snapshot.planCount]);
 
   const queues = useMemo(() => liveCatalogQueueOptions(liveProject).map((queue) => ({
     key: queue.queueKey,

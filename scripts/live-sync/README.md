@@ -5,6 +5,26 @@ projects without changing any source CRM. They publish only full
 `*-catalog.json` files (plus `avalon-units.json`); an authentication, schema,
 pagination, identity, or count uncertainty makes the command exit non-zero.
 
+## October 23 recovery
+
+The authenticated Kayan/MBC catalogues can expose the same generic Profitbase
+overview URL. Automatic selection now proves ownership against the exact
+authenticated parent CRM origin and iframe element; ambiguous duplicates still
+fail closed. Neither credentials nor opaque iframe query values are read.
+
+Sado's existing Comfort blocks moved to official estate
+`6742abd7-5d7e-4d15-ad87-6fd6e26f2d56`, alongside the original Business estate.
+Both exact estate UUIDs are queried and required. The canonical project, block
+registry and apartment source keys stay unchanged; completeness checks remain.
+
+SARBON now includes reviewed Profitbase house `164912` (`II очередь`) alongside
+`164684` (`I очередь`), with a 175-residential-unit safety floor per house.
+The October 23 complete capture contained 402 residential units: queue I 208,
+queue II 194. Unknown houses and incomplete queues still reject the candidate.
+The established four-project MBC transaction remains isolated from SARBON.
+
+The historical observations below are reference captures, not current stock.
+
 ## Verified source contracts (2026-09-15)
 
 | Adapter | Projects | Read-only upstream contract | Verified result |
@@ -40,15 +60,15 @@ public BI sales-picker source.
   allowlist. Mutating methods are blocked. Uysot has one exact read-only POST
   exception whose request is constrained to house 1074.
 - MBC attaches to the existing authorized browser but reads only allowlisted
-  GET response bodies. Automatic CDP selection requires one of the ten reviewed
-  MBC house paths. If no catalogue iframe exists, the browser service opens the
+  GET response bodies. Automatic CDP selection requires a reviewed
+  MBC house path or a proven authenticated parent-owned overview. If no catalogue iframe exists, the browser service opens the
   exact HTTPS MBC applications page and the collector clicks its single
   `Витрина объектов` button only after request interception is active. All
   non-read bootstrap requests are blocked. The newly attached child stays
   paused while the outer DOM returns only a boolean proof of its exact iframe
   tag, HTTPS origin, and path; opaque query values and page storage are never
   read by the collector. A tenant-agnostic
-  project overview is otherwise accepted only with an explicit target ID. The
+  project overview without that parent proof is accepted only with an explicit target ID. The
   collector then visits the overview before every house, retains the opaque
   iframe query entirely inside the browser, and never reads or persists its
   values. `mbc` owns Regnum Plaza, C1, Soy Bo‘yi, and Saadiyat together;

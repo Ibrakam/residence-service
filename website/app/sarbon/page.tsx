@@ -15,9 +15,9 @@ const languageOf = (value?: string): Language => value === "uz" || value === "en
 const local = (value: string) => `${basePath}${value}`;
 const canonical = (language: Language) => local(`/sarbon?lang=${language}`);
 const copy = {
-  ru: { title: "SARBON — новый городской ориентир в Новом Ташкенте", description: "Жилой квартал бизнес-класса SARBON: архитектура, благоустройство и актуальные квартиры первой очереди. Идет бронирование." },
-  uz: { title: "SARBON — Yangi Toshkentdagi yangi shahar mo‘ljali", description: "SARBON biznes-klass turar joy mavzesi: arxitektura, obodonlashtirish va birinchi navbatdagi mavjud xonadonlar. Bron qilish jarayoni ketmoqda." },
-  en: { title: "SARBON — a new urban landmark in New Tashkent", description: "SARBON business-class residential quarter: architecture, landscaped spaces and currently available phase-one apartments. Booking in progress." },
+  ru: { title: "SARBON — новый городской ориентир в Новом Ташкенте", description: "Жилой квартал бизнес-класса SARBON: архитектура, благоустройство и доступные квартиры по очередям. Идет бронирование." },
+  uz: { title: "SARBON — Yangi Toshkentdagi yangi shahar mo‘ljali", description: "SARBON biznes-klass turar joy mavzesi: arxitektura, obodonlashtirish va navbatlar bo‘yicha mavjud xonadonlar. Bron qilish jarayoni ketmoqda." },
+  en: { title: "SARBON — a new urban landmark in New Tashkent", description: "SARBON business-class residential quarter: architecture, landscaped spaces and available apartments by phase. Booking in progress." },
 } as const;
 
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {

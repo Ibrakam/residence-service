@@ -3,7 +3,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { opaqueMbcSourceKey, templateMbcSourceKey } from './mbc-identity.mjs';
 import { expectedNrgOriginalUrl, expectedNrgPlanUrl, nrgPlanAssetGeometryValid, nrgPlanVariants } from './nrg-plan-assets.mjs';
-import { mbcProjects, nrgBiApartmentPropertyTypeUUID, nrgBiProjects } from './providers.mjs';
+import { mbcProjects, nrgBiApartmentPropertyTypeUUID, nrgBiProjects, nrgProjectSourceUUIDs } from './providers.mjs';
 
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 
@@ -820,17 +820,24 @@ export function normalizeNrgBiCapture(groups, capturedAt = new Date().toISOStrin
       return page.placements;
     });
     assert(record(group.realEstate) && Array.isArray(group.realEstate.realEstates), `NRG ${slug} realEstateList is invalid`);
-    const estate = group.realEstate.realEstates.find((item) => item?.uuid === group.project.realEstateUUID);
-    assert(record(estate), `NRG ${slug} realEstateList does not contain the requested project`);
-    assert(Array.isArray(estate.propertyTypes) && estate.propertyTypes.some((item) => item?.uuid === group.apartmentPropertyTypeUUID), `NRG ${slug} has no apartment property type`);
-    const mixedPlacementCount = integer(estate.placementCount);
+    const sourceUUIDs = nrgProjectSourceUUIDs(configuredProject);
+    const estates = sourceUUIDs.map((id) => {
+      const estate = group.realEstate.realEstates.find((item) => item?.uuid === id);
+      assert(record(estate), `NRG ${slug} realEstateList does not contain required estate ${id}`);
+      assert(Array.isArray(estate.propertyTypes) && estate.propertyTypes.some((item) => item?.uuid === group.apartmentPropertyTypeUUID), `NRG ${slug} has no apartment property type`);
+      assert(Array.isArray(estate.blocks), `NRG ${slug} estate has no block list`);
+      return estate;
+    });
+    const currentBlocks = estates.flatMap((estate) => estate.blocks);
+    const counts = estates.map((estate) => integer(estate.placementCount));
+    const mixedPlacementCount = counts.every((count) => count !== null) ? counts.reduce((a, b) => a + b, 0) : null;
     assert(mixedPlacementCount === null || mixedPlacementCount >= rows.length, `NRG ${slug} apartment rows exceed realEstateList mixed placementCount`);
-    const requiredBlocks = group.requiredBlocks ?? estate.blocks;
+    const requiredBlocks = group.requiredBlocks ?? currentBlocks;
     if (group.requiredBlocks) {
       assert(Array.isArray(requiredBlocks) && requiredBlocks.length > 0, `NRG ${slug} trusted block registry is empty`);
       const requiredById = new Map(requiredBlocks.map((block) => [String(block?.id ?? ''), block]));
       assert(requiredById.size === requiredBlocks.length, `NRG ${slug} trusted block registry contains duplicate blocks`);
-      for (const block of estate.blocks) {
+      for (const block of currentBlocks) {
         const required = requiredById.get(String(block?.id ?? ''));
         assert(required && required.name === block.name, `NRG ${slug} realEstateList block conflicts with the trusted block registry`);
       }
@@ -847,7 +854,7 @@ export function normalizeNrgBiCapture(groups, capturedAt = new Date().toISOStrin
       const id = nrgUuid(row.uuid, `NRG ${slug} row ${index + 1}.uuid`);
       assert(!listedById.has(id), `NRG ${slug} duplicate placementList UUID ${id}`);
       listedById.set(id, row);
-      assert(String(row.realEstateUUID) === group.project.realEstateUUID, `NRG ${slug} row ${id} realEstateUUID mismatch`);
+      assert(sourceUUIDs.includes(String(row.realEstateUUID)), `NRG ${slug} row ${id} realEstateUUID mismatch`);
       assert(row.propertyType?.uuid === group.apartmentPropertyTypeUUID, `NRG ${slug} row ${id} is not an apartment`);
       assert(typeof row.isSale === 'boolean', `NRG ${slug} row ${id}.isSale must be boolean`);
       const matrixEntry = matrixApartmentById.get(id);
@@ -935,6 +942,7 @@ export function normalizeNrgBiCapture(groups, capturedAt = new Date().toISOStrin
       identities,
       extra: {
         sourceProjectUuid: group.project.realEstateUUID,
+        sourceProjectUuids: sourceUUIDs,
         apartmentPropertyTypeUuid: group.apartmentPropertyTypeUUID,
         terminalEmptyPage: true,
         realEstateListMixedPlacementCount: mixedPlacementCount,

@@ -19,7 +19,7 @@ import {
   normalizeSunPages,
   normalizeUysotTable,
 } from './normalize.mjs';
-import { getProvider, providerStatus } from './providers.mjs';
+import { getProvider, nrgProjectSourceUUIDs, providerStatus } from './providers.mjs';
 
 const repositoryRoot = resolve(fileURLToPath(new URL('../../..', import.meta.url)));
 const packageRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -271,8 +271,8 @@ function inputFromCapture(providerId, capture) {
       if (realEstateRecord.method !== 'POST' || realEstateRecord.url?.origin !== 'https://apigw.bi.group' || realEstateRecord.url?.path !== '/sales-picker/microfe-v3/realEstateList') {
         throw new Error(`NRG ${project.slug} realEstateList response is outside the exact endpoint scope`);
       }
-      const estate = realEstateRecord.value?.realEstates?.find((item) => item?.uuid === project.realEstateUUID);
-      if (!estate || !Array.isArray(estate.blocks) || estate.blocks.length === 0) throw new Error(`NRG ${project.slug} realEstateList has no requested-project block universe`);
+      const estates = nrgProjectSourceUUIDs(project).map((id) => realEstateRecord.value?.realEstates?.find((item) => item?.uuid === id));
+      if (estates.some((estate) => !estate || !Array.isArray(estate.blocks) || estate.blocks.length === 0)) throw new Error(`NRG ${project.slug} realEstateList has no requested-project block universe`);
       const requiredProject = blockRegistry.projects[project.slug];
       if (!requiredProject || requiredProject.realEstateUUID !== project.realEstateUUID) throw new Error(`NRG ${project.slug} block registry project identity mismatch`);
       const blocks = new Map();
@@ -281,7 +281,7 @@ function inputFromCapture(providerId, capture) {
         if (!blockId || blocks.has(blockId)) throw new Error(`NRG ${project.slug} block registry has an invalid or duplicate block identity`);
         blocks.set(blockId, { block, index: index + 1 });
       }
-      for (const block of estate.blocks) {
+      for (const block of estates.flatMap((estate) => estate.blocks)) {
         const expected = blocks.get(String(block?.id ?? '').trim());
         if (!expected || expected.block.name !== block.name) throw new Error(`NRG ${project.slug} realEstateList block is outside or conflicts with the trusted registry candidate`);
       }

@@ -22,13 +22,17 @@ export const nrgBiProjects = Object.freeze([
   Object.freeze({ slug: 'jomiy', name: 'Jomiy', realEstateUUID: '81153f29-f48b-11ed-a82e-001dd8b726aa' }),
   Object.freeze({ slug: 'maftun-makon', name: 'Maftun Makon', realEstateUUID: '20b833b1-0d2a-420e-81d5-98585730350f' }),
   Object.freeze({ slug: 'meros', name: 'Meros', realEstateUUID: '0e6cc6d9-6f4a-405c-a8c0-037264d133c1' }),
-  Object.freeze({ slug: 'sado', name: 'Sado', realEstateUUID: '848ce8ff-54a9-4ffb-9fdf-183aea1710a6' }),
+  // On 2026-10-23 the official realEstateList moved the existing Comfort
+  // blocks to this second estate UUID; apartment/block identities are unchanged.
+  Object.freeze({ slug: 'sado', name: 'Sado', realEstateUUID: '848ce8ff-54a9-4ffb-9fdf-183aea1710a6', additionalRealEstateUUIDs: Object.freeze(['6742abd7-5d7e-4d15-ad87-6fd6e26f2d56']) }),
   Object.freeze({ slug: 'voha', name: 'Voha', realEstateUUID: 'ea3ccd82-e81b-11ed-a827-001dd8b72708' }),
   Object.freeze({ slug: 'yangibaxt', name: 'Yangibaxt', realEstateUUID: '6481be1c-c9fe-11ed-a82c-001dd8b726aa' }),
   Object.freeze({ slug: 'zamon', name: 'Zamon', realEstateUUID: '58e48f7d-dd1c-11ed-a82c-001dd8b726aa' }),
 ]);
 
 export const nrgBiApartmentPropertyTypeUUID = '5990a172-812a-4fee-b4f5-c860cca824d7';
+
+export const nrgProjectSourceUUIDs = (project) => [project.realEstateUUID, ...(project.additionalRealEstateUUIDs ?? [])];
 
 // Authoritative queue-card metadata observed in the MBC Partners CRM on
 // 2026-09-15. Profitbase houses are joined to this reviewed display metadata;
@@ -108,13 +112,17 @@ export const mbcSarbonProjects = Object.freeze([
   Object.freeze({
     id: 21, slug: 'sarbon', name: 'SARBON', sourceLanding: 'https://mbc.uz/ru/project/sarbon', templateFile: 'sarbon-catalog.json',
     profitbaseProjectId: 57946, profitbaseProjectTitle: 'Sarbon',
-    minimumResidentialUnits: 175,
+    minimumResidentialUnits: 350,
     profitbaseHouses: Object.freeze([
       Object.freeze({ id: 164684, title: 'I очередь', queueSourceValue: '1', minimumResidentialUnits: 175 }),
+      // Exact house/project/title observed in the authenticated tenant on
+      // 2026-10-23. Preserve queue I and collect the newly published queue II.
+      Object.freeze({ id: 164912, title: 'II очередь', queueSourceValue: '2', minimumResidentialUnits: 175 }),
     ]),
     excludedProfitbaseHouseIds: Object.freeze([]),
     queues: Object.freeze([
       Object.freeze({ sourceValue: '1', queueKey: 'q1', queueLabel: 'I очередь', queueDisplayCode: 'I', queueOrder: 1 }),
+      Object.freeze({ sourceValue: '2', queueKey: 'q2', queueLabel: 'II очередь', queueDisplayCode: 'II', queueOrder: 2 }),
     ]),
   }),
 ]);
@@ -185,6 +193,15 @@ export const providers = Object.freeze({
     allowedResponses: Object.freeze([
       https('pb21432.profitbase.ru', ['/api/v4/json/property'], ['houseId', 'returnFilteredCount', 'showQueueCount']),
     ]),
+    targetPaths: Object.freeze(['/eco/catalog/projects/houses']),
+    browserBootstrap: Object.freeze({
+      origin: 'https://agent.kayan.uz',
+      path: '/cabinet/applications',
+      targetOrigin: 'https://smart-catalog.profitbase.ru',
+      targetPath: '/eco/catalog/projects/houses',
+      controlText: 'Витрина объектов',
+      timeoutMs: 20_000,
+    }),
     probes: Object.freeze([]),
     navigationPaths: Object.freeze([
       '/eco/catalog/house/154813/smallGrid',

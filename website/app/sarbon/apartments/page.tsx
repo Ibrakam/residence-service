@@ -16,9 +16,9 @@ const languageOf = (value?: string): Language => value === "uz" || value === "en
 const local = (value: string) => `${basePath}${value}`;
 const canonical = (language: Language) => local(`/sarbon/apartments?lang=${language}`);
 const copy = {
-  ru: { title: "Квартиры SARBON — актуальный каталог", description: "Доступные квартиры первой очереди SARBON: 2–4 комнаты, планы и фильтры. Состав предложений обновляется автоматически, цены — по запросу.", crumb: "Квартиры SARBON" },
-  uz: { title: "SARBON xonadonlari — dolzarb katalog", description: "SARBON birinchi navbatidagi mavjud xonadonlar: 2–4 xona, rejalar va filtrlar. Takliflar avtomatik yangilanadi, narxlar — so‘rov bo‘yicha.", crumb: "SARBON xonadonlari" },
-  en: { title: "SARBON apartments — current catalogue", description: "Available phase-one SARBON apartments with plans and filters. Listings update automatically and all prices are on request.", crumb: "SARBON apartments" },
+  ru: { title: "Квартиры SARBON — актуальный каталог", description: "Доступные квартиры SARBON по очередям: планы и фильтры. Состав предложений обновляется автоматически, цены — по запросу.", crumb: "Квартиры SARBON" },
+  uz: { title: "SARBON xonadonlari — dolzarb katalog", description: "Navbatlar bo‘yicha mavjud SARBON xonadonlari: rejalar va filtrlar. Takliflar avtomatik yangilanadi, narxlar — so‘rov bo‘yicha.", crumb: "SARBON xonadonlari" },
+  en: { title: "SARBON apartments — current catalogue", description: "Available SARBON apartments by phase with plans and filters. Listings update automatically and all prices are on request.", crumb: "SARBON apartments" },
 } as const;
 
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {

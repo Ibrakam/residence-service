@@ -101,7 +101,9 @@ for (const asset of mediaManifest.assets.flatMap((item) => item.derivatives)) {
 
 for (const required of ["21", "1 023", "39 600", "до 12 этажей", "новый ташкент", "41.283289", "69.498216", "керамогранита", "клинкерной плитки", "гранатовые", "охристые", "бежевые", "общие гостиные", "детские комнаты", "библиотека", "murad buildings", "+998 78 113 77 12"]) assert.ok(landing.toLowerCase().includes(required), `landing misses confirmed fact: ${required}`);
 for (const forbidden of ["KAYAN", "старт продаж", "не построено", "Скачать PDF", "mbc.uz", "43° / SKYLINE"]) assert.ok(!landing.includes(forbidden), `landing contains forbidden copy/link: ${forbidden}`);
-assert.ok(landing.includes("butun loyihaga emas") && landing.includes("not to the entire project"));
+assert.ok(landing.includes("для выбранной квартиры подтвердит менеджер") && landing.includes("tanlangan xonadon") && landing.includes("selected apartment"), 'completion must be confirmed per apartment, not inherited by a newly added phase');
+assert.ok(!landing.includes('apartmentsTitle: "Квартиры первой очереди"') && !catalogue.includes('available phase-one apartments'), 'live listings must not be mislabeled as phase one only');
+assert.ok(landing.includes("phase: unit.queueLabel || unit.phase || '—'") && landing.includes("completion: unit.completion || '—'"), 'new phases need authoritative labels and must not borrow a completion date');
 assert.ok(landing.includes("Loyiha vizualizatsiyasi / CGI") && landing.includes("Project visualisation / CGI"));
 assert.ok(landing.includes("import(\"lenis\")") && landingCss.includes("prefers-reduced-motion") && landing.includes("IntersectionObserver"));
 assert.ok(landing.includes("let cancelled = false") && landing.includes("if (cancelled) return") && landing.includes("cancelled = true"));

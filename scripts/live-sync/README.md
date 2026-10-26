@@ -58,6 +58,22 @@ about the health check itself and never invent per-provider recovery. The
 monitor never changes synchronization timers, browser sessions or catalogue
 data. Tests use fake Telegram responses and never send real messages.
 
+## October 26 Uysot transport recovery
+
+The approved Cloudflare WARP local SOCKS5 proxy restored access to the Uysot
+login page from the server (HTTP 200 instead of the prior pre-SPA HTTP 403).
+Only the dedicated Uysot Chrome service uses `127.0.0.1:40000`; the main CRM
+browser, frontend, SSH, main routes and DNS remain direct. See
+[the scoped setup and rollback procedure](deploy/UYSOT_WARP.md).
+
+The complete fresh capture contains the same 268 apartment identities as the
+previous accepted universe: 161 available, 29 reserved and 78 sold at the first
+October 26 import. No identities were added or dropped and no contradictory
+total/per-square-metre prices were observed. These counts are a dated audit,
+not hardcoded availability. The existing collector and completeness guards are
+unchanged. Neither the viewer password nor browser session secrets are stored
+in the repository.
+
 ## Verified source contracts (2026-09-15)
 
 | Adapter | Projects | Read-only upstream contract | Verified result |

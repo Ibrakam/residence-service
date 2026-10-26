@@ -25,6 +25,39 @@ The established four-project MBC transaction remains isolated from SARBON.
 
 The historical observations below are reference captures, not current stock.
 
+## Private CRM failure notifications
+
+`src/notify-cli.mjs` is a separate read-only health monitor, not a collector.
+Install the tracked `residence-catalog-alerts.service` and `.timer` from
+`deploy/systemd/` with `notify-cli.mjs` and `notify.mjs` under the immutable
+`/opt/residence-catalog-alerts/current/` release link. It checks the fixed
+loopback `/v1/sync/catalog-status` endpoint once per minute and monitors all six
+configured providers, including Uysot. It requires no CRM or database secrets.
+
+Create root-owned mode-0600 files under `/etc/residence-catalog-alerts/`:
+`monitor.env` following `deploy/crm-alerts.env.example`, and `telegram-token`
+containing only the existing notification bot token. The positive private chat
+ID must belong to the verified intended recipient, who must first start the
+bot. A group ID is intentionally rejected. The token is delivered to the
+isolated DynamicUser process with systemd `LoadCredential`; it is never passed
+in a command argument, environment variable, Git file or journal message.
+
+Two bad checks at least 60 seconds apart produce one batched problem message.
+This includes expired access, blocked or timed-out capture, failed completeness
+checks and stale data; an unknown failure is not falsely diagnosed as logout.
+Unchanged incidents stay silent, including after restarts. Only a confirmed
+successful fresh import sends recovery. A new outage after recovery alerts
+again. Telegram failures retain the pending incident and back off, respecting
+bounded `Retry-After`. Only an acknowledged message for the exact private chat
+is marked sent. Like any non-idempotent Telegram send, an accepted request whose
+network receipt is lost can be retried; this is not an exactly-once guarantee.
+
+State is kept privately and atomically in the systemd StateDirectory. A corrupt
+state fails closed instead of resetting deduplication. API outages alert once
+about the health check itself and never invent per-provider recovery. The
+monitor never changes synchronization timers, browser sessions or catalogue
+data. Tests use fake Telegram responses and never send real messages.
+
 ## Verified source contracts (2026-09-15)
 
 | Adapter | Projects | Read-only upstream contract | Verified result |

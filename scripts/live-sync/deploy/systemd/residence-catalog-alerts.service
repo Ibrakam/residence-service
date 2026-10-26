@@ -1,0 +1,29 @@
+[Unit]
+Description=Private Telegram notifications about Residence CRM access and freshness
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+DynamicUser=yes
+StateDirectory=residence-catalog-alerts
+StateDirectoryMode=0700
+EnvironmentFile=/etc/residence-catalog-alerts/monitor.env
+LoadCredential=telegram-token:/etc/residence-catalog-alerts/telegram-token
+ExecStart=/usr/bin/flock --nonblock --conflict-exit-code 0 /var/lib/residence-catalog-alerts/monitor.lock /usr/bin/node /opt/residence-catalog-alerts/current/notify-cli.mjs
+TimeoutStartSec=40s
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+MemoryMax=128M
+TasksMax=32
+

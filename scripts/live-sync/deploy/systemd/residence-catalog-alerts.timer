@@ -1,0 +1,13 @@
+[Unit]
+Description=Check Residence CRM access and freshness every minute
+
+[Timer]
+OnBootSec=1min
+OnUnitInactiveSec=60s
+RandomizedDelaySec=5s
+AccuracySec=5s
+Persistent=yes
+Unit=residence-catalog-alerts.service
+
+[Install]
+WantedBy=timers.target

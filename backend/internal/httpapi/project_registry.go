@@ -28,6 +28,7 @@ var publishedSalesSiteRoutes = map[string]projectRegistryRoutes{
 	"meros":            {passportPath: "/meros", apartmentsPath: "/meros/apartments", aliases: []string{"Мерос"}},
 	"mirador":          {passportPath: "/mirador", apartmentsPath: "/mirador/apartments", aliases: []string{"Мирадор"}},
 	"ofiyat":           {passportPath: "/ofiyat", apartmentsPath: "/ofiyat/apartments", aliases: []string{"Офият"}},
+	"pushkin":          {passportPath: "/pushkin", apartmentsPath: "/pushkin/apartments", aliases: []string{"Пушкин", "Пушкин. Клубный дом"}},
 	"regnum-plaza":     {passportPath: "/regnum-plaza", apartmentsPath: "/regnum-plaza/apartments", aliases: []string{"Регнум Плаза"}},
 	"saadiyat":         {passportPath: "/saadiyat", apartmentsPath: "/saadiyat/apartments", aliases: []string{"Саадият"}},
 	"sado":             {passportPath: "/sado", apartmentsPath: "/sado/apartments", aliases: []string{"Sad'O", "Садо"}},

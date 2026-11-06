@@ -1,0 +1,21 @@
+export type PushkinLanguage = 'ru' | 'uz' | 'en';
+export const pushkinLocation = { latitude: 41.3213055556, longitude: 69.3153611111 };
+export const pushkinMapUrl = 'https://yandex.uz/maps/?pt=69.3153611111,41.3213055556&z=17&l=map';
+export const pushkinGallery = ['hero', 'architecture', 'aerial', 'terrace', 'arrival', 'detail'];
+export const pushkinFaq = [
+  [['Где находится Pushkin?', 'Pushkin qayerda joylashgan?', 'Where is Pushkin located?'], ['Ташкент, Мирзо-Улугбекский район, улица Олмачи, 21. По информации застройщика, до станции метро «Пушкин» около 500 метров.', 'Toshkent, Mirzo Ulug‘bek tumani, Olmachi ko‘chasi, 21. Quruvchi ma’lumotiga ko‘ra, Pushkin metro bekatigacha taxminan 500 metr.', '21 Olmachi Street, Mirzo Ulugbek District, Tashkent. The developer lists Pushkin metro station at approximately 500 metres.']],
+  [['Когда планируется сдача?', 'Qachon topshirilishi rejalashtirilgan?', 'When is completion planned?'], ['В каталоге Taqsim для дома указан IV квартал 2027 года. Точные обязательства и сроки необходимо проверить в договоре.', 'Taqsim katalogida 2027-yilning IV choragi ko‘rsatilgan. Aniq muddat va majburiyatlar shartnomada tekshiriladi.', 'The Taqsim catalogue lists Q4 2027. Confirm the contractual completion date and obligations in the agreement.']],
+  [['Какие квартиры представлены?', 'Qanday xonadonlar mavjud?', 'What apartments are listed?'], ['В источнике опубликованы квартиры с двумя, тремя и четырьмя комнатами. В каталоге можно выбрать секцию, этаж и площадь, посмотреть цену и точную планировку.', 'Manbada ikki, uch va to‘rt xonali xonadonlar mavjud. Katalogda seksiya, qavat va maydonni tanlab, narx va aniq rejani ko‘rish mumkin.', 'The source lists two, three and four room apartments. Filter by section, floor and area, and view the listed price and exact plan.']],
+  [['В каком виде передаются квартиры?', 'Xonadonlar qanday holatda topshiriladi?', 'What finishing is included?'], ['Taqsim указывает черновую отделку. На сайте застройщика заявлена высота потолков 3,1 м. Комплектацию выбранной квартиры подтверждает менеджер.', 'Taqsimda qora suvoq holati ko‘rsatilgan. Quruvchi saytida shift balandligi 3,1 metr deb berilgan. Tanlangan xonadon komplektatsiyasini menejer tasdiqlaydi.', 'Taqsim lists shell finishing. The developer advertises 3.1 metre ceilings. A manager will confirm the specification of your selected apartment.']],
+  [['Есть ли рассрочка?', 'Bo‘lib to‘lash imkoniyati bormi?', 'Are instalments available?'], ['Застройщик публикует несколько вариантов оплаты, включая рассрочку и финансирование через Taqsim. Цена при полной оплате, итоговая стоимость финансирования и ежемесячный платёж могут различаться. Запросите индивидуальный график.', 'Quruvchi turli to‘lov usullarini, jumladan bo‘lib to‘lash va Taqsim orqali moliyalashtirishni taklif etadi. To‘liq to‘lov narxi, moliyalashtirish qiymati va oylik to‘lov farq qilishi mumkin. Shaxsiy jadvalni so‘rang.', 'The developer lists several payment options, including instalments and financing through Taqsim. The full payment price, financing total and monthly payment can differ. Request a personalised schedule.']],
+  [['Как получить предложение и записаться на просмотр?', 'Taklif olish va ko‘rikka yozilish qanday amalga oshiriladi?', 'How do I request an offer or a viewing?'], ['Выберите квартиру или нажмите «Получить предложение». Оставьте имя и номер телефона с согласия на обработку данных. Менеджер TENCORP свяжется с вами и уточнит наличие, стоимость и время просмотра.', 'Xonadonni tanlang yoki «Taklif olish» tugmasini bosing. Ismingiz, telefon raqamingiz va ma’lumotlarni qayta ishlashga rozilikni kiriting. TENCORP menejeri mavjudlik, narx va ko‘rik vaqtini aniqlashtiradi.', 'Choose an apartment or select “Request an offer”. Provide your name, phone number and consent to data processing. A TENCORP manager will confirm availability, pricing and a viewing time.']],
+] as const;
+
+export function pushkinHref(path: string, language: PushkinLanguage, currentQuery = '') {
+  const query = new URLSearchParams({ lang: language });
+  new URLSearchParams(currentQuery).forEach((value, key) => {
+    if (key.startsWith('utm_') || ['tcid', 'fbclid'].includes(key)) query.set(key, value);
+  });
+  const configured = process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '';
+  return `${configured}${path}?${query}`;
+}

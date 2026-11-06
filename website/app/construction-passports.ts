@@ -8,7 +8,7 @@ export type ConstructionPassport = {
 
 export const publishedProjectKeys = new Set([
   '4u', 'avalon-residence', 'bayterak', 'botanika-saroyi', 'c1', 'flagman', 'jomiy',
-  'maftun-makon', 'meros', 'mirador', 'ofiyat', 'regnum-plaza', 'saadiyat', 'sado',
+  'maftun-makon', 'meros', 'mirador', 'ofiyat', 'pushkin', 'regnum-plaza', 'saadiyat', 'sado',
   'sarbon', 'soy-boyi', 'sun', 'voha', 'yangibaxt', 'zamon',
 ]);
 const projectKeyPattern = /^[a-z0-9][a-z0-9-]{0,79}$/;

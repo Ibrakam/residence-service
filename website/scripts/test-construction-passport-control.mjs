@@ -11,7 +11,7 @@ assert.equal(projectKeyForLandingPath('/'), 'avalon-residence');
 assert.equal(projectKeyForLandingPath('/soy-boyi'), 'soy-boyi');
 assert.equal(projectKeyForLandingPath('/soy-boyi/'), 'soy-boyi');
 assert.equal(projectKeyForLandingPath('/portal/soy-boyi', '/portal'), 'soy-boyi');
-assert.equal(publishedProjectKeys.size, 20);
+assert.equal(publishedProjectKeys.size, 21);
 for (const key of publishedProjectKeys) {
   const path = key === 'avalon-residence' ? '/' : `/${key}`;
   assert.equal(projectKeyForLandingPath(path), key, `${key} must have an exact landing route`);

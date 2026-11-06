@@ -58,6 +58,7 @@ readonly -a DIRECT_PROJECTS=(
   meros
   mirador
   ofiyat
+  pushkin
   regnum-plaza
   saadiyat
   sarbon

@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+umask 077
+PACKAGE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+: "${CATALOG_OUTPUT_DIR:?CATALOG_OUTPUT_DIR is required}"
+# Plans are outside immutable frontend releases. The Pushkin route also serves
+# new source plans after validating their identity against a complete capture.
+exec /usr/bin/node "$PACKAGE_ROOT/src/taqsim.mjs" \
+  --output "$CATALOG_OUTPUT_DIR" \
+  --public /var/lib/residence-live-sync/public

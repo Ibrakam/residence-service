@@ -179,7 +179,7 @@ func TestReadyWorkspaceCatalogCounts(t *testing.T) {
 			}
 		}
 	}
-	if audit.Files != 19 || audit.Projects != 20 || audit.Records != 3485 || audit.CompleteRecords != 3434 || audit.PartialRecords != 51 {
+	if audit.Files != 20 || audit.Projects != 21 || audit.Records != 3616 || audit.CompleteRecords != 3565 || audit.PartialRecords != 51 {
 		t.Fatalf("unexpected workspace totals: %#v", audit)
 	}
 	if audit.FloorSchemeArtifacts != 2 || audit.FloorSchemes != 34 || audit.FloorSchemeHotspots != 209 {

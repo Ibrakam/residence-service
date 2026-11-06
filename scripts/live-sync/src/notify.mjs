@@ -7,6 +7,7 @@ export const alertProviders = Object.freeze({
   'mbc-sarbon': 'Murad Buildings — Sarbon',
   human2human: 'SUN',
   'nrg-bi': 'NRG BI — 11 ЖК',
+  taqsim: 'Taqsim Estate — Pushkin',
   monitor: 'Проверка состояния CRM на сервере',
 });
 

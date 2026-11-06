@@ -1,0 +1,9 @@
+{
+  "name": "taqsim",
+  "command": ["/opt/residence-live-sync/bin/capture-taqsim"],
+  "workingDirectory": "/opt/residence-live-sync",
+  "timeout": "5m",
+  "freshnessWindow": "30m",
+  "maximumRecordDropPercent": 25,
+  "projects": { "pushkin": { "minimumRecords": 1 } }
+}

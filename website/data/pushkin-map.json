@@ -1,0 +1,11 @@
+{
+  "id": "pushkin",
+  "slug": "pushkin",
+  "name": "Pushkin",
+  "district": "Мирзо-Улугбекский район",
+  "address": "ул. Олмачи, 21",
+  "coordinates": [41.3213055556, 69.3153611111],
+  "url": "/pushkin",
+  "catalogUrl": "/pushkin/apartments",
+  "image": "/pushkin/images/hero.webp"
+}

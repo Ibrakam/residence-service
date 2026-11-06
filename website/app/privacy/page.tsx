@@ -647,6 +647,13 @@ const legacyProjects: Record<
     phoneHref: "tel:+998781137712",
     phoneLabel: "+998 78 113 77 12",
   },
+  pushkin: {
+    name: "PUSHKIN",
+    path: "/pushkin",
+    image: "/pushkin/images/hero.webp",
+    phoneHref: "tel:+998781137712",
+    phoneLabel: "+998 78 113 77 12",
+  },
   c1: {
     name: "C1",
     path: "/c1",

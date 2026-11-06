@@ -1,6 +1,7 @@
 'use client';
 
 import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { leadProjectFacts } from './lead-project-facts';
 
 type Language = 'ru' | 'uz' | 'en';
 type Goal = 'live' | 'invest' | 'rent';
@@ -428,7 +429,7 @@ export function LeadModal({ open, language, context, autoPrompt = false, brandNa
           <span className="lead-modal__index">01</span>
           <div>{hideBrand ? null : <small>{brandName}</small>}<strong>{projectName}</strong></div>
           <p>{tagline || (language === 'ru' ? 'Дом, к которому хочется возвращаться.' : language === 'uz' ? 'Qaytishni istaydigan uy.' : 'A home worth returning to.')}</p>
-          <ul>{(facts || t.facts).map((fact) => <li key={fact}>{fact}</li>)}</ul>
+          <ul>{leadProjectFacts(language, projectSlug, facts, t.facts).map((fact) => <li key={fact}>{fact}</li>)}</ul>
         </aside>
         <div className="lead-modal__content">
           {!sent ? (

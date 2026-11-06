@@ -27,6 +27,7 @@ export const config = {
     '/mirador/:path*',
     '/ofiyat/:path*',
     '/privacy',
+    '/pushkin/:path*',
     '/regnum-plaza/:path*',
     '/saadiyat/:path*',
     '/sarbon/:path*',

@@ -274,6 +274,22 @@ configure_public_auth_smoke_mode() {
   # never exported, logged, or placed on a command line.
   printf 'noproxy = "*"\ncookie = "__Host-tencorp_session=%s"\n' "$session_token" > "$AUTH_SMOKE_CURL_CONFIG"
   session_token=""
+  # Reject an expired fixture before creating or switching any release. Page
+  # gates deliberately return a 200 login screen, so page status alone is not
+  # evidence of an authenticated deployment session.
+  local identity_file identity_status
+  identity_file="$(mktemp /run/tencorp-auth-preflight.XXXXXX)"
+  identity_status="$(curl --disable --config "$AUTH_SMOKE_CURL_CONFIG" \
+    --silent --show-error --output "$identity_file" --write-out '%{http_code}' \
+    --connect-timeout 3 --max-time 10 "${PUBLIC_ORIGIN}/__auth/me")" || {
+      rm -f -- "$identity_file"
+      die "could not verify the deployment authentication session"
+    }
+  if [[ "$identity_status" != 200 ]] || ! grep -Eq '"phoneNumberVerified"[[:space:]]*:[[:space:]]*true' "$identity_file"; then
+    rm -f -- "$identity_file"
+    die "deployment authentication session is expired or unverified; renew it through Telegram before deploying"
+  fi
+  rm -f -- "$identity_file"
   PUBLIC_AUTH_GATE_ENABLED=1
   log "Public smoke mode: ${AUTH_GATE_MODE_VALUE}"
 }

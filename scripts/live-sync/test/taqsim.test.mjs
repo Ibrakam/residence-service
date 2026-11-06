@@ -1,5 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { mkdtemp, symlink, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
 import { collectTaqsim, normalizePages, parsePage, planPath, planSource, PROJECT_UUID, HOUSE_UUID } from '../src/taqsim.mjs';
 
 const project = { uuid: PROJECT_UUID, slug: 'pushkin-klubnyy-dom' };
@@ -9,6 +14,16 @@ const row = { uuid: '10a2c39b-b652-49ec-9d6b-3f2889d93257', projectUuid: PROJECT
   monthlyFrom: 17035000, priceFrom: 2202416536, minPrepayFrom: 550604135 };
 const page = (units, total = units.length) => ({ project, units, total });
 const html = data => `<script id="__NEXT_DATA__" type="application/json">${JSON.stringify({ props: { pageProps: data } })}</script>`;
+
+test('CLI runs through the immutable package symlink used in production', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'taqsim-cli-'));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  const entry = join(dir, 'capture.mjs');
+  await symlink(fileURLToPath(new URL('../src/taqsim.mjs', import.meta.url)), entry);
+  const result = spawnSync(process.execPath, [entry], { encoding: 'utf8' });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Usage: taqsim/);
+});
 
 test('cash price is never replaced with the monthly payment or financing total', () => {
   const snapshot = normalizePages(page([row]), [page([row])], '2026-11-06T00:00:00Z');

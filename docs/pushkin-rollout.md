@@ -1,8 +1,8 @@
 # Pushkin: local implementation and deferred rollout
 
-The user deferred all production writes on 2026-11-06: continue locally and
-wait for a separate instruction to deploy. Do not publish, edit the running
-services, enable timers, or modify the production home map before that message.
+The initial local phase deferred all production writes. The user subsequently
+authorized publishing Pushkin, adding the general map entry, enabling updates
+and verifying actual amoCRM delivery. Production completion is recorded below.
 
 ## Routes and presentation
 
@@ -73,9 +73,8 @@ the stable `unitKey`; language, consent and advertising attribution are kept.
 The phone link is the canonical TenCorp contact, +998 78 113 77 12. No enquiry
 is submitted to the original developer or to Taqsim.
 
-The proxy is tested with an ephemeral local mock sink. This does **not** verify
-delivery to production amoCRM. The existing production sink must recognize
-Pushkin and its unit references before rollout is reported complete.
+The local phase tested the proxy with an ephemeral mock sink. The production
+phase separately verified actual amoCRM delivery, as recorded below.
 
 ## Production steps after the user's deployment instruction
 
@@ -134,4 +133,50 @@ No production write or deployment was performed during this local task.
 
 The large frontend bundle warning is pre-existing in the shared application;
 it is not evidence of a failed build. Real amoCRM delivery, server authentication,
-the production map insertion and the scheduled provider remain rollout checks.
+the production map insertion and the scheduled provider were pending at that
+point; their subsequent completion is recorded below.
+
+## Production completion: 2026-11-06
+
+- Root frontend release: `20261106T073234Z-5386c1d`, commit
+  `5386c1de89cc01b3b7b0d32a7b610c820e32f01e`. The normal atomic deployer
+  completed its full authenticated and guest portfolio checks.
+- Public landing and catalogue paths passed authenticated HTTP checks in all
+  three languages. The live API returned 130 available apartments and a fresh
+  source timestamp; a source-matched plan returned a valid PNG.
+- The shared production amoCRM handler's project allowlist includes `pushkin`.
+  A single clearly labelled synthetic apartment enquiry went through public
+  `/v1/leads`, returned a durable acknowledgement and was read back from amoCRM
+  with the expected Pushkin name and configured pipeline. The private audit
+  records the lead ID; no credential is recorded here.
+- Portal release `20261106T072500Z-pushkin` adds the map/list entry at the exact
+  user coordinates, preserving all previous 21 entries (22 total). The loader
+  cache version was advanced. Authenticated module access succeeds; guest map
+  and catalogue API requests still return 401. The root remains public.
+- `residence-catalog-sync@taqsim.timer` is enabled, every five minutes. Repeated
+  server captures/imports succeeded. All six existing providers were preserved.
+  The collector requires a real-path CLI check because `/opt/residence-live-sync`
+  points to an immutable package release. That production case has a regression
+  test. Its writable plan directory is explicitly scoped in the instance unit.
+- The catalogue API has a versioned binary override for the published Pushkin
+  registry entry. Its previous executable remains available for rollback.
+  The existing private alert monitor now includes Taqsim/Pushkin.
+- A long-running WARP process held about 28,000 UDP sockets and exhausted the
+  server's ephemeral port range, breaking ordinary DNS. Restarting it restored
+  DNS with the original resolver configuration. Its service now has a one-day
+  runtime bound and automatic restart; no TLS or authentication protection was
+  disabled.
+- The deployment fixture had expired. The operator completed a real Telegram
+  OIDC login using the reviewed enrollment helper; callback routing was restored
+  and the root-only fixture was renewed. Deploy checks now validate the session
+  before release work and pace requests/retry 429 responses without relaxing
+  rate limits. The auth deployment fixture suite and all 63 live-sync tests pass.
+- Twelve old inactive root releases were placed in two deduplicated archives,
+  with contents and hashes verified before removing unpacked copies. Active and
+  previous releases were retained. Task-only server worktree and agency build
+  staging were removed after success; approximately 12 GB remained free.
+
+Rollback records, the synthetic lead evidence and the reviewed integration
+scripts are under `/root/tencorp-workflow-backups/20261106T072500Z-pushkin/`;
+the Nginx backup is under `/root/tencorp-nginx-backups/pushkin-20261106/`.
+The root deployment log is `/var/log/pushkin-root-deploy-20261106.log`.

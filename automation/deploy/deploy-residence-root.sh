@@ -995,6 +995,7 @@ smoke_public_authenticated_contract() {
     status="$(curl \
       --disable \
       --config "$AUTH_SMOKE_CURL_CONFIG" \
+      --retry 4 --retry-delay 5 --retry-max-time 90 \
       --silent \
       --show-error \
       --output /dev/null \
@@ -1007,12 +1008,15 @@ smoke_public_authenticated_contract() {
       || die "authenticated public page request failed: ${route}"
     status_is_healthy "$status" \
       || die "authenticated public page did not return 2xx: ${route} (${status})"
+    # Keep the full portfolio check below the shared authentication rate limit.
+    sleep 2
   done
 
   for route in /sanat/ /sanat/flats /avalon /tencorp/ /tencrop/; do
     status="$(curl \
       --disable \
       --config "$AUTH_SMOKE_CURL_CONFIG" \
+      --retry 4 --retry-delay 5 --retry-max-time 90 \
       --silent \
       --show-error \
       --output /dev/null \
@@ -1025,6 +1029,7 @@ smoke_public_authenticated_contract() {
       || die "authenticated public page request failed: ${route}"
     status_is_healthy "$status" \
       || die "authenticated public page did not return 2xx: ${route} (${status})"
+    sleep 2
   done
 
   status="$(curl \

@@ -63,7 +63,7 @@ const copy = {
     catalogKicker: '09 · ВЫБОР КВАРТИРЫ', catalogTitle: 'Найдите свой', catalogAccent: 'тихий ритм.',
     catalogCopy: (count: number) => `${count} предложений из официального каталога: реальные планировки, площади, этажи и цены.`, catalogButton: 'Открыть каталог',
     formKicker: 'ПЕРСОНАЛЬНАЯ КОНСУЛЬТАЦИЯ', formTitle: 'Расскажите,', formAccent: 'что важно именно вам.',
-    formCopy: 'Менеджер проекта уточнит ваш сценарий и подготовит актуальные варианты Sad’O.', name: 'Ваше имя', namePlaceholder: 'Как к вам обращаться', phone: 'Телефон', submit: 'Получить подборку', pending: 'Отправляем…', success: 'Спасибо. Заявка принята — менеджер проекта свяжется с вами.', nameError: 'Введите имя — не менее 2 символов.', phoneError: 'Введите 9 цифр после +998.', sendError: 'Не удалось отправить заявку. Попробуйте ещё раз.', privacy: 'Нажимая кнопку, вы соглашаетесь на обработку персональных данных.',
+    formCopy: 'Менеджер проекта уточнит ваш сценарий и подготовит актуальные варианты Sad’O.', name: 'Ваше имя', namePlaceholder: 'Как к вам обращаться', phone: 'Телефон', submit: 'Получить подборку', pending: 'Отправляем…', success: 'Спасибо. Заявка принята — менеджер проекта свяжется с вами.', nameError: 'Введите имя — не менее 2 символов.', phoneError: 'Введите 9 цифр после +998.', sendError: 'Не удалось отправить заявку. Попробуйте ещё раз.', consent: 'Я согласен на обработку персональных данных.', consentError: 'Подтвердите согласие на обработку персональных данных.',
     footerNote: 'Информация не является публичной офертой. Наличие, стоимость и условия покупки уточняйте у менеджера.', privacyLink: 'Конфиденциальность',
     galleryOpen: 'Открыть фотографию', previous: 'Предыдущее изображение', next: 'Следующее изображение', checked: 'Последнее обновление',
   },
@@ -80,7 +80,7 @@ const copy = {
     locationKicker: '07 · JOYLASHUV', locationTitle: 'Yashnobod.', locationAccent: 'Mavjud va yangi shahar orasida.', locationCopy: 'Majmua Parkent ko‘chasida joylashgan. Rasmiy materiallarda Parkent va Yangi O‘zbekiston yo‘nalishlari kesishmasi sifatida tasvirlanadi.', nearby: ['“Yangi O‘zbekiston” bog‘i', 'Milliy bolalar tibbiyot markazi', 'ST Golf Academy', '“Yashnobod” metro bekati'], booklet: 'Bukletni yuklash',
     progressKicker: '08 · QURILISH JARAYONI', progressTitle: 'Haqiqiy taraqqiyot.', progressAccent: '2026-yil iyul.', progressCopy: 'Business 2-1: fasad, toza pardoz, elektr montaj, parking kotlovani va muhandislik tizimlari. Comfort 2-1: 1 va 2 bloklarda beshinchi qavat darajasida monolit, ikkinchi qavatda g‘isht terish.', panorama: '360° panorama', camera: 'Onlayn kamera', cameraUnavailable: 'Oqim vaqtincha ishlamayapti',
     catalogKicker: '09 · XONADON TANLASH', catalogTitle: 'O‘z sokin', catalogAccent: 'ritmingizni toping.', catalogCopy: (count: number) => `Rasmiy katalogdan ${count} ta taklif: haqiqiy rejalar, maydonlar, qavatlar va narxlar.`, catalogButton: 'Katalogni ochish',
-    formKicker: 'SHAXSIY MASLAHAT', formTitle: 'Siz uchun', formAccent: 'nima muhimligini ayting.', formCopy: 'Loyiha menejeri istaklaringizni aniqlab, Sad’O bo‘yicha dolzarb variantlarni tayyorlaydi.', name: 'Ismingiz', namePlaceholder: 'Sizga qanday murojaat qilamiz', phone: 'Telefon', submit: 'Variantlarni olish', pending: 'Yuborilmoqda…', success: 'Rahmat. Ariza qabul qilindi — loyiha menejeri siz bilan bog‘lanadi.', nameError: 'Ismingizni kiriting — kamida 2 ta belgi.', phoneError: '+998 dan keyin 9 ta raqam kiriting.', sendError: 'Arizani yuborib bo‘lmadi. Qayta urinib ko‘ring.', privacy: 'Tugmani bosish orqali shaxsiy ma’lumotlarni qayta ishlashga rozilik bildirasiz.', footerNote: 'Ma’lumot ommaviy oferta emas. Mavjudlik, narx va xarid shartlarini menejerdan aniqlang.', privacyLink: 'Maxfiylik', galleryOpen: 'Rasmni ochish', previous: 'Oldingi rasm', next: 'Keyingi rasm', checked: 'So‘nggi yangilanish',
+    formKicker: 'SHAXSIY MASLAHAT', formTitle: 'Siz uchun', formAccent: 'nima muhimligini ayting.', formCopy: 'Loyiha menejeri istaklaringizni aniqlab, Sad’O bo‘yicha dolzarb variantlarni tayyorlaydi.', name: 'Ismingiz', namePlaceholder: 'Sizga qanday murojaat qilamiz', phone: 'Telefon', submit: 'Variantlarni olish', pending: 'Yuborilmoqda…', success: 'Rahmat. Ariza qabul qilindi — loyiha menejeri siz bilan bog‘lanadi.', nameError: 'Ismingizni kiriting — kamida 2 ta belgi.', phoneError: '+998 dan keyin 9 ta raqam kiriting.', sendError: 'Arizani yuborib bo‘lmadi. Qayta urinib ko‘ring.', consent: 'Shaxsiy ma’lumotlarni qayta ishlashga roziman.', consentError: 'Shaxsiy ma’lumotlarni qayta ishlashga rozilikni tasdiqlang.', footerNote: 'Ma’lumot ommaviy oferta emas. Mavjudlik, narx va xarid shartlarini menejerdan aniqlang.', privacyLink: 'Maxfiylik', galleryOpen: 'Rasmni ochish', previous: 'Oldingi rasm', next: 'Keyingi rasm', checked: 'So‘nggi yangilanish',
   },
   en: {
     nav: [['about', 'About'], ['architecture', 'Architecture'], ['garden', 'Garden'], ['courtyard', 'Courtyard'], ['location', 'Location'], ['progress', 'Construction']],
@@ -95,7 +95,7 @@ const copy = {
     locationKicker: '07 · LOCATION', locationTitle: 'Yashnabad.', locationAccent: 'Between the established and new city.', locationCopy: 'The project is located on Parkent Street. Official materials describe the setting at the intersection of the Parkent and Yangi O‘zbekiston directions.', nearby: ['Yangi O‘zbekiston Park', 'National Children’s Medical Centre', 'ST Golf Academy', 'Yashnabad metro station'], booklet: 'Download the booklet',
     progressKicker: '08 · CONSTRUCTION', progressTitle: 'Visible progress.', progressAccent: 'July 2026.', progressCopy: 'Business 2-1: facade, final finishes, electrical installation, parking excavation and engineering systems. Comfort 2-1: frame works on blocks 1 and 2 at level five and masonry on level two.', panorama: '360° panorama', camera: 'Live camera', cameraUnavailable: 'Stream temporarily unavailable',
     catalogKicker: '09 · APARTMENT SELECTION', catalogTitle: 'Find your', catalogAccent: 'quiet rhythm.', catalogCopy: (count: number) => `${count} official listings with real plans, areas, floors and prices.`, catalogButton: 'Open the catalogue',
-    formKicker: 'PERSONAL CONSULTATION', formTitle: 'Tell us', formAccent: 'what matters to you.', formCopy: 'The project manager will clarify your plans and prepare current options at Sad’O.', name: 'Your name', namePlaceholder: 'How should we address you?', phone: 'Phone', submit: 'Get a selection', pending: 'Sending…', success: 'Thank you. Your request has been received and the project manager will contact you.', nameError: 'Enter your name — at least 2 characters.', phoneError: 'Enter 9 digits after +998.', sendError: 'We could not send the request. Please try again.', privacy: 'By clicking the button, you consent to the processing of personal data.', footerNote: 'Information is not a public offer. Confirm availability, price and purchase terms with a project manager.', privacyLink: 'Privacy', galleryOpen: 'Open photograph', previous: 'Previous image', next: 'Next image', checked: 'Last updated',
+    formKicker: 'PERSONAL CONSULTATION', formTitle: 'Tell us', formAccent: 'what matters to you.', formCopy: 'The project manager will clarify your plans and prepare current options at Sad’O.', name: 'Your name', namePlaceholder: 'How should we address you?', phone: 'Phone', submit: 'Get a selection', pending: 'Sending…', success: 'Thank you. Your request has been received and the project manager will contact you.', nameError: 'Enter your name — at least 2 characters.', phoneError: 'Enter 9 digits after +998.', sendError: 'We could not send the request. Please try again.', consent: 'I consent to the processing of my personal data.', consentError: 'Confirm your consent to personal data processing.', footerNote: 'Information is not a public offer. Confirm availability, price and purchase terms with a project manager.', privacyLink: 'Privacy', galleryOpen: 'Open photograph', previous: 'Previous image', next: 'Next image', checked: 'Last updated',
   },
 } as const;
 
@@ -128,7 +128,8 @@ function Lightbox({ state, onClose, onMove, labels }: { state: NonNullable<Light
 function SadoInlineForm({ language }: { language: Language }) {
   const t = copy[language];
   const [pending, setPending] = useState(false);
-  const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'success' | 'error' | 'consent-error'>('idle');
+  const consentRef = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState('');
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -140,7 +141,12 @@ function SadoInlineForm({ language }: { language: Language }) {
     const consent = data.get('consent') === 'on';
     if (name.length < 2) { setStatus('error'); setMessage(t.nameError); return; }
     if (!/^\+998\d{9}$/.test(phone)) { setStatus('error'); setMessage(t.phoneError); return; }
-    if (!consent) { setStatus('error'); setMessage(language === 'ru' ? 'Подтвердите согласие на обработку данных.' : language === 'uz' ? 'Ma’lumotlarni qayta ishlashga rozilikni tasdiqlang.' : 'Confirm your consent to data processing.'); return; }
+    if (!consent) {
+      setStatus('consent-error');
+      setMessage(t.consentError);
+      consentRef.current?.focus();
+      return;
+    }
     setPending(true); setStatus('idle'); setMessage('');
     try {
       const response = await fetch(leadSubmitUrl(), { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ name, phone, goal: 'live', consent, lang: language, language, projectSlug: 'sado', formContext: 'sado:landing:contact', landing_url: window.location.href, referrer_url: document.referrer || undefined }) });
@@ -153,9 +159,20 @@ function SadoInlineForm({ language }: { language: Language }) {
   return <form className="sado-contact-form" onSubmit={onSubmit} noValidate>
     <label><span>{t.name}</span><input name="name" autoComplete="name" placeholder={t.namePlaceholder} required /></label>
     <label><span>{t.phone}</span><div className="sado-phone"><b>+998</b><input name="phone" type="tel" inputMode="numeric" autoComplete="tel" placeholder="90 000 00 00" required onInput={(event) => { event.currentTarget.value = event.currentTarget.value.replace(/[^0-9 ]/g, '').slice(0, 12); }} /></div></label>
+    <label className="lead-consent">
+      <input ref={consentRef} name="consent" type="checkbox" required
+        aria-invalid={status === 'consent-error' || undefined}
+        aria-describedby={status === 'consent-error' ? 'sado-contact-status' : undefined}
+        onChange={(event) => {
+          if (event.currentTarget.checked && status === 'consent-error') {
+            setStatus('idle');
+            setMessage('');
+          }
+        }} />
+      <span>{t.consent} <a href={`${appBasePath}/privacy?project=sado&lang=${language}`}>{t.privacyLink}</a></span>
+    </label>
     <button type="submit" disabled={pending}>{pending ? t.pending : t.submit}<span>↗</span></button>
-    {message ? <p className={`sado-contact-form__status is-${status}`} role="status">{message}</p> : null}
-    <label className="sado-contact-form__consent"><input name="consent" type="checkbox" required /><span>{t.privacy} <a href={`${appBasePath}/privacy?project=sado&lang=${language}`}>{t.privacyLink}</a></span></label>
+    {message ? <p id="sado-contact-status" className={`sado-contact-form__status is-${status === 'consent-error' ? 'error' : status}`} role="status">{message}</p> : null}
   </form>;
 }
 

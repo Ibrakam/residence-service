@@ -71,8 +71,8 @@ body.jm-active {
 .jomiy-catalog-site .lead-goals label.is-active { border-color: var(--jm-bronze-dark); background: var(--jm-bronze-dark); color: #fff; }
 .jomiy-site .lead-modal__content > p,
 .jomiy-catalog-site .lead-modal__content > p,
-.jomiy-site .lead-form > label > span,
-.jomiy-catalog-site .lead-form > label > span,
+.jomiy-site .lead-form > label:where(:not(.lead-consent)) > span,
+.jomiy-catalog-site .lead-form > label:where(:not(.lead-consent)) > span,
 .jomiy-site .lead-form legend,
 .jomiy-catalog-site .lead-form legend,
 .jomiy-site .lead-goals label,
@@ -89,28 +89,9 @@ body.jm-active {
   outline: 2px solid var(--jm-pomegranate);
   outline-offset: 3px;
 }
-:is(.jomiy-site, .jomiy-catalog-site) .lead-form .lead-consent {
-  grid-column: 1 / -1;
-  grid-template-columns: 26px minmax(0, 1fr);
-  min-height: 48px;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-}
-:is(.jomiy-site, .jomiy-catalog-site) .lead-form .lead-consent input {
-  width: 24px;
-  height: 24px;
-  min-height: 24px;
-  margin: 0;
-  padding: 0;
-  accent-color: var(--jm-pomegranate);
-}
-:is(.jomiy-site, .jomiy-catalog-site) .lead-form .lead-consent > span {
-  color: #5c554b;
-  font-size: 11px;
-  line-height: 1.4;
-  letter-spacing: 0;
-  text-transform: none;
+:is(.jomiy-site, .jomiy-catalog-site) .lead-consent {
+  --lead-consent-accent: var(--jm-pomegranate);
+  --lead-consent-ink: #5c554b;
 }
 
 @media (prefers-reduced-motion: reduce) {

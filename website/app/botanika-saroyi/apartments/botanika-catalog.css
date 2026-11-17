@@ -248,7 +248,7 @@ body.botanika-catalog-detail-locked { overflow: hidden; }
 .botanika-catalog-site .botanika-catalog-lead-host .lead-modal__visual > p { color: var(--bot-cat-brass-light); }
 .botanika-catalog-site .botanika-catalog-lead-host .lead-modal__close { width: 48px; height: 48px; }
 .botanika-catalog-site .botanika-catalog-lead-host .lead-form__submit { min-height: 52px; background: var(--bot-cat-pomegranate); }
-.botanika-catalog-site .botanika-catalog-lead-host .lead-consent { min-height: 44px; }
+.botanika-catalog-site .botanika-catalog-lead-host .lead-consent { --lead-consent-accent: var(--bot-cat-green-deep); }
 
 @keyframes botanika-catalog-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes botanika-catalog-drawer { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }

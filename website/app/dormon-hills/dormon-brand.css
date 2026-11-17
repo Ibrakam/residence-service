@@ -1,0 +1,337 @@
+@font-face {
+  font-family: "Dormon Arkhip";
+  src: url("./fonts/arkhip-dormon.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Dormon Littera Plain";
+  src: url("./fonts/littera-plain-book.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Dormon Littera Plain";
+  src: url("./fonts/littera-plain-medium.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Dormon Littera Plain";
+  src: url("./fonts/littera-plain-bold.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
+.dormon-theme {
+  --dh-dark: #0e1510;
+  --dh-dark-alt: #141e15;
+  --dh-light: #f1ede2;
+  --dh-paper: #eeeadf;
+  --dh-paper-alt: #e4dfd0;
+  --dh-dark-ink: #1b2916;
+  --dh-forest: #293b21;
+  --dh-gold: #c9a862;
+  --dh-gold-dark: #8a6420;
+  --dh-rule: #8a642059;
+  --dh-motion-ease: cubic-bezier(.22, 1, .36, 1);
+  --font-display: "Dormon Arkhip", sans-serif;
+  --font-ui: "Dormon Littera Plain", sans-serif;
+  --ink: var(--dh-dark-ink);
+  --lead-consent-accent: var(--dh-forest);
+  --mint: var(--dh-gold);
+  --coral: var(--dh-gold);
+  font-family: var(--font-ui);
+}
+
+.dormon-theme .dormon-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: .75rem;
+  min-width: 0;
+  color: var(--dh-light);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: .14em;
+  line-height: 1.25;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.dormon-brand img {
+  width: 3.25rem;
+  height: 3.25rem;
+  flex: none;
+  object-fit: contain;
+}
+
+.dormon-theme .lead-modal__panel { background: var(--dh-paper); }
+.dormon-theme .lead-modal__visual { background: var(--dh-dark-alt); color: var(--dh-light); }
+.dormon-theme .lead-modal__visual::before { display: none; }
+.dormon-theme .lead-modal__visual > div strong,
+.dormon-theme .lead-modal__content h2 {
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.1;
+}
+.dormon-theme .lead-modal__eyebrow,
+.dormon-theme .lead-success > small { color: var(--dh-gold-dark); }
+.dormon-theme .lead-form__submit,
+.dormon-theme .lead-success__icon { background: var(--dh-forest); color: var(--dh-light); }
+.dormon-theme .lead-form__submit:hover:not(:disabled) { background: var(--dh-dark-ink); }
+.dormon-theme .lead-form :is(input:not([type='checkbox']):focus, .lead-phone:focus-within) {
+  border-color: var(--dh-gold-dark);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dh-gold) 30%, transparent);
+}
+
+@media (max-width: 630px) {
+  .dormon-theme .dormon-brand { gap: .5rem; font-size: .875rem; letter-spacing: .09em; }
+  .dormon-brand img { width: 2.5rem; height: 2.5rem; }
+}
+
+.dormon-site-header {
+  position: relative;
+  z-index: 20;
+  background: var(--dh-dark-alt);
+  color: var(--dh-light);
+}
+
+.dormon-site-header.is-overlay {
+  position: absolute;
+  inset: 0 0 auto;
+  background: linear-gradient(180deg, #0e151085, transparent);
+}
+
+.dormon-site-header__inner,
+.dormon-menu__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(1rem, 3vw, 3rem);
+}
+
+.dormon-site-header__inner {
+  width: min(100%, 100rem);
+  min-height: 6rem;
+  margin-inline: auto;
+  padding: 1rem clamp(1rem, 4vw, 4rem);
+}
+
+.dormon-site-header__desktop {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex: 1;
+  gap: clamp(1rem, 3vw, 3rem);
+  min-width: 0;
+}
+
+.dormon-site-header__nav,
+.dormon-site-header__languages,
+.dormon-menu__languages {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  font-size: .875rem;
+}
+
+.dormon-site-header__languages { gap: .25rem; }
+.dormon-site-header__nav a,
+.dormon-site-header__languages a,
+.dormon-menu__languages a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+}
+.dormon-site-header__languages a { justify-content: center; min-width: 36px; }
+
+.dormon-site-header a {
+  color: inherit;
+  text-decoration: none;
+}
+.dormon-site-header__nav a { white-space: nowrap; }
+.dormon-site-header__nav a:hover,
+.dormon-site-header__languages a:hover,
+.dormon-menu__languages a:hover,
+.dormon-menu__contact a:hover { color: var(--dh-gold); }
+.dormon-site-header__languages [aria-current],
+.dormon-menu__languages [aria-current] {
+  text-decoration: underline;
+  text-underline-offset: .5em;
+  text-decoration-color: var(--dh-gold);
+}
+.dormon-site-header :is(a, button):focus-visible {
+  outline: 2px solid var(--dh-gold);
+  outline-offset: 4px;
+}
+
+.dormon-menu-toggle {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: .75rem;
+  min-width: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: .75rem;
+  cursor: pointer;
+}
+.dormon-menu-toggle:hover { color: var(--dh-gold); }
+.dormon-menu-icon { position: relative; display: block; width: 28px; height: 24px; }
+.dormon-menu-icon::before,
+.dormon-menu-icon::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: calc(50% - .5px);
+  height: 1px;
+  background: currentColor;
+  transform: translateY(-4px);
+  transition: transform 240ms var(--dh-motion-ease);
+}
+.dormon-menu-icon::after { transform: translateY(4px); }
+.dormon-menu-toggle:hover .dormon-menu-icon:not(.is-close)::before { transform: translateY(-6px); }
+.dormon-menu-toggle:hover .dormon-menu-icon:not(.is-close)::after { transform: translateY(6px); }
+.dormon-menu-icon.is-close::before { transform: rotate(45deg); }
+.dormon-menu-icon.is-close::after { transform: rotate(-45deg); }
+
+.dormon-menu {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: max(1rem, env(safe-area-inset-top)) max(clamp(1rem, 4vw, 4rem), env(safe-area-inset-right))
+    max(2rem, env(safe-area-inset-bottom)) max(clamp(1rem, 4vw, 4rem), env(safe-area-inset-left));
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 0;
+  background: var(--dh-dark);
+  color: var(--dh-light);
+}
+.dormon-menu[open] { display: flex; flex-direction: column; }
+.dormon-menu::backdrop { background: var(--dh-dark); }
+body:has(.dormon-menu[open]) { overflow: hidden; }
+.dormon-menu__header { flex: none; min-height: 4rem; }
+.dormon-menu__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(14rem, .4fr);
+  align-items: end;
+  gap: 3rem;
+  width: min(100%, 92rem);
+  margin: auto;
+  padding-block: clamp(3rem, 10vh, 7rem);
+}
+.dormon-menu__links { display: grid; align-content: center; gap: 1rem; min-width: 0; }
+.dormon-menu__links a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 44px;
+  padding-block: .5rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 4.5vw, 4.5rem);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  transition: color 200ms ease;
+}
+.dormon-menu__links a:hover { color: var(--dh-gold); }
+.dormon-menu__links a > span:last-child { flex: none; font-family: var(--font-ui); font-size: .5em; color: var(--dh-gold); }
+.dormon-menu__aside { display: grid; gap: 3rem; padding-bottom: .5rem; }
+.dormon-menu__contact p { margin: 0 0 1rem; color: var(--dh-gold); font-size: .875rem; line-height: 1.5; }
+.dormon-menu__contact a { display: inline-flex; align-items: center; min-height: 44px; font-size: clamp(1rem, 1.6vw, 1.5rem); white-space: nowrap; }
+.dormon-menu__languages a { min-width: 44px; justify-content: center; }
+
+@media (max-width: 1100px) {
+  .dormon-site-header__desktop { display: none; }
+}
+@media (max-width: 700px) {
+  .dormon-site-header__inner { min-height: 5rem; padding-block: .75rem; }
+  .dormon-menu__body { grid-template-columns: minmax(0, 1fr); gap: 3rem; padding-block: 3rem 1rem; }
+  .dormon-menu__aside { gap: 1.5rem; }
+}
+@media (max-width: 420px) {
+  .dormon-menu-toggle__label { display: none; }
+  .dormon-site-header__inner, .dormon-menu__header { gap: .75rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dormon-menu-icon::before,
+  .dormon-menu-icon::after,
+  .dormon-menu__links a { transition: none; }
+}
+
+.dormon-intro-mark { display: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .dormon-intro-mark {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 1rem;
+    pointer-events: none;
+    color: var(--dh-light);
+    background: var(--dh-dark);
+    animation: dh-intro-curtain 1000ms var(--dh-motion-ease) both;
+  }
+  .dormon-intro-mark img {
+    width: clamp(5rem, 13vw, 8rem);
+    height: auto;
+    animation: dh-intro-mark 680ms var(--dh-motion-ease) both;
+  }
+  .dormon-intro-mark span {
+    font-family: var(--font-display);
+    font-size: clamp(.875rem, 3vw, 1.4rem);
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    animation: dh-intro-mark 620ms var(--dh-motion-ease) 80ms both;
+  }
+  .dormon:has(:target, :focus-visible, .dormon-menu[open]) .dormon-intro-mark {
+    opacity: 0 !important;
+    visibility: hidden !important;
+  }
+  .dormon-menu[open] { animation: dh-menu-fade 260ms var(--dh-motion-ease) both; }
+  .dormon-menu[open] .dormon-menu__links > a { animation: dh-menu-link 460ms var(--dh-motion-ease) both; }
+  .dormon-menu[open] .dormon-menu__links > a:nth-child(2) { animation-delay: 60ms; }
+  .dormon-menu[open] .dormon-menu__links > a:nth-child(3) { animation-delay: 120ms; }
+  .dormon-menu[open] .dormon-menu__links > a:focus-visible { animation: none; }
+}
+
+@keyframes dh-intro-curtain {
+  0%, 42% { opacity: 1; visibility: visible; }
+  99% { visibility: visible; }
+  100% { opacity: 0; visibility: hidden; }
+}
+@keyframes dh-intro-mark {
+  from { opacity: 0; transform: translateY(12px) scale(.93); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes dh-menu-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes dh-menu-link {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}

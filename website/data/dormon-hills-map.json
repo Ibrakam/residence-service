@@ -1,0 +1,14 @@
+{
+  "id": "dormon-hills",
+  "slug": "dormon-hills",
+  "name": "Do‘rmon Hills",
+  "district": "Кибрайский район",
+  "address": "Кибрайский район, Ташкентская область",
+  "coordinates": [
+    41.37533333333334,
+    69.4316388888889
+  ],
+  "url": "/dormon-hills",
+  "catalogUrl": "/dormon-hills/apartments",
+  "image": "/dormon-hills/images/hero.webp"
+}

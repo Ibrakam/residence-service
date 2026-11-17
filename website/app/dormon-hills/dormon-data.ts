@@ -1,0 +1,137 @@
+export type DormonLanguage = 'ru' | 'uz' | 'en';
+
+export const dormonBase = (process.env.NEXT_PUBLIC_APP_BASE_PATH ?? '').replace(/\/$/, '');
+export const dormonName = 'Do‘rmon Hills';
+export const dormonCoordinates = [41.3753333333, 69.4316388889] as const;
+export const dormonMapHref = `https://yandex.uz/maps/?pt=${dormonCoordinates[1]},${dormonCoordinates[0]}&z=16&l=map`;
+export const dormonSource = 'https://millenniumhouse.uz/dormon-hills';
+
+export function dormonLanguage(value?: string | string[]): DormonLanguage {
+  const language = Array.isArray(value) ? value[0] : value;
+  return language === 'uz' || language === 'en' ? language : 'ru';
+}
+
+export function dormonHref(path: string, language: DormonLanguage, rawQuery = '') {
+  const query = new URLSearchParams({ lang: language });
+  for (const [key, value] of new URLSearchParams(rawQuery)) {
+    if (/^(utm_(source|medium|campaign|term|content|id)|tcid|fbclid|gclid)$/.test(key)) query.set(key, value);
+  }
+  return `${dormonBase}${path}?${query}`;
+}
+
+export const dormonCopy = {
+  ru: {
+    title: 'Do‘rmon Hills — жилой комплекс в Кибрайском районе',
+    description: 'Жилой комплекс бизнес-класса от Millennium House. Закрытый двор, зелёные аллеи, лаунж и планировки квартир в Кибрайском районе.',
+    skip: 'Перейти к содержанию', project: 'О проекте', architecture: 'Архитектура', gardens: 'Двор', gallery: 'Галерея', plans: 'Выбрать планировку', enquire: 'Обсудить покупку',
+    heroKicker: 'Millennium House · Кибрайский район',
+    heroTitle: ['Ближе', 'к природе.'],
+    hero: 'Жилой комплекс бизнес-класса с закрытым двором и местом для жизни на открытом воздухе.',
+    explore: 'Узнать о проекте',
+    introKicker: 'О проекте',
+    intro: 'Свой ритм.\nСвоё пространство.',
+    introBody: 'Пять корпусов и один общий двор. Здесь утро начинается с прогулки по аллее, а вечер можно провести у фонтана или за большим столом в лаунже.',
+    facts: [['0,8 га', 'территория комплекса'], ['5', 'корпусов'], ['12', 'этажей'], ['Более 30%', 'зелёных зон']],
+    architectureTitle: 'Архитектура,\nкоторая объединяет.',
+    architectureBody: 'Светлые фасады, вертикальный ритм и тёплые оттенки камня. Корпуса образуют единый ансамбль вокруг внутреннего двора.',
+    architectureNote: 'Вид с улицы', detailNote: 'Детали фасада',
+    gardensTitle: 'Выйти из дома.\nОстаться у себя.',
+    gardensBody: 'Прогулочные дорожки, зелёные островки, фонтан и игровые площадки. Во внутреннем дворе предусмотрены места и для движения, и для спокойного отдыха.',
+    courtyardFeatures: ['Прогулочные аллеи', 'Фонтан в центре двора', 'Детские площадки'],
+    yardTabs: ['Двор', 'Фонтан', 'Для детей'],
+    loungeKicker: 'Лаунж с летней кухней',
+    loungeTitle: 'Место для\nваших встреч.',
+    loungeBody: 'Собраться всей семьёй, пригласить друзей, приготовить ужин вместе. Отдельный павильон во дворе продолжает пространство дома.',
+    loungeNote: 'Интерьер лаунжа', pavilionNote: 'Павильон во дворе',
+    galleryTitle: 'Посмотрите\nближе.',
+    galleryBody: 'Архитектура, двор и общие пространства в визуализациях проекта.',
+    galleryLabels: ['Комплекс с высоты', 'Архитектура', 'Двор и игровые площадки', 'Фонтан', 'Лаунж', 'Прогулочная аллея'],
+    previous: 'Предыдущее изображение', next: 'Следующее изображение', enlarge: 'Открыть на весь экран', close: 'Закрыть галерею',
+    plansTitle: 'Пространство\nпод вашу жизнь.',
+    plansBody: 'Типовые планировки с одной, двумя и тремя комнатами. Сравните площади, выберите блок и посмотрите расположение квартиры на этаже.',
+    roomLabels: ['1 комната', '2 комнаты', '3 комнаты'], block: 'Блок', allPlans: 'Все планировки', typical: 'Типовая планировка',
+    mapTitle: 'За городом.\nРядом с Ташкентом.',
+    mapBody: 'Do‘rmon Hills расположен в Кибрайском районе Ташкентской области. Согласуйте просмотр с менеджером и познакомьтесь с проектом лично.',
+    contact: 'Ваш следующий\nадрес.',
+    contactBody: 'Расскажите, какое пространство вы ищете. Поможем сравнить планировки, уточнить цену и условия покупки.',
+    map: 'Открыть карту', phone: 'Позвонить', privacy: 'Политика конфиденциальности', source: 'Millennium House', portfolio: 'Все проекты TenCorp',
+    caption: 'Визуализация проекта',
+    formContext: 'Do‘rmon Hills: консультация со страницы проекта',
+  },
+  uz: {
+    title: 'Do‘rmon Hills — Qibray tumanidagi turar joy majmuasi',
+    description: 'Millennium House kompaniyasining biznes toifasidagi majmuasi. Qibray tumanida yopiq hovli, yashil yo‘laklar, dam olish zonasi va xonadon rejalari.',
+    skip: 'Asosiy mazmunga o‘tish', project: 'Loyiha', architecture: 'Arxitektura', gardens: 'Hovli', gallery: 'Galereya', plans: 'Rejani tanlash', enquire: 'Xaridni muhokama qilish',
+    heroKicker: 'Millennium House · Qibray tumani',
+    heroTitle: ['Tabiatga', 'yaqinroq.'],
+    hero: 'Yopiq hovli va ochiq havoda dam olish joylariga ega biznes toifasidagi turar joy majmuasi.',
+    explore: 'Loyiha bilan tanishish',
+    introKicker: 'Loyiha haqida',
+    intro: 'O‘z maromingiz.\nO‘z makoningiz.',
+    introBody: 'Beshta korpus va bitta umumiy hovli. Kuningizni yo‘lakda sayr bilan boshlang, oqshomni favvora yonida yoki dam olish zonasidagi katta stol atrofida o‘tkazing.',
+    facts: [['0,8 ga', 'majmua hududi'], ['5', 'korpus'], ['12', 'qavat'], ['30% dan ortiq', 'yashil hudud']],
+    architectureTitle: 'Birlashtiruvchi\narxitektura.',
+    architectureBody: 'Yorug‘ fasadlar, vertikal chiziqlar va toshning iliq tuslari. Korpuslar ichki hovli atrofida yagona ansamblni tashkil etadi.',
+    architectureNote: 'Ko‘chadan ko‘rinish', detailNote: 'Fasad tafsilotlari',
+    gardensTitle: 'Uydan chiqing.\nO‘z makoningizda qoling.',
+    gardensBody: 'Sayr yo‘laklari, yashil orolchalar, favvora va o‘yin maydonchalari. Ichki hovlida faol va sokin dam olish uchun joylar bor.',
+    courtyardFeatures: ['Sayr yo‘laklari', 'Hovli markazidagi favvora', 'Bolalar maydonchalari'],
+    yardTabs: ['Hovli', 'Favvora', 'Bolalar uchun'],
+    loungeKicker: 'Yozgi oshxonali dam olish zonasi',
+    loungeTitle: 'Uchrashuvlaringiz\nuchun makon.',
+    loungeBody: 'Oilangiz bilan yig‘iling, do‘stlaringizni taklif qiling va birga kechki ovqat tayyorlang. Hovlidagi alohida pavilyon uy makonini davom ettiradi.',
+    loungeNote: 'Dam olish zonasi interyeri', pavilionNote: 'Hovlidagi pavilyon',
+    galleryTitle: 'Yaqinroq\nnazar tashlang.',
+    galleryBody: 'Loyiha vizualizatsiyalarida arxitektura, hovli va umumiy makonlar.',
+    galleryLabels: ['Majmuaning yuqoridan ko‘rinishi', 'Arxitektura', 'Hovli va o‘yin maydonchalari', 'Favvora', 'Dam olish zonasi', 'Sayr yo‘lagi'],
+    previous: 'Oldingi rasm', next: 'Keyingi rasm', enlarge: 'To‘liq ekranda ochish', close: 'Galereyani yopish',
+    plansTitle: 'Hayotingizga\nmos makon.',
+    plansBody: 'Bir, ikki va uch xonali namunaviy rejalar. Maydonlarni solishtiring, blokni tanlang va xonadonning qavatdagi joylashuvini ko‘ring.',
+    roomLabels: ['1 xona', '2 xona', '3 xona'], block: 'Blok', allPlans: 'Barcha rejalar', typical: 'Namunaviy reja',
+    mapTitle: 'Shahar tashqarisida.\nToshkentga yaqin.',
+    mapBody: 'Do‘rmon Hills Toshkent viloyatining Qibray tumanida joylashgan. Ko‘rik vaqtini menejer bilan kelishib, loyiha bilan shaxsan tanishing.',
+    contact: 'Keyingi\nmanzilingiz.',
+    contactBody: 'Qanday makon izlayotganingizni ayting. Rejalarni solishtirish, narx va xarid shartlarini aniqlashga yordam beramiz.',
+    map: 'Xaritani ochish', phone: 'Qo‘ng‘iroq qilish', privacy: 'Maxfiylik siyosati', source: 'Millennium House', portfolio: 'TenCorp loyihalari',
+    caption: 'Loyiha vizualizatsiyasi',
+    formContext: 'Do‘rmon Hills: loyiha sahifasidan maslahat',
+  },
+  en: {
+    title: 'Do‘rmon Hills — residences in Qibray District',
+    description: 'A business-class development by Millennium House in Qibray District, with a private courtyard, green paths, a lounge and apartment layouts.',
+    skip: 'Skip to content', project: 'The project', architecture: 'Architecture', gardens: 'Courtyard', gallery: 'Gallery', plans: 'Choose a layout', enquire: 'Discuss your options',
+    heroKicker: 'Millennium House · Qibray District',
+    heroTitle: ['Closer', 'to nature.'],
+    hero: 'A business-class residential development with a private courtyard and room to spend time outdoors.',
+    explore: 'Explore the project',
+    introKicker: 'The project',
+    intro: 'Your own rhythm.\nYour own space.',
+    introBody: 'Five buildings frame a shared courtyard. Start the day with a walk along the garden paths and spend the evening by the fountain or around the lounge’s large table.',
+    facts: [['0.8 ha', 'site area'], ['5', 'buildings'], ['12', 'storeys'], ['Over 30%', 'green space']],
+    architectureTitle: 'Architecture\nthat brings together.',
+    architectureBody: 'Light façades, vertical lines and warm stone tones. The buildings form a unified ensemble around the inner courtyard.',
+    architectureNote: 'Street view', detailNote: 'Façade details',
+    gardensTitle: 'Step outside.\nStay in your element.',
+    gardensBody: 'Walking paths, planted islands, a fountain and play areas. The inner courtyard offers spaces for movement and quiet moments alike.',
+    courtyardFeatures: ['Walking paths', 'Central courtyard fountain', 'Children’s play areas'],
+    yardTabs: ['Courtyard', 'Fountain', 'For children'],
+    loungeKicker: 'Lounge with a summer kitchen',
+    loungeTitle: 'A place\nto come together.',
+    loungeBody: 'Gather the family, invite friends and cook dinner together. A separate courtyard pavilion extends the spaces of home.',
+    loungeNote: 'Lounge interior', pavilionNote: 'Courtyard pavilion',
+    galleryTitle: 'Take a\ncloser look.',
+    galleryBody: 'Explore the architecture, courtyard and shared spaces in the project visualisations.',
+    galleryLabels: ['Aerial view', 'Architecture', 'Courtyard and play areas', 'Fountain', 'Lounge', 'Garden paths'],
+    previous: 'Previous image', next: 'Next image', enlarge: 'Open full screen', close: 'Close gallery',
+    plansTitle: 'Room for\nthe life you lead.',
+    plansBody: 'One-, two- and three-room layout types. Compare floor areas, choose a building and see each layout’s position on the floor.',
+    roomLabels: ['1 room', '2 rooms', '3 rooms'], block: 'Block', allPlans: 'All layouts', typical: 'Typical layout',
+    mapTitle: 'Outside the city.\nClose to Tashkent.',
+    mapBody: 'Do‘rmon Hills is in Qibray District, Tashkent Region. Arrange a viewing with your adviser and get to know the development in person.',
+    contact: 'Your next\naddress.',
+    contactBody: 'Tell us what you’re looking for. We can compare layouts and confirm pricing and purchase terms.',
+    map: 'Open map', phone: 'Call us', privacy: 'Privacy policy', source: 'Millennium House', portfolio: 'All TenCorp projects',
+    caption: 'Project visualisation',
+    formContext: 'Do‘rmon Hills: consultation from the project page',
+  },
+} as const;

@@ -219,12 +219,10 @@ html.bayterak-scroll-smooth { scroll-behavior: smooth; }
 .bayterak-site .lead-modal__visual ul { border-color: rgba(37, 39, 37, .2); }
 .bayterak-site .lead-modal__visual li { color: rgba(37, 39, 37, .6); }
 .bayterak-site .lead-modal__close { width: 44px; height: 44px; border-radius: 0; background: rgba(250, 247, 240, .94); color: var(--bay-graphite); }
-.bayterak-site .lead-form input { border-radius: 1px; }
-.bayterak-site .lead-form input:focus { border-color: var(--bay-brass); box-shadow: 0 0 0 3px rgba(182, 139, 50, .13); }
+.bayterak-site .lead-form input:where(:not([type='checkbox'])) { border-radius: 1px; }
+.bayterak-site .lead-form input:where(:not([type='checkbox'])):focus { border-color: var(--bay-brass); box-shadow: 0 0 0 3px rgba(182, 139, 50, .13); }
 .bayterak-site .lead-goals label.is-active, .bayterak-site .lead-form__submit, .bayterak-site .lead-success button { border-color: var(--bay-graphite); border-radius: 1px; background: var(--bay-graphite); color: var(--bay-bone-soft); }
-.bayterak-site .lead-form .lead-consent { grid-column: 1 / -1; display: flex; min-height: 44px; align-items: flex-start; gap: 11px; cursor: pointer; }
-.bayterak-site .lead-form .lead-consent input { width: 22px; height: 22px; flex: 0 0 22px; margin: 0; padding: 0; accent-color: var(--bay-brass); }
-.bayterak-site .lead-form .lead-consent > span { padding-top: 3px; color: rgba(37, 39, 37, .68); font-size: 10px; line-height: 1.45; }
+.bayterak-site .lead-consent { --lead-consent-accent: var(--bay-brass); --lead-consent-ink: rgba(37,39,37,.76); }
 
 @media (max-width: 1180px) {
   .bayterak-header { grid-template-columns: 1fr auto; }

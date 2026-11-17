@@ -1,0 +1,273 @@
+{
+  "source": "https://millenniumhouse.uz/dormon-hills",
+  "capturedAt": "2026-11-15T21:12:50.715Z",
+  "plans": [
+    {
+      "id": "layout-a-1-4075",
+      "block": "А",
+      "rooms": 1,
+      "area": 40.75,
+      "plan": "/dormon-hills/plans/u-a-1k-4075-ndwnlz-a8fac798ee44.webp",
+      "floorPlan": "/dormon-hills/plans/floor-a-y2v8lw-977543bc72a4.webp"
+    },
+    {
+      "id": "layout-a-1-4215",
+      "block": "А",
+      "rooms": 1,
+      "area": 42.15,
+      "plan": "/dormon-hills/plans/u-a-1k-4215-d8snzw-15661fd82cf0.webp",
+      "floorPlan": "/dormon-hills/plans/floor-a-y2v8lw-977543bc72a4.webp"
+    },
+    {
+      "id": "layout-a-1-4340",
+      "block": "А",
+      "rooms": 1,
+      "area": 43.4,
+      "plan": "/dormon-hills/plans/u-a-1k-434-uqjznv-ca6fb52f6848.webp",
+      "floorPlan": "/dormon-hills/plans/floor-a-y2v8lw-977543bc72a4.webp"
+    },
+    {
+      "id": "layout-a-1-4845",
+      "block": "А",
+      "rooms": 1,
+      "area": 48.45,
+      "plan": "/dormon-hills/plans/u-a-1k-4845-iv3ezt-1b0955572977.webp",
+      "floorPlan": "/dormon-hills/plans/floor-a-y2v8lw-977543bc72a4.webp"
+    },
+    {
+      "id": "layout-a-2-6235",
+      "block": "А",
+      "rooms": 2,
+      "area": 62.35,
+      "plan": "/dormon-hills/plans/u-a-2k-6235-itvdmq-16b5555aa680.webp",
+      "floorPlan": "/dormon-hills/plans/floor-a-y2v8lw-977543bc72a4.webp"
+    },
+    {
+      "id": "layout-a-2-6810",
+      "block": "А",
+      "rooms": 2,
+      "area": 68.1,
+      "plan": "/dormon-hills/plans/u-a-2k-681-jgjeyr-00106fa0b515.webp",
+      "floorPlan": "/dormon-hills/plans/floor-a-y2v8lw-977543bc72a4.webp"
+    },
+    {
+      "id": "layout-b-1-3625",
+      "block": "Б",
+      "rooms": 1,
+      "area": 36.25,
+      "plan": "/dormon-hills/plans/u-b-1k-3625-lnq0vg-2b1f0ebb56be.webp",
+      "floorPlan": "/dormon-hills/plans/floor-b-6lrjtp-a1cf0684d333.webp"
+    },
+    {
+      "id": "layout-b-2-6560",
+      "block": "Б",
+      "rooms": 2,
+      "area": 65.6,
+      "plan": "/dormon-hills/plans/u-b-2k-656-fiifum-9e84216a78a9.webp",
+      "floorPlan": "/dormon-hills/plans/floor-b-6lrjtp-a1cf0684d333.webp"
+    },
+    {
+      "id": "layout-b-2-6725",
+      "block": "Б",
+      "rooms": 2,
+      "area": 67.25,
+      "plan": "/dormon-hills/plans/u-b-2k-6725-knvomy-dbb52875dcba.webp",
+      "floorPlan": "/dormon-hills/plans/floor-b-6lrjtp-a1cf0684d333.webp"
+    },
+    {
+      "id": "layout-b-3-6640",
+      "block": "Б",
+      "rooms": 3,
+      "area": 66.4,
+      "plan": "/dormon-hills/plans/u-b-3k-664-67fqeq-ebafc7851410.webp",
+      "floorPlan": "/dormon-hills/plans/floor-b-6lrjtp-a1cf0684d333.webp"
+    },
+    {
+      "id": "layout-b-3-9020",
+      "block": "Б",
+      "rooms": 3,
+      "area": 90.2,
+      "plan": "/dormon-hills/plans/u-b-3k-902-nbhwhv-8f7378f7430a.webp",
+      "floorPlan": "/dormon-hills/plans/floor-b-6lrjtp-a1cf0684d333.webp"
+    },
+    {
+      "id": "layout-v-1-4075",
+      "block": "В",
+      "rooms": 1,
+      "area": 40.75,
+      "plan": "/dormon-hills/plans/u-v-1k-4075-qmkkul-68a76abb3f0b.webp",
+      "floorPlan": "/dormon-hills/plans/floor-v-dyaanv-c99aefdd25ca.webp"
+    },
+    {
+      "id": "layout-v-1-4215",
+      "block": "В",
+      "rooms": 1,
+      "area": 42.15,
+      "plan": "/dormon-hills/plans/u-v-1k-4215-qrlcjg-c336f9db39c1.webp",
+      "floorPlan": "/dormon-hills/plans/floor-v-dyaanv-c99aefdd25ca.webp"
+    },
+    {
+      "id": "layout-v-1-4340",
+      "block": "В",
+      "rooms": 1,
+      "area": 43.4,
+      "plan": "/dormon-hills/plans/u-v-1k-434-c8xvlu-43f90d316a46.webp",
+      "floorPlan": "/dormon-hills/plans/floor-v-dyaanv-c99aefdd25ca.webp"
+    },
+    {
+      "id": "layout-v-1-4875",
+      "block": "В",
+      "rooms": 1,
+      "area": 48.75,
+      "plan": "/dormon-hills/plans/u-v-1k-4875-a0ayv9-bf90d818aabf.webp",
+      "floorPlan": "/dormon-hills/plans/floor-v-dyaanv-c99aefdd25ca.webp"
+    },
+    {
+      "id": "layout-v-2-6235",
+      "block": "В",
+      "rooms": 2,
+      "area": 62.35,
+      "plan": "/dormon-hills/plans/u-v-2k-6235-ir7mh2-40c3b6dde963.webp",
+      "floorPlan": "/dormon-hills/plans/floor-v-dyaanv-c99aefdd25ca.webp"
+    },
+    {
+      "id": "layout-v-2-6810",
+      "block": "В",
+      "rooms": 2,
+      "area": 68.1,
+      "plan": "/dormon-hills/plans/u-v-2k-681-ymirsh-0e2450851ff7.webp",
+      "floorPlan": "/dormon-hills/plans/floor-v-dyaanv-c99aefdd25ca.webp"
+    },
+    {
+      "id": "layout-g-1-4075",
+      "block": "Г",
+      "rooms": 1,
+      "area": 40.75,
+      "plan": "/dormon-hills/plans/u-g-1k-4075-9znos2-c40773230d31.webp",
+      "floorPlan": "/dormon-hills/plans/floor-g-tlm1nz-247670d8bda0.webp"
+    },
+    {
+      "id": "layout-g-1-4215",
+      "block": "Г",
+      "rooms": 1,
+      "area": 42.15,
+      "plan": "/dormon-hills/plans/u-g-1k-4215-8ulglq-255b4fee7ec7.webp",
+      "floorPlan": "/dormon-hills/plans/floor-g-tlm1nz-247670d8bda0.webp"
+    },
+    {
+      "id": "layout-g-1-4340",
+      "block": "Г",
+      "rooms": 1,
+      "area": 43.4,
+      "plan": "/dormon-hills/plans/u-g-1k-434-odyigr-870c1fdb3732.webp",
+      "floorPlan": "/dormon-hills/plans/floor-g-tlm1nz-247670d8bda0.webp"
+    },
+    {
+      "id": "layout-g-2-6810",
+      "block": "Г",
+      "rooms": 2,
+      "area": 68.1,
+      "plan": "/dormon-hills/plans/u-g-2k-681-xxkp0w-cce80590d17c.webp",
+      "floorPlan": "/dormon-hills/plans/floor-g-tlm1nz-247670d8bda0.webp"
+    },
+    {
+      "id": "layout-d-2-7-1-4075",
+      "block": "Д",
+      "rooms": 1,
+      "area": 40.75,
+      "floors": "2–7",
+      "plan": "/dormon-hills/plans/u-d27-1k-4075-0dwmzz-9175f168dc16.webp",
+      "floorPlan": "/dormon-hills/plans/floor-d-2-7-gbkxxf-680a32e251a4.webp"
+    },
+    {
+      "id": "layout-d-2-7-1-4340",
+      "block": "Д",
+      "rooms": 1,
+      "area": 43.4,
+      "floors": "2–7",
+      "plan": "/dormon-hills/plans/u-d27-1k-434-neawfi-998668227287.webp",
+      "floorPlan": "/dormon-hills/plans/floor-d-2-7-gbkxxf-680a32e251a4.webp"
+    },
+    {
+      "id": "layout-d-2-7-2-6215",
+      "block": "Д",
+      "rooms": 2,
+      "area": 62.15,
+      "floors": "2–7",
+      "plan": "/dormon-hills/plans/u-d27-2k-6215-pajuhl-fea2b2393b9e.webp",
+      "floorPlan": "/dormon-hills/plans/floor-d-2-7-gbkxxf-680a32e251a4.webp"
+    },
+    {
+      "id": "layout-d-2-7-2-6810",
+      "block": "Д",
+      "rooms": 2,
+      "area": 68.1,
+      "floors": "2–7",
+      "plan": "/dormon-hills/plans/u-d27-2k-681-jzkxvf-18c2f7e8d857.webp",
+      "floorPlan": "/dormon-hills/plans/floor-d-2-7-gbkxxf-680a32e251a4.webp"
+    },
+    {
+      "id": "layout-d-2-7-3-9255",
+      "block": "Д",
+      "rooms": 3,
+      "area": 92.55,
+      "floors": "2–7",
+      "plan": "/dormon-hills/plans/u-d27-3k-9255-6eq9ys-88182a98a48e.webp",
+      "floorPlan": "/dormon-hills/plans/floor-d-2-7-gbkxxf-680a32e251a4.webp"
+    },
+    {
+      "id": "layout-d-8-12-1-4075",
+      "block": "Д",
+      "rooms": 1,
+      "area": 40.75,
+      "floors": "8–12",
+      "plan": "/dormon-hills/plans/u-d812-1k-4075-22g1y9-672807712f13.webp",
+      "floorPlan": "/dormon-hills/plans/floor-d-8-12-e3ki2d-2de44ba91a20.webp"
+    },
+    {
+      "id": "layout-d-8-12-1-4215",
+      "block": "Д",
+      "rooms": 1,
+      "area": 42.15,
+      "floors": "8–12",
+      "plan": "/dormon-hills/plans/u-d812-1k-4215-rmkkun-7b4f8f18bf4e.webp",
+      "floorPlan": "/dormon-hills/plans/floor-d-8-12-e3ki2d-2de44ba91a20.webp"
+    },
+    {
+      "id": "layout-d-8-12-1-4340",
+      "block": "Д",
+      "rooms": 1,
+      "area": 43.4,
+      "floors": "8–12",
+      "plan": "/dormon-hills/plans/u-d812-1k-434-mflwhl-bc345fbebf06.webp",
+      "floorPlan": "/dormon-hills/plans/floor-d-8-12-e3ki2d-2de44ba91a20.webp"
+    },
+    {
+      "id": "layout-d-8-12-1-4845",
+      "block": "Д",
+      "rooms": 1,
+      "area": 48.45,
+      "floors": "8–12",
+      "plan": "/dormon-hills/plans/u-d812-1k-4845-d9iomw-18d6db30152d.webp",
+      "floorPlan": "/dormon-hills/plans/floor-d-8-12-e3ki2d-2de44ba91a20.webp"
+    },
+    {
+      "id": "layout-d-8-12-2-6215",
+      "block": "Д",
+      "rooms": 2,
+      "area": 62.15,
+      "floors": "8–12",
+      "plan": "/dormon-hills/plans/u-d812-2k-6215-3ednzx-e79a2e0fce65.webp",
+      "floorPlan": "/dormon-hills/plans/floor-d-8-12-e3ki2d-2de44ba91a20.webp"
+    },
+    {
+      "id": "layout-d-8-12-2-6810",
+      "block": "Д",
+      "rooms": 2,
+      "area": 68.1,
+      "floors": "8–12",
+      "plan": "/dormon-hills/plans/u-d812-2k-681-z0gizq-efe6e5816f83.webp",
+      "floorPlan": "/dormon-hills/plans/floor-d-8-12-e3ki2d-2de44ba91a20.webp"
+    }
+  ]
+}

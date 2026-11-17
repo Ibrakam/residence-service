@@ -22,6 +22,7 @@ var publishedSalesSiteRoutes = map[string]projectRegistryRoutes{
 	"bayterak":         {passportPath: "/bayterak", apartmentsPath: "/bayterak/apartments", aliases: []string{"Baiterek", "Байтерек"}},
 	"botanika-saroyi":  {passportPath: "/botanika-saroyi", apartmentsPath: "/botanika-saroyi/apartments", aliases: []string{"Ботаника Саройи"}},
 	"c1":               {passportPath: "/c1", apartmentsPath: "/c1/apartments", aliases: []string{"C-1", "C 1"}},
+	"dormon-hills":     {passportPath: "/dormon-hills", apartmentsPath: "/dormon-hills/apartments", aliases: []string{"Do’RMON HILLS", "Dormon Hills", "Дурмон Хиллс"}},
 	"flagman":          {passportPath: "/flagman", apartmentsPath: "/flagman/apartments", aliases: []string{"Флагман"}},
 	"jomiy":            {passportPath: "/jomiy", apartmentsPath: "/jomiy/apartments", aliases: []string{"Жомий"}},
 	"maftun-makon":     {passportPath: "/maftun-makon", apartmentsPath: "/maftun-makon/apartments", aliases: []string{"Мафтун Макон"}},

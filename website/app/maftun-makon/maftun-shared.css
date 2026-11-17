@@ -52,44 +52,18 @@ html.maftun-scroll-smooth { scroll-behavior: smooth; }
 .maftun-site .lead-modal .lead-success > p,
 .maftun-catalog-site .lead-modal__content > p,
 .maftun-catalog-site .lead-modal .lead-success > p,
-.maftun-site .lead-modal .lead-form > label > span,
+.maftun-site .lead-modal .lead-form > label:where(:not(.lead-consent)) > span,
 .maftun-site .lead-modal .lead-form legend,
 .maftun-site .lead-modal .lead-form__privacy,
-.maftun-catalog-site .lead-modal .lead-form > label > span,
+.maftun-catalog-site .lead-modal .lead-form > label:where(:not(.lead-consent)) > span,
 .maftun-catalog-site .lead-modal .lead-form legend,
 .maftun-catalog-site .lead-modal .lead-form__privacy { color: #4b554e; }
 
 .maftun-site .lead-modal .lead-goals label,
 .maftun-catalog-site .lead-modal .lead-goals label { color: #465149; }
 
-.maftun-site .lead-modal .lead-form .lead-consent,
-.maftun-catalog-site .lead-modal .lead-form .lead-consent {
-  grid-column: 1 / -1;
-  display: flex;
-  min-height: 44px;
-  align-items: flex-start;
-  gap: 11px;
-  color: #465149;
-  cursor: pointer;
-}
-
-.maftun-site .lead-modal .lead-form .lead-consent input,
-.maftun-catalog-site .lead-modal .lead-form .lead-consent input {
-  width: 22px;
-  height: 22px;
-  flex: 0 0 22px;
-  margin: 0;
-  padding: 0;
-  border-radius: 3px;
-  accent-color: #123b2d;
-}
-
-.maftun-site .lead-modal .lead-form .lead-consent > span,
-.maftun-catalog-site .lead-modal .lead-form .lead-consent > span {
-  padding-top: 3px;
-  font-size: 10px;
-  font-weight: 650;
-  line-height: 1.45;
+:is(.maftun-site, .maftun-catalog-site) .lead-consent {
+  --lead-consent-accent: #123b2d;
 }
 
 .maftun-site .lead-modal .lead-modal__close,
@@ -101,18 +75,18 @@ html.maftun-scroll-smooth { scroll-behavior: smooth; }
   color: #101c54;
 }
 
-.maftun-site .lead-modal .lead-form input,
+.maftun-site .lead-modal .lead-form input:where(:not([type='checkbox'])),
 .maftun-site .lead-modal .lead-phone,
-.maftun-catalog-site .lead-modal .lead-form input,
+.maftun-catalog-site .lead-modal .lead-form input:where(:not([type='checkbox'])),
 .maftun-catalog-site .lead-modal .lead-phone {
   border-color: rgba(23, 35, 29, .2);
   background: rgba(255, 255, 255, .66);
   color: #17231d;
 }
 
-.maftun-site .lead-modal .lead-form input:focus,
+.maftun-site .lead-modal .lead-form input:where(:not([type='checkbox'])):focus,
 .maftun-site .lead-modal .lead-phone:focus-within,
-.maftun-catalog-site .lead-modal .lead-form input:focus,
+.maftun-catalog-site .lead-modal .lead-form input:where(:not([type='checkbox'])):focus,
 .maftun-catalog-site .lead-modal .lead-phone:focus-within {
   border-color: #b59656;
   box-shadow: 0 0 0 3px rgba(181, 150, 86, .15);

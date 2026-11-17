@@ -15,6 +15,8 @@ type PageProps = {
     utm_content?: string;
     fbclid?: string;
     tcid?: string;
+    gclid?: string;
+    utm_id?: string;
   }>;
 };
 type PrivacyCopy = {
@@ -66,10 +68,13 @@ function preserveProjectAttribution(
 ) {
   if (
     !url ||
-    (params?.project !== "soy-boyi" && params?.project !== "sarbon")
+    (params?.project !== "soy-boyi" && params?.project !== "sarbon" && params?.project !== "dormon-hills")
   ) return url;
   const attribution = new URLSearchParams();
-  for (const key of projectAttributionKeys) {
+  const keys = params.project === "dormon-hills"
+    ? [...projectAttributionKeys, "gclid", "utm_id"] as const
+    : projectAttributionKeys;
+  for (const key of keys) {
     if (params[key]) attribution.set(key, params[key]);
   }
   const query = attribution.toString();
@@ -647,6 +652,13 @@ const legacyProjects: Record<
     phoneHref: "tel:+998781137712",
     phoneLabel: "+998 78 113 77 12",
   },
+  "dormon-hills": {
+    name: "Do‘rmon Hills",
+    path: "/dormon-hills",
+    image: "/dormon-hills/images/hero.webp",
+    phoneHref: "tel:+998781137712",
+    phoneLabel: "+998 78 113 77 12",
+  },
   pushkin: {
     name: "PUSHKIN",
     path: "/pushkin",
@@ -945,13 +957,14 @@ export default async function PrivacyPage({ searchParams }: PageProps) {
                   : null;
   const projectUrl = preserveProjectAttribution(baseProjectUrl, params)!;
   const catalogUrl = preserveProjectAttribution(baseCatalogUrl, params);
+  const fromDormonAvailability = params?.project === "dormon-hills" && params?.from === "available";
   const fromCatalog =
     (isYangiBaxt ||
       isJomiy ||
       isRegnumPlaza ||
       isSun ||
       Boolean(legacyProject)) &&
-    params?.from === "catalog";
+    (params?.from === "catalog" || fromDormonAvailability);
   const returnUrl = fromCatalog && catalogUrl ? catalogUrl : projectUrl;
   const back =
     fromCatalog && current.catalogBack ? current.catalogBack : current.back;

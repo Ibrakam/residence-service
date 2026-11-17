@@ -108,7 +108,7 @@ const copy = {
     goals: { live: 'Для жизни', invest: 'Инвестиция', rent: 'Для аренды' },
     submit: 'Получить подборку',
     pending: 'Отправляем…',
-    privacy: 'Нажимая кнопку, вы соглашаетесь на обработку персональных данных.', privacyLink: 'Подробнее',
+    privacy: 'Нажимая кнопку, вы соглашаетесь на обработку персональных данных.', privacyLink: 'Политика конфиденциальности',
     consent: 'Я согласен на обработку персональных данных.',
     consentError: 'Подтвердите согласие на обработку персональных данных.',
     successEyebrow: 'Заявка принята',
@@ -135,7 +135,7 @@ const copy = {
     goals: { live: 'Yashash uchun', invest: 'Investitsiya', rent: 'Ijaraga berish' },
     submit: 'Variantlarni olish',
     pending: 'Yuborilmoqda…',
-    privacy: 'Tugmani bosish orqali shaxsiy ma’lumotlarni qayta ishlashga rozilik bildirasiz.', privacyLink: 'Batafsil',
+    privacy: 'Tugmani bosish orqali shaxsiy ma’lumotlarni qayta ishlashga rozilik bildirasiz.', privacyLink: 'Maxfiylik siyosati',
     consent: 'Shaxsiy ma’lumotlarni qayta ishlashga roziman.',
     consentError: 'Shaxsiy ma’lumotlarni qayta ishlashga rozilikni tasdiqlang.',
     successEyebrow: 'Ariza qabul qilindi',
@@ -162,7 +162,7 @@ const copy = {
     goals: { live: 'For living', invest: 'Investment', rent: 'For rental' },
     submit: 'Get a selection',
     pending: 'Sending…',
-    privacy: 'By clicking the button, you consent to the processing of personal data.', privacyLink: 'Learn more',
+    privacy: 'By clicking the button, you consent to the processing of personal data.', privacyLink: 'Privacy policy',
     consent: 'I consent to the processing of my personal data.',
     consentError: 'Confirm your consent to personal data processing.',
     successEyebrow: 'Request received',
@@ -441,10 +441,24 @@ export function LeadModal({ open, language, context, autoPrompt = false, brandNa
                 <label><span>{t.name}</span><input ref={nameRef} name="name" autoComplete="name" required placeholder={t.namePlaceholder} aria-invalid={errorField === 'name' || undefined} aria-describedby={errorField === 'name' ? 'lead-form-error' : undefined} /></label>
                 <label><span>{t.phone}</span><div className="lead-phone"><b>+998</b><input ref={phoneRef} name="phone" type="tel" inputMode="numeric" autoComplete="tel" required placeholder="90 000 00 00" aria-invalid={errorField === 'phone' || undefined} aria-describedby={errorField === 'phone' ? 'lead-form-error' : undefined} onInput={(event) => { event.currentTarget.value = event.currentTarget.value.replace(/[^0-9 ]/g, '').slice(0, 12); }} /></div></label>
                 <fieldset><legend>{t.goal}</legend><div className="lead-goals">{(['live', 'invest', 'rent'] as Goal[]).map((value) => <label key={value} className={goal === value ? 'is-active' : ''}><input type="radio" name="goal" value={value} checked={goal === value} onChange={() => setGoal(value)} /><span>{t.goals[value]}</span></label>)}</div></fieldset>
-                {requireConsent ? <label className="lead-consent"><input ref={consentRef} name="consent" type="checkbox" required aria-invalid={errorField === 'consent' || undefined} aria-describedby={errorField === 'consent' ? 'lead-form-error' : undefined} /><span>{t.consent}</span></label> : null}
+                {requireConsent ? <label className="lead-consent">
+                  <input ref={consentRef} name="consent" type="checkbox" required
+                    aria-invalid={errorField === 'consent' || undefined}
+                    aria-describedby={errorField === 'consent' ? 'lead-form-error' : undefined}
+                    onChange={(event) => {
+                      if (event.currentTarget.checked && errorField === 'consent') {
+                        setErrorField(undefined);
+                        setError('');
+                      }
+                    }} />
+                  <span>{t.consent}</span>
+                </label> : null}
                 <button className="lead-form__submit" type="submit" disabled={pending}>{pending ? t.pending : t.submit}<span>↗</span></button>
                 {error ? <p id="lead-form-error" className="lead-form__error" role="alert">{error}</p> : null}
-                <small className="lead-form__privacy">{t.privacy}{privacyUrl ? <> <a href={privacyUrl}>{t.privacyLink}</a></> : null}</small>
+                {!requireConsent || privacyUrl ? <small className="lead-form__privacy">
+                  {requireConsent ? null : t.privacy}
+                  {privacyUrl ? <> <a href={privacyUrl}>{t.privacyLink}</a></> : null}
+                </small> : null}
               </form>
             </>
           ) : (

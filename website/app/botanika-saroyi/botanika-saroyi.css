@@ -270,9 +270,7 @@ body.botanika-overlay-locked { overflow: hidden; }
 .botanika-site .lead-modal__visual { background: radial-gradient(circle at 18% 82%, rgba(164, 131, 69, .3), transparent 31%), linear-gradient(148deg, var(--bot-green) 0%, var(--bot-green-deep) 100%); }
 .botanika-site .lead-modal__visual > div small, .botanika-site .lead-modal__visual > p, .botanika-site .lead-modal__eyebrow, .botanika-site .lead-success > small { color: var(--bot-brass); }
 .botanika-site .lead-modal__content h2 { color: var(--bot-green-deep); }
-.botanika-site .lead-modal .lead-form .lead-consent { grid-column: 1 / -1; display: flex; min-height: 44px; align-items: flex-start; gap: 11px; color: #465149; cursor: pointer; }
-.botanika-site .lead-modal .lead-form .lead-consent input { width: 22px; height: 22px; flex: 0 0 22px; margin: 0; padding: 0; border-radius: 2px; accent-color: var(--bot-green); }
-.botanika-site .lead-modal .lead-form .lead-consent > span { padding-top: 3px; font-size: 10px; font-weight: 650; line-height: 1.45; }
+.botanika-site .lead-consent { --lead-consent-accent: var(--bot-green); }
 .botanika-site .lead-modal .lead-modal__close { width: 44px; height: 44px; background: rgba(248, 243, 233, .96); color: var(--bot-green-deep); }
 .botanika-site .lead-modal .lead-goals label.is-active, .botanika-site .lead-modal .lead-form__submit, .botanika-site .lead-modal .lead-success button { border-color: var(--bot-green); border-radius: 2px; background: var(--bot-green); color: #fff; }
 .botanika-site .lead-modal :focus-visible { outline: 3px solid var(--bot-brass); outline-offset: 3px; }

@@ -20,6 +20,7 @@ export const config = {
     '/bayterak/:path*',
     '/botanika-saroyi/:path*',
     '/c1/:path*',
+    '/dormon-hills/:path*',
     '/flagman/:path*',
     '/jomiy/:path*',
     '/maftun-makon/:path*',

@@ -11,7 +11,7 @@ import (
 
 func TestPublishedSalesSiteRoutesAreExplicitAndComplete(t *testing.T) {
 	expectedKeys := []string{
-		"4u", "avalon-residence", "bayterak", "botanika-saroyi", "c1",
+		"4u", "avalon-residence", "bayterak", "botanika-saroyi", "c1", "dormon-hills",
 		"flagman", "jomiy", "maftun-makon", "meros", "mirador", "ofiyat",
 		"pushkin", "regnum-plaza", "saadiyat", "sado", "sarbon", "soy-boyi", "sun",
 		"voha", "yangibaxt", "zamon",

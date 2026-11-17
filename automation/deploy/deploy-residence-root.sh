@@ -52,6 +52,7 @@ readonly -a DIRECT_PROJECTS=(
   bayterak
   botanika-saroyi
   c1
+  dormon-hills
   flagman
   jomiy
   maftun-makon

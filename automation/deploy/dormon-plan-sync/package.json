@@ -1,0 +1,7 @@
+{
+  "name": "residence-dormon-plan-sync",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.13.0 <23" },
+  "dependencies": { "sharp": "0.35.4" }
+}

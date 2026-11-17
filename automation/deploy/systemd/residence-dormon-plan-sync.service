@@ -1,0 +1,32 @@
+[Unit]
+Description=Capture published Do‘rmon Hills layouts from Millennium House
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=residence-catalog-sync
+Group=residence-catalog-sync
+WorkingDirectory=/opt/residence-dormon-plan-sync
+Environment=DORMON_PLANS_DIR=/var/lib/residence-dormon-plans
+ExecStart=/usr/bin/flock -n /var/lib/residence-dormon-plans/.service.lock /usr/bin/node /opt/residence-dormon-plan-sync/scripts/capture-dormon-plans.mjs --store /var/lib/residence-dormon-plans
+UMask=0022
+TimeoutStartSec=15min
+KillMode=control-group
+Nice=10
+MemoryMax=768M
+CPUQuota=100%
+TasksMax=128
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ProtectClock=true
+RestrictSUIDSGID=true
+LockPersonality=true
+ReadWritePaths=/var/lib/residence-dormon-plans
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6

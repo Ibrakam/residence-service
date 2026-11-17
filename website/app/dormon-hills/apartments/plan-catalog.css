@@ -122,35 +122,78 @@
 .dh-plan-footer { background: var(--dh-dark-alt); color: var(--plan-ivory); }
 .dh-plan-footer-inner { flex-wrap: wrap; padding-block: 1.2rem; }
 
-.dh-plan-dialog {
-  width: min(60rem, calc(100% - 2rem));
-  max-height: calc(100dvh - 2rem);
+dialog.dh-plan-dialog {
+  position: fixed;
+  inset: 0;
+  width: min(82rem, calc(100% - 4rem));
+  height: min(56rem, calc(100dvh - 3rem));
+  max-width: none;
+  max-height: none;
+  min-inline-size: 0;
+  margin: auto;
   padding: 0;
-  border: 1px solid var(--plan-line);
-  background: var(--plan-ivory);
-  color: var(--plan-ink);
+  border: 0;
+  overflow: visible;
+  background: transparent;
+  color: var(--plan-ivory);
   overscroll-behavior: contain;
 }
+dialog.dh-plan-dialog[open] { display: flex; flex-direction: column; }
 .dh-plan-dialog::backdrop { background: var(--plan-overlay); }
-body:has(.dh-plan-dialog[open]) { overflow: hidden; }
-.dh-plan-dialog-content { padding: clamp(1rem, 3vw, 1.8rem); }
-.dh-plan-dialog-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
-.dh-plan-dialog-header h2 { margin: .25rem 0 .8rem; font-size: clamp(1.25rem, 3vw, 2rem); }
-.dh-plan-close, .dh-plan-dialog-tabs button {
-  border: 1px solid var(--plan-line);
-  background: var(--plan-ivory);
-  color: var(--plan-ink);
+html:has(.dh-plan-dialog[open]), body:has(.dh-plan-dialog[open]) { overflow: hidden; }
+.dh-plan-dialog-closebar { display: flex; flex: none; align-items: center; justify-content: flex-end; min-height: 44px; padding-bottom: .5rem; }
+.dh-plan-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .75rem;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--plan-ivory);
   font: inherit;
-  min-height: 2.75rem;
+  font-size: .75rem;
   cursor: pointer;
 }
-.dh-plan-close { min-width: 2.75rem; font-size: 1.45rem; }
-.dh-plan-dialog-tabs { display: flex; flex-wrap: wrap; gap: .55rem; }
-.dh-plan-dialog-tabs button { padding: .4rem .8rem; }
-.dh-plan-dialog-tabs [aria-pressed="true"] { background: var(--plan-olive); border-color: var(--plan-olive); color: var(--plan-ivory); }
-.dh-plan-dialog-tabs [aria-pressed="true"]:focus-visible { outline-color: var(--plan-ink); }
-.dh-plan-dialog-image { display: grid; place-items: center; min-height: 12rem; margin-block: .9rem; background: var(--plan-white); }
-.dh-plan-dialog-image img { display: block; width: 100%; max-height: min(54dvh, 36rem); object-fit: contain; }
+.dh-plan-close > span:last-child { font-size: 2rem; line-height: 1; }
+.dh-plan-dialog-content { display: grid; grid-template-columns: minmax(0, 1fr) minmax(17rem, .42fr); flex: 1; min-height: 0; background: var(--dh-dark); }
+.dh-plan-dialog-image { position: relative; min-width: 0; min-height: 0; overflow: auto; background: var(--plan-ivory); color: var(--plan-ink); }
+.dh-plan-dialog-zoom {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: clamp(1rem, 3vw, 3rem);
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: zoom-in;
+}
+.dh-plan-dialog-zoom img { display: block; width: 100%; height: 100%; min-height: 0; object-fit: contain; mix-blend-mode: multiply; }
+.dh-plan-dialog-image.is-zoomed .dh-plan-dialog-zoom { width: 200%; height: 200%; cursor: zoom-out; }
+.dh-plan-dialog-hint { position: absolute; inset: auto 1rem .75rem; pointer-events: none; color: var(--plan-muted); font-size: .625rem; line-height: 1.5; }
+.dh-plan-dialog-side { display: flex; flex-direction: column; min-width: 0; min-height: 0; gap: 1.5rem; padding: clamp(1.5rem, 3vw, 2.5rem); overflow: auto; }
+.dh-plan-dialog-kicker { margin: 0 0 .75rem; color: var(--plan-gold); font-size: .6875rem; line-height: 1.5; letter-spacing: .12em; }
+.dh-plan-dialog-header h2 { margin: 0; font-size: clamp(1.5rem, 2.3vw, 2rem); line-height: 1.2; overflow-wrap: anywhere; }
+.dh-plan-dialog-area { margin: 1rem 0 0; color: var(--plan-gold); font-size: clamp(2.75rem, 4vw, 3.75rem); font-weight: 700; line-height: 1.1; }
+.dh-plan-dialog-area small { margin-left: .5rem; color: var(--plan-ivory); font-size: .4em; font-weight: 400; }
+.dh-plan-dialog-facts { display: grid; margin: 0; font-size: .875rem; }
+.dh-plan-dialog-facts div { display: flex; justify-content: space-between; gap: 1rem; padding-block: .875rem; border-top: 1px solid var(--plan-line); }
+.dh-plan-dialog-facts dt { color: #f1ede2ad; }
+.dh-plan-dialog-facts dd { margin: 0; }
+.dh-plan-dialog-actions { display: grid; gap: .75rem; }
+.dh-plan-dialog-actions .dh-plan-action { width: 100%; min-height: 48px; border-color: var(--plan-gold); background: var(--plan-gold); color: var(--dh-dark); font-size: .8125rem; line-height: 1.3; }
+.dh-plan-dialog-actions .dh-plan-action:hover { background: var(--plan-ivory); }
+.dh-plan-dialog-actions .dh-plan-action.is-outline { background: transparent; color: var(--plan-ivory); }
+.dh-plan-dialog-actions .dh-plan-action.is-outline:hover { background: var(--plan-olive); }
+.dh-plan-dialog-navigation { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: auto; color: var(--plan-gold); font-size: .875rem; }
+.dh-plan-dialog-navigation button { width: 44px; height: 44px; border: 1px solid var(--plan-line); background: transparent; color: inherit; font: inherit; font-size: 1.25rem; cursor: pointer; }
+.dh-plan-dialog-navigation button:disabled { opacity: .35; cursor: default; }
+.dh-plan-dialog-navigation button:hover:not(:disabled) { background: var(--plan-olive); }
+.dh-plan-dialog :is(button, a):focus-visible { outline: 2px solid var(--plan-gold); outline-offset: -4px; }
+.dh-plan-dialog-zoom:focus-visible { outline-color: var(--plan-ink); }
 .dh-plan-image-fallback { padding: 1rem; color: var(--plan-muted); font-size: .85rem; text-align: center; }
 
 @media (max-width: 900px) {
@@ -162,9 +205,12 @@ body:has(.dh-plan-dialog[open]) { overflow: hidden; }
 @media (max-width: 630px) {
   .dh-plan-hero-inner { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
   .dh-plan-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; }
-  .dh-plan-grid { gap: .65rem; }
-  .dh-plan-card-image { padding: .4rem; }
-  .dh-plan-card-content { padding: .8rem .65rem .3rem; }
+  .dh-plan-grid { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+  .dh-plan-card-image { padding: 1rem; aspect-ratio: 1.15; }
+  .dh-plan-card-content { padding: 1.25rem; background: var(--dh-dark); color: var(--plan-ivory); }
+  .dh-plan-card-content h2 { color: var(--plan-gold); }
+  .dh-plan-card-content p { color: var(--plan-ivory); }
+  .dh-plan-card-content .dh-plan-text-action { color: var(--plan-gold); }
   .dh-plan-card-content p, .dh-plan-card-content button { font-size: .8rem; }
 }
 
@@ -195,4 +241,21 @@ body:has(.dh-plan-dialog[open]) { overflow: hidden; }
 @keyframes dh-plan-image-in {
   from { opacity: 0; transform: scale(.985); }
   to { opacity: 1; transform: scale(1); }
+}
+
+@media (max-width: 760px) {
+  dialog.dh-plan-dialog { inset: 0; width: 100%; height: 100dvh; max-height: 100dvh; margin: 0; overflow: hidden; background: var(--dh-dark); }
+  .dh-plan-dialog-closebar { min-height: calc(56px + env(safe-area-inset-top)); padding: env(safe-area-inset-top) 1rem 0; }
+  .dh-plan-dialog-content { display: flex; flex-direction: column; overflow: auto; }
+  .dh-plan-dialog-image { flex: 1 0 min(60dvh, 32rem); min-height: 16rem; }
+  .dh-plan-dialog-zoom { position: absolute; inset: 0; padding: 1rem 1rem 2rem; }
+  .dh-plan-dialog-side { flex: none; gap: 1rem; padding: 1.25rem 1.25rem max(1.25rem, env(safe-area-inset-bottom)); overflow: visible; }
+  .dh-plan-dialog-kicker { margin-bottom: .5rem; }
+  .dh-plan-dialog-header h2 { font-size: 1.5rem; }
+  .dh-plan-dialog-area { margin-top: .5rem; font-size: 2.75rem; }
+  .dh-plan-dialog-facts { display: none; }
+  .dh-plan-dialog-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
+  .dh-plan-dialog-actions .dh-plan-action:only-child { grid-column: 1 / -1; }
+  .dh-plan-dialog-actions .dh-plan-action { padding-inline: .5rem; font-size: .75rem; }
+  .dh-plan-dialog-navigation { margin-top: 0; }
 }

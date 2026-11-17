@@ -12,6 +12,11 @@ import './plan-catalog.css';
 
 const pageSize = 12;
 const locale = { ru: 'ru-RU', uz: 'uz-Latn-UZ', en: 'en-GB' };
+const dialogCopy = {
+  ru: { previous: 'Предыдущая планировка', next: 'Следующая планировка', zoom: 'Увеличить планировку', restore: 'Уменьшить планировку', hint: 'Нажмите на план, чтобы увеличить', close: 'Закрыть', area: 'Общая площадь' },
+  uz: { previous: 'Oldingi reja', next: 'Keyingi reja', zoom: 'Rejani kattalashtirish', restore: 'Rejani kichraytirish', hint: 'Kattalashtirish uchun rejani bosing', close: 'Yopish', area: 'Umumiy maydon' },
+  en: { previous: 'Previous floor plan', next: 'Next floor plan', zoom: 'Enlarge floor plan', restore: 'Reduce floor plan', hint: 'Tap the plan to enlarge', close: 'Close', area: 'Total area' },
+};
 
 type Props = {
   language: CatalogLanguage;
@@ -31,10 +36,13 @@ function PlanImage({ src, alt, fallback, eager = false }: { src: string; alt: st
 
 export function DormonPlanCatalog({ language, attribution, initialFilters, plans, source }: Props) {
   const t = copy[language];
+  const dialogText = dialogCopy[language];
   const [filters, setFilters] = useState(initialFilters);
   const [limit, setLimit] = useState(pageSize);
   const [detail, setDetail] = useState<PublishedPlan>();
   const [imageKind, setImageKind] = useState<'plan' | 'floorPlan'>('plan');
+  const [zoomed, setZoomed] = useState(false);
+  const imageStage = useRef<HTMLDivElement>(null);
   const [lead, setLead] = useState<LeadRequest>();
   const detailDialog = useRef<HTMLDialogElement>(null);
   const detailOpener = useRef<HTMLElement | null>(null);
@@ -67,10 +75,12 @@ export function DormonPlanCatalog({ language, attribution, initialFilters, plans
     transferredToLead.current = false;
     setDetail(plan);
     setImageKind('plan');
+    setZoomed(false);
     detailDialog.current?.showModal();
   };
   const dismissDetail = () => {
     setDetail(undefined);
+    setZoomed(false);
     if (!transferredToLead.current) detailOpener.current?.focus();
   };
   const inquireFromDetail = (plan: PublishedPlan, fallback: HTMLElement) => {
@@ -79,6 +89,17 @@ export function DormonPlanCatalog({ language, attribution, initialFilters, plans
     setLead({ plan, opener: detailOpener.current ?? fallback });
   };
   const dialogImage = detail && (imageKind === 'floorPlan' ? detail.floorPlan : detail.plan);
+  const detailIndex = detail ? filtered.findIndex(plan => plan.id === detail.id) : -1;
+  const resetImage = () => {
+    setZoomed(false);
+    imageStage.current?.scrollTo({ top: 0, left: 0 });
+  };
+  const moveDetail = (direction: number) => {
+    if (detailIndex < 0 || filtered.length < 2) return;
+    setDetail(filtered[(detailIndex + direction + filtered.length) % filtered.length]);
+    setImageKind('plan');
+    resetImage();
+  };
 
   return <div className="dh-plan-catalog" lang={language}>
     <DormonHeader homeHref={projectHref} language={language} compact
@@ -159,22 +180,63 @@ export function DormonPlanCatalog({ language, attribution, initialFilters, plans
     </footer>
 
     <dialog ref={detailDialog} className="dh-plan-dialog" aria-labelledby="dh-plan-dialog-title" onClose={dismissDetail}
+      onKeyDown={event => {
+        if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+        if (event.key === 'Escape' && zoomed) {
+          event.preventDefault();
+          resetImage();
+        } else if (!zoomed && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) {
+          event.preventDefault();
+          moveDetail(event.key === 'ArrowRight' ? 1 : -1);
+        }
+      }}
       onClick={event => { if (event.target === event.currentTarget) event.currentTarget.close(); }}>
+      <div className="dh-plan-dialog-closebar">
+        <button type="button" className="dh-plan-close" onClick={() => detailDialog.current?.close()} aria-label={t.close}>
+          <span>{dialogText.close}</span><span aria-hidden="true">×</span>
+        </button>
+      </div>
       <div className="dh-plan-dialog-content">
-        <div className="dh-plan-dialog-header">
-          <h2 id="dh-plan-dialog-title">{detail ? planLabel(detail) : t.plan}</h2>
-          <button type="button" className="dh-plan-close" onClick={() => detailDialog.current?.close()} aria-label={t.close}>×</button>
-        </div>
-        {detail && dialogImage && <>
-          {detail.floorPlan && <div className="dh-plan-dialog-tabs" role="group" aria-label={t.view}>
-            <button type="button" aria-pressed={imageKind === 'plan'} onClick={() => setImageKind('plan')}>{t.plan}</button>
-            <button type="button" aria-pressed={imageKind === 'floorPlan'} onClick={() => setImageKind('floorPlan')}>{t.floorPlan}</button>
-          </div>}
-          <div className="dh-plan-dialog-image">
-            <PlanImage key={dialogImage} src={dialogImage} alt={imageKind === 'floorPlan' ? `${t.floorPlan}. ${t.block} ${detail.block}` : planLabel(detail)} fallback={t.imagePlaceholder} eager />
+        {detail && dialogImage ? <>
+          <div ref={imageStage} className={`dh-plan-dialog-image${zoomed ? ' is-zoomed' : ''}`}>
+            <button type="button" className="dh-plan-dialog-zoom" aria-pressed={zoomed}
+              aria-label={zoomed ? dialogText.restore : dialogText.zoom}
+              onClick={() => {
+                if (zoomed) resetImage();
+                else setZoomed(true);
+              }}>
+              <PlanImage key={dialogImage} src={dialogImage}
+                alt={imageKind === 'floorPlan' ? `${t.floorPlan}. ${t.block} ${detail.block}` : planLabel(detail)}
+                fallback={t.imagePlaceholder} eager />
+            </button>
+            {!zoomed && <span className="dh-plan-dialog-hint" aria-hidden="true">{dialogText.hint}</span>}
           </div>
-          <button type="button" className="dh-plan-action" onClick={event => inquireFromDetail(detail, event.currentTarget)}>{t.inquire}</button>
-        </>}
+          <div className="dh-plan-dialog-side">
+            <div className="dh-plan-dialog-header" aria-live="polite" aria-atomic="true">
+              <p className="dh-plan-dialog-kicker">{t.block} {detail.block}{detail.floors && ` · ${t.floors(detail.floors)}`}</p>
+              <h2 id="dh-plan-dialog-title">{imageKind === 'floorPlan' ? t.floorPlan : t.roomsLabel(detail.rooms)}</h2>
+              <p className="dh-plan-dialog-area">{areaFormat.format(detail.area)}<small>{language === 'ru' ? 'м²' : 'm²'}</small></p>
+            </div>
+            <dl className="dh-plan-dialog-facts">
+              <div><dt>{t.block}</dt><dd>{detail.block}</dd></div>
+              <div><dt>{t.rooms}</dt><dd>{detail.rooms}</dd></div>
+              <div><dt>{dialogText.area}</dt><dd>{areaLabel(detail.area)}</dd></div>
+            </dl>
+            <div className="dh-plan-dialog-actions">
+              <button type="button" className="dh-plan-action" onClick={event => inquireFromDetail(detail, event.currentTarget)}>{t.inquire}</button>
+              {detail.floorPlan && <button type="button" className="dh-plan-action is-outline"
+                aria-pressed={imageKind === 'floorPlan'} onClick={() => {
+                  setImageKind(current => current === 'plan' ? 'floorPlan' : 'plan');
+                  resetImage();
+                }}>{imageKind === 'floorPlan' ? t.plan : t.floorPlan}</button>}
+            </div>
+            <div className="dh-plan-dialog-navigation" role="group" aria-label={t.view}>
+              <button type="button" onClick={() => moveDetail(-1)} aria-label={dialogText.previous} disabled={filtered.length < 2}>←</button>
+              <span aria-live="polite" aria-atomic="true">{String(detailIndex + 1).padStart(2, '0')} / {String(filtered.length).padStart(2, '0')}</span>
+              <button type="button" onClick={() => moveDetail(1)} aria-label={dialogText.next} disabled={filtered.length < 2}>→</button>
+            </div>
+          </div>
+        </> : <h2 id="dh-plan-dialog-title">{t.plan}</h2>}
       </div>
     </dialog>
 

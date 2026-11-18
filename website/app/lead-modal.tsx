@@ -2,6 +2,7 @@
 
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { leadProjectFacts } from './lead-project-facts';
+import { notifyWebAnalytics } from '@/lib/web-analytics-client';
 
 type Language = 'ru' | 'uz' | 'en';
 type Goal = 'live' | 'invest' | 'rent';
@@ -338,6 +339,7 @@ export function LeadModal({ open, language, context, autoPrompt = false, brandNa
 
   useEffect(() => {
     if (!open) return;
+    notifyWebAnalytics('form_open');
     const opener = returnFocusTo ?? document.activeElement as HTMLElement | null;
     const unlockBody = lockLeadBody();
     const focusFrame = window.requestAnimationFrame(() => nameRef.current?.focus());
@@ -408,6 +410,7 @@ export function LeadModal({ open, language, context, autoPrompt = false, brandNa
     setErrorField(undefined);
     try {
       await submitLead({ name, phone, goal, consent: data.get('consent') === 'on', context, language, submitUrl, projectSlug, unitId, unitKey });
+      notifyWebAnalytics('form_success');
       form.reset();
       setGoal('live');
       setSent(true);

@@ -1,3 +1,5 @@
+import { webAnalyticsProxyHeaders } from '../../../lib/web-analytics-proxy.mjs';
+
 const MAX_BODY_BYTES = 4_096;
 const TIMEOUT_MS = 8_000;
 const INTERESTS = ['Купить квартиру', 'Продать недвижимость', 'Инвестиции', 'Аренда'];
@@ -74,6 +76,7 @@ export async function POST(request: Request) {
       headers: {
         'Content-Type': 'application/json', Accept: 'application/json',
         'X-Tencorp-Lead-Contract': 'agency-v1',
+        ...webAnalyticsProxyHeaders(request.headers),
         ...(clientIp && clientIp.length <= 64 && /^[0-9a-f:.]+$/iu.test(clientIp) ? { 'X-Real-IP': clientIp } : {}),
       },
       body: JSON.stringify({ name, phone: input.phone, interest: input.interest, consent: true }),

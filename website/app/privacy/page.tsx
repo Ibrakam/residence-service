@@ -970,6 +970,11 @@ export default async function PrivacyPage({ searchParams }: PageProps) {
     fromCatalog && current.catalogBack ? current.catalogBack : current.back;
   const contactHref = "tel:+998781137712";
   const contactLabel = "+998 78 113 77 12";
+  const webAnalyticsCopy = {
+    ru: { title: 'Аналитика посещений', text: 'Для улучшения сайтов мы учитываем просмотры страниц и планировок, переходы между разделами, активное время и отправку заявки. Псевдонимные cookie этого сайта помогают отличать браузеры и посещения; они не являются учётной записью Telegram. Cookie браузера сохраняется до 180 дней, сессия — до 30 минут без активности, события — до 90 дней. Содержимое полей формы, пароли и платёжные данные в события не записываются. Сбор отключается при включённом Do Not Track или Global Privacy Control в браузере.' },
+    uz: { title: 'Tashriflar tahlili', text: 'Saytlarni yaxshilash uchun sahifalar va rejalar ko‘rilishi, bo‘limlar orasidagi o‘tishlar, faol vaqt va ariza yuborilishini hisoblaymiz. Saytning taxallusli cookie fayllari brauzer va tashriflarni ajratadi; ular Telegram hisobini bildirmaydi. Brauzer cookie fayli 180 kungacha, sessiya faolliksiz 30 daqiqagacha, hodisalar 90 kungacha saqlanadi. Shakl maydonlari tarkibi, parollar va to‘lov ma’lumotlari hodisalarga yozilmaydi. Brauzerda Do Not Track yoki Global Privacy Control yoqilganida yig‘ish o‘chiriladi.' },
+    en: { title: 'Website analytics', text: 'To improve our sites, we measure page and layout views, navigation, active time and enquiry submissions. Pseudonymous first-party cookies distinguish browsers and visits; they do not identify a Telegram account. Browser cookies last up to 180 days, sessions expire after 30 inactive minutes, and events are retained for up to 90 days. Form field contents, passwords and payment details are not recorded in events. Collection is disabled when Do Not Track or Global Privacy Control is enabled in the browser.' },
+  }[language];
 
   return (
     <main className="privacy-page" lang={language}>
@@ -1004,6 +1009,11 @@ export default async function PrivacyPage({ searchParams }: PageProps) {
             {current.revokeBefore} <a href={contactHref}>{contactLabel}</a>
             {current.revokeAfter}
           </p>
+        </article>
+        <article>
+          <span>04</span>
+          <h2>{webAnalyticsCopy.title}</h2>
+          <p>{webAnalyticsCopy.text}</p>
         </article>
       </section>
       <footer>

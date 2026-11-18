@@ -56,6 +56,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       <body className={`${golos.variable} ${prata.variable}`}>
         <SessionRevocationGuard />
         <ConstructionPassportControl />
+        <script defer src="/web-analytics.js?v=20261118-1" />
         {children}
       </body>
     </html>

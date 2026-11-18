@@ -1,3 +1,5 @@
+import { webAnalyticsProxyHeaders } from '../../../lib/web-analytics-proxy.mjs';
+
 const MAX_REQUEST_BYTES = 64 * 1024;
 const MAX_RESPONSE_BYTES = 64 * 1024;
 const UPSTREAM_TIMEOUT_MS = 8_000;
@@ -121,6 +123,7 @@ export async function POST(request: Request) {
         // The TenCorp sink applies the strict residence consent/project/unit
         // contract while preserving the existing legacy SAN'AT payload.
         'X-Tencorp-Lead-Contract': 'residence-v1',
+        ...webAnalyticsProxyHeaders(request.headers),
         ...(clientIp ? { 'X-Real-IP': clientIp, 'X-Forwarded-For': clientIp } : {}),
       },
       body: serialized,

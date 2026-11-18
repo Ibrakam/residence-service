@@ -58,7 +58,12 @@ limit_req_zone $binary_remote_addr zone=tencorp_web_events_per_ip:10m rate=5r/s;
 '''
 location_source = '''# Anonymous bounded ingestion only; report routes retain existing operator Basic auth.
 location = /api/web-events {
-    include /etc/nginx/snippets/tencorp-auth-exempt.conf;
+    # Only this collector may issue signed telemetry cookies. The shared exempt
+    # snippet hides Set-Cookie and would break visit continuity here.
+    auth_request off;
+    proxy_set_header X-Auth-User-ID "";
+    proxy_set_header X-Auth-Telegram-ID "";
+    proxy_set_header X-Auth-Phone "";
     if ($request_method != POST) { return 405; }
     if ($args != "") { return 400; }
     client_max_body_size 16k;

@@ -116,7 +116,6 @@
 .dh-plan-card-content { padding: 1.1rem 1.1rem .5rem; }
 .dh-plan-card-content h2 { margin: .4rem 0 .2rem; font-family: var(--font-ui); font-weight: 700; font-size: clamp(1.6rem, 3vw, 2.4rem); }
 .dh-plan-card-content p { margin: 0; font-size: .9rem; color: var(--plan-muted); }
-.dh-plan-more { display: flex; justify-content: center; margin-top: 1.8rem; }
 .dh-plan-empty { padding: 2rem; border: 1px solid var(--plan-line); background: var(--plan-ivory); }
 .dh-plan-empty h2 { margin-top: 0; }
 .dh-plan-footer { background: var(--dh-dark-alt); color: var(--plan-ivory); }

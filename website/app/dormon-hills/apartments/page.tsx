@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import { dormonPlansState } from '../../../lib/dormon-plans-state';
 import { DormonPlanCatalog } from './plan-catalog';
-import { attributionQuery, basePath, catalogHref, catalogLanguage, catalogPath, copy, initialPlanFilters, type CatalogQuery } from './plan-catalog-data';
+import { attributionQuery, basePath, catalogHref, catalogLanguage, catalogPath, copy, initialPlanFilters, isLegacyPlanPreviewQuery, type CatalogQuery } from './plan-catalog-data';
 
 type Props = { searchParams?: Promise<CatalogQuery> };
 
@@ -27,11 +28,15 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 export default async function DormonPlansPage({ searchParams }: Props) {
   const query = (await searchParams) ?? {};
   const snapshot = await dormonPlansState();
+  // Older homepage cards linked to a single exact layout through four filters.
+  // Keep those existing links useful by returning visitors to the full catalogue.
+  if (isLegacyPlanPreviewQuery(query, snapshot.plans)) {
+    redirect(catalogHref(catalogPath, catalogLanguage(query), attributionQuery(query)));
+  }
   return <DormonPlanCatalog
     language={catalogLanguage(query)}
     attribution={attributionQuery(query)}
     initialFilters={initialPlanFilters(query, snapshot.plans)}
     plans={snapshot.plans}
-    source={snapshot.source}
   />;
 }

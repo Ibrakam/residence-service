@@ -10,7 +10,6 @@ import {
 } from './plan-catalog-data';
 import './plan-catalog.css';
 
-const pageSize = 12;
 const locale = { ru: 'ru-RU', uz: 'uz-Latn-UZ', en: 'en-GB' };
 const dialogCopy = {
   ru: { previous: 'Предыдущая планировка', next: 'Следующая планировка', zoom: 'Увеличить планировку', restore: 'Уменьшить планировку', hint: 'Нажмите на план, чтобы увеличить', close: 'Закрыть', area: 'Общая площадь' },
@@ -23,7 +22,6 @@ type Props = {
   attribution: string;
   initialFilters: PlanFilters;
   plans: readonly PublishedPlan[];
-  source: string;
 };
 
 type LeadRequest = { plan?: PublishedPlan; opener: HTMLElement };
@@ -34,11 +32,10 @@ function PlanImage({ src, alt, fallback, eager = false }: { src: string; alt: st
   return <img src={basePath + src} alt={alt} loading={eager ? 'eager' : 'lazy'} decoding="async" onError={() => setFailed(true)} />;
 }
 
-export function DormonPlanCatalog({ language, attribution, initialFilters, plans, source }: Props) {
+export function DormonPlanCatalog({ language, attribution, initialFilters, plans }: Props) {
   const t = copy[language];
   const dialogText = dialogCopy[language];
   const [filters, setFilters] = useState(initialFilters);
-  const [limit, setLimit] = useState(pageSize);
   const [detail, setDetail] = useState<PublishedPlan>();
   const [imageKind, setImageKind] = useState<'plan' | 'floorPlan'>('plan');
   const [zoomed, setZoomed] = useState(false);
@@ -64,11 +61,9 @@ export function DormonPlanCatalog({ language, attribution, initialFilters, plans
   const privacyHref = `${catalogHref('/privacy', language, attribution)}&project=dormon-hills&from=catalog`;
   const setFilter = (key: keyof PlanFilters, value: string) => {
     setFilters(current => ({ ...current, [key]: value }));
-    setLimit(pageSize);
   };
   const reset = () => {
     setFilters(emptyFilters);
-    setLimit(pageSize);
   };
   const showPlan = (plan: PublishedPlan, opener: HTMLElement) => {
     detailOpener.current = opener;
@@ -145,11 +140,10 @@ export function DormonPlanCatalog({ language, attribution, initialFilters, plans
         {invalidArea && <p id="dh-plan-range-error" className="dh-plan-range-error" role="alert">{t.invalidArea}</p>}
         <div className="dh-plan-result-bar">
           <p role="status">{t.count(filtered.length)}</p>
-          <a href={source} target="_blank" rel="noreferrer">{t.source}</a>
         </div>
         {filtered.length ? <>
           <ul className="dh-plan-grid">
-            {filtered.slice(0, limit).map(plan => <li key={plan.id} className="dh-plan-card">
+            {filtered.map(plan => <li key={plan.id} className="dh-plan-card">
               <button type="button" className="dh-plan-card-image" aria-haspopup="dialog" aria-label={`${t.view}: ${planLabel(plan)}`}
                 onClick={event => showPlan(plan, event.currentTarget)}>
                 <PlanImage src={plan.plan} alt="" fallback={t.imagePlaceholder} />
@@ -162,9 +156,6 @@ export function DormonPlanCatalog({ language, attribution, initialFilters, plans
               </div>
             </li>)}
           </ul>
-          {filtered.length > limit && <div className="dh-plan-more">
-            <button type="button" className="dh-plan-action" onClick={() => setLimit(current => current + pageSize)}>{t.more}</button>
-          </div>}
         </> : <div className="dh-plan-empty">
           <h2>{t.empty}</h2><p>{t.emptyDescription}</p>
           <button type="button" className="dh-plan-action" onClick={reset}>{t.reset}</button>

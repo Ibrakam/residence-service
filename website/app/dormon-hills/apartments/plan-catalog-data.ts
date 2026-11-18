@@ -61,6 +61,14 @@ export function initialPlanFilters(query: CatalogQuery, plans: readonly Publishe
   };
 }
 
+export function isLegacyPlanPreviewQuery(query: CatalogQuery, plans: readonly PublishedPlan[]): boolean {
+  const filters = initialPlanFilters(query, plans);
+  return Boolean(filters.block && filters.rooms && filters.minArea && filters.maxArea
+    && Number(filters.minArea) === Number(filters.maxArea)
+    && plans.some(plan => plan.block === filters.block && String(plan.rooms) === filters.rooms
+      && plan.area === Number(filters.minArea)));
+}
+
 export function catalogHref(path: string, language: CatalogLanguage, attribution = '', filters?: PlanFilters) {
   const params = new URLSearchParams(attribution);
   params.set('lang', language);
@@ -90,13 +98,11 @@ export const copy = {
     count: (value: number) => `Найдено планировок: ${value}`,
     empty: 'Подходящих планировок нет',
     emptyDescription: 'Измените диапазон площади или сбросьте фильтры.',
-    source: 'Источник планировок: Millennium House',
     plan: 'План квартиры',
     floorPlan: 'План этажа',
     view: 'Смотреть планировку',
     close: 'Закрыть планировку',
     inquire: 'Узнать цену',
-    more: 'Показать ещё планировки',
     floors: (value: string) => `Этажи ${value}`,
     roomsLabel: (value: number) => value === 1 ? '1 комната' : `${value} комнаты`,
     imagePlaceholder: 'Планировка не загрузилась',
@@ -121,13 +127,11 @@ export const copy = {
     count: (value: number) => `${value} ta reja topildi`,
     empty: 'Mos rejalar topilmadi',
     emptyDescription: 'Maydon oralig‘ini o‘zgartiring yoki filtrlarni tozalang.',
-    source: 'Rejalar manbasi: Millennium House',
     plan: 'Xonadon rejasi',
     floorPlan: 'Qavat rejasi',
     view: 'Rejani ko‘rish',
     close: 'Rejani yopish',
     inquire: 'Narxni bilish',
-    more: 'Yana rejalarni ko‘rsatish',
     floors: (value: string) => `${value}-qavatlar`,
     roomsLabel: (value: number) => `${value} xona`,
     imagePlaceholder: 'Rejani yuklab bo‘lmadi',
@@ -152,13 +156,11 @@ export const copy = {
     count: (value: number) => `${value} ${value === 1 ? 'floor plan' : 'floor plans'} found`,
     empty: 'No floor plans match',
     emptyDescription: 'Change the area range or reset the filters.',
-    source: 'Floor plan source: Millennium House',
     plan: 'Apartment plan',
     floorPlan: 'Building floor plan',
     view: 'View floor plan',
     close: 'Close floor plan',
     inquire: 'Ask about pricing',
-    more: 'Show more floor plans',
     floors: (value: string) => `Floors ${value}`,
     roomsLabel: (value: number) => `${value} ${value === 1 ? 'room' : 'rooms'}`,
     imagePlaceholder: 'The floor plan could not be loaded',

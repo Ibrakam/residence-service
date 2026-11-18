@@ -4,6 +4,7 @@ import hashlib
 import json
 import re
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -36,8 +37,20 @@ for route in ['/dormon-hills', '/dormon-hills/apartments']:
         assert status == 200 and b'dormon-hills' in document and b'__Host-tencorp_session' not in document
         assert re.search(rb'<html[^>]+lang="' + language.encode() + rb'"', document)
         assert b'/dormon-hills/plans/live/' in document
+        if route.endswith('/apartments'):
+            assert len(re.findall(rb'<li\b[^>]*class="dh-plan-card"', document)) == len(state['plans'])
+            assert b'Floor plan source:' not in document
+            assert 'Источник планировок:'.encode() not in document
+            assert b'Rejalar manbasi:' not in document
     guest = get(route, False)
     assert guest[0] in [200, 401] and b'/dormon-hills/plans/live/' not in guest[1]
+
+plan = state['plans'][0]
+legacy = urllib.parse.urlencode({'lang': 'ru', 'block': plan['block'], 'rooms': plan['rooms'],
+                                'minArea': plan['area'], 'maxArea': plan['area']})
+status, document, _ = get('/dormon-hills/apartments?' + legacy)
+assert status == 200
+assert len(re.findall(rb'<li\b[^>]*class="dh-plan-card"', document)) == len(state['plans'])
 
 assets = set(url for plan in state['plans'] for url in [plan['plan'], plan['floorPlan']])
 for asset in sorted(assets):

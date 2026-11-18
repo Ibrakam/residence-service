@@ -149,7 +149,7 @@ export function DormonPage({ language, query, featuredPlans }: { language: Dormo
           </div>
           <div className="dormon-plan-preview">
             {featuredPlans.map((plan, index) => (
-              <a href={`${plans}&block=${encodeURIComponent(plan.block)}&rooms=${plan.rooms}&minArea=${plan.area}&maxArea=${plan.area}`} key={plan.id} className="dormon-plan-preview-card" data-dormon-reveal="text">
+              <a href={plans} key={plan.id} className="dormon-plan-preview-card" data-dormon-reveal="text">
                 <div className="dormon-plan-preview-top"><span>{t.roomLabels[index]}</span><span>{t.block} {plan.block}</span></div>
                 <img src={dormonBase + plan.plan} alt={`${t.typical} · ${t.roomLabels[index]}`} loading="lazy" />
                 <div className="dormon-plan-preview-bottom">

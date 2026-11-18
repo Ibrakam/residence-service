@@ -37,6 +37,16 @@ for route in ['/dormon-hills', '/dormon-hills/apartments']:
         assert status == 200 and b'dormon-hills' in document and b'__Host-tencorp_session' not in document
         assert re.search(rb'<html[^>]+lang="' + language.encode() + rb'"', document)
         assert b'/dormon-hills/plans/live/' in document
+        if route == '/dormon-hills':
+            for section in ['dormon-project', 'dormon-features', 'dormon-architecture',
+                            'dormon-gardens', 'dormon-lounge', 'dormon-hub',
+                            'dormon-plans', 'dormon-contact']:
+                assert ('id="' + section + '"').encode() in document, (language, section)
+            assert b'/dormon-hills/editorial/hero.webp' in document
+            assert b'/dormon-hills/editorial/lobby.webp' in document
+            assert b'/dormon-hills/editorial/elevators.webp' in document
+            assert b'/dormon-hills/editorial/parking-interior.webp' in document
+            assert b'/dormon-hills/apartments?' in document
         if route.endswith('/apartments'):
             assert len(re.findall(rb'<li\b[^>]*class="dh-plan-card"', document)) == len(state['plans'])
             assert b'Floor plan source:' not in document
@@ -44,6 +54,15 @@ for route in ['/dormon-hills', '/dormon-hills/apartments']:
             assert b'Rejalar manbasi:' not in document
     guest = get(route, False)
     assert guest[0] in [200, 401] and b'/dormon-hills/plans/live/' not in guest[1]
+
+# Verify the redesigned project's local media through the real protected edge.
+status, landing, _ = get('/dormon-hills?lang=ru')
+editorial_assets = set(re.findall(rb'/dormon-hills/editorial/[a-z0-9-]+\.webp', landing))
+assert len(editorial_assets) >= 24
+for asset in sorted(editorial_assets):
+    status, image, headers = get(asset.decode())
+    assert status == 200 and headers.get('Content-Type', '').startswith('image/webp'), asset
+    assert image[:4] == b'RIFF' and image[8:12] == b'WEBP', asset
 
 plan = state['plans'][0]
 legacy = urllib.parse.urlencode({'lang': 'ru', 'block': plan['block'], 'rooms': plan['rooms'],
@@ -70,4 +89,5 @@ assert get('/', False)[0] == 200
 print(json.dumps({'verified': True, 'plans': len(state['plans']), 'images': len(assets),
                   'capturedAt': state['capturedAt'], 'freshness': state['freshness'],
                   'languages': ['ru', 'uz', 'en'], 'mapProjects': 23,
+                  'editorialImages': len(editorial_assets),
                   'guestProtection': True, 'source': state['source']}, ensure_ascii=False))

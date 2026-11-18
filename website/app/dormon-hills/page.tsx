@@ -13,7 +13,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
   const language = dormonLanguage(params?.lang);
   const { title, description } = dormonCopy[language];
   const route = `${dormonBase}/dormon-hills`;
-  const hero = `${route}/images/hero.webp`;
+  const hero = `${route}/editorial/hero.webp`;
   return {
     title,
     description,

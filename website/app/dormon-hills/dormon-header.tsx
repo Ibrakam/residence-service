@@ -43,7 +43,7 @@ export function DormonHeader({ homeHref, language, languageHref, links, compact 
   function renderLinks(inMenu = false) {
     return (
       <nav className={inMenu ? 'dormon-menu__links' : 'dormon-site-header__nav'} aria-label={t.nav}>
-        {links.map(({ href, label }) => (
+        {(inMenu || links.length <= 4 ? links : links.filter((_, index) => index === 0 || index === 2 || index === links.length - 2)).map(({ href, label }) => (
           <a key={href} href={href} onClick={inMenu ? closeMenu : undefined}>
             <span>{label}</span>{inMenu ? <span aria-hidden="true">↗</span> : null}
           </a>

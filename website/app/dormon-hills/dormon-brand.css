@@ -1,33 +1,28 @@
 @font-face {
-  font-family: "Dormon Arkhip";
-  src: url("./fonts/arkhip-dormon.woff2") format("woff2");
+  font-family: "Dormon Manrope";
   font-style: normal;
-  font-weight: 400;
+  font-weight: 300 600;
   font-display: swap;
+  src: url(./fonts/manrope-cyrillic.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
 }
 
 @font-face {
-  font-family: "Dormon Littera Plain";
-  src: url("./fonts/littera-plain-book.woff2") format("woff2");
+  font-family: "Dormon Manrope";
   font-style: normal;
-  font-weight: 400;
+  font-weight: 300 600;
   font-display: swap;
+  src: url(./fonts/manrope-latin-ext.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
 @font-face {
-  font-family: "Dormon Littera Plain";
-  src: url("./fonts/littera-plain-medium.woff2") format("woff2");
+  font-family: "Dormon Manrope";
   font-style: normal;
-  font-weight: 500;
+  font-weight: 300 600;
   font-display: swap;
-}
-
-@font-face {
-  font-family: "Dormon Littera Plain";
-  src: url("./fonts/littera-plain-bold.woff2") format("woff2");
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
+  src: url(./fonts/manrope-latin.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 .dormon-theme {
@@ -42,13 +37,15 @@
   --dh-gold-dark: #8a6420;
   --dh-rule: #8a642059;
   --dh-motion-ease: cubic-bezier(.22, 1, .36, 1);
-  --font-display: "Dormon Arkhip", sans-serif;
-  --font-ui: "Dormon Littera Plain", sans-serif;
+  --font-display: "Dormon Manrope", sans-serif;
+  --font-ui: "Dormon Manrope", sans-serif;
   --ink: var(--dh-dark-ink);
   --lead-consent-accent: var(--dh-forest);
   --mint: var(--dh-gold);
   --coral: var(--dh-gold);
   font-family: var(--font-ui);
+  font-weight: 400;
+  font-synthesis: none;
 }
 
 .dormon-theme .dormon-brand {
@@ -78,9 +75,12 @@
 .dormon-theme .lead-modal__visual::before { display: none; }
 .dormon-theme .lead-modal__visual > div strong,
 .dormon-theme .lead-modal__content h2 {
-  font-weight: 400;
+  font-weight: 300;
   letter-spacing: 0;
   line-height: 1.1;
+}
+.dormon-theme .dh-plan-catalog :is(.dh-plan-hero h1, .dh-plan-empty h2, .dh-plan-dialog-header h2) {
+  font-weight: 300;
 }
 .dormon-theme .lead-modal__eyebrow,
 .dormon-theme .lead-success > small { color: var(--dh-gold-dark); }
@@ -225,6 +225,9 @@
   border: 0;
   background: var(--dh-dark);
   color: var(--dh-light);
+  color-scheme: dark;
+  scrollbar-width: thin;
+  scrollbar-color: var(--dh-gold) var(--dh-dark);
 }
 .dormon-menu[open] { display: flex; flex-direction: column; }
 .dormon-menu::backdrop { background: var(--dh-dark); }

@@ -409,6 +409,7 @@ Required unauthenticated public checks:
   `method="post" action="/__auth/telegram/start"`;
 - representative framework/image assets return 401 with
   `Cache-Control: private, no-store`;
+
 - `/residence-api/catalog/` and `/api/kayan/ofiyat-explorer` return 401;
 - protected POST routes return 401 without forwarding a body upstream;
 - all six `/__auth/assets/` files remain 200 with their exact image/font
@@ -421,6 +422,13 @@ Required unauthenticated public checks:
 - the ticket worker still exercises its Bearer contract, market-map still
   exercises Basic auth, and `/analytics` still returns its independent `401`
   with `Basic realm="TenCorp Analytics"`.
+
+Do‘rmon's reviewed photo location is the only protected-media storage
+exception: successful WebP/AVIF responses use `private, no-cache,
+must-revalidate`, so every reuse still passes authorization before a 304.
+Its denied/error responses remain `private, no-store`. Pages, JSON and
+framework assets retain the original no-store contract. See
+[`DORMON_MEDIA_CACHE.md`](DORMON_MEDIA_CACHE.md) and its conditional-request smoke.
 
 The gated deployer is selected only by this exact root-controlled marker:
 

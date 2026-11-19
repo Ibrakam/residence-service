@@ -8,6 +8,7 @@ import { dormonBase, type DormonLanguage } from './dormon-data';
 import { DormonShowroomPreview } from './dormon-showroom-preview';
 import { dormonShowroomPriceKey, useDormonShowroomPrices } from './dormon-showroom-prices';
 import { dormonShowroomOverview, dormonShowroomScenes, type Outline } from './dormon-showroom-scenes';
+import { dormonMediaSources, dormonSceneSizes, preloadDormonMedia } from './dormon-media';
 
 type Unit = { number: number; rooms: number | null; area: number | null; marker: number[] | null; outline?: number[][]; views: string[] };
 type Floor = { image: string | null; units: Unit[] };
@@ -155,6 +156,8 @@ function SceneArtwork({ target, mode, attention, floorImage, withUnit, activeNum
   const isCurrent = mode !== 'exiting';
   const label = target.block ? `${c.block} ${target.block}` : t.house;
   const rendering = facadeMedia(facade?.file ?? dormonShowroomOverview.file);
+  const responsive = dormonMediaSources(rendering);
+  const imageSizes = dormonSceneSizes(Boolean(facade));
   const verticalSpan = activeCamera.verticalSpan ?? 1;
 
   return <div className="dormon-showroom-layer" data-motion={mode}
@@ -183,8 +186,11 @@ function SceneArtwork({ target, mode, attention, floorImage, withUnit, activeNum
         '--fit-desktop': verticalSpan * activeCamera.desktop,
         '--fit-mobile': verticalSpan * activeCamera.mobile,
       } as CSSProperties}>
-        <img src={rendering} width={dormonShowroomOverview.width}
-          height={dormonShowroomOverview.height} alt={label} fetchPriority={facade ? undefined : 'high'} decoding="async" />
+        <picture className="dormon-media">
+          {responsive && <source type="image/avif" srcSet={responsive.avif} sizes={imageSizes} />}
+          <img src={rendering} srcSet={responsive?.webp} sizes={imageSizes} width={dormonShowroomOverview.width}
+            height={dormonShowroomOverview.height} alt={label} fetchPriority={facade ? undefined : 'high'} decoding="async" />
+        </picture>
         {facade ? <>
           <FacadeShade floors={facade.floors} />
           {Object.entries(facade.floors).map(([level, band]) => band && <SceneHotspot key={level}
@@ -285,8 +291,7 @@ export function DormonShowroom({ language, plans, catalogHref, onEnquire }: {
 
     const nextFacade = dormonShowroomScenes[next.block];
     const source = next.floor ? floorSource(next) : facadeMedia(nextFacade?.file ?? dormonShowroomOverview.file);
-    const preload = source ? new Image() : undefined;
-    if (preload) preload.src = source;
+    const preload = source ? preloadDormonMedia(source, dormonSceneSizes(Boolean(nextFacade))) : undefined;
     const departing = { from: view, fromImage: hasDrawing ? currentImage : '', fromWithUnit: Boolean(activeUnit), attention };
     setFlight({ ...departing, phase: 'focus' });
     function arrive() {

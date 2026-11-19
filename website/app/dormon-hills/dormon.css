@@ -12,6 +12,7 @@ body:has(.dormon-theme) { min-width: 0; }
 .dormon :is(a,button,[tabindex='0']):focus-visible { outline: 2px solid var(--dh-gold-dark); outline-offset: 5px; }
 .dormon figure { min-width: 0; }
 .dormon figure img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.dormon picture.dormon-media { display: contents; }
 .dormon-wrap { width: min(calc(100% - clamp(2.5rem,9vw,9rem)),88rem); margin-inline: auto; }
 .dormon-section { padding-block: clamp(4rem,7vw,6rem); }
 .dormon [id] { scroll-margin-top: 2rem; }
@@ -62,7 +63,7 @@ body:has(.dormon-theme) { min-width: 0; }
 .dormon-lounge-gallery { --dh-lounge-gutter: max(calc((100vw - 88rem) / 2),4.5vw); }
 .dormon-lounge-track { position: relative; display: flex; gap: 2rem; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: thin; scrollbar-color: #c9a86266 transparent; padding: 0 var(--dh-lounge-gutter) 1.5rem; scroll-padding-inline: var(--dh-lounge-gutter); }
 .dormon-lounge-card { flex: 0 0 55%; scroll-snap-align: start; }
-.dormon-lounge-card > img { height: auto !important; aspect-ratio: 1.5; object-position: center; }
+.dormon-lounge-card > img, .dormon-lounge-card > picture.dormon-media > img { height: auto !important; aspect-ratio: 1.5; object-position: center; }
 .dormon-lounge-card figcaption { padding-top: 1rem; }
 .dormon-lounge-card h3 { font-size: 1.5rem; margin-bottom: .625rem; }
 .dormon-lounge-card p { max-width: 55ch; font-size: .8125rem; line-height: 1.8; color: #f1ede2a6; }
@@ -83,7 +84,7 @@ body:has(.dormon-theme) { min-width: 0; }
 .dormon-visit { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); color: var(--dh-light); }
 .dormon-location, .dormon-contact { display: grid; align-content: center; padding: clamp(2rem, 5vw, 5rem); }
 .dormon-location { position: relative; isolation: isolate; min-height: 30rem; background: var(--dh-dark); }
-.dormon-location > img { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
+.dormon-location > img, .dormon-location > picture.dormon-media > img { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
 .dormon-location::after { content: ''; position: absolute; inset: 0; z-index: -1; background: #0e15108e; }
 .dormon-contact { background: var(--dh-forest); }
 .dormon-visit h2 { font-size: clamp(2rem, 3.6vw, 4rem); }
@@ -127,7 +128,7 @@ body:has(.dormon-theme) { min-width: 0; }
   .dormon-lounge-gallery { --dh-lounge-gutter: 1.25rem; }
   .dormon-lounge-track { gap: 1rem; }
   .dormon-lounge-card { flex-basis: 86%; }
-  .dormon-lounge-card > img { aspect-ratio: 1.2; }
+  .dormon-lounge-card > img, .dormon-lounge-card > picture.dormon-media > img { aspect-ratio: 1.2; }
   .dormon-services { grid-template-columns: minmax(0,1fr); gap: 1.75rem; }
   .dormon-access { gap: 1rem; }
   .dormon-location { min-height: 20rem; }

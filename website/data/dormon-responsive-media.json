@@ -1,0 +1,1498 @@
+{
+  "schemaVersion": 1,
+  "config": {
+    "widths": [
+      640,
+      960,
+      1440,
+      1920
+    ],
+    "webp": {
+      "quality": 78,
+      "effort": 5
+    },
+    "avif": {
+      "quality": 53,
+      "effort": 4,
+      "chromaSubsampling": "4:4:4"
+    }
+  },
+  "images": {
+    "/dormon-hills/editorial/about.webp": {
+      "width": 1300,
+      "height": 1300,
+      "originalBytes": 267368,
+      "sourceSha256": "c03d40a57091b4e8a1d37960562457c250e4a6b1a510ce9f1ad2008fbaefd959",
+      "variants": [
+        {
+          "width": 640,
+          "height": 640,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-about-640-3f5cda1ff2c3.webp",
+            "bytes": 80366
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-about-640-0f7547cee50c.avif",
+            "bytes": 43202
+          }
+        },
+        {
+          "width": 960,
+          "height": 960,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-about-960-8662226b764e.webp",
+            "bytes": 144540
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-about-960-0fb578c7f8b5.avif",
+            "bytes": 77947
+          }
+        },
+        {
+          "width": 1300,
+          "height": 1300,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-about-1300-6127ff321c33.webp",
+            "bytes": 229084
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-about-1300-7648ca215107.avif",
+            "bytes": 141079
+          }
+        }
+      ]
+    },
+    "/dormon-hills/editorial/aerial.webp": {
+      "width": 1600,
+      "height": 1066,
+      "originalBytes": 361420,
+      "sourceSha256": "47dc4c9d9a6a82152d493dc1eb2bc65c78856d92b672b29c76ddbf775a008133",
+      "variants": [
+        {
+          "width": 640,
+          "height": 426,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-aerial-640-17a6d06abbd2.webp",
+            "bytes": 59142
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-aerial-640-13e5f8e92356.avif",
+            "bytes": 34267
+          }
+        },
+        {
+          "width": 960,
+          "height": 640,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-aerial-960-858b7f87f9d7.webp",
+            "bytes": 110302
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-aerial-960-7fb563495bed.avif",
+            "bytes": 62402
+          }
+        },
+        {
+          "width": 1440,
+          "height": 959,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-aerial-1440-eb20c22215f0.webp",
+            "bytes": 187636
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-aerial-1440-a0db5c783bae.avif",
+            "bytes": 111885
+          }
+        },
+        {
+          "width": 1600,
+          "height": 1066,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-aerial-1600-87011553832e.webp",
+            "bytes": 265202
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-aerial-1600-3ee382a3b7c1.avif",
+            "bytes": 150767
+          }
+        }
+      ]
+    },
+    "/dormon-hills/editorial/alleys.webp": {
+      "width": 1300,
+      "height": 1300,
+      "originalBytes": 276052,
+      "sourceSha256": "753745084b90fed4c2d817b33b3d863bc9f6658932c34cf2956f638e0dc0a31f",
+      "variants": [
+        {
+          "width": 640,
+          "height": 640,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-alleys-640-e80e73b7cf5e.webp",
+            "bytes": 70000
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-alleys-640-ea227e498d0c.avif",
+            "bytes": 38645
+          }
+        },
+        {
+          "width": 960,
+          "height": 960,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-alleys-960-ec347a252b42.webp",
+            "bytes": 133280
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-alleys-960-94ab0ddaee48.avif",
+            "bytes": 75365
+          }
+        },
+        {
+          "width": 1300,
+          "height": 1300,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-alleys-1300-5776f294c843.webp",
+            "bytes": 229928
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-alleys-1300-e0647b8bf720.avif",
+            "bytes": 149616
+          }
+        }
+      ]
+    },
+    "/dormon-hills/editorial/architecture.webp": {
+      "width": 1300,
+      "height": 1300,
+      "originalBytes": 177922,
+      "sourceSha256": "02d771ebdb0d8af0b74bc0c3b33b44f8f515d0a61e90594c661979b19a8896f8",
+      "variants": [
+        {
+          "width": 640,
+          "height": 640,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-architecture-640-c225e35a1a7e.webp",
+            "bytes": 54158
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-architecture-640-f0f7aa6aa2e9.avif",
+            "bytes": 30364
+          }
+        },
+        {
+          "width": 960,
+          "height": 960,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-architecture-960-1ef9da4f5e63.webp",
+            "bytes": 94260
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-architecture-960-9f817f4b228a.avif",
+            "bytes": 53442
+          }
+        },
+        {
+          "width": 1300,
+          "height": 1300,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-architecture-1300-9b50c5bf99b9.webp",
+            "bytes": 146198
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-architecture-1300-781fdfe29d13.avif",
+            "bytes": 92849
+          }
+        }
+      ]
+    },
+    "/dormon-hills/editorial/calm.webp": {
+      "width": 1076,
+      "height": 1070,
+      "originalBytes": 131654,
+      "sourceSha256": "74a8895cb529911053e7a1cde5e1394c381a374102e4d9f6330980b644c86a54",
+      "variants": [
+        {
+          "width": 640,
+          "height": 636,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-calm-640-ba12ff1137cc.webp",
+            "bytes": 53788
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-calm-640-44a436dff26d.avif",
+            "bytes": 30428
+          }
+        },
+        {
+          "width": 960,
+          "height": 955,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-calm-960-5cea5474434a.webp",
+            "bytes": 87172
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-calm-960-46afdca70873.avif",
+            "bytes": 52570
+          }
+        },
+        {
+          "width": 1076,
+          "height": 1070,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-calm-1076-fc9624bf4633.webp",
+            "bytes": 109296
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-calm-1076-a6967966dfd2.avif",
+            "bytes": 73402
+          }
+        }
+      ]
+    },
+    "/dormon-hills/editorial/courtyard-plan.webp": {
+      "width": 1600,
+      "height": 800,
+      "originalBytes": 367752,
+      "sourceSha256": "3adf3b9f1e9cfdb4c9de17d624dac60e00f6af10afa9e6f984dd0726a579dc37",
+      "variants": [
+        {
+          "width": 640,
+          "height": 320,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-courtyard-plan-640-815212a2d0fd.webp",
+            "bytes": 50360
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-courtyard-plan-640-891c9e66779c.avif",
+            "bytes": 26484
+          }
+        },
+        {
+          "width": 960,
+          "height": 480,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-courtyard-plan-960-6cec5149bd4e.webp",
+            "bytes": 97562
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-courtyard-plan-960-81ce9909eed6.avif",
+            "bytes": 51438
+          }
+        },
+        {
+          "width": 1440,
+          "height": 720,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-courtyard-plan-1440-743340354e46.webp",
+            "bytes": 173540
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-courtyard-plan-1440-14f0377561f6.avif",
+            "bytes": 95251
+          }
+        },
+        {
+          "width": 1600,
+          "height": 800,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-courtyard-plan-1600-986d60215ea2.webp",
+            "bytes": 260380
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-courtyard-plan-1600-20f01ff9b0a6.avif",
+            "bytes": 135606
+          }
+        }
+      ]
+    },
+    "/dormon-hills/editorial/elevators.webp": {
+      "width": 1600,
+      "height": 1603,
+      "originalBytes": 210086,
+      "sourceSha256": "a5eacbce74388de65b993820e477f5c43b65d4fc61e29ab35e6917820e0d2885",
+      "variants": [
+        {
+          "width": 640,
+          "height": 641,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-elevators-640-b98b6c8b5265.webp",
+            "bytes": 40820
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-elevators-640-86ad85161031.avif",
+            "bytes": 24967
+          }
+        },
+        {
+          "width": 960,
+          "height": 962,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-elevators-960-3996333ecac7.webp",
+            "bytes": 70708
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-elevators-960-8f946c7efb57.avif",
+            "bytes": 44037
+          }
+        },
+        {
+          "width": 1440,
+          "height": 1443,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-elevators-1440-6d989865f87a.webp",
+            "bytes": 112738
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-elevators-1440-9523a58bec07.avif",
+            "bytes": 74409
+          }
+        },
+        {
+          "width": 1600,
+          "height": 1603,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-elevators-1600-731aa8916b72.webp",
+            "bytes": 141580
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-elevators-1600-b94894917488.avif",
+            "bytes": 92692
+          }
+        }
+      ]
+    },
+    "/dormon-hills/editorial/entry.webp": {
+      "width": 1058,
+      "height": 1031,
+      "originalBytes": 105578,
+      "sourceSha256": "8f27cd59ed7574a25841904ebce04067f941c53b100d9ee6f06bda4f842928f6",
+      "variants": [
+        {
+          "width": 640,
+          "height": 624,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-entry-640-50c1ae2bab4c.webp",
+            "bytes": 45740
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-entry-640-a502bff2a8d0.avif",
+            "bytes": 26048
+          }
+        },
+        {
+          "width": 960,
+          "height": 936,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-entry-960-99a0073bb33d.webp",
+            "bytes": 73480
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-entry-960-e5098701a5e8.avif",
+            "bytes": 44076
+          }
+        },
+        {
+          "width": 1058,
+          "height": 1031,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-entry-1058-0fc68dc966ed.webp",
+            "bytes": 85662
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-entry-1058-5f86b32063b8.avif",
+            "bytes": 57087
+          }
+        }
+      ]
+    },
+    "/dormon-hills/editorial/facade-air.webp": {
+      "width": 1254,
+      "height": 1254,
+      "originalBytes": 30580,
+      "sourceSha256": "5d8922b894f2fc19d289be9331bb5c08f17f0060b3d6708549e32fd257856da5",
+      "variants": [
+        {
+          "width": 640,
+          "height": 640,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-facade-air-640-41e26861243c.webp",
+            "bytes": 11260
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-facade-air-640-4a7a99b570d6.avif",
+            "bytes": 6395
+          }
+        },
+        {
+          "width": 960,
+          "height": 960,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-facade-air-960-224c9a6d7b3c.webp",
+            "bytes": 20164
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-facade-air-960-75b61f925ab0.avif",
+            "bytes": 9215
+          }
+        },
+        {
+          "width": 1254,
+          "height": 1254,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-facade-air-1254-a104b8a59ffc.webp",
+            "bytes": 27692
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-facade-air-1254-3b32b60e3318.avif",
+            "bytes": 12048
+          }
+        }
+      ]
+    },
+    "/dormon-hills/editorial/facade-section.webp": {
+      "width": 1254,
+      "height": 1254,
+      "originalBytes": 121642,
+      "sourceSha256": "d3c5613a46dd9270044f729cf9646dabfc6fda3f57ace872155e11219350a560",
+      "variants": [
+        {
+          "width": 640,
+          "height": 640,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-facade-section-640-61df40d88750.webp",
+            "bytes": 27762
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-facade-section-640-34ece47b613b.avif",
+            "bytes": 19501
+          }
+        },
+        {
+          "width": 960,
+          "height": 960,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-facade-section-960-bc207218e163.webp",
+            "bytes": 48800
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-facade-section-960-cffdd7a82f11.avif",
+            "bytes": 34379
+          }
+        },
+        {
+          "width": 1254,
+          "height": 1254,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-facade-section-1254-8bfe8f86b27d.webp",
+            "bytes": 85224
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-facade-section-1254-f5efd10aa2eb.avif",
+            "bytes": 57233
+          }
+        }
+      ]
+    },
+    "/dormon-hills/editorial/family.webp": {
+      "width": 1200,
+      "height": 962,
+      "originalBytes": 207210,
+      "sourceSha256": "12c1f1da0a3c97ae36e50a725c810952492291e64a7fd5e4c81b13661d390cea",
+      "variants": [
+        {
+          "width": 640,
+          "height": 513,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-family-640-9c763ee3f949.webp",
+            "bytes": 71364
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-family-640-e14121727dff.avif",
+            "bytes": 36318
+          }
+        },
+        {
+          "width": 960,
+          "height": 770,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-family-960-ea1d05f69fa6.webp",
+            "bytes": 124790
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-family-960-cada2e8eb8b0.avif",
+            "bytes": 65069
+          }
+        },
+        {
+          "width": 1200,
+          "height": 962,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-family-1200-4b896d576f0b.webp",
+            "bytes": 176794
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-family-1200-ec322039b147.avif",
+            "bytes": 110687
+          }
+        }
+      ]
+    },
+    "/dormon-hills/editorial/fountain.webp": {
+      "width": 1300,
+      "height": 975,
+      "originalBytes": 272926,
+      "sourceSha256": "8f8d01eaf188a7dde1a3669574a40ded946299cfe57e6237c4f4db510b664b1d",
+      "variants": [
+        {
+          "width": 640,
+          "height": 480,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-fountain-640-83602e3cb652.webp",
+            "bytes": 69732
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-fountain-640-68af85d1ad5a.avif",
+            "bytes": 39065
+          }
+        },
+        {
+          "width": 960,
+          "height": 720,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-fountain-960-4ed688915606.webp",
+            "bytes": 134082
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-fountain-960-30b0c40a86d2.avif",
+            "bytes": 75097
+          }
+        },
+        {
+          "width": 1300,
+          "height": 975,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-fountain-1300-fd81eb4981d9.webp",
+            "bytes": 231174
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-fountain-1300-54c4af8295d4.avif",
+            "bytes": 144810
+          }
+        }
+      ]
+    },
+    "/dormon-hills/editorial/gazebos.webp": {
+      "width": 1300,
+      "height": 1115,
+      "originalBytes": 180902,
+      "sourceSha256": "a74c251a3fe93635feea9d1a938ebf45739c38945974ec44937362faecf7fc56",
+      "variants": [
+        {
+          "width": 640,
+          "height": 549,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-gazebos-640-52e21729e5c9.webp",
+            "bytes": 45842
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-gazebos-640-53929797593d.avif",
+            "bytes": 26044
+          }
+        },
+        {
+          "width": 960,
+          "height": 823,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-gazebos-960-0783263a5247.webp",
+            "bytes": 86816
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-gazebos-960-370a7ae38b6c.avif",
+            "bytes": 49252
+          }
+        },
+        {
+          "width": 1300,
+          "height": 1115,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-gazebos-1300-aa3b0dcaa1b0.webp",
+            "bytes": 150268
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-gazebos-1300-c09a62f521b9.avif",
+            "bytes": 96343
+          }
+        }
+      ]
+    },
+    "/dormon-hills/editorial/hero.webp": {
+      "width": 2200,
+      "height": 1278,
+      "originalBytes": 478454,
+      "sourceSha256": "30983bd72ff64ad5a6608a73646585105c7b441a0bd960157fc58b9b1994724d",
+      "variants": [
+        {
+          "width": 640,
+          "height": 372,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-hero-640-55b69d32a2db.webp",
+            "bytes": 51026
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-hero-640-4ea46067810a.avif",
+            "bytes": 29179
+          }
+        },
+        {
+          "width": 960,
+          "height": 558,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-hero-960-96d29c25ce13.webp",
+            "bytes": 98184
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-hero-960-7593a729df40.avif",
+            "bytes": 55962
+          }
+        },
+        {
+          "width": 1440,
+          "height": 837,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-hero-1440-4d7447bcdf3f.webp",
+            "bytes": 175732
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-hero-1440-5911c8a7ce4b.avif",
+            "bytes": 101705
+          }
+        },
+        {
+          "width": 1920,
+          "height": 1115,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-hero-1920-995c9265eb16.webp",
+            "bytes": 254788
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-hero-1920-6adb0ff5d421.avif",
+            "bytes": 148112
+          }
+        },
+        {
+          "width": 2200,
+          "height": 1278,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-hero-2200-4f0ae819e433.webp",
+            "bytes": 353540
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-hero-2200-e8d1d5eb7d4d.avif",
+            "bytes": 195578
+          }
+        }
+      ]
+    },
+    "/dormon-hills/editorial/kitchen.webp": {
+      "width": 1300,
+      "height": 1300,
+      "originalBytes": 161272,
+      "sourceSha256": "b27322310cb732a8f2565b375012e9c1eb54c63af0aada57f554e9a3498084a3",
+      "variants": [
+        {
+          "width": 640,
+          "height": 640,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-kitchen-640-e0debb5c2a13.webp",
+            "bytes": 44078
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-kitchen-640-03ecaa1e97cd.avif",
+            "bytes": 27062
+          }
+        },
+        {
+          "width": 960,
+          "height": 960,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-kitchen-960-068253aa7f3c.webp",
+            "bytes": 78090
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-kitchen-960-f0b3efd4e9c9.avif",
+            "bytes": 49641
+          }
+        },
+        {
+          "width": 1300,
+          "height": 1300,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-kitchen-1300-1c497f19e216.webp",
+            "bytes": 125862
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-kitchen-1300-c1a66b6d47c4.avif",
+            "bytes": 85292
+          }
+        }
+      ]
+    },
+    "/dormon-hills/editorial/lobby.webp": {
+      "width": 1600,
+      "height": 1632,
+      "originalBytes": 428302,
+      "sourceSha256": "92932d6fb8c911919be8d76138348ec890c4ab60dc22e151103580129476f0b2",
+      "variants": [
+        {
+          "width": 640,
+          "height": 653,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-lobby-640-41f19aec5f7a.webp",
+            "bytes": 76182
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-lobby-640-9138e0dffa10.avif",
+            "bytes": 41151
+          }
+        },
+        {
+          "width": 960,
+          "height": 979,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-lobby-960-71a0ddfb2372.webp",
+            "bytes": 138044
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-lobby-960-59da3aa56a6d.avif",
+            "bytes": 75955
+          }
+        },
+        {
+          "width": 1440,
+          "height": 1469,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-lobby-1440-1444bdc8c9e7.webp",
+            "bytes": 228996
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-lobby-1440-6fcba0958d78.avif",
+            "bytes": 131441
+          }
+        },
+        {
+          "width": 1600,
+          "height": 1632,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-lobby-1600-2d445a95603c.webp",
+            "bytes": 309186
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-lobby-1600-be5dccda450a.avif",
+            "bytes": 169498
+          }
+        }
+      ]
+    },
+    "/dormon-hills/editorial/lounge-outside.webp": {
+      "width": 1300,
+      "height": 1300,
+      "originalBytes": 181496,
+      "sourceSha256": "6b6eaebe0a196b3ca3466c2e52bdec98b8da0c95ee4bfda877925ee1f06ee7f0",
+      "variants": [
+        {
+          "width": 640,
+          "height": 640,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-lounge-outside-640-36c69c4bf21d.webp",
+            "bytes": 47428
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-lounge-outside-640-d45755c8beba.avif",
+            "bytes": 27283
+          }
+        },
+        {
+          "width": 960,
+          "height": 960,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-lounge-outside-960-ca26e1615ee6.webp",
+            "bytes": 87146
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-lounge-outside-960-b5fadac7c90d.avif",
+            "bytes": 52483
+          }
+        },
+        {
+          "width": 1300,
+          "height": 1300,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-lounge-outside-1300-59a0221761f6.webp",
+            "bytes": 143632
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-lounge-outside-1300-11d2e0c0b78c.avif",
+            "bytes": 99935
+          }
+        }
+      ]
+    },
+    "/dormon-hills/editorial/lounge.webp": {
+      "width": 1300,
+      "height": 1300,
+      "originalBytes": 188938,
+      "sourceSha256": "ac922eaf1a202f72cefacbcf7933121e2eb3721b856e9f23a2fb3e76c6ba3c6e",
+      "variants": [
+        {
+          "width": 640,
+          "height": 640,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-lounge-640-a4605f7a0a61.webp",
+            "bytes": 49610
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-lounge-640-5d46d015e2fc.avif",
+            "bytes": 28887
+          }
+        },
+        {
+          "width": 960,
+          "height": 960,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-lounge-960-1461c84fe5ca.webp",
+            "bytes": 91174
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-lounge-960-572a6a6344a9.avif",
+            "bytes": 54068
+          }
+        },
+        {
+          "width": 1300,
+          "height": 1300,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-lounge-1300-0ddb6245a8e9.webp",
+            "bytes": 151216
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-lounge-1300-b23226eab82b.avif",
+            "bytes": 95633
+          }
+        }
+      ]
+    },
+    "/dormon-hills/editorial/masterplan.webp": {
+      "width": 1600,
+      "height": 798,
+      "originalBytes": 265022,
+      "sourceSha256": "c31b26f462a32b14b0eaab3a2c7fcd6831f00ce8b05521d3564b93eaef6685b8",
+      "variants": [
+        {
+          "width": 640,
+          "height": 319,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-masterplan-640-f0d635e088b2.webp",
+            "bytes": 49842
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-masterplan-640-b3a98bdaefec.avif",
+            "bytes": 26085
+          }
+        },
+        {
+          "width": 960,
+          "height": 479,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-masterplan-960-d22c551f5035.webp",
+            "bytes": 97016
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-masterplan-960-71ac1af8cf48.avif",
+            "bytes": 50451
+          }
+        },
+        {
+          "width": 1440,
+          "height": 718,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-masterplan-1440-a53dba27d0b9.webp",
+            "bytes": 176740
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-masterplan-1440-3c7748f17729.avif",
+            "bytes": 94860
+          }
+        },
+        {
+          "width": 1600,
+          "height": 798,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-masterplan-1600-beed2713d2fa.webp",
+            "bytes": 228018
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-masterplan-1600-2469772e8dfe.avif",
+            "bytes": 142532
+          }
+        }
+      ]
+    },
+    "/dormon-hills/editorial/panorama.webp": {
+      "width": 2200,
+      "height": 1467,
+      "originalBytes": 696454,
+      "sourceSha256": "9ce3b622b8e6a88ec4f56c241bf1bc565e21678ba73c76f6dec1e0fc1d1aa75d",
+      "variants": [
+        {
+          "width": 640,
+          "height": 427,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-panorama-640-8d1c904e0f58.webp",
+            "bytes": 68746
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-panorama-640-df566e5cdaac.avif",
+            "bytes": 38165
+          }
+        },
+        {
+          "width": 960,
+          "height": 640,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-panorama-960-a3502b302b4f.webp",
+            "bytes": 136622
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-panorama-960-d30cf346ca9e.avif",
+            "bytes": 76552
+          }
+        },
+        {
+          "width": 1440,
+          "height": 960,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-panorama-1440-c63245f83679.webp",
+            "bytes": 250572
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-panorama-1440-3b066ea9619d.avif",
+            "bytes": 141271
+          }
+        },
+        {
+          "width": 1920,
+          "height": 1280,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-panorama-1920-bea3b9edeb65.webp",
+            "bytes": 356986
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-panorama-1920-b47d42d03ee4.avif",
+            "bytes": 209964
+          }
+        },
+        {
+          "width": 2200,
+          "height": 1467,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-panorama-2200-e4de9a44a96d.webp",
+            "bytes": 518680
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-panorama-2200-6a15f68541ec.avif",
+            "bytes": 281565
+          }
+        }
+      ]
+    },
+    "/dormon-hills/editorial/parking-interior.webp": {
+      "width": 1600,
+      "height": 1600,
+      "originalBytes": 89056,
+      "sourceSha256": "04e6e442fcbbfae19e07ee6409f2df064dc26518ba93014980930604db2dd2fd",
+      "variants": [
+        {
+          "width": 640,
+          "height": 640,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-parking-interior-640-69cb4d91afea.webp",
+            "bytes": 20120
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-parking-interior-640-835c0ba3704a.avif",
+            "bytes": 14983
+          }
+        },
+        {
+          "width": 960,
+          "height": 960,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-parking-interior-960-5ba37df09a8a.webp",
+            "bytes": 31922
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-parking-interior-960-d773396895e8.avif",
+            "bytes": 24406
+          }
+        },
+        {
+          "width": 1440,
+          "height": 1440,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-parking-interior-1440-ee4f6e631a8e.webp",
+            "bytes": 50424
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-parking-interior-1440-bd12f8f81675.avif",
+            "bytes": 38387
+          }
+        },
+        {
+          "width": 1600,
+          "height": 1600,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-parking-interior-1600-af8da9908215.webp",
+            "bytes": 61262
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-parking-interior-1600-c39a2a16a385.avif",
+            "bytes": 44653
+          }
+        }
+      ]
+    },
+    "/dormon-hills/editorial/parking.webp": {
+      "width": 1079,
+      "height": 1070,
+      "originalBytes": 44628,
+      "sourceSha256": "e25d165a72fc15bf0e2bd11747831a8c9879d9f882b34cb1a880e3daaedf12be",
+      "variants": [
+        {
+          "width": 640,
+          "height": 635,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-parking-640-bdaa1ec95f2c.webp",
+            "bytes": 19088
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-parking-640-891e5b8ffd39.avif",
+            "bytes": 14269
+          }
+        },
+        {
+          "width": 960,
+          "height": 952,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-parking-960-8c733d7d14ab.webp",
+            "bytes": 29060
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-parking-960-9584c0c88260.avif",
+            "bytes": 22307
+          }
+        },
+        {
+          "width": 1079,
+          "height": 1070,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-parking-1079-beb625813ca5.webp",
+            "bytes": 33924
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-parking-1079-34eb2316ed0c.avif",
+            "bytes": 26602
+          }
+        }
+      ]
+    },
+    "/dormon-hills/editorial/pavilion.webp": {
+      "width": 1300,
+      "height": 1115,
+      "originalBytes": 291708,
+      "sourceSha256": "9e5cddf25902a40007284773feb168f66ed294100e6427108c9746851b6569ce",
+      "variants": [
+        {
+          "width": 640,
+          "height": 549,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-pavilion-640-15b78ea5a22e.webp",
+            "bytes": 69822
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-pavilion-640-5b55444ee7f9.avif",
+            "bytes": 38974
+          }
+        },
+        {
+          "width": 960,
+          "height": 823,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-pavilion-960-29aa11932ca3.webp",
+            "bytes": 136786
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-pavilion-960-db3f39104e09.avif",
+            "bytes": 76793
+          }
+        },
+        {
+          "width": 1300,
+          "height": 1115,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-pavilion-1300-cebd768f9a30.webp",
+            "bytes": 248124
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-pavilion-1300-6072df59ef98.avif",
+            "bytes": 158201
+          }
+        }
+      ]
+    },
+    "/dormon-hills/editorial/playground.webp": {
+      "width": 1300,
+      "height": 1115,
+      "originalBytes": 270446,
+      "sourceSha256": "1ec8aa1ab4096e33c1c80f00b1dc3c7c26071058873df15fc85198bef1009a6f",
+      "variants": [
+        {
+          "width": 640,
+          "height": 549,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-playground-640-3b9f5a97be40.webp",
+            "bytes": 62202
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-playground-640-0f9044714c1f.avif",
+            "bytes": 34688
+          }
+        },
+        {
+          "width": 960,
+          "height": 823,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-playground-960-5b4d59da655c.webp",
+            "bytes": 119642
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-playground-960-e0bf5e292e88.avif",
+            "bytes": 66648
+          }
+        },
+        {
+          "width": 1300,
+          "height": 1115,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-playground-1300-fa1dd21c408c.webp",
+            "bytes": 217186
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-playground-1300-3c14a6c14a0c.avif",
+            "bytes": 134130
+          }
+        }
+      ]
+    },
+    "/dormon-hills/editorial/screen.webp": {
+      "width": 1300,
+      "height": 1300,
+      "originalBytes": 172896,
+      "sourceSha256": "596a0c5c6e84bea5a11a00a4544fdfc92159c0740a32541cbb9d6ca470e39940",
+      "variants": [
+        {
+          "width": 640,
+          "height": 640,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-screen-640-ac650c0266ef.webp",
+            "bytes": 38452
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-screen-640-8b8ccb9a3ba3.avif",
+            "bytes": 18933
+          }
+        },
+        {
+          "width": 960,
+          "height": 960,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-screen-960-a2d8b99b6fa4.webp",
+            "bytes": 75010
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-screen-960-d8b23c01cb29.avif",
+            "bytes": 37468
+          }
+        },
+        {
+          "width": 1300,
+          "height": 1300,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-screen-1300-e3eed4ef5dce.webp",
+            "bytes": 141378
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-screen-1300-e410224645ea.avif",
+            "bytes": 78803
+          }
+        }
+      ]
+    },
+    "/dormon-hills/editorial/security.webp": {
+      "width": 1300,
+      "height": 1300,
+      "originalBytes": 228076,
+      "sourceSha256": "d456a8ca6a855b71897053a579c04ee8ff044133de423c885930d1fff3af346c",
+      "variants": [
+        {
+          "width": 640,
+          "height": 640,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-security-640-52766bc0a991.webp",
+            "bytes": 62552
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-security-640-d6f93d32d429.avif",
+            "bytes": 35369
+          }
+        },
+        {
+          "width": 960,
+          "height": 960,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-security-960-2ca3790f7c5a.webp",
+            "bytes": 111206
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-security-960-838da8b0feac.avif",
+            "bytes": 64151
+          }
+        },
+        {
+          "width": 1300,
+          "height": 1300,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-security-1300-a5a84ae77ea1.webp",
+            "bytes": 184834
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-security-1300-f59b4942a269.avif",
+            "bytes": 112296
+          }
+        }
+      ]
+    },
+    "/dormon-hills/editorial/workout.webp": {
+      "width": 1162,
+      "height": 1042,
+      "originalBytes": 117698,
+      "sourceSha256": "13df28572dc9bb28f8948aa257ddde7333f2c89ba5b8bd182dd698c9c692eb49",
+      "variants": [
+        {
+          "width": 640,
+          "height": 574,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-workout-640-ee430c65dc14.webp",
+            "bytes": 43192
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-workout-640-b98aaad4efc6.avif",
+            "bytes": 25535
+          }
+        },
+        {
+          "width": 960,
+          "height": 861,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-workout-960-53edcc3f4006.webp",
+            "bytes": 72060
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-workout-960-f84ff23ef2e1.avif",
+            "bytes": 44914
+          }
+        },
+        {
+          "width": 1162,
+          "height": 1042,
+          "webp": {
+            "src": "/dormon-hills/media/editorial-workout-1162-e37646f75fc0.webp",
+            "bytes": 96238
+          },
+          "avif": {
+            "src": "/dormon-hills/media/editorial-workout-1162-8b78aa2e81e8.avif",
+            "bytes": 66632
+          }
+        }
+      ]
+    },
+    "/dormon-hills/facades/courtyard.webp": {
+      "width": 1920,
+      "height": 1080,
+      "originalBytes": 436780,
+      "sourceSha256": "a88c9c6779c940c00be37ceb0047dc2eab927a2d1ddc24ee2f082f9e71fadc7e",
+      "variants": [
+        {
+          "width": 640,
+          "height": 360,
+          "webp": {
+            "src": "/dormon-hills/media/facades-courtyard-640-ca459105ba96.webp",
+            "bytes": 49552
+          },
+          "avif": {
+            "src": "/dormon-hills/media/facades-courtyard-640-b7e55eab1583.avif",
+            "bytes": 27488
+          }
+        },
+        {
+          "width": 960,
+          "height": 540,
+          "webp": {
+            "src": "/dormon-hills/media/facades-courtyard-960-1407967e0592.webp",
+            "bytes": 99412
+          },
+          "avif": {
+            "src": "/dormon-hills/media/facades-courtyard-960-8b365361d44b.avif",
+            "bytes": 54901
+          }
+        },
+        {
+          "width": 1440,
+          "height": 810,
+          "webp": {
+            "src": "/dormon-hills/media/facades-courtyard-1440-a625b6faafd1.webp",
+            "bytes": 174228
+          },
+          "avif": {
+            "src": "/dormon-hills/media/facades-courtyard-1440-8a5242e95211.avif",
+            "bytes": 97284
+          }
+        },
+        {
+          "width": 1920,
+          "height": 1080,
+          "webp": {
+            "src": "/dormon-hills/media/facades-courtyard-1920-25714722e4dd.webp",
+            "bytes": 322782
+          },
+          "avif": {
+            "src": "/dormon-hills/media/facades-courtyard-1920-c88281abb524.avif",
+            "bytes": 171413
+          }
+        }
+      ]
+    },
+    "/dormon-hills/facades/front.webp": {
+      "width": 1920,
+      "height": 1080,
+      "originalBytes": 394546,
+      "sourceSha256": "a96f617ffe6f38027d5ab121253e0bd5a09eaceec5ebd6eee3e1fed94534c227",
+      "variants": [
+        {
+          "width": 640,
+          "height": 360,
+          "webp": {
+            "src": "/dormon-hills/media/facades-front-640-c57fd6908e60.webp",
+            "bytes": 44888
+          },
+          "avif": {
+            "src": "/dormon-hills/media/facades-front-640-fbaa592ac274.avif",
+            "bytes": 24724
+          }
+        },
+        {
+          "width": 960,
+          "height": 540,
+          "webp": {
+            "src": "/dormon-hills/media/facades-front-960-ace7da2c43c4.webp",
+            "bytes": 89698
+          },
+          "avif": {
+            "src": "/dormon-hills/media/facades-front-960-808dad10527f.avif",
+            "bytes": 50230
+          }
+        },
+        {
+          "width": 1440,
+          "height": 810,
+          "webp": {
+            "src": "/dormon-hills/media/facades-front-1440-dcf7b3a555e8.webp",
+            "bytes": 156594
+          },
+          "avif": {
+            "src": "/dormon-hills/media/facades-front-1440-65812e6a5b62.avif",
+            "bytes": 86902
+          }
+        },
+        {
+          "width": 1920,
+          "height": 1080,
+          "webp": {
+            "src": "/dormon-hills/media/facades-front-1920-dd5e7ddc3bf2.webp",
+            "bytes": 277990
+          },
+          "avif": {
+            "src": "/dormon-hills/media/facades-front-1920-3b7255a02a35.avif",
+            "bytes": 151900
+          }
+        }
+      ]
+    },
+    "/dormon-hills/facades/overview.webp": {
+      "width": 1920,
+      "height": 1080,
+      "originalBytes": 685524,
+      "sourceSha256": "0bbfe60a415d11da288bc2237f06d10bbd3521ce3b564b296ed32c0ee6cf3805",
+      "variants": [
+        {
+          "width": 640,
+          "height": 360,
+          "webp": {
+            "src": "/dormon-hills/media/facades-overview-640-9f0516ebac93.webp",
+            "bytes": 62658
+          },
+          "avif": {
+            "src": "/dormon-hills/media/facades-overview-640-8dcc8c5631db.avif",
+            "bytes": 34811
+          }
+        },
+        {
+          "width": 960,
+          "height": 540,
+          "webp": {
+            "src": "/dormon-hills/media/facades-overview-960-18890c5a4343.webp",
+            "bytes": 133292
+          },
+          "avif": {
+            "src": "/dormon-hills/media/facades-overview-960-f3049f48a3b7.avif",
+            "bytes": 74559
+          }
+        },
+        {
+          "width": 1440,
+          "height": 810,
+          "webp": {
+            "src": "/dormon-hills/media/facades-overview-1440-9ff6207ea8f7.webp",
+            "bytes": 245278
+          },
+          "avif": {
+            "src": "/dormon-hills/media/facades-overview-1440-bc9396d7f61e.avif",
+            "bytes": 134745
+          }
+        },
+        {
+          "width": 1920,
+          "height": 1080,
+          "webp": {
+            "src": "/dormon-hills/media/facades-overview-1920-39a08372656e.webp",
+            "bytes": 500334
+          },
+          "avif": {
+            "src": "/dormon-hills/media/facades-overview-1920-60c3413b5bfe.avif",
+            "bytes": 254555
+          }
+        }
+      ]
+    }
+  }
+}

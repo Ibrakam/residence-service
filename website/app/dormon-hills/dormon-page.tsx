@@ -10,6 +10,7 @@ import { DormonShowroom } from './dormon-showroom';
 import { useDormonReveal } from './use-dormon-reveal';
 import { dormonEditorial } from './dormon-editorial-data';
 import { dormonImageSizes } from './dormon-image-data';
+import { dormonMediaSources, preloadDormonMedia } from './dormon-media';
 import { dormonBase, dormonCopy, dormonHref, dormonMapHref, dormonName, type DormonLanguage } from './dormon-data';
 
 const route = '/dormon-hills';
@@ -21,20 +22,21 @@ function Photo({ name, alt, sizes = '(max-width: 800px) 100vw, 55vw' }: { name: 
   useEffect(() => {
     if (name === shown.name) return;
     let cancelled = false;
-    const preload = new Image();
-    preload.sizes = sizes;
-    preload.srcset = `${image(name + '-640')} 640w, ${image(name)} ${dormonImageSizes[name]?.width ?? 1200}w`;
-    preload.src = image(name);
+    const preload = preloadDormonMedia(image(name), sizes);
     void preload.decode().then(() => {
       if (!cancelled) { setShown({ name, alt }); setFailed(false); }
     }, () => { if (!cancelled) setFailed(true); });
     return () => { cancelled = true; };
   }, [name, alt, sizes, shown.name]);
   const dimensions = dormonImageSizes[shown.name];
-  return <img key={shown.name} src={image(shown.name)}
-    srcSet={`${image(shown.name + '-640')} 640w, ${image(shown.name)} ${dimensions?.width ?? 1200}w`} sizes={sizes}
+  const sources = dormonMediaSources(image(shown.name));
+  return <picture className="dormon-media" key={shown.name}>
+    {sources && <source type="image/avif" srcSet={sources.avif} sizes={sizes} />}
+    <img src={image(shown.name)}
+    srcSet={sources?.webp ?? `${image(shown.name + '-640')} 640w, ${image(shown.name)} ${dimensions?.width ?? 1200}w`} sizes={sizes}
     width={dimensions?.width} height={dimensions?.height} data-image-unavailable={failed || undefined}
-    alt={shown.name === name ? alt : shown.alt} loading="lazy" decoding="async" />;
+    alt={shown.name === name ? alt : shown.alt} loading="lazy" decoding="async" />
+  </picture>;
 }
 function CourtyardPlan({ language }: { language: DormonLanguage }) {
   const t = dormonEditorial[language];

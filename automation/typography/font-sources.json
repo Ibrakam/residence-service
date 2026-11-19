@@ -1,0 +1,27 @@
+{
+  "montserrat.woff2": {
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/montserrat/Montserrat%5Bwght%5D.ttf",
+    "sha256": "79a44d340d74a1c0f0cff523cda8e76da3f504a31c3e9a1baa4bb4a08086e7bd",
+    "conversion": "lossless WOFF2 compression, glyph set and copyright unchanged"
+  },
+  "helvetica-neue-400.woff2": {
+    "source": "https://font.download/cdn/webfont/helvetica-neue-5/HelveticaNeueRoman.woff",
+    "sha256": "5c3fb5e436aa5eb2ddfbfbd907a1d8eb8c68466c2bfed292d095d295a6f8921f",
+    "conversion": "lossless WOFF2 compression, glyph set and copyright unchanged"
+  },
+  "helvetica-neue-500.woff2": {
+    "source": "https://font.download/cdn/webfont/helvetica-neue-5/HelveticaNeueMedium.woff",
+    "sha256": "e3b14961c7d70d74b250f7a6475f90d3cd3e9ddf44efa51ca5fdfa7d220e9312",
+    "conversion": "lossless WOFF2 compression, glyph set and copyright unchanged"
+  },
+  "helvetica-neue-700.woff2": {
+    "source": "https://font.download/cdn/webfont/helvetica-neue-5/HelveticaNeueBold.woff",
+    "sha256": "c975d028e0c8b9532ee8d428e8056d8a226415fe1707c3db3a1209f2d10f62cc",
+    "conversion": "lossless WOFF2 compression, glyph set and copyright unchanged"
+  },
+  "helvetica-neue-italic.woff2": {
+    "source": "https://font.download/cdn/webfont/helvetica-neue-5/HelveticaNeueItalic.woff",
+    "sha256": "94e5e01042aac2c464b1151b9e8e75117b1e7b99d2dd8edd145bcdb6c63a1663",
+    "conversion": "lossless WOFF2 compression, glyph set and copyright unchanged"
+  }
+}

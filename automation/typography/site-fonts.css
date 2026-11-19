@@ -1,0 +1,139 @@
+/* Shared marketing typography. The edge only includes this stylesheet on
+   marketing/project pages. The structural guard also restores Do‘rmon's own
+   typography when the application navigates there without a document reload. */
+@font-face {
+  font-family: 'TenCorp Montserrat';
+  src: url('./montserrat.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'TenCorp Helvetica Neue';
+  src: url('./helvetica-neue-400.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'TenCorp Helvetica Neue';
+  src: url('./helvetica-neue-500.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'TenCorp Helvetica Neue';
+  src: url('./helvetica-neue-700.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'TenCorp Helvetica Neue';
+  src: url('./helvetica-neue-italic.woff2') format('woff2');
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+}
+
+html:not(:has(.dormon-theme)):not(:has(.dormon)),
+html:not(:has(.dormon-theme)):not(:has(.dormon)) body,
+html:not(:has(.dormon-theme)):not(:has(.dormon)) body :where(
+  main, [class$='-site'], .experience-shell, .apartment-catalog, .sa-page
+) {
+  --font-display: 'TenCorp Montserrat', Arial, sans-serif !important;
+  --font-ui: 'TenCorp Helvetica Neue', 'Helvetica Neue', Arial, sans-serif !important;
+  --font-heading: 'TenCorp Montserrat', Arial, sans-serif !important;
+  --font-body: 'TenCorp Helvetica Neue', 'Helvetica Neue', Arial, sans-serif !important;
+  --font-sans: 'TenCorp Helvetica Neue', 'Helvetica Neue', Arial, sans-serif !important;
+  --font-serif: 'TenCorp Montserrat', Arial, sans-serif !important;
+  --zamon-serif: 'TenCorp Montserrat', Arial, sans-serif !important;
+  font-family: var(--font-ui) !important;
+}
+
+/* Replace hardcoded description and control stacks without touching SVG,
+   icon-font elements, pseudo-elements, or the illustrated project logos. */
+html:not(:has(.dormon-theme)):not(:has(.dormon)) body :where(
+  p, li, figcaption, label, small, address, dd, dt,
+  input, textarea, select, option, button
+) {
+  font-family: 'TenCorp Helvetica Neue', 'Helvetica Neue', Arial, sans-serif !important;
+}
+
+html:not(:has(.dormon-theme)):not(:has(.dormon)) body :where(p, figcaption, address, dd) {
+  line-height: 1.55 !important;
+}
+
+/* Previous display faces used leading below 1 and tightly negative tracking.
+   Montserrat needs a full line box, including Cyrillic descenders and accents. */
+html:not(:has(.dormon-theme)):not(:has(.dormon)) body :where(
+  h1, h2, h3, h4, h5, h6, [role='heading']
+) {
+  font-family: 'TenCorp Montserrat', Arial, sans-serif !important;
+  font-style: normal !important;
+  line-height: 1.14 !important;
+  letter-spacing: -.025em !important;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  hyphens: auto;
+}
+
+/* Emphasis and reveal wrappers must not reintroduce the old serif family,
+   compressed line boxes or a synthetic serif-style italic inside a heading. */
+html:not(:has(.dormon-theme)):not(:has(.dormon)) body :where(
+  h1, h2, h3, h4, h5, h6, [role='heading']
+) :where(span, em, strong, b, i, a) {
+  font-family: 'TenCorp Montserrat', Arial, sans-serif !important;
+  font-style: normal !important;
+  line-height: inherit !important;
+  letter-spacing: inherit !important;
+}
+
+/* The public agency front page predates the shared --font-* variables.
+   These are actual display/title selectors in its production stylesheet. */
+html:not(:has(.dormon-theme)):not(:has(.dormon)) body :where(
+  .intro__wordmark, .hero__center, .menu-panel nav span,
+  .menu-panel__foot > a, .projects-map__list button strong,
+  .estate-card strong, .estate-popup strong, .feature__facts strong,
+  .journal-portal strong, .form-success span
+) {
+  font-family: 'TenCorp Montserrat', Arial, sans-serif !important;
+  font-style: normal !important;
+  line-height: 1.14 !important;
+  letter-spacing: -.025em !important;
+  overflow-wrap: anywhere;
+}
+
+/* Shrink-to-fit grid tracks allow titles to wrap inside their own columns. */
+html:not(:has(.dormon-theme)):not(:has(.dormon)) body :where(
+  main, section, article, header, footer, aside, figure
+) {
+  min-inline-size: 0;
+}
+
+@media (min-width: 601px) {
+  /* The original single-line wordmark was fitted to a narrower display face. */
+  html:not(:has(.dormon-theme)):not(:has(.dormon)) body .yb-hero h1 {
+    font-size: clamp(70px, 14vw, 220px) !important;
+  }
+}
+
+@media (max-width: 600px) {
+  /* Narrow screens keep the title hierarchy while allowing long Russian and
+     Uzbek copy to fit; catalogue and modal h3+ retain their original sizes. */
+  html:not(:has(.dormon-theme)):not(:has(.dormon)) body :where(h1) {
+    font-size: clamp(2.25rem, 10vw, 3.5rem) !important;
+  }
+  html:not(:has(.dormon-theme)):not(:has(.dormon)) body :where(h2) {
+    font-size: clamp(1.75rem, 8vw, 2.75rem) !important;
+  }
+  /* These child elements have independent oversized sizes in the old hero. */
+  html:not(:has(.dormon-theme)):not(:has(.dormon)) body :where(
+    .hero-copy h1 em, .pushkin-hero h1 span
+  ) {
+    font-size: inherit !important;
+  }
+}

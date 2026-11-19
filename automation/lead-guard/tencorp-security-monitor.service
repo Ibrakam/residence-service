@@ -1,0 +1,19 @@
+[Unit]
+Description=TenCorp security event notifications
+After=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/residence-catalog-alerts/monitor.env
+LoadCredential=telegram-token:/etc/residence-catalog-alerts/telegram-token
+StateDirectory=tencorp-security-monitor
+StateDirectoryMode=0700
+ExecStart=/usr/bin/python3 /opt/tencorp-lead-guard/security-monitor.py
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/tencorp-security-monitor
+MemoryMax=128M
+TimeoutStartSec=35s

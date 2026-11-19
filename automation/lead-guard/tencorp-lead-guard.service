@@ -1,0 +1,28 @@
+[Unit]
+Description=TenCorp lead anti-abuse gateway
+After=network.target
+
+[Service]
+DynamicUser=yes
+EnvironmentFile=/etc/tencorp-lead-guard/guard.env
+StateDirectory=tencorp-lead-guard
+StateDirectoryMode=0700
+ExecStart=/usr/bin/node /opt/tencorp-lead-guard/server.mjs
+Restart=on-failure
+RestartSec=3s
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+MemoryMax=192M
+TasksMax=32
+
+[Install]
+WantedBy=multi-user.target

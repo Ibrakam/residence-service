@@ -1,0 +1,8 @@
+[Unit]
+Description=Check TenCorp security signals each minute
+[Timer]
+OnBootSec=90s
+OnUnitActiveSec=60s
+RandomizedDelaySec=5s
+[Install]
+WantedBy=timers.target

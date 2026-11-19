@@ -3,6 +3,8 @@ import { dormonBase, dormonCopy, dormonLanguage } from './dormon-data';
 import { DormonPage } from './dormon-page';
 import { dormonPlansState } from '@/lib/dormon-plans-state';
 import './dormon.css';
+import './dormon-showroom.css';
+import './dormon-facade-section.css';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,9 +37,5 @@ export default async function Page({ searchParams }: PageProps) {
     if (first) query.set(key, first);
   }
   const state = await dormonPlansState();
-  const featuredPlans = [1, 2, 3].flatMap(rooms => {
-    const plan = state.plans.find(item => item.rooms === rooms);
-    return plan ? [plan] : [];
-  });
-  return <DormonPage language={language} query={query.toString()} featuredPlans={featuredPlans} />;
+  return <DormonPage language={language} query={query.toString()} publishedPlans={state.plans} />;
 }

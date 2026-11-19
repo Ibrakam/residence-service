@@ -1,0 +1,250 @@
+.dormon-cutaway {
+  display: grid;
+  grid-template-areas: "figure head" "figure controls";
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr);
+  grid-template-rows: auto 1fr;
+  column-gap: clamp(24px, 5vw, 64px);
+  align-items: start;
+  padding: clamp(24px, 5vw, 48px);
+  border: 1px solid var(--dh-rule);
+  background: var(--dh-paper);
+}
+
+.dormon-cutaway-head {
+  grid-area: head;
+  padding-top: clamp(0px, 3vw, 24px);
+}
+
+.dormon .dormon-cutaway-head h2 {
+  font-size: clamp(1.875rem, 3.5vw, 3.75rem);
+  line-height: 1.15;
+}
+
+.dormon-cutaway-head > p {
+  margin-top: 12px;
+  color: #4e5949;
+  font-size: .875rem;
+  line-height: 1.5rem;
+}
+
+.dormon-cutaway-figure {
+  grid-area: figure;
+  min-width: 0;
+}
+
+.dormon-cutaway-figure figcaption {
+  color: #4e5949;
+  font-size: .75rem;
+  line-height: 1rem;
+  margin-top: 12px;
+}
+
+.dormon-cutaway-scene {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  aspect-ratio: 1;
+  background: var(--dh-paper-alt);
+}
+
+.dormon-cutaway-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  transform-origin: 0 0;
+  transition: transform 650ms var(--dh-motion-ease);
+}
+
+.dormon-cutaway-base,
+.dormon-cutaway-reveal {
+  transition: opacity 300ms var(--dh-motion-ease);
+}
+
+.dormon-cutaway-scene[data-highlighted="true"] .dormon-cutaway-base { opacity: .52; }
+.dormon-cutaway-reveal { opacity: 0; }
+.dormon-cutaway-reveal[data-active="true"] { opacity: 1; }
+
+.dormon-cutaway-marker {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  transform: translate(var(--cutaway-x), var(--cutaway-y));
+  pointer-events: none;
+  transition: transform 650ms var(--dh-motion-ease), opacity 220ms ease;
+}
+
+.dormon-cutaway-marker[data-active="true"] { z-index: 2; }
+.dormon-cutaway-marker[data-visible="false"] { opacity: 0; }
+
+.dormon-cutaway-point {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.dormon-cutaway-marker[data-visible="false"] .dormon-cutaway-point { pointer-events: none; }
+
+.dormon-cutaway-point > span {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid #fff5da;
+  border-radius: 50%;
+  background: var(--dh-dark-ink);
+  color: var(--dh-light);
+  font-size: .75rem;
+  line-height: 1rem;
+  font-weight: 600;
+  transition: transform 300ms var(--dh-motion-ease);
+}
+
+.dormon-cutaway-marker[data-active="true"] .dormon-cutaway-point > span {
+  color: var(--dh-dark);
+  background: var(--dh-gold);
+}
+.dormon-cutaway-point[aria-pressed="true"] > span { transform: scale(1.14); }
+.dormon-cutaway-marker .dormon-cutaway-point:active > span { transform: scale(.96); }
+
+.dormon .dormon-cutaway-point:focus-visible,
+.dormon .dormon-cutaway-layer button:focus-visible,
+.dormon .dormon-cutaway-reset:focus-visible { outline-offset: -4px; }
+
+.dormon .dormon-cutaway-point:focus-visible { outline-color: var(--dh-light); }
+
+.dormon-cutaway-controls { grid-area: controls; margin-top: 24px; }
+.dormon-cutaway-layers { display: grid; gap: 4px; }
+
+.dormon-cutaway-layer {
+  border: 1px solid transparent;
+  border-radius: 6px;
+}
+
+.dormon-cutaway-layer[data-active="true"],
+.dormon-cutaway-layer:has([aria-expanded="true"]) {
+  border-color: var(--dh-rule);
+  background: var(--dh-paper-alt);
+}
+
+.dormon-cutaway-layer > h3 { font: inherit; letter-spacing: 0; }
+
+.dormon-cutaway-layer button {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--dh-dark-ink);
+  background: transparent;
+  text-align: start;
+  font-size: .875rem;
+  line-height: 1.25rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dormon-cutaway-index {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--dh-rule);
+  border-radius: 50%;
+  color: var(--dh-gold-dark);
+  font-size: .75rem;
+  line-height: 1rem;
+}
+
+.dormon-cutaway-layer[data-active="true"] .dormon-cutaway-index {
+  background: var(--dh-dark-ink);
+  color: var(--dh-light);
+}
+
+.dormon-cutaway-toggle {
+  justify-self: end;
+  color: var(--dh-gold-dark);
+  font-size: 1rem;
+  line-height: 1.5rem;
+}
+
+.dormon-cutaway-layer > div {
+  padding: 0 12px 12px 48px;
+  color: #4e5949;
+  font-size: .875rem;
+  line-height: 1.5rem;
+}
+
+.dormon-cutaway-layer > div:not([hidden]) {
+  animation: dh-cutaway-details-in 270ms var(--dh-motion-ease) both;
+}
+
+.dormon-cutaway-detail-name {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--dh-dark-ink);
+  font-size: .8125rem;
+  font-weight: 600;
+}
+
+@keyframes dh-cutaway-details-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dormon-cutaway-reset {
+  margin-top: 12px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--dh-rule);
+  border-radius: 6px;
+  color: var(--dh-dark-ink);
+  background: transparent;
+  font-size: .875rem;
+  line-height: 1.25rem;
+  cursor: pointer;
+}
+.dormon-cutaway-reset:hover:not([aria-disabled="true"]) { background: var(--dh-paper-alt); }
+.dormon-cutaway-reset[aria-disabled="true"] { opacity: .5; cursor: default; }
+
+@media (max-width: 850px) {
+  .dormon-cutaway {
+    grid-template-areas: "head" "figure" "controls";
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+    row-gap: 16px;
+  }
+  .dormon-cutaway-head { padding-top: 0; }
+  .dormon-cutaway-figure { width: min(100%, 34rem); justify-self: center; }
+  .dormon-cutaway-controls { margin-top: 0; }
+}
+
+@media (max-width: 480px) {
+  .dormon-cutaway { padding: 12px; }
+  .dormon-cutaway-layer button { padding-inline: 8px; }
+  .dormon-cutaway-layer > div { padding-inline: 44px 8px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dormon-cutaway-art,
+  .dormon-cutaway-base,
+  .dormon-cutaway-reveal,
+  .dormon-cutaway-marker,
+  .dormon-cutaway-point > span { transition: none; }
+  .dormon-cutaway-layer > div:not([hidden]) { animation: none; }
+}

@@ -283,37 +283,7 @@ body:has(.dormon-menu[open]) { overflow: hidden; }
   .dormon-menu__links a { transition: none; }
 }
 
-.dormon-intro-mark { display: none; }
 @media (prefers-reduced-motion: no-preference) {
-  .dormon-intro-mark {
-    position: fixed;
-    inset: 0;
-    z-index: 90;
-    display: grid;
-    place-content: center;
-    justify-items: center;
-    gap: 1rem;
-    pointer-events: none;
-    color: var(--dh-light);
-    background: var(--dh-dark);
-    animation: dh-intro-curtain 1000ms var(--dh-motion-ease) both;
-  }
-  .dormon-intro-mark img {
-    width: clamp(5rem, 13vw, 8rem);
-    height: auto;
-    animation: dh-intro-mark 680ms var(--dh-motion-ease) both;
-  }
-  .dormon-intro-mark span {
-    font-family: var(--font-display);
-    font-size: clamp(.875rem, 3vw, 1.4rem);
-    letter-spacing: .16em;
-    text-transform: uppercase;
-    animation: dh-intro-mark 620ms var(--dh-motion-ease) 80ms both;
-  }
-  .dormon:has(:target, :focus-visible, .dormon-menu[open]) .dormon-intro-mark {
-    opacity: 0 !important;
-    visibility: hidden !important;
-  }
   .dormon-menu[open] { animation: dh-menu-fade 260ms var(--dh-motion-ease) both; }
   .dormon-menu[open] .dormon-menu__links > a { animation: dh-menu-link 460ms var(--dh-motion-ease) both; }
   .dormon-menu[open] .dormon-menu__links > a:nth-child(2) { animation-delay: 60ms; }
@@ -321,15 +291,6 @@ body:has(.dormon-menu[open]) { overflow: hidden; }
   .dormon-menu[open] .dormon-menu__links > a:focus-visible { animation: none; }
 }
 
-@keyframes dh-intro-curtain {
-  0%, 42% { opacity: 1; visibility: visible; }
-  99% { visibility: visible; }
-  100% { opacity: 0; visibility: hidden; }
-}
-@keyframes dh-intro-mark {
-  from { opacity: 0; transform: translateY(12px) scale(.93); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
 @keyframes dh-menu-fade {
   from { opacity: 0; }
   to { opacity: 1; }

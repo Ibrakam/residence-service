@@ -16,11 +16,12 @@ type Props = {
   language: DormonLanguage;
   languageHref: (language: DormonLanguage) => string;
   links: { href: string; label: string }[];
+  desktopLinks?: { href: string; label: string }[];
   compact?: boolean;
   overlay?: boolean;
 };
 
-export function DormonHeader({ homeHref, language, languageHref, links, compact = false, overlay = false }: Props) {
+export function DormonHeader({ homeHref, language, languageHref, links, desktopLinks, compact = false, overlay = false }: Props) {
   const t = labels[language];
   const menuId = useId();
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -41,9 +42,11 @@ export function DormonHeader({ homeHref, language, languageHref, links, compact 
   }
 
   function renderLinks(inMenu = false) {
+    const visibleLinks = inMenu ? links : desktopLinks ?? (links.length <= 4 ? links :
+      links.filter((_, index) => index === 0 || index === 2 || index === links.length - 2));
     return (
       <nav className={inMenu ? 'dormon-menu__links' : 'dormon-site-header__nav'} aria-label={t.nav}>
-        {(inMenu || links.length <= 4 ? links : links.filter((_, index) => index === 0 || index === 2 || index === links.length - 2)).map(({ href, label }) => (
+        {visibleLinks.map(({ href, label }) => (
           <a key={href} href={href} onClick={inMenu ? closeMenu : undefined}>
             <span>{label}</span>{inMenu ? <span aria-hidden="true">↗</span> : null}
           </a>

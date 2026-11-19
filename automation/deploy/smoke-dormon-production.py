@@ -36,18 +36,26 @@ for route in ['/dormon-hills', '/dormon-hills/apartments']:
         status, document, _ = get(route + '?lang=' + language)
         assert status == 200 and b'dormon-hills' in document and b'__Host-tencorp_session' not in document
         assert re.search(rb'<html[^>]+lang="' + language.encode() + rb'"', document)
-        assert b'/dormon-hills/plans/live/' in document
         if route == '/dormon-hills':
             for section in ['dormon-project', 'dormon-features', 'dormon-architecture',
                             'dormon-gardens', 'dormon-lounge', 'dormon-hub',
-                            'dormon-plans', 'dormon-contact']:
+                            'dormon-plans', 'dormon-location', 'dormon-contact']:
                 assert ('id="' + section + '"').encode() in document, (language, section)
-            assert b'/dormon-hills/editorial/hero.webp' in document
+            assert re.search(rb'<main[^>]+id="dormon-main"[^>]*>\s*<div[^>]+id="plans"[^>]*>\s*'
+                             rb'<section[^>]+id="dormon-plans"', document), language
+            assert document.count(b'id="dormon-plans"') == 1
+            assert b'class="dormon-hero"' not in document
+            assert b'id="dormon-facade-section"' in document
+            assert document.count(b'class="dormon-cutaway-point"') == 8
+            assert b'/dormon-hills/editorial/facade-section.webp' in document
             assert b'/dormon-hills/editorial/lobby.webp' in document
             assert b'/dormon-hills/editorial/elevators.webp' in document
             assert b'/dormon-hills/editorial/parking-interior.webp' in document
             assert b'/dormon-hills/apartments?' in document
+            assert b'id="dormon-showroom-title"' in document
+            assert b'/dormon-hills/facades/overview.webp' in document
         if route.endswith('/apartments'):
+            assert b'/dormon-hills/plans/live/' in document
             assert len(re.findall(rb'<li\b[^>]*class="dh-plan-card"', document)) == len(state['plans'])
             assert b'Floor plan source:' not in document
             assert 'Источник планировок:'.encode() not in document
@@ -58,8 +66,15 @@ for route in ['/dormon-hills', '/dormon-hills/apartments']:
 # Verify the redesigned project's local media through the real protected edge.
 status, landing, _ = get('/dormon-hills?lang=ru')
 editorial_assets = set(re.findall(rb'/dormon-hills/editorial/[a-z0-9-]+\.webp', landing))
-assert len(editorial_assets) >= 24
-for asset in sorted(editorial_assets):
+featured = {b'/dormon-hills/editorial/' + file for file in
+            [b'about.webp', b'courtyard-plan.webp', b'facade-section.webp',
+             b'panorama.webp', b'lounge-outside.webp', b'lobby.webp']}
+assert featured <= editorial_assets
+editorial_assets.add(b'/dormon-hills/editorial/facade-air.webp')
+showroom_assets = {b'/dormon-hills/facades/' + scene for scene in
+                   [b'overview.webp', b'front.webp', b'courtyard.webp']}
+showroom_assets.add(b'/dormon-hills/showroom/a-upper.webp')
+for asset in sorted(editorial_assets | showroom_assets):
     status, image, headers = get(asset.decode())
     assert status == 200 and headers.get('Content-Type', '').startswith('image/webp'), asset
     assert image[:4] == b'RIFF' and image[8:12] == b'WEBP', asset

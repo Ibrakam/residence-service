@@ -11,8 +11,12 @@ catalog into the directory supplied in `CATALOG_OUTPUT_DIR`.
 - Each provider has an independent PostgreSQL advisory lock. An overlapping
   timer invocation exits as `skipped` instead of starting a second browser.
 - Capture runs in a new private staging directory with a configured timeout.
-  The process group is killed on timeout. Its stdout and stderr are discarded,
-  so an upstream page or wrapper cannot put cookies or tokens in service logs.
+  The process group is killed on timeout. Its stdout is discarded; only the first 16 KiB of stderr is held in memory
+  to classify a failure into a fixed diagnostic vocabulary. Raw stderr is never
+  returned or logged, so an upstream page or wrapper cannot put cookies or tokens
+  in service logs. Public error codes remain unchanged; the journal additionally
+  records a static `diagnosticCode` such as `browser_login_required`,
+  `source_scope_changed`, or `browser_response_missing`.
 - The capture child receives only a small browser/runtime environment allowlist.
   In particular, `DATABASE_URL`, Telegram variables, and unrelated service
   secrets are not inherited.

@@ -2,6 +2,8 @@ package catalogsync
 
 import (
 	"context"
+	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -89,5 +91,50 @@ func TestRemoveStagingDirectoryStaysInsideParent(t *testing.T) {
 	removeStagingDirectory(parent, inside)
 	if _, err := os.Stat(inside); !os.IsNotExist(err) {
 		t.Fatalf("staging directory still exists: %v", err)
+	}
+}
+
+func TestCaptureDiagnosticIsBoundedAndNeverReturnsRawOutput(t *testing.T) {
+	buffer := &captureDiagnosticBuffer{}
+	body := []byte("upstream HTTP 403 " + strings.Repeat("secret-token-", 4096))
+	n, err := buffer.Write(body)
+	if err != nil || n != len(body) || buffer.Len() != 16<<10 {
+		t.Fatalf("unbounded diagnostic: n=%d length=%d err=%v", n, buffer.Len(), err)
+	}
+	failure := &captureCommandError{cause: errors.New("exit status 1"), code: classifyCaptureDiagnostic(buffer.Bytes())}
+	if captureDiagnosticCode(failure) != "upstream_forbidden" || strings.Contains(failure.Error(), "secret-token") {
+		t.Fatalf("unsafe failure: %q", failure.Error())
+	}
+}
+func TestCaptureDiagnosticClassification(t *testing.T) {
+	cases := map[string]string{
+		"mbc: authorized bootstrap control is unavailable":                "browser_bootstrap_unavailable",
+		"NRG sado realEstateList is missing required estate sensitive-id": "source_scope_changed",
+		"Uysot table request was not observed":                            "browser_response_missing",
+		"password=secret https://host/?token=secret":                      "collector_failed",
+	}
+	for input, want := range cases {
+		if got := classifyCaptureDiagnostic([]byte(input)); got != want {
+			t.Fatalf("got %s want %s", got, want)
+		}
+	}
+}
+func TestCaptureFailureKeepsExitCauseAndStaticDiagnostic(t *testing.T) {
+	provider := ProviderConfig{Name: "test", Command: []string{"/bin/sh", "-c", "echo 'HTTP 403 password=never-log-this' >&2; exit 3"}}
+	err := runCaptureCommand(context.Background(), provider, t.TempDir(), t.TempDir())
+	if err == nil || captureDiagnosticCode(err) != "upstream_forbidden" || strings.Contains(err.Error(), "never-log-this") {
+		t.Fatalf("unsafe classification: %v", err)
+	}
+}
+
+func TestCaptureDiagnosticCopyCannotBypassBound(t *testing.T) {
+	buffer := &captureDiagnosticBuffer{}
+	if _, ok := any(buffer).(io.ReaderFrom); ok {
+		t.Fatal("ReaderFrom bypasses bounded Write")
+	}
+	body := strings.Repeat("private-credential-", 10000)
+	n, err := io.Copy(buffer, strings.NewReader(body))
+	if err != nil || n != int64(len(body)) || buffer.Len() != 16<<10 {
+		t.Fatalf("copy bypassed bound: n=%d length=%d err=%v", n, buffer.Len(), err)
 	}
 }

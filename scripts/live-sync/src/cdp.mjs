@@ -351,10 +351,22 @@ async function bootstrapProviderTarget(provider, targets, cdpEndpoint) {
       flatten: true,
       filter: [{ type: 'iframe', exclude: false }, { exclude: true }],
     });
-    const result = await outerClient.call('Runtime.evaluate', {
+    const openCatalogue = () => outerClient.call('Runtime.evaluate', {
       expression: browserBootstrapExpression(bootstrap.controlText),
       returnByValue: true,
     });
+    let result = await openCatalogue();
+    if (result?.result?.value !== true) {
+      // A long-lived CRM tab can remain a partially rendered shell after a
+      // transient asset failure. Retry one read-only reload, with interception
+      // already armed, instead of resetting the profile or requiring a login.
+      await outerClient.call('Page.reload', { ignoreCache: true });
+      const readyDeadline = Date.now() + Math.min(12_000, bootstrap.timeoutMs);
+      while (result?.result?.value !== true && Date.now() < readyDeadline) {
+        await delay(250);
+        result = await openCatalogue();
+      }
+    }
     if (result?.result?.value !== true) {
       throw new Error(`${provider.id}: authorized bootstrap control is unavailable`);
     }

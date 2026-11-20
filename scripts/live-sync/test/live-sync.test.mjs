@@ -253,6 +253,7 @@ test('MBC bootstrap pauses and guards the OOPIF before capture takes over', asyn
   const previousWebSocket = globalThis.WebSocket;
   const calls = [];
   let emittedChildProbe = false;
+  let bootstrapEvaluations = 0;
 
   class FakeWebSocket extends EventTarget {
     constructor() {
@@ -267,6 +268,7 @@ test('MBC bootstrap pauses and guards the OOPIF before capture takes over', asyn
         data: JSON.stringify({ id: request.id, result, ...(request.sessionId ? { sessionId: request.sessionId } : {}) }),
       })));
       if (request.method === 'Runtime.evaluate' && !request.sessionId) {
+        if (++bootstrapEvaluations === 1) { respond({ result: { value: false } }); return; }
         respond({ result: { value: true } });
         queueMicrotask(() => {
           this.dispatchEvent(new MessageEvent('message', { data: JSON.stringify({
@@ -351,6 +353,8 @@ test('MBC bootstrap pauses and guards the OOPIF before capture takes over', asyn
   const methodIndex = (method, sessionId = undefined) => calls.findIndex((call) => (
     call.method === method && call.sessionId === sessionId
   ));
+  assert.equal(calls.filter((call) => call.method === 'Page.reload').length, 1, 'one bounded reload recovers an unrendered account page');
+  assert.ok(methodIndex('Fetch.enable') < methodIndex('Page.reload'), 'read-only interception must precede the recovery reload');
   assert.ok(methodIndex('Fetch.enable') < methodIndex('Target.setAutoAttach'));
   assert.ok(methodIndex('Target.setAutoAttach') < methodIndex('Runtime.evaluate'));
   assert.ok(methodIndex('Runtime.evaluate') < methodIndex('Fetch.enable', 'mbc-child-session'));
@@ -1581,8 +1585,6 @@ test('NRG normalization covers all eleven project adapters and requires an empty
       ...(planAssets ? { planAssets } : {}),
     };
   });
-  const sadoGroup = groups.find((group) => group.project.slug === 'sado');
-  sadoGroup.realEstate.realEstates.push({ ...structuredClone(sadoGroup.realEstate.realEstates[0]), uuid: sadoGroup.project.additionalRealEstateUUIDs[0], blocks: [], placementCount: 0 });
   const result = normalizeNrgBiCapture(groups);
   assert.equal(result.artifacts.length, 11);
   assert.ok(Object.values(result.audit).every((audit) => audit.complete));
@@ -1596,16 +1598,10 @@ test('NRG normalization covers all eleven project adapters and requires an empty
   assert.equal(fourUArtifact.units.find((unit) => unit.status === 'reserved').repairIncluded, false);
   assert.equal(fourUArtifact.sourceCount, 3);
   assert.equal(fourUArtifact.historicalSaleDates, null);
-  const splitSado = structuredClone(groups);
-  const split = splitSado.find((group) => group.project.slug === 'sado');
-  split.realEstate.realEstates[1].blocks = split.realEstate.realEstates[0].blocks;
-  split.realEstate.realEstates[1].placementCount = 1;
-  split.realEstate.realEstates[0].blocks = [];
-  split.realEstate.realEstates[0].placementCount = 0;
-  split.pages[0].placements[0].realEstateUUID = split.project.additionalRealEstateUUIDs[0];
-  assert.equal(normalizeNrgBiCapture(splitSado).artifacts.find((item) => item.filename === 'sado-catalog.json').artifact.units.length, 3);
-  split.pages[0].placements[0].realEstateUUID = '00000000-0000-4000-8000-999999999999';
-  assert.throws(() => normalizeNrgBiCapture(splitSado), /realEstateUUID mismatch/);
+  const retiredSado = structuredClone(groups);
+  const retired = retiredSado.find((group) => group.project.slug === 'sado');
+  retired.pages[0].placements[0].realEstateUUID = '6742abd7-5d7e-4d15-ad87-6fd6e26f2d56';
+  assert.throws(() => normalizeNrgBiCapture(retiredSado), /realEstateUUID mismatch/, 'a retired alias is not accepted as a current apartment scope');
   assert.equal(fourUArtifact.units.find((unit) => unit.status === 'sold').price, null);
   assert.ok(fourUArtifact.units.every((unit) => unit.id === unit.sourceId && unit.sourceKey === `nrg-bi:4u:${unit.id}`));
   const repairedPricing = structuredClone(groups);
@@ -1950,4 +1946,16 @@ test('retention keeps current, bounds successful runs, and never touches staging
   const finalRuns = (await readdir(providerRoot)).filter((name) => /^\d{4}-/.test(name));
   assert.deepEqual(finalRuns, [pointer.runId]);
   assert.equal(await readFile(join(staging, 'in-progress'), 'utf8'), 'do not delete');
+});
+
+
+test('Uysot visible login form is not reloaded or intercepted by a scheduled capture', async () => {
+ const calls=[]; let closed=false;
+ const client={
+  call:async(method,params)=>{calls.push(method);assert.equal(method,'Runtime.evaluate');return {result:{value:true}};},
+  close:()=>{closed=true;},
+ };
+ await assert.rejects(captureFromAuthorizedTab(getProvider('uysot'),{cdpEndpoint:'http://127.0.0.1:9223',connectTarget:async()=>({client,target:{}})}),/authentication required/);
+ assert.equal(closed,true);
+ assert.deepEqual(calls,['Runtime.evaluate']);
 });

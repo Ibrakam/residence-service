@@ -1,6 +1,7 @@
 package catalogsync
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -146,6 +147,7 @@ func (runner *Runner) runProvider(ctx context.Context, workDirectory string, pro
 		if captureTimedOut {
 			return fail("capture_timeout", nil)
 		}
+		runner.logger.Warn("catalog capture failed", "provider", provider.Name, "diagnosticCode", captureDiagnosticCode(err))
 		return fail("capture_failed", nil)
 	}
 	if err := validateStagingTree(stageRoot); err != nil {
@@ -437,7 +439,8 @@ func runCaptureCommand(ctx context.Context, provider ProviderConfig, outputDirec
 	command.Dir = provider.WorkingDirectory
 	command.Env = captureEnvironment(provider.Name, outputDirectory, temporaryDirectory)
 	command.Stdout = io.Discard
-	command.Stderr = io.Discard
+	diagnostic := &captureDiagnosticBuffer{}
+	command.Stderr = diagnostic
 	command.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	command.WaitDelay = 5 * time.Second
 	command.Cancel = func() error {
@@ -446,7 +449,66 @@ func runCaptureCommand(ctx context.Context, provider ProviderConfig, outputDirec
 		}
 		return syscall.Kill(-command.Process.Pid, syscall.SIGKILL)
 	}
-	return command.Run()
+	if err := command.Run(); err != nil {
+		return &captureCommandError{cause: err, code: classifyCaptureDiagnostic(diagnostic.Bytes())}
+	}
+	return nil
+}
+
+// Collector stderr is untrusted: bound it in memory and return only a fixed code.
+type captureDiagnosticBuffer struct{ buffer bytes.Buffer }
+
+func (buffer *captureDiagnosticBuffer) Len() int      { return buffer.buffer.Len() }
+func (buffer *captureDiagnosticBuffer) Bytes() []byte { return buffer.buffer.Bytes() }
+
+func (buffer *captureDiagnosticBuffer) Write(body []byte) (int, error) {
+	const limit = 16 << 10
+	if remaining := limit - buffer.Len(); remaining > 0 {
+		_, _ = buffer.buffer.Write(body[:min(len(body), remaining)])
+	}
+	return len(body), nil
+}
+
+type captureCommandError struct {
+	cause error
+	code  string
+}
+
+func (err *captureCommandError) Error() string { return "capture failed: " + err.code }
+func (err *captureCommandError) Unwrap() error { return err.cause }
+func captureDiagnosticCode(err error) string {
+	var failure *captureCommandError
+	if errors.As(err, &failure) {
+		return failure.code
+	}
+	return "collector_failed"
+}
+func classifyCaptureDiagnostic(body []byte) string {
+	text := strings.ToLower(string(body))
+	for _, category := range []struct {
+		code     string
+		patterns []string
+	}{
+		{"browser_login_required", []string{"login required", "authentication required"}},
+		{"browser_bootstrap_unavailable", []string{"authorized bootstrap control is unavailable"}},
+		{"browser_target_missing", []string{"no matching authorized tab"}},
+		{"browser_target_ambiguous", []string{"multiple matching authorized"}},
+		{"template_unavailable", []string{"enrichment template", "required public enrichment template"}},
+		{"upstream_forbidden", []string{"http 403", "http_403"}},
+		{"upstream_unauthorized", []string{"http 401", "http_401"}},
+		{"upstream_rate_limited", []string{"http 429"}},
+		{"source_scope_changed", []string{"missing required estate", "outside the exact", "block registry", "unregistered", "universe changed", "identity changed"}},
+		{"browser_response_missing", []string{"table request was not observed", "response was not observed", "guarded table response"}},
+		{"collector_network_failed", []string{"fetch failed", "econnreset", "enotfound", "econnrefused", "timed out", "timeout"}},
+		{"source_contract_changed", []string{"incomplete", "mismatch", "is invalid", "is not an array", "is not an object", "consistency"}},
+	} {
+		for _, pattern := range category.patterns {
+			if strings.Contains(text, pattern) {
+				return category.code
+			}
+		}
+	}
+	return "collector_failed"
 }
 
 func captureEnvironment(provider, outputDirectory, temporaryDirectory string) []string {

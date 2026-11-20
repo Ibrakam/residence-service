@@ -104,6 +104,19 @@ export async function captureFromAuthorizedTab(provider, {
 } = {}) {
   const captureStartedAt = Date.now();
   const { client, target } = await connectTarget(provider, cdpEndpoint, targetId);
+  if (provider.id === 'uysot') {
+    // Do not reload or intercept a visible login form every five minutes: that
+    // can interrupt the operator's later login. Timers remain enabled and
+    // resume capture automatically once a real authenticated page is present.
+    const login = await client.call('Runtime.evaluate', {
+      expression: `Boolean(document.querySelector('input[type="password"]'))`,
+      returnByValue: true,
+    });
+    if (login?.result?.value === true) {
+      client.close();
+      throw new Error('Uysot authentication required');
+    }
+  }
   const methods = new Map();
   const eligible = new Map();
   const records = [];

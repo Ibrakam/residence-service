@@ -22,9 +22,12 @@ export const nrgBiProjects = Object.freeze([
   Object.freeze({ slug: 'jomiy', name: 'Jomiy', realEstateUUID: '81153f29-f48b-11ed-a82e-001dd8b726aa' }),
   Object.freeze({ slug: 'maftun-makon', name: 'Maftun Makon', realEstateUUID: '20b833b1-0d2a-420e-81d5-98585730350f' }),
   Object.freeze({ slug: 'meros', name: 'Meros', realEstateUUID: '0e6cc6d9-6f4a-405c-a8c0-037264d133c1' }),
-  // On 2026-10-23 the official realEstateList moved the existing Comfort
-  // blocks to this second estate UUID; apartment/block identities are unchanged.
-  Object.freeze({ slug: 'sado', name: 'Sado', realEstateUUID: '848ce8ff-54a9-4ffb-9fdf-183aea1710a6', additionalRealEstateUUIDs: Object.freeze(['6742abd7-5d7e-4d15-ad87-6fd6e26f2d56']) }),
+  // Reviewed 2026-11-20: official realEstateList retired the temporary Comfort
+  // estate alias 6742abd7-5d7e-4d15-ad87-6fd6e26f2d56. Keep the primary
+  // estate scope; the persistent block registry still requires ALL previously
+  // accepted blocks, including blocks now hidden by realEstateList. Every
+  // retained matrix and FREE-list consistency guard must continue to pass.
+  Object.freeze({ slug: 'sado', name: 'Sado', realEstateUUID: '848ce8ff-54a9-4ffb-9fdf-183aea1710a6' }),
   Object.freeze({ slug: 'voha', name: 'Voha', realEstateUUID: 'ea3ccd82-e81b-11ed-a827-001dd8b72708' }),
   Object.freeze({ slug: 'yangibaxt', name: 'Yangibaxt', realEstateUUID: '6481be1c-c9fe-11ed-a82c-001dd8b726aa' }),
   Object.freeze({ slug: 'zamon', name: 'Zamon', realEstateUUID: '58e48f7d-dd1c-11ed-a82c-001dd8b726aa' }),

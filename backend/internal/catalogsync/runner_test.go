@@ -138,3 +138,17 @@ func TestCaptureDiagnosticCopyCannotBypassBound(t *testing.T) {
 		t.Fatalf("copy bypassed bound: n=%d length=%d err=%v", n, buffer.Len(), err)
 	}
 }
+
+func TestProviderSplitRetainsAcceptedDropBaselineAndScope(t *testing.T) {
+	provider := ProviderConfig{Name: "nrg-bi-sado", BaselineProvider: "nrg-bi", Projects: map[string]ProjectPolicy{"sado": {MinimumRecords: 250}}}
+	inherited := map[string]AcceptedProject{"sado": {Records: 800}, "4u": {Records: 1000}}
+	merged := mergeAcceptedProjectBaselines(provider, nil, inherited)
+	if len(merged) != 1 || merged["sado"].Records != 800 {
+		t.Fatalf("split lost baseline/scope: %#v", merged)
+	}
+	own := map[string]AcceptedProject{"sado": {Records: 850}}
+	merged = mergeAcceptedProjectBaselines(provider, own, inherited)
+	if merged["sado"].Records != 850 {
+		t.Fatal("inherited baseline replaced a newer accepted own capture")
+	}
+}

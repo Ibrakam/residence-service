@@ -237,3 +237,26 @@ A failed attempt can still report `fresh` while the last-known-good data is
 inside its freshness window. Alert on `freshness=stale`; investigate the
 machine error code and the provider wrapper privately. Do not weaken a guard or
 delete the last successful data as an automatic response.
+
+
+### Reviewed hidden inventory and project failure isolation (2026-11-20)
+
+Profitbase may hide a previously reviewed house from its overview while its
+exact house inventory remains readable. Regnum Plaza II (122371) is explicitly
+marked `allowHiddenFromHouseList`; all of its exact house/project property IDs,
+full pagination and per-house residential floors remain mandatory. No other
+missing or unregistered residential house is accepted.
+
+The Sad’O temporary estate alias remains an exact inventory scope, although it
+is now hidden from `realEstateList`. Every retained block is still collected
+from its matrix; missing apartments are never inferred to be SOLD. In November
+the source listing omitted 154 FREE apartments still reported by those matrices,
+so the candidate correctly failed its consistency guard. The reviewed runnable
+configuration now isolates `nrg-bi` (ten projects) from `nrg-bi-sado` (Sad’O).
+The latter preserves the previous catalogue and reports stale until the source
+becomes consistent. `--projects` is an exact allowlist of known slugs, requires
+all and only those candidate projects, and never weakens a project guard.
+
+Uysot checks for a visible password form before navigation or interception.
+An expired session fails with a static diagnostic and leaves the login screen
+untouched for the operator; the enabled timer resumes normal capture after login.

@@ -15,7 +15,7 @@ import { opaqueMbcSourceKey, templateMbcSourceKey } from '../src/mbc-identity.mj
 import { mergeNrgBlockRegistries, nrgBiSeedBlockRegistry, normalizeNrgBlockRegistry } from '../src/nrg-block-registry.mjs';
 import { auditNrgPlanAssets, expectedNrgOriginalUrl, expectedNrgPlanUrl, fetchNrgPlanDetails, imageMetadata, refreshNrgPlanAssets, validateNrgOriginalUrl, validateNrgPlanUrl } from '../src/nrg-plan-assets.mjs';
 import { normalizeKayanPropertyResponses, normalizeMbcProfitbaseCapture, normalizeMbcProjects, normalizeNrgBiCapture, normalizeRegnumPages, normalizeSunPages, normalizeUysotTable } from '../src/normalize.mjs';
-import { getProvider, mbcProjects, mbcSarbonProjects } from '../src/providers.mjs';
+import { getProvider, mbcProjects, mbcSarbonProjects, scopeNrgProvider, listedNrgProjectEstates } from '../src/providers.mjs';
 import { containsObviousSecret, sanitizeValue } from '../src/redact.mjs';
 
 function fakeUysotBrowser(reloadScripts, responseBody = '{}') {
@@ -1077,6 +1077,13 @@ test('MBC Profitbase normalizer preserves the reviewed 2,784-unit lifecycle univ
   assert.equal(artifacts.reduce((sum, artifact) => sum + artifact.soldResidentialTotal, 0), 2_232);
   assert.ok(artifacts.every((artifact) => artifact.completeness.saleDatePolicy.includes('baseline SOLD')));
 
+  const hiddenReviewedHouse = structuredClone(fixture.input);
+  hiddenReviewedHouse.houses.data = hiddenReviewedHouse.houses.data.filter((house) => house.id !== 122371);
+  assert.equal(normalizeMbcProfitbaseCapture(hiddenReviewedHouse, undefined, fixture.templates, fixture.projectDefinitions).artifacts.flatMap(({artifact}) => artifact.units).length, 2784, 'an explicitly reviewed hidden house remains fully collected');
+  const missingRequiredHouse = structuredClone(fixture.input);
+  missingRequiredHouse.houses.data = missingRequiredHouse.houses.data.filter((house) => house.id !== 122368);
+  assert.throws(() => normalizeMbcProfitbaseCapture(missingRequiredHouse, undefined, fixture.templates, fixture.projectDefinitions), /house universe changed/);
+
   const missingSoyQueue = structuredClone(fixture.input);
   const fourthSoyHouse = missingSoyQueue.groups
     .find((group) => group.project.slug === 'soy-boyi')
@@ -1601,7 +1608,16 @@ test('NRG normalization covers all eleven project adapters and requires an empty
   const retiredSado = structuredClone(groups);
   const retired = retiredSado.find((group) => group.project.slug === 'sado');
   retired.pages[0].placements[0].realEstateUUID = '6742abd7-5d7e-4d15-ad87-6fd6e26f2d56';
-  assert.throws(() => normalizeNrgBiCapture(retiredSado), /realEstateUUID mismatch/, 'a retired alias is not accepted as a current apartment scope');
+  assert.equal(normalizeNrgBiCapture(retiredSado).artifacts.length, 11, 'an exact previously reviewed alias remains an inventory scope even when hidden from overview');
+  retired.pages[0].placements[0].realEstateUUID = '00000000-0000-4000-8000-999999999999';
+  assert.throws(() => normalizeNrgBiCapture(retiredSado), /realEstateUUID mismatch/);
+  const healthy = groups.filter((group) => group.project.slug !== 'sado');
+  const healthyProvider = scopeNrgProvider(provider, healthy.map((group) => group.project.slug).join(','));
+  assert.equal(normalizeNrgBiCapture(healthy, undefined, healthyProvider.projectDefinitions).artifacts.length, 10);
+  assert.throws(() => normalizeNrgBiCapture(healthy), /requires 11 project groups/, 'partial data never silently passes an unscoped run');
+  assert.throws(() => scopeNrgProvider(provider, 'sado,unknown'), /scope is invalid/);
+  assert.throws(() => scopeNrgProvider(provider, 'sado,sado'), /scope is invalid/);
+  assert.throws(() => listedNrgProjectEstates(provider.projectDefinitions[0], []), /missing required estate/);
   assert.equal(fourUArtifact.units.find((unit) => unit.status === 'sold').price, null);
   assert.ok(fourUArtifact.units.every((unit) => unit.id === unit.sourceId && unit.sourceKey === `nrg-bi:4u:${unit.id}`));
   const repairedPricing = structuredClone(groups);

@@ -3,7 +3,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { opaqueMbcSourceKey, templateMbcSourceKey } from './mbc-identity.mjs';
 import { expectedNrgOriginalUrl, expectedNrgPlanUrl, nrgPlanAssetGeometryValid, nrgPlanVariants } from './nrg-plan-assets.mjs';
-import { mbcProjects, nrgBiApartmentPropertyTypeUUID, nrgBiProjects, nrgProjectSourceUUIDs } from './providers.mjs';
+import { mbcProjects, nrgBiApartmentPropertyTypeUUID, nrgBiProjects, nrgProjectSourceUUIDs, listedNrgProjectEstates } from './providers.mjs';
 
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 
@@ -551,7 +551,9 @@ export function normalizeMbcProfitbaseCapture(input, capturedAt = new Date().toI
     projectIds.add(project.profitbaseProjectId);
     const sourceHouses = houses.filter((house) => integer(house?.projectId) === project.profitbaseProjectId && house?.isArchive !== true);
     const allowedHouseIds = new Set([...project.profitbaseHouses.map((house) => house.id), ...project.excludedProfitbaseHouseIds]);
-    assert(sourceHouses.length === allowedHouseIds.size && sourceHouses.every((house) => allowedHouseIds.has(integer(house.id))), `MBC ${project.slug} Profitbase house universe changed`);
+    const requiredVisible = new Set([...project.profitbaseHouses.filter((house) => !house.allowHiddenFromHouseList).map((house) => house.id), ...project.excludedProfitbaseHouseIds]);
+    const visibleIds = new Set(sourceHouses.map((house) => integer(house.id)));
+    assert(visibleIds.size === sourceHouses.length && [...requiredVisible].every((id) => visibleIds.has(id)) && sourceHouses.every((house) => allowedHouseIds.has(integer(house.id))), `MBC ${project.slug} Profitbase house universe changed`);
     const capturedGroup = groupsBySlug.get(project.slug);
     assert(capturedGroup && Number(capturedGroup.project?.id) === project.id, `MBC Profitbase capture is missing project ${project.slug}`);
     assert(Array.isArray(capturedGroup.houses), `MBC ${project.slug} captured houses are invalid`);
@@ -565,7 +567,7 @@ export function normalizeMbcProfitbaseCapture(input, capturedAt = new Date().toI
     let excludedNonResidential = 0;
     for (const definition of project.profitbaseHouses) {
       const sourceHouse = sourceHouses.find((house) => integer(house?.id) === definition.id);
-      assert(sourceHouse && String(sourceHouse.title ?? '').trim() === definition.title, `MBC ${project.slug} house ${definition.id} identity changed`);
+      assert((sourceHouse && String(sourceHouse.title ?? '').trim() === definition.title) || (!sourceHouse && definition.allowHiddenFromHouseList === true), `MBC ${project.slug} house ${definition.id} identity changed`);
       const normalized = mbcProfitbaseHouseRows(capturedHouses.get(definition.id), project, definition, customStatuses);
       for (const row of normalized.residentialRows) {
         assert(!globalPropertyIds.has(row.id), `MBC Profitbase duplicates property ${row.id} across houses`);
@@ -796,9 +798,11 @@ function normalize4uPlanAudit(value, rows) {
 }
 
 /** Normalize the public BI sales-picker responses used by the eleven NRG projects. */
-export function normalizeNrgBiCapture(groups, capturedAt = new Date().toISOString()) {
-  assert(Array.isArray(groups) && groups.length === nrgBiProjects.length, `NRG capture requires ${nrgBiProjects.length} project groups, received ${groups?.length ?? 0}`);
-  const expectedProjects = new Map(nrgBiProjects.map((project) => [project.slug, project]));
+export function normalizeNrgBiCapture(groups, capturedAt = new Date().toISOString(), projectDefinitions = nrgBiProjects) {
+  const trustedProjects = new Map(nrgBiProjects.map((project) => [project.slug, project]));
+  assert(Array.isArray(projectDefinitions) && projectDefinitions.length > 0 && new Set(projectDefinitions.map((p) => p.slug)).size === projectDefinitions.length && projectDefinitions.every((p) => trustedProjects.has(p.slug)), 'NRG project scope is invalid');
+  assert(Array.isArray(groups) && groups.length === projectDefinitions.length, `NRG capture requires ${projectDefinitions.length} project groups, received ${groups?.length ?? 0}`);
+  const expectedProjects = new Map(projectDefinitions.map((project) => [project.slug, trustedProjects.get(project.slug)]));
   const projectSlugs = new Set();
   const artifacts = [];
   const audits = {};
@@ -821,9 +825,7 @@ export function normalizeNrgBiCapture(groups, capturedAt = new Date().toISOStrin
     });
     assert(record(group.realEstate) && Array.isArray(group.realEstate.realEstates), `NRG ${slug} realEstateList is invalid`);
     const sourceUUIDs = nrgProjectSourceUUIDs(configuredProject);
-    const estates = sourceUUIDs.map((id) => {
-      const estate = group.realEstate.realEstates.find((item) => item?.uuid === id);
-      assert(record(estate), `NRG ${slug} realEstateList does not contain required estate ${id}`);
+    const estates = listedNrgProjectEstates(configuredProject, group.realEstate.realEstates).map((estate) => {
       assert(Array.isArray(estate.propertyTypes) && estate.propertyTypes.some((item) => item?.uuid === group.apartmentPropertyTypeUUID), `NRG ${slug} has no apartment property type`);
       assert(Array.isArray(estate.blocks), `NRG ${slug} estate has no block list`);
       return estate;
@@ -983,7 +985,7 @@ export function normalizeNrgBiCapture(groups, capturedAt = new Date().toISOStrin
       },
     });
   }
-  for (const project of nrgBiProjects) assert(projectSlugs.has(project.slug), `NRG capture is missing project ${project.slug}`);
+  for (const project of projectDefinitions) assert(projectSlugs.has(project.slug), `NRG capture is missing project ${project.slug}`);
   return { artifacts, audit: audits };
 }
 

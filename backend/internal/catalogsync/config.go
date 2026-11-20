@@ -32,6 +32,7 @@ type Config struct {
 
 type ProviderConfig struct {
 	Name                     string                   `json:"name"`
+	BaselineProvider         string                   `json:"baselineProvider,omitempty"`
 	Command                  []string                 `json:"command"`
 	WorkingDirectory         string                   `json:"workingDirectory,omitempty"`
 	Timeout                  string                   `json:"timeout,omitempty"`
@@ -99,6 +100,9 @@ func (config *Config) Validate() error {
 			return fmt.Errorf("provider %q is configured more than once", provider.Name)
 		}
 		providers[provider.Name] = struct{}{}
+		if provider.BaselineProvider != "" && (!safeNamePattern.MatchString(provider.BaselineProvider) || provider.BaselineProvider == provider.Name) {
+			return fmt.Errorf("provider %q baselineProvider is invalid", provider.Name)
+		}
 		if len(provider.Command) == 0 || !filepath.IsAbs(provider.Command[0]) {
 			return fmt.Errorf("provider %q command must start with an absolute executable path", provider.Name)
 		}
@@ -152,6 +156,13 @@ func (config *Config) Validate() error {
 				return fmt.Errorf("project %q is owned by both %q and %q", slug, owner, provider.Name)
 			}
 			projectOwners[slug] = provider.Name
+		}
+	}
+	for _, provider := range config.Providers {
+		if provider.BaselineProvider != "" {
+			if _, exists := providers[provider.BaselineProvider]; !exists {
+				return fmt.Errorf("provider %q baselineProvider is not configured", provider.Name)
+			}
 		}
 	}
 	return nil

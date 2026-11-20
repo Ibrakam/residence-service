@@ -6,7 +6,8 @@ export const alertProviders = Object.freeze({
   mbc: 'Murad Buildings — Regnum Plaza, C1, Soy Bo‘yi, Saadiyat',
   'mbc-sarbon': 'Murad Buildings — Sarbon',
   human2human: 'SUN',
-  'nrg-bi': 'NRG BI — 11 ЖК',
+  'nrg-bi': 'NRG BI — 10 ЖК',
+  'nrg-bi-sado': 'NRG BI — Sad’O',
   taqsim: 'Taqsim Estate — Pushkin',
   monitor: 'Проверка состояния CRM на сервере',
 });

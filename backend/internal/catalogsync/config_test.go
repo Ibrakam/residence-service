@@ -110,9 +110,10 @@ func TestProductionExampleOwnsAllLiveProjects(t *testing.T) {
 		"mbc-sarbon":  {"sarbon"},
 		"nrg-bi": {
 			"4u", "bayterak", "botanika-saroyi", "flagman", "jomiy", "maftun-makon",
-			"meros", "sado", "voha", "yangibaxt", "zamon",
+			"meros", "voha", "yangibaxt", "zamon",
 		},
-		"uysot": {"avalon-residence"},
+		"nrg-bi-sado": {"sado"},
+		"uysot":       {"avalon-residence"},
 	}
 	got := make(map[string][]string, len(config.Providers))
 	mbcFloors := map[string]int{
@@ -130,8 +131,21 @@ func TestProductionExampleOwnsAllLiveProjects(t *testing.T) {
 		if provider.WorkingDirectory != "/opt/residence-live-sync" {
 			t.Errorf("provider %q workingDirectory=%q", provider.Name, provider.WorkingDirectory)
 		}
-		if len(provider.Command) != 1 || provider.Command[0] != "/opt/residence-live-sync/bin/capture-"+provider.Name {
+		expectedCommand := "/opt/residence-live-sync/bin/capture-" + provider.Name
+		if provider.Name == "nrg-bi-sado" {
+			expectedCommand = "/opt/residence-live-sync/bin/capture-nrg-bi"
+			if provider.BaselineProvider != "nrg-bi" {
+				t.Fatal("isolated Sado lost its accepted baseline")
+			}
+		}
+		if len(provider.Command) < 1 || provider.Command[0] != expectedCommand {
 			t.Errorf("provider %q command=%q", provider.Name, provider.Command)
+		}
+		if provider.Name == "nrg-bi" && len(provider.Command) != 3 {
+			t.Fatal("healthy NRG scope is not explicit")
+		}
+		if provider.Name == "nrg-bi-sado" && len(provider.Command) != 5 {
+			t.Fatal("isolated NRG scope/namespace is not explicit")
 		}
 	}
 	if !reflect.DeepEqual(got, want) {

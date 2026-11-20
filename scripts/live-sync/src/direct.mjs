@@ -3,7 +3,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { makeBodyRecord } from './capture.mjs';
 import { mergeNrgBlockRegistries, nrgBiSeedBlockRegistry, normalizeNrgBlockRegistry } from './nrg-block-registry.mjs';
 import { refreshNrgPlanAssets } from './nrg-plan-assets.mjs';
-import { nrgProjectSourceUUIDs } from './providers.mjs';
+import { nrgProjectSourceUUIDs, listedNrgProjectEstates } from './providers.mjs';
 
 const MBC_ENDPOINT = 'https://mbc.uz/api/plans';
 const NRG_BASE = 'https://apigw.bi.group/sales-picker/microfe-v3';
@@ -341,16 +341,12 @@ async function captureNrgBi(provider, records, { planAssetCache = null, blockReg
     provider: 'nrg-bi',
     source: `${NRG_BASE}/realEstateList`,
     reviewedAt: new Date().toISOString(),
-    projects: {},
+    projects: structuredClone(trustedRegistry.projects),
   };
   for (const project of provider.projectDefinitions) {
     const estate = await nrgPost('realEstateList', nrgEstateBody(provider, project), `NRG ${project.slug} realEstateList`);
     if (!Array.isArray(estate.value?.realEstates)) throw new Error(`NRG ${project.slug} realEstateList has no realEstates array`);
-    const targetEstates = nrgProjectSourceUUIDs(project).map((id) => {
-      const item = estate.value.realEstates.find((candidate) => candidate?.uuid === id);
-      if (!item || !Array.isArray(item.blocks) || item.blocks.length === 0) throw new Error(`NRG ${project.slug} realEstateList is missing required estate ${id}`);
-      return item;
-    });
+    const targetEstates = listedNrgProjectEstates(project, estate.value.realEstates);
     const currentBlocks = targetEstates.flatMap((item) => item.blocks);
     const savedProject = trustedRegistry.projects[project.slug];
     if (!savedProject || savedProject.realEstateUUID !== project.realEstateUUID) throw new Error(`NRG ${project.slug} trusted block registry identity mismatch`);

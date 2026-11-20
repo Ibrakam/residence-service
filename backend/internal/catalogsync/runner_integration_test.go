@@ -205,6 +205,53 @@ func TestProviderImportKeepsLastGoodCatalogAfterGuardFailure(t *testing.T) {
 	if !found {
 		t.Fatal("provider is missing from machine-readable status")
 	}
+	// A split provider must compare against the real accepted source history,
+	// even before its first own successful capture; a small candidate cannot
+	// bypass record-drop protection by changing the provider name.
+	isolated := provider
+	isolated.Name = provider.Name + "-isolated"
+	isolated.BaselineProvider = provider.Name
+	isolated.Projects = map[string]ProjectPolicy{projectSlug: {MinimumRecords: 1}}
+	inherited, err := loadProviderAcceptedProjects(ctx, connection, isolated)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if inherited[projectSlug].Records != 3 {
+		t.Fatal("split source lost accepted baseline")
+	}
+	if err := ValidatePreparedCatalog(isolated, truncated, inherited, secondAt); err == nil {
+		t.Fatal("split source bypassed accepted record drop protection")
+	}
+
+	defer func() {
+		_, _ = pool.Exec(context.Background(), `DELETE FROM catalog_sync_providers WHERE provider=$1`, isolated.Name)
+		_, _ = pool.Exec(context.Background(), `DELETE FROM sync_runs WHERE source=$1`, ProviderSource(isolated.Name))
+	}()
+	isolatedRun, err := startAttempt(ctx, connection, isolated, secondAt.Add(time.Minute))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := finishFailed(ctx, connection, isolated, isolatedRun, secondAt.Add(time.Minute), "capture_failed", nil); err != nil {
+		t.Fatal(err)
+	}
+	remaining := provider
+	remaining.Projects = map[string]ProjectPolicy{projectSlug + "-healthy": {MinimumRecords: 1}}
+	if _, err := startAttempt(ctx, connection, remaining, secondAt.Add(2*time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+	var healthRows int
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM catalog_sync_projects WHERE project_slug=$1 AND provider=$2 AND last_attempt_status='failed' AND last_success_at IS NULL AND fresh_until IS NULL`, projectSlug, isolated.Name).Scan(&healthRows); err != nil {
+		t.Fatal(err)
+	}
+	if healthRows != 1 {
+		t.Fatalf("split health is missing, duplicated or falsely fresh: %d", healthRows)
+	}
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM units u JOIN phases ph ON ph.id=u.phase_id JOIN projects p ON p.id=ph.project_id WHERE p.slug=$1 AND u.is_active`, projectSlug).Scan(&active); err != nil {
+		t.Fatal(err)
+	}
+	if active != 3 {
+		t.Fatalf("isolated failure removed previous catalogue: %d", active)
+	}
 }
 
 func TestProviderImportRollsBackDataWhenAtomicFinalizerFails(t *testing.T) {

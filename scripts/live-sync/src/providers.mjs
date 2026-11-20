@@ -22,12 +22,10 @@ export const nrgBiProjects = Object.freeze([
   Object.freeze({ slug: 'jomiy', name: 'Jomiy', realEstateUUID: '81153f29-f48b-11ed-a82e-001dd8b726aa' }),
   Object.freeze({ slug: 'maftun-makon', name: 'Maftun Makon', realEstateUUID: '20b833b1-0d2a-420e-81d5-98585730350f' }),
   Object.freeze({ slug: 'meros', name: 'Meros', realEstateUUID: '0e6cc6d9-6f4a-405c-a8c0-037264d133c1' }),
-  // Reviewed 2026-11-20: official realEstateList retired the temporary Comfort
-  // estate alias 6742abd7-5d7e-4d15-ad87-6fd6e26f2d56. Keep the primary
-  // estate scope; the persistent block registry still requires ALL previously
-  // accepted blocks, including blocks now hidden by realEstateList. Every
-  // retained matrix and FREE-list consistency guard must continue to pass.
-  Object.freeze({ slug: 'sado', name: 'Sado', realEstateUUID: '848ce8ff-54a9-4ffb-9fdf-183aea1710a6' }),
+  // Reviewed 2026-11-20: the Comfort alias is hidden from realEstateList,
+  // but remains a scoped inventory identity. Its previously trusted blocks
+  // remain mandatory; disappearance is never interpreted as SOLD.
+  Object.freeze({ slug: 'sado', name: 'Sado', realEstateUUID: '848ce8ff-54a9-4ffb-9fdf-183aea1710a6', additionalRealEstateUUIDs: Object.freeze(['6742abd7-5d7e-4d15-ad87-6fd6e26f2d56']), hiddenOverviewEstateUUIDs: Object.freeze(['6742abd7-5d7e-4d15-ad87-6fd6e26f2d56']) }),
   Object.freeze({ slug: 'voha', name: 'Voha', realEstateUUID: 'ea3ccd82-e81b-11ed-a827-001dd8b72708' }),
   Object.freeze({ slug: 'yangibaxt', name: 'Yangibaxt', realEstateUUID: '6481be1c-c9fe-11ed-a82c-001dd8b726aa' }),
   Object.freeze({ slug: 'zamon', name: 'Zamon', realEstateUUID: '58e48f7d-dd1c-11ed-a82c-001dd8b726aa' }),
@@ -36,6 +34,26 @@ export const nrgBiProjects = Object.freeze([
 export const nrgBiApartmentPropertyTypeUUID = '5990a172-812a-4fee-b4f5-c860cca824d7';
 
 export const nrgProjectSourceUUIDs = (project) => [project.realEstateUUID, ...(project.additionalRealEstateUUIDs ?? [])];
+
+export function listedNrgProjectEstates(project, realEstates) {
+  if (!Array.isArray(realEstates)) throw new Error(`NRG ${project.slug} realEstateList has no realEstates array`);
+  const hidden = new Set(project.hiddenOverviewEstateUUIDs ?? []);
+  return nrgProjectSourceUUIDs(project).flatMap((id) => {
+    const matches = realEstates.filter((item) => item?.uuid === id);
+    if (!matches.length && hidden.has(id)) return [];
+    if (matches.length !== 1 || !Array.isArray(matches[0].blocks)) throw new Error(`NRG ${project.slug} realEstateList is missing required estate ${id}`);
+    return matches;
+  });
+}
+
+export function scopeNrgProvider(provider, scope) {
+  if (!scope) return provider;
+  if (provider.id !== 'nrg-bi') throw new Error('Project scope is supported only for NRG');
+  const slugs = scope.split(',');
+  if (!slugs.length || new Set(slugs).size !== slugs.length || slugs.some((slug) => !provider.projectDefinitions.some((project) => project.slug === slug))) throw new Error('NRG project scope is invalid');
+  const definitions = provider.projectDefinitions.filter((project) => slugs.includes(project.slug));
+  return { ...provider, projects: definitions.map((project) => project.slug), projectDefinitions: definitions };
+}
 
 // Authoritative queue-card metadata observed in the MBC Partners CRM on
 // 2026-09-15. Profitbase houses are joined to this reviewed display metadata;
@@ -48,7 +66,7 @@ export const mbcProjects = Object.freeze([
     minimumResidentialUnits: 700,
     profitbaseHouses: Object.freeze([
       Object.freeze({ id: 122368, title: 'I очередь', queueSourceValue: '1', minimumResidentialUnits: 310 }),
-      Object.freeze({ id: 122371, title: 'II очередь', queueSourceValue: '3', minimumResidentialUnits: 370 }),
+      Object.freeze({ id: 122371, title: 'II очередь', queueSourceValue: '3', minimumResidentialUnits: 370, allowHiddenFromHouseList: true }),
     ]),
     excludedProfitbaseHouseIds: Object.freeze([123808, 124007]),
     // The CRM calls its second displayed queue `3`. Keeping the source value

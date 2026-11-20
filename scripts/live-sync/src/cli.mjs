@@ -19,7 +19,7 @@ import {
   normalizeSunPages,
   normalizeUysotTable,
 } from './normalize.mjs';
-import { getProvider, nrgProjectSourceUUIDs, providerStatus } from './providers.mjs';
+import { getProvider, nrgProjectSourceUUIDs, providerStatus, scopeNrgProvider, listedNrgProjectEstates } from './providers.mjs';
 
 const repositoryRoot = resolve(fileURLToPath(new URL('../../..', import.meta.url)));
 const packageRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -149,7 +149,7 @@ export async function loadTemplate(providerId, explicitPath) {
   throw new Error(`${providerId}: required public enrichment template ${filename} is missing; set LIVE_SYNC_TEMPLATE_DIR or install it under ${packageRoot}/templates`);
 }
 
-function normalize(providerId, input, capturedAt, template, legacy = false) {
+function normalize(providerId, input, capturedAt, template, legacy = false, projectDefinitions = undefined) {
   if (providerId === 'uysot') return normalizeUysotTable(input, capturedAt);
   if (isMbcProvider(providerId)) {
     if (legacy) {
@@ -161,18 +161,18 @@ function normalize(providerId, input, capturedAt, template, legacy = false) {
   }
   if (providerId === 'sun') return normalizeSunPages(input, capturedAt, template);
   if (providerId === 'kayan') return legacy ? normalizeKayanSnapshots(input, capturedAt, template) : normalizeKayanPropertyResponses(input, capturedAt, template);
-  if (providerId === 'nrg-bi') return normalizeNrgBiCapture(input, capturedAt);
+  if (providerId === 'nrg-bi') return normalizeNrgBiCapture(input, capturedAt, projectDefinitions);
   throw new Error(`${providerId}: capture-only discovery adapter; no publishable normalizer exists`);
 }
 
-function inputFromCapture(providerId, capture) {
+function inputFromCapture(providerId, capture, scopedProvider = null) {
   if (providerId === 'uysot') {
     const record = capture.records.find((item) => item.method === 'POST' && item.url?.origin === 'https://service.app.uysot.uz' && item.url?.path === '/v1/smart-catalog/table');
     if (!record) throw new Error('Uysot capture does not contain the guarded table response');
     return record.value;
   }
   if (isMbcProvider(providerId)) {
-    const provider = getProvider(providerId);
+    const provider = scopedProvider ?? getProvider(providerId);
     const singleton = (endpoint) => {
       const records = capture.records.filter((item) => item.method === 'GET'
         && item.url?.origin === `https://${provider.profitbaseHost}`
@@ -235,7 +235,7 @@ function inputFromCapture(providerId, capture) {
     return responses;
   }
   if (providerId === 'nrg-bi') {
-    const provider = getProvider(providerId);
+    const provider = scopedProvider ?? getProvider(providerId);
     const expectedProjectSlugs = new Set(provider.projectDefinitions.map((project) => project.slug));
     const registryRecords = capture.records.filter((item) => item.method === 'DERIVED'
       && item.url?.origin === 'https://apigw.bi.group'
@@ -271,8 +271,7 @@ function inputFromCapture(providerId, capture) {
       if (realEstateRecord.method !== 'POST' || realEstateRecord.url?.origin !== 'https://apigw.bi.group' || realEstateRecord.url?.path !== '/sales-picker/microfe-v3/realEstateList') {
         throw new Error(`NRG ${project.slug} realEstateList response is outside the exact endpoint scope`);
       }
-      const estates = nrgProjectSourceUUIDs(project).map((id) => realEstateRecord.value?.realEstates?.find((item) => item?.uuid === id));
-      if (estates.some((estate) => !estate || !Array.isArray(estate.blocks) || estate.blocks.length === 0)) throw new Error(`NRG ${project.slug} realEstateList has no requested-project block universe`);
+      const estates = listedNrgProjectEstates(project, realEstateRecord.value?.realEstates);
       const requiredProject = blockRegistry.projects[project.slug];
       if (!requiredProject || requiredProject.realEstateUUID !== project.realEstateUUID) throw new Error(`NRG ${project.slug} block registry project identity mismatch`);
       const blocks = new Map();
@@ -409,10 +408,9 @@ function blockRegistryFromCapture(capture) {
 async function persistNrgCaches(providerId, root, capture) {
   if (providerId !== 'nrg-bi' || !root) return;
   const audit = planAssetAuditFromCapture(capture);
-  if (!audit) throw new Error('NRG 4u plan asset audit is unavailable for cache persistence');
   const registry = blockRegistryFromCapture(capture);
   if (!registry) throw new Error('NRG block registry is unavailable for cache persistence');
-  await atomicWriteFile(nrgPlanCachePath(root), jsonBody(audit));
+  if (audit) await atomicWriteFile(nrgPlanCachePath(root), jsonBody(audit));
   await atomicWriteFile(nrgBlockRegistryPath(root), jsonBody(mergeNrgBlockRegistries(nrgBiSeedBlockRegistry, registry)));
 }
 
@@ -442,7 +440,7 @@ async function statusCommand(json) {
 
 async function captureCommand(options) {
   const providerId = providerAlias(options.provider);
-  const provider = getProvider(providerId);
+  const provider = scopeNrgProvider(getProvider(providerId), options.projects);
   if (!options.output) throw new Error('capture requires --output');
   const capture = await captureProvider(provider, options);
   const files = captureFiles(capture);
@@ -450,7 +448,7 @@ async function captureCommand(options) {
   if (provider.maturity !== 'discovery') {
     try {
       const template = await loadTemplate(providerId, options.template);
-      normalized = normalize(providerId, inputFromCapture(providerId, capture), capture.capturedAt, template);
+      normalized = normalize(providerId, inputFromCapture(providerId, capture, provider), capture.capturedAt, template, false, provider.projectDefinitions);
       for (const artifact of artifactEntries(providerId, normalized)) files.push([`artifacts/${artifact.filename}`, jsonBody(artifact.artifact)]);
       files.push(['completeness.json', jsonBody(normalized.audit)]);
     } catch (error) {
@@ -468,7 +466,7 @@ async function captureCommand(options) {
 
 async function collectCommand(options) {
   const providerId = providerAlias(options.provider);
-  const provider = getProvider(providerId);
+  const provider = scopeNrgProvider(getProvider(providerId), options.projects);
   if (!options['capture-output'] || !options['catalog-output']) {
     throw new Error('collect requires --capture-output and --catalog-output');
   }
@@ -477,7 +475,7 @@ async function collectCommand(options) {
   const capture = await captureProvider(provider, options);
   let result;
   try {
-    result = normalize(providerId, inputFromCapture(providerId, capture), capture.capturedAt, template);
+    result = normalize(providerId, inputFromCapture(providerId, capture, provider), capture.capturedAt, template, false, provider.projectDefinitions);
   } catch (error) {
     capture.errors.push(error instanceof Error ? error.message : String(error));
   }
@@ -487,7 +485,9 @@ async function collectCommand(options) {
     for (const entry of artifactEntries(providerId, result)) evidenceFiles.push([`artifacts/${entry.filename}`, jsonBody(entry.artifact)]);
   }
   if (result && capture.errors.length === 0) evidenceFiles.push(['success.json', jsonBody({ provider: providerId, complete: true })]);
-  const captureDestination = await atomicRunDirectory(options['capture-output'], providerId, evidenceFiles);
+  const namespace = options['capture-namespace'] ?? providerId;
+  if (namespace !== providerId && !(providerId === 'nrg-bi' && namespace === 'nrg-bi-sado')) throw new Error('Invalid capture namespace');
+  const captureDestination = await atomicRunDirectory(options['capture-output'], namespace, evidenceFiles);
   if (!result || capture.errors.length) {
     throw new Error(`${providerId}: no complete publishable catalogue; evidence=${captureDestination}; errors=${capture.errors.join('; ') || '(none)'}`);
   }
@@ -503,7 +503,7 @@ async function collectCommand(options) {
 
 async function normalizeCommand(command, options) {
   const providerId = providerAlias(options.provider);
-  const provider = getProvider(providerId);
+  const provider = scopeNrgProvider(getProvider(providerId), options.projects);
   if (!options.input) throw new Error(`${command} requires --input`);
   if (provider.maturity === 'discovery' && providerId !== 'kayan') throw new Error(provider.blocker ?? `${providerId}: discovery-only`);
   const template = await loadTemplate(providerId, options.template);
@@ -513,9 +513,9 @@ async function normalizeCommand(command, options) {
   else {
     const capture = await loadCaptureDirectory(options.input);
     capturedAt = capture.capturedAt;
-    input = inputFromCapture(providerId, capture);
+    input = inputFromCapture(providerId, capture, provider);
   }
-  const result = normalize(providerId, input, capturedAt, template, Boolean(options.legacy));
+  const result = normalize(providerId, input, capturedAt, template, Boolean(options.legacy), provider.projectDefinitions);
   if (command === 'dry-run') {
     process.stdout.write(jsonBody({ provider: providerId, artifacts: artifactEntries(providerId, result).map((entry) => entry.filename), audit: result.audit, write: false }));
     return;

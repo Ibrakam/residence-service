@@ -167,7 +167,7 @@ func (runner *Runner) runProvider(ctx context.Context, workDirectory string, pro
 			return fail("status_write_failed", nil)
 		}
 	}
-	baselines, err := loadAcceptedProjects(ctx, connection, ProviderSource(provider.Name))
+	baselines, err := loadProviderAcceptedProjects(ctx, connection, provider)
 	if err != nil {
 		return fail("baseline_unavailable", nil)
 	}
@@ -373,6 +373,31 @@ func finalizeSuccess(ctx context.Context, tx pgx.Tx, provider ProviderConfig, pr
 		}
 	}
 	return nil
+}
+
+// An explicit provider split inherits the original accepted baseline without
+// rewriting capture history. New accepted snapshots always take precedence.
+func loadProviderAcceptedProjects(ctx context.Context, connection *pgxpool.Conn, provider ProviderConfig) (map[string]AcceptedProject, error) {
+	current, err := loadAcceptedProjects(ctx, connection, ProviderSource(provider.Name))
+	if err != nil || provider.BaselineProvider == "" {
+		return current, err
+	}
+	inherited, err := loadAcceptedProjects(ctx, connection, ProviderSource(provider.BaselineProvider))
+	if err != nil {
+		return nil, err
+	}
+	return mergeAcceptedProjectBaselines(provider, current, inherited), nil
+}
+func mergeAcceptedProjectBaselines(provider ProviderConfig, current, inherited map[string]AcceptedProject) map[string]AcceptedProject {
+	result := make(map[string]AcceptedProject, len(provider.Projects))
+	for slug := range provider.Projects {
+		if value, exists := current[slug]; exists {
+			result[slug] = value
+		} else if value, exists := inherited[slug]; exists {
+			result[slug] = value
+		}
+	}
+	return result
 }
 
 func loadAcceptedProjects(ctx context.Context, connection *pgxpool.Conn, source string) (map[string]AcceptedProject, error) {

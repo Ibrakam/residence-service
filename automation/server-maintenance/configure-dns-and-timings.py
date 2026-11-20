@@ -56,7 +56,7 @@ files={site:updated.encode(),conf:fmt.encode(),rotation:b'''/var/log/nginx/tenco
         if [ -f /run/nginx.pid ]; then kill -USR1 $(cat /run/nginx.pid); fi
     endscript
 }
-''',dns:b'[Network]\nDNS=\nDNS=8.8.8.8 8.8.4.4\n'}
+''',dns:b'[Network]\nDNS=\nDNS=8.8.8.8 8.8.4.4\n\n[DHCPv4]\nUseDNS=no\n\n[DHCPv6]\nUseDNS=no\n\n[IPv6AcceptRA]\nUseDNS=no\n'}
 old={p:p.read_bytes() if p.exists() else None for p in files}
 (backup/'paths.json').write_text(json.dumps([str(p) for p in files]))
 for i,(p,data) in enumerate(old.items()):

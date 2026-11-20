@@ -1975,3 +1975,11 @@ test('Uysot visible login form is not reloaded or intercepted by a scheduled cap
  assert.equal(closed,true);
  assert.deepEqual(calls,['Runtime.evaluate']);
 });
+
+
+test('NRG split providers serialize shared registry reads and writes before Node starts', async () => {
+ const wrapper=await readFile(new URL('../bin/capture-nrg-bi',import.meta.url),'utf8');
+ assert.match(wrapper,/LOCK_FILE=\$CAPTURE_DIR\/\.nrg-capture\.lock/);
+ assert.match(wrapper,/exec flock --exclusive --timeout 600 "\$LOCK_FILE" node/);
+ assert.match(wrapper,/"\$@"/,'both reviewed scopes use the same locked wrapper');
+});

@@ -260,3 +260,9 @@ all and only those candidate projects, and never weakens a project guard.
 Uysot checks for a visible password form before navigation or interception.
 An expired session fails with a static diagnostic and leaves the login screen
 untouched for the operator; the enabled timer resumes normal capture after login.
+
+NRG scopes share a coordinator advisory family lock acquired before writing an
+attempt. An overlapping scope exits `skipped/overlap_prevented` without changing
+health. The shared wrapper also takes one capture-root flock before starting
+Node, serializing the complete cache read/capture/merge/write cycle even for
+manual wrapper invocations; its capture directory is created privately first.

@@ -200,9 +200,19 @@ func (runner *Runner) runProvider(ctx context.Context, workDirectory string, pro
 	return result
 }
 
+// NRG scopes have independent health but share registry/cache transport state.
+// Acquire this family lock before startAttempt, so overlap skips cannot mark a
+// healthy provider failed or replace its last accepted state.
+func providerLockName(provider string) string {
+	if provider == "nrg-bi" || strings.HasPrefix(provider, "nrg-bi-") {
+		return "nrg-bi"
+	}
+	return provider
+}
+
 func tryProviderLock(ctx context.Context, connection *pgxpool.Conn, provider string) (bool, error) {
 	var locked bool
-	err := connection.QueryRow(ctx, `SELECT pg_try_advisory_lock(hashtextextended($1,0))`, "catalog_provider_sync:"+provider).Scan(&locked)
+	err := connection.QueryRow(ctx, `SELECT pg_try_advisory_lock(hashtextextended($1,0))`, "catalog_provider_sync:"+providerLockName(provider)).Scan(&locked)
 	return locked, err
 }
 
@@ -210,7 +220,7 @@ func releaseProviderLock(connection *pgxpool.Conn, provider string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	var unlocked bool
-	_ = connection.QueryRow(ctx, `SELECT pg_advisory_unlock(hashtextextended($1,0))`, "catalog_provider_sync:"+provider).Scan(&unlocked)
+	_ = connection.QueryRow(ctx, `SELECT pg_advisory_unlock(hashtextextended($1,0))`, "catalog_provider_sync:"+providerLockName(provider)).Scan(&unlocked)
 }
 
 func startAttempt(ctx context.Context, connection *pgxpool.Conn, provider ProviderConfig, attemptAt time.Time) (int64, error) {

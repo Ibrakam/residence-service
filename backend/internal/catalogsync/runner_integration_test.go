@@ -349,3 +349,51 @@ func providerPreparedFixture(projectSlug, developerSlug string, capturedAt time.
 		}},
 	}}}
 }
+
+func TestNrgFamilyOverlapSkipsBeforeAnyHealthMutation(t *testing.T) {
+	databaseURL := os.Getenv("CATALOG_SYNC_TEST_DATABASE_URL")
+	if databaseURL == "" {
+		t.Skip("set CATALOG_SYNC_TEST_DATABASE_URL for isolated PostgreSQL test")
+	}
+	ctx := t.Context()
+	pool, err := database.Open(ctx, databaseURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer pool.Close()
+	if err := database.Migrate(ctx, pool, filepath.Join("..", "..", "migrations")); err != nil {
+		t.Fatal(err)
+	}
+	holder, err := pool.Acquire(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer holder.Release()
+	locked, err := tryProviderLock(ctx, holder, "nrg-bi")
+	if err != nil || !locked {
+		t.Fatalf("family lock: %v %v", locked, err)
+	}
+	defer releaseProviderLock(holder, "nrg-bi")
+	var before, after int
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM sync_runs`).Scan(&before); err != nil {
+		t.Fatal(err)
+	}
+	provider := ProviderConfig{Name: "nrg-bi-sado", Command: []string{"/not-executed"}, Projects: map[string]ProjectPolicy{"sado": {MinimumRecords: 1}}}
+	result := NewRunner(pool, nil).runProvider(ctx, t.TempDir(), provider, false)
+	if result.Status != "skipped" || result.FailureCode != "overlap_prevented" {
+		t.Fatalf("family overlap was not safely skipped: %#v", result)
+	}
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM sync_runs`).Scan(&after); err != nil {
+		t.Fatal(err)
+	}
+	if before != after {
+		t.Fatal("overlap inserted a failed/running sync attempt")
+	}
+	var healthCount int
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM catalog_sync_providers WHERE provider='nrg-bi-sado'`).Scan(&healthCount); err != nil {
+		t.Fatal(err)
+	}
+	if healthCount != 0 {
+		t.Fatal("overlap mutated provider health before capture")
+	}
+}

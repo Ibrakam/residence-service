@@ -118,17 +118,19 @@ func TestConstructionPassportProxyReportsUnlinkedProjectWithoutInventingURL(t *t
 	handler := constructionPassportHandler(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = io.WriteString(w, `{"project":{"key":"soy-boyi"},"objects":[],"object_count":0}`)
 	}))
-	recorder := httptest.NewRecorder()
-	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/v1/construction-passports/soy-boyi", nil))
-	if recorder.Code != http.StatusOK {
-		t.Fatalf("status=%d body=%s", recorder.Code, recorder.Body.String())
-	}
-	var payload constructionPassportsPayload
-	if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
-		t.Fatal(err)
-	}
-	if payload.Linked || len(payload.Passports) != 0 || payload.ObjectCount != 0 {
-		t.Fatalf("unlinked payload = %#v", payload)
+	for range 2 { // The fresh response and its cached clone share the same contract.
+		recorder := httptest.NewRecorder()
+		handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/v1/construction-passports/soy-boyi", nil))
+		if recorder.Code != http.StatusOK {
+			t.Fatalf("status=%d body=%s", recorder.Code, recorder.Body.String())
+		}
+		var payload constructionPassportsPayload
+		if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
+			t.Fatal(err)
+		}
+		if payload.Linked || payload.Passports == nil || len(payload.Passports) != 0 || payload.ObjectCount != 0 {
+			t.Fatalf("unlinked payload must contain an empty array, never null: %s", recorder.Body.String())
+		}
 	}
 }
 

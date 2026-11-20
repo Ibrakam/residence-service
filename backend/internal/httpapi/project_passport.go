@@ -146,7 +146,7 @@ func constructionPassportCacheKey(s *Server, projectKey string) string {
 
 func cloneConstructionPassportsPayload(payload constructionPassportsPayload) constructionPassportsPayload {
 	cloned := payload
-	cloned.Passports = append([]constructionPassportLink(nil), payload.Passports...)
+	cloned.Passports = append([]constructionPassportLink{}, payload.Passports...)
 	return cloned
 }
 

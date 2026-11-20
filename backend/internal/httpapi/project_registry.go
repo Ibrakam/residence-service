@@ -41,8 +41,16 @@ var publishedSalesSiteRoutes = map[string]projectRegistryRoutes{
 	"zamon":            {passportPath: "/zamon", apartmentsPath: "/zamon/apartments", aliases: []string{"Замон"}},
 }
 
+// These published sites use an official plan feed rather than a CRM unit
+// catalogue. Keep their registry metadata available for passport linking
+// without inventing catalogue rows, availability or update timestamps.
+var officialPlanProjectNames = map[string]string{
+	"dormon-hills": "Do‘rmon Hills",
+}
+
 func buildProjectRegistry(projects []domain.ProjectSummary) []domain.ProjectRegistryItem {
 	items := make([]domain.ProjectRegistryItem, 0, len(projects))
+	seen := make(map[string]bool, len(projects))
 	for _, project := range projects {
 		routes, published := publishedSalesSiteRoutes[project.Slug]
 		if !published {
@@ -55,9 +63,20 @@ func buildProjectRegistry(projects []domain.ProjectSummary) []domain.ProjectRegi
 			Published:      true,
 			PassportPath:   routes.passportPath,
 			ApartmentsPath: routes.apartmentsPath,
-			TotalUnits:     project.TotalUnits,
-			AvailableUnits: project.AvailableUnits,
+			TotalUnits:     &project.TotalUnits,
+			AvailableUnits: &project.AvailableUnits,
 			UpdatedAt:      project.UpdatedAt,
+		})
+		seen[project.Slug] = true
+	}
+	for key, name := range officialPlanProjectNames {
+		routes, published := publishedSalesSiteRoutes[key]
+		if seen[key] || !published {
+			continue
+		}
+		items = append(items, domain.ProjectRegistryItem{
+			ProjectKey: key, Name: name, Aliases: append([]string(nil), routes.aliases...),
+			Published: true, PassportPath: routes.passportPath, ApartmentsPath: routes.apartmentsPath,
 		})
 	}
 	return items

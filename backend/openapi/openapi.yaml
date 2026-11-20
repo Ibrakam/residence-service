@@ -422,11 +422,11 @@ components:
         updatedAt: { type: string, format: date-time }
     ProjectRegistryItem:
       type: object
-      required: [projectKey, name, published, passportPath, totalUnits, availableUnits]
+      required: [projectKey, name, published, passportPath]
       properties:
         projectKey:
           type: string
-          description: Стабильный canonical catalog slug; хранится потребителем вместо изменяемого имени.
+          description: Стабильный ключ опубликованного проекта; хранится потребителем вместо изменяемого имени. Наличие ключа не означает наличие CRM-каталога квартир.
         name: { type: string }
         published:
           type: boolean
@@ -440,8 +440,14 @@ components:
           type: string
           pattern: '^/'
           description: Опциональный explicit same-origin путь отдельной страницы выбора квартир; клиент не должен вычислять его из projectKey.
-        totalUnits: { type: integer, format: int64 }
-        availableUnits: { type: integer, format: int64 }
+        totalUnits:
+          type: integer
+          format: int64
+          description: Число записей CRM-каталога. Поле отсутствует у проектов только с официальными типовыми планировками.
+        availableUnits:
+          type: integer
+          format: int64
+          description: Число свободных записей CRM-каталога. Поле отсутствует, если такого каталога нет.
         updatedAt: { type: string, format: date-time }
     ConstructionPassports:
       type: object

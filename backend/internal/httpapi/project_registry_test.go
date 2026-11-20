@@ -50,8 +50,9 @@ func TestBuildProjectRegistryMapsCurrentSummariesAndFiltersUnpublished(t *testin
 
 	got := buildProjectRegistry(projects)
 	want := []domain.ProjectRegistryItem{
-		{ProjectKey: "avalon-residence", Name: "Avalon Residence", Aliases: []string{"Avalon", "Авалон", "Авалон Резиденс"}, Published: true, PassportPath: "/", TotalUnits: 268, AvailableUnits: 41, UpdatedAt: &updatedAt},
-		{ProjectKey: "soy-boyi", Name: "Soy Bo‘yi", Aliases: []string{"Soy Boyi", "Soy Bo'yi", "Сой Бойи", "Сой Бўйи"}, Published: true, PassportPath: "/soy-boyi", ApartmentsPath: "/soy-boyi/apartments", TotalUnits: 209, AvailableUnits: 20, UpdatedAt: &updatedAt},
+		{ProjectKey: "avalon-residence", Name: "Avalon Residence", Aliases: []string{"Avalon", "Авалон", "Авалон Резиденс"}, Published: true, PassportPath: "/", TotalUnits: registryCount(268), AvailableUnits: registryCount(41), UpdatedAt: &updatedAt},
+		{ProjectKey: "soy-boyi", Name: "Soy Bo‘yi", Aliases: []string{"Soy Boyi", "Soy Bo'yi", "Сой Бойи", "Сой Бўйи"}, Published: true, PassportPath: "/soy-boyi", ApartmentsPath: "/soy-boyi/apartments", TotalUnits: registryCount(209), AvailableUnits: registryCount(20), UpdatedAt: &updatedAt},
+		{ProjectKey: "dormon-hills", Name: "Do‘rmon Hills", Aliases: []string{"Do’RMON HILLS", "Dormon Hills", "Дурмон Хиллс"}, Published: true, PassportPath: "/dormon-hills", ApartmentsPath: "/dormon-hills/apartments"},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("registry = %#v, want %#v", got, want)
@@ -63,10 +64,47 @@ func TestBuildProjectRegistryMapsCurrentSummariesAndFiltersUnpublished(t *testin
 	}
 }
 
-func TestBuildProjectRegistryReturnsNonNilEmptyItems(t *testing.T) {
+func registryCount(value int64) *int64 { return &value }
+
+func TestOfficialPlanRegistryDoesNotInventAvailability(t *testing.T) {
 	items := buildProjectRegistry([]domain.ProjectSummary{{Slug: "unpublished-pilot", Name: "Pilot"}})
-	if items == nil || len(items) != 0 {
-		t.Fatalf("empty registry = %#v, want a non-nil empty slice", items)
+	if len(items) != 1 || items[0].ProjectKey != "dormon-hills" {
+		t.Fatalf("official-plan registry = %#v", items)
+	}
+	encoded, err := json.Marshal(items[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	var item map[string]any
+	if err := json.Unmarshal(encoded, &item); err != nil {
+		t.Fatal(err)
+	}
+	if item["name"] != "Do‘rmon Hills" || item["published"] != true || item["passportPath"] != "/dormon-hills" || item["apartmentsPath"] != "/dormon-hills/apartments" {
+		t.Fatalf("official-plan metadata = %s", encoded)
+	}
+	for _, field := range []string{"totalUnits", "availableUnits", "updatedAt", "id", "developerSlug"} {
+		if _, exists := item[field]; exists {
+			t.Fatalf("official-plan project must not invent %s: %s", field, encoded)
+		}
+	}
+}
+
+func TestOfficialPlanRegistryPrefersRealCatalogueWhenPresent(t *testing.T) {
+	updatedAt := time.Date(2026, time.November, 20, 12, 30, 0, 0, time.UTC)
+	items := buildProjectRegistry([]domain.ProjectSummary{{Slug: "dormon-hills", Name: "CRM project name", TotalUnits: 0, AvailableUnits: 0, UpdatedAt: &updatedAt}})
+	if len(items) != 1 || items[0].Name != "CRM project name" || items[0].UpdatedAt != &updatedAt {
+		t.Fatalf("real catalogue must replace, not duplicate, official metadata: %#v", items)
+	}
+	encoded, err := json.Marshal(items[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	var item map[string]any
+	if err := json.Unmarshal(encoded, &item); err != nil {
+		t.Fatal(err)
+	}
+	if item["totalUnits"] != float64(0) || item["availableUnits"] != float64(0) {
+		t.Fatalf("known zero catalogue counts must remain explicit: %s", encoded)
 	}
 }
 

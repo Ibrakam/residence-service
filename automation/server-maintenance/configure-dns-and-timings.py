@@ -17,17 +17,17 @@ fmt='''log_format tencorp_timing escape=json '{"time":"$time_iso8601","request_i
 '''
 lines='''    # Keep security monitoring's existing combined log; add bounded timing diagnostics.
     access_log /var/log/nginx/access.log combined;
-    access_log /var/log/nginx/tencorp-timing.log tencorp_timing;
+    access_log /var/log/nginx/tencorp-timing.jsonl tencorp_timing;
 '''
 # Add only the TLS virtual host, preserving all location-specific log overrides.
 marker='    server_name form.tencorp.uz;'
 idx=original.index(marker)
 # sites may define HTTP redirect first; select TLS block containing reviewed auth gate.
-blocks=original.split('\nserver {')
+blocks=original.replace('/var/log/nginx/tencorp-timing.log','/var/log/nginx/tencorp-timing.jsonl').split('\nserver {')
 found=0
 for i,block in enumerate(blocks):
     if 'server_name form.tencorp.uz;' in block and 'ssl' in block and 'tencorp-auth-gate.conf' in block:
-        if 'tencorp-timing.log' not in block:
+        if 'tencorp-timing.jsonl' not in block:
             blocks[i]=block.replace(marker,marker+'\n'+lines,1)
         found+=1
 assert found==1, 'Unexpected TLS vhost structure'
@@ -39,10 +39,10 @@ start=updated.index(static_marker)
 end=updated.index('\n    }',start)
 block=updated[start:end]
 if 'access_log off;' in block:
-    block=block.replace('access_log off;','access_log /var/log/nginx/tencorp-timing.log tencorp_timing;')
+    block=block.replace('access_log off;','access_log /var/log/nginx/tencorp-timing.jsonl tencorp_timing;')
     updated=updated[:start]+block+updated[end:]
-assert 'access_log /var/log/nginx/tencorp-timing.log tencorp_timing;' in updated[start:updated.index('\n    }',start)]
-files={site:updated.encode(),conf:fmt.encode(),rotation:b'''/var/log/nginx/tencorp-timing.log {
+assert 'access_log /var/log/nginx/tencorp-timing.jsonl tencorp_timing;' in updated[start:updated.index('\n    }',start)]
+files={site:updated.encode(),conf:fmt.encode(),rotation:b'''/var/log/nginx/tencorp-timing.jsonl {
     daily
     maxsize 50M
     rotate 7
@@ -66,7 +66,9 @@ previous_dns=subprocess.run(['resolvectl','dns','eth0'],capture_output=True,text
 try:
     for p,data in files.items():p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(data);p.chmod(0o644)
     subprocess.run(['nginx','-t'],check=True)
-    subprocess.run(['logrotate','--debug',str(rotation)],check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+    subprocess.run(['logrotate','--debug','/etc/logrotate.conf'],check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+    # Reread DNS-only drop-ins so DHCP cannot restore old resolvers on renewal.
+    subprocess.run(['networkctl','reload'],check=True)
     subprocess.run(['resolvectl','dns','eth0','8.8.8.8','8.8.4.4'],check=True)
     subprocess.run(['resolvectl','flush-caches'],check=True)
     subprocess.run(['systemctl','reload','nginx'],check=True)
@@ -74,9 +76,10 @@ except Exception:
     for p,data in old.items():
         if data is None:p.unlink(missing_ok=True)
         else:p.write_bytes(data)
+    subprocess.run(['networkctl','reload'],check=False)
     prior=previous_dns.split(':',1)[1].strip().split()
     if prior:subprocess.run(['resolvectl','dns','eth0',*prior],check=False)
     subprocess.run(['nginx','-t'],check=True)
     subprocess.run(['systemctl','reload','nginx'],check=True)
     raise
-print(json.dumps({'installed':True,'backup':str(backup),'dns':['8.8.8.8','8.8.4.4'],'timingLog':'/var/log/nginx/tencorp-timing.log','networkInterfaceRestarted':False}))
+print(json.dumps({'installed':True,'backup':str(backup),'dns':['8.8.8.8','8.8.4.4'],'timingLog':'/var/log/nginx/tencorp-timing.jsonl','networkInterfaceRestarted':False}))

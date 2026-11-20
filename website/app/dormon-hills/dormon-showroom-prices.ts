@@ -54,19 +54,19 @@ function buildPrices(rows: Iterable<PriceRow>): Prices {
 const capturedPrices = capture.source === captureSource && Number.isFinite(capturedAt) ? buildPrices(capture.units) : emptyPrices;
 
 export function useDormonShowroomPrices(): Prices {
-  const { data, dataSource, refreshedAt } = useLiveCatalogUnits(projectSlug, catalogSchema);
   const [now, setNow] = useState(0);
   const [health, setHealth] = useState<CatalogSyncProject>();
+  // The official plan feed is independent of the CRM unit catalogue. Only ask
+  // for CRM units after the sync registry advertises this project's source.
+  const { data, dataSource, refreshedAt } = useLiveCatalogUnits(projectSlug, catalogSchema, { enabled: Boolean(health) });
 
   useEffect(() => {
     let active = true;
     const refresh = async () => {
       setNow(Date.now());
-      if (dataSource === 'live') {
-        const projects = await fetchCatalogSyncHealth();
-        const matching = projects.filter((project) => project.projectSlug === projectSlug);
-        if (active) setHealth(matching.length === 1 ? matching[0] : undefined);
-      }
+      const projects = await fetchCatalogSyncHealth();
+      const matching = projects.filter((project) => project.projectSlug === projectSlug);
+      if (active) setHealth(matching.length === 1 ? matching[0] : undefined);
     };
     const initial = window.setTimeout(() => void refresh(), 0);
     const polling = window.setInterval(() => void refresh(), 30_000);
@@ -80,7 +80,7 @@ export function useDormonShowroomPrices(): Prices {
       window.clearInterval(polling);
       window.clearTimeout(expiry);
     };
-  }, [dataSource, refreshedAt]);
+  }, []);
 
   return useMemo(() => {
     if (now && dataSource === 'live' && catalogFreshness(refreshedAt, health, now) === 'live') {

@@ -457,7 +457,7 @@ async function fetchLivePayload(
   return { project, units, refreshedAt };
 }
 
-function useLivePayload(projectSlug: string) {
+function useLivePayload(projectSlug: string, enabled = true) {
   const [payload, setPayload] = useState<LivePayload | null>(null);
   const [dataSource, setDataSource] = useState<CatalogDataSource>('embedded');
   const [isLoading, setIsLoading] = useState(true);
@@ -466,6 +466,7 @@ function useLivePayload(projectSlug: string) {
   const retry = useCallback(() => setRequestVersion((version) => version + 1), []);
 
   useEffect(() => {
+    if (!enabled) return;
     let disposed = false;
     let activeRequest: AbortController | null = null;
     let refreshTimer: number | null = null;
@@ -558,9 +559,13 @@ function useLivePayload(projectSlug: string) {
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('online', onOnline);
     };
-  }, [projectSlug, requestVersion]);
+  }, [projectSlug, requestVersion, enabled]);
 
-  return { payload, dataSource, isLoading, loadError, retry };
+  return enabled
+    ? { payload, dataSource, isLoading, loadError, retry }
+    // Retain the last generation when a source disappears, but never label it
+    // current. Consumers can use its timestamp to reject older captures.
+    : { payload, dataSource: (payload ? 'cached' : 'embedded') as CatalogDataSource, isLoading: false, loadError: false, retry };
 }
 
 function normalized(value: unknown) {
@@ -967,8 +972,8 @@ export function useLiveCatalogSnapshot<T extends { units: readonly object[] }>(p
   return { data, ...state, refreshedAt: payload?.refreshedAt, project: payload?.project };
 }
 
-export function useLiveCatalogUnits<T extends object>(projectSlug: string, embeddedUnits: readonly T[]): CatalogState<T[]> {
-  const { payload, ...state } = useLivePayload(projectSlug);
+export function useLiveCatalogUnits<T extends object>(projectSlug: string, embeddedUnits: readonly T[], options: { enabled?: boolean } = {}): CatalogState<T[]> {
+  const { payload, ...state } = useLivePayload(projectSlug, options.enabled);
   const data = useMemo(
     () => payload ? mergeLiveCatalogUnits(projectSlug, embeddedUnits, payload.units) : initialCatalogUnits(projectSlug, embeddedUnits),
     [embeddedUnits, payload, projectSlug],

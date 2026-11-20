@@ -13,12 +13,14 @@ const golos = Golos_Text({
   variable: '--font-ui',
   subsets: ['cyrillic', 'latin'],
   weight: 'variable',
+  preload: false,
 });
 
 const prata = Prata({
   variable: '--font-display',
   subsets: ['cyrillic', 'latin'],
   weight: '400',
+  preload: false,
 });
 
 export const metadata: Metadata = {

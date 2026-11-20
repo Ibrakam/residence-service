@@ -55,6 +55,23 @@ deployment command may switch a release.
    then transfer only the completed `website/dist/standalone` tree into the
    matching detached worktree for the same commit. Do not build on production.
 
+   For the production root routes, build and verify with the reviewed namespace
+   before sealing or transferring the artifact:
+
+   ```bash
+   cd website
+   export NEXT_PUBLIC_APP_BASE_PATH=''
+   export NEXT_PUBLIC_ASSET_PREFIX='/residence-assets'
+   export NEXT_PUBLIC_SITE_URL='https://form.tencorp.uz'
+   npm run build
+   npm run verify:base-path
+   test -d dist/standalone/dist/client/residence-assets/_next/static
+   ```
+
+   Use Node 22 as required by `website/package.json`. A default local build
+   without this namespace is suitable for preview but will be rejected by the
+   production deployer before switching the active release.
+
 For automated runs, install the reviewed `deploy-residence-root-remote.sh`
 outside the agent-editable checkout at the runner's fixed
 `$RUNNER_STATE_DIR/bin/deploy-residence-root-remote` path. It must be a

@@ -32,6 +32,16 @@ for i,block in enumerate(blocks):
         found+=1
 assert found==1, 'Unexpected TLS vhost structure'
 updated='\nserver {'.join(blocks)
+# Framework files previously suppressed all logs. Preserve their auth/cache
+# policy while recording transfer timings for diagnosing slow JS/CSS downloads.
+static_marker='    location ^~ /residence-assets/_next/static/ {'
+start=updated.index(static_marker)
+end=updated.index('\n    }',start)
+block=updated[start:end]
+if 'access_log off;' in block:
+    block=block.replace('access_log off;','access_log /var/log/nginx/tencorp-timing.log tencorp_timing;')
+    updated=updated[:start]+block+updated[end:]
+assert 'access_log /var/log/nginx/tencorp-timing.log tencorp_timing;' in updated[start:updated.index('\n    }',start)]
 files={site:updated.encode(),conf:fmt.encode(),rotation:b'''/var/log/nginx/tencorp-timing.log {
     daily
     maxsize 50M

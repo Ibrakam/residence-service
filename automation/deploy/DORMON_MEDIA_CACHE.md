@@ -7,7 +7,7 @@ Pages, JSON, live plan endpoints and the shared authentication snippets retain
 `private, no-store`.
 
 Every request, including `If-None-Match`, runs `auth_request` before the content
-handler. Vinext returns a bodyless 304 for unchanged, authorized files. Missing
+handler. The Nginx static content handler returns a bodyless 304 for unchanged, authorized files. Missing
 or invalid sessions use the existing JSON401 handler with `private, no-store`.
 No rewrite-phase conditional return, shared proxy cache, public caching, or
 freshness TTL is permitted for these images. A browser must revalidate each
@@ -29,3 +29,8 @@ remove its cookie and prove that its stored image revalidates and receives401.
 Do not include the shared API protection snippet and append a second cache
 header: that creates conflicting `no-store`/`no-cache` policies. Do not weaken
 shared page, catalogue, or framework-asset policies to speed up media.
+
+Images are served directly from the active release’s `dist/client` tree.
+The scoped filename regex, session check and no-store error policy remain in
+place. This avoids a Node file-stream hop without opening other paths or caching
+pages, API responses or framework assets.

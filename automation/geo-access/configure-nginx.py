@@ -41,11 +41,19 @@ EXCEPTIONS = [
     r'^GET:/__residence-ticket-worker/internal/ticket-runner/tickets/[1-9][0-9]*/attachments/[1-9][0-9]*$',
 ]
 
+# Main TenCorp page only. A candidate UA is not proof: every matching public
+# location performs a bounded reverse + forward DNS check before serving bytes.
+SEO_EXACT = ['/', '/robots.txt', '/sitemap.xml', '/lead-security/client.js',
+             '/web-analytics.js', '/telegram-contact.js']
+SEO_RESOURCES = [r'^/tencorp/(?:assets|images|fonts)/',
+                 r'^/site-typography/(?:20261119-1|20261122-1)/']
+CRAWLER_UA = r'(?:Googlebot(?:-[A-Za-z]+)?|Google-InspectionTool|bingbot|Yandex(?:Bot|MobileBot|Images|Video|RenderResourcesBot|Webmaster|CheckBot))(?:[/;\s)]|$)'
 
-def http_config(addresses, networks_path=ROOT / 'uz-networks.conf'):
+
+def http_config(addresses, networks_path=ROOT / 'uz-networks.conf', seo=False):
     addresses = sorted({str(ipaddress.ip_address(x)) for x in addresses})
     rules = '\n'.join('    ' + json.dumps('~' + x) + ' 1;' for x in EXCEPTIONS)
-    return '''# DB-IP Country Lite, CC BY 4.0, https://db-ip.com/db/download/ip-to-country-lite
+    base = '''# DB-IP Country Lite, CC BY 4.0, https://db-ip.com/db/download/ip-to-country-lite
 # Generated UZ data; unknown and foreign addresses fail closed.
 geo $remote_addr $tencorp_geo_uz {
     default 0;
@@ -58,11 +66,41 @@ map "$request_method:$uri" $tencorp_geo_machine {
     default 0;
 ''' + rules + '''
 }
-map "$tencorp_geo_uz:$tencorp_geo_internal:$tencorp_geo_machine" $tencorp_geo_block {
+'''
+    if not seo:
+        return base + '''map "$tencorp_geo_uz:$tencorp_geo_internal:$tencorp_geo_machine" $tencorp_geo_block {
     default 1;
     ~^1: 0;
     ~^0:1: 0;
     "0:0:1" 0;
+}
+'''
+    return base + '''# Candidate screening is followed by auth_request DNS proof in public SEO locations.
+map $uri $tencorp_geo_seo_path {
+    default 0;
+    /tencorp/assets/projects-map.js 0;
+''' + ''.join('    ' + json.dumps(x) + ' 1;\n' for x in SEO_EXACT) + ''.join(
+        '    ' + json.dumps('~' + x) + ' 1;\n' for x in SEO_RESOURCES) + '''}
+map $http_user_agent $tencorp_geo_crawler_ua {
+    default 0;
+    ''' + json.dumps('~*' + CRAWLER_UA) + ''' 1;
+}
+map "$request_method:$tencorp_geo_seo_path:$tencorp_geo_crawler_ua" $tencorp_geo_crawler_candidate {
+    default 0;
+    ~^(?:GET|HEAD):1:1$ 1;
+}
+# This URI has an internal-only location. Direct external requests receive 404.
+map $uri $tencorp_geo_verification_subrequest {
+    default 0;
+    /__tencorp-seo-crawler-check 1;
+}
+map "$tencorp_geo_uz:$tencorp_geo_internal:$tencorp_geo_machine:$tencorp_geo_crawler_candidate:$tencorp_geo_verification_subrequest" $tencorp_geo_block {
+    default 1;
+    ~^1: 0;
+    ~^0:1: 0;
+    ~^0:0:1: 0;
+    "0:0:0:1:0" 0;
+    "0:0:0:0:1" 0;
 }
 '''
 

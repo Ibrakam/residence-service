@@ -3,7 +3,7 @@
 All customer sites currently share `form.tencorp.uz`. The Nginx server rewrite
 gate runs before location-level redirects, static files, authentication and
 application APIs. Unknown and non-UZ addresses receive a non-cacheable 403 page.
-Browser login, OIDC callback, analytics, map and static assets obey the same rule.
+Browser login, OIDC callback, analytics, map and protected static assets obey the same rule.
 Existing Telegram login and protected-resource checks remain in place for UZ users.
 
 ## Source and trust
@@ -37,8 +37,61 @@ These exceptions do not grant access to website pages:
 
 OIDC callbacks are browser redirects and are **not** exempt. Generic `/api/`,
 `/__auth/`, media prefixes and caller-supplied authentication headers do not
-grant an exception. Foreign search crawlers are also blocked by this policy.
+grant an exception. With the separately installed main-only SEO extension,
+verified search crawlers can read the already-public homepage and its render
+resources. This does not open any residence page or protected resource.
 Outbound CRM synchronization is unaffected.
+
+## Main TenCorp SEO extension
+
+The owner explicitly requested indexing **only** `https://form.tencorp.uz/`.
+`configure-seo-main.py` installs a single-URL sitemap and a robots policy with
+`Disallow: /`, `Allow: /$`, and exceptions only for the public assets needed to
+render that homepage. The private `projects-map.js` module stays disallowed and
+protected. The sitemap never lists residence, apartment, analytics or auth URLs.
+
+Ordinary visitors still need a UZ address. An unfamiliar foreign address gets
+no website content merely by claiming a search-crawler User-Agent. The Nginx
+candidate filter additionally requires GET/HEAD and a main-only public path;
+the matching public location then runs `auth_request` against an internal-only
+verification endpoint. Nginx short-circuits UZ/local requests to 204 without DNS.
+
+The loopback `tencorp-crawler-verifier` service performs reverse **and** forward
+DNS checks against the source address, following official verification methods:
+
+- Google: <https://developers.google.com/crawling/docs/crawlers-fetchers/verify-google-requests>
+- Bing: <https://www.bing.com/webmasters/help/how-to-verify-bingbot-3905dc26>
+- Yandex: <https://yandex.com/support/webmaster/en/robot-workings/check-yandex-robots>
+
+Provider suffixes must match DNS-label boundaries and the forward A/AAAA answer
+must contain the original address. User GCP fetchers and general cloud/ASN
+networks are not allowed. DNS work has a subprocess deadline, bounded workers,
+in-flight deduplication and bounded positive/negative caches. An unverified bot
+gets 403; a verification outage gets non-cacheable 503 with Retry-After, rather
+than website content. Existing scanner bans are not bypassed.
+
+Install the root-owned verifier source and its systemd service, create its
+dedicated non-login identity `tencorp-crawler-verifier`, and prove health plus
+live provider DNS verification before running:
+
+```sh
+python3 /opt/tencorp-geo-access/configure-seo-main.py --apply
+```
+
+The installer locks against country-feed updates and backs up all changed
+files. It writes `/etc/tencorp-geo-access/seo-main-enabled` root-owned mode 0600
+with value `main-only-v1` only after Nginx validation/reload and real loopback
+HTTPS robots/sitemap checks. Deployment smoke tests validate this marker and
+the single-page policy, while retaining compatibility with older closed sites.
+
+There is **no bot exemption from browser authentication**. Catalogues, the map
+module, operator tools, forms, APIs, accounts and every residence site retain
+their earlier boundaries. The extension changes crawl eligibility, not a
+guarantee that a search engine will index or rank the homepage.
+
+Rollback uses `configure-seo-main.py --rollback BACKUP_DIR` and restores the
+previous country-only configuration and closed robots policy. Stop/disable
+the verifier service after rollback; it is never exposed on a public port.
 
 ## Install and verify
 

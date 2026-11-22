@@ -258,6 +258,7 @@ transformed_deployer="${TEST_ROOT}/deploy-residence-root"
 sed \
   -e "s|readonly AUTH_GATE_MODE_FILE=.*|readonly AUTH_GATE_MODE_FILE=\"${deploy_etc}/public-gate-enabled\"|" \
   -e "s|readonly AUTH_SMOKE_SESSION_FILE=.*|readonly AUTH_SMOKE_SESSION_FILE=\"${deploy_etc}/deploy-smoke-session\"|" \
+  -e "s|readonly MAIN_SEO_MODE_FILE=.*|readonly MAIN_SEO_MODE_FILE=\"${deploy_etc}/seo-main-enabled\"|" \
   -e "s|/run/|${deploy_run}/|g" \
   -e 's|chmod 0600 --|chmod 0600|g' \
   "$DEPLOYER" > "$transformed_deployer"
@@ -267,10 +268,16 @@ cat > "$deploy_bin/stat" <<'FAKE_STAT'
 #!/usr/bin/env bash
 set -Eeuo pipefail
 case "$2" in
-  %u) printf '0\n' ;;
+  %u)
+    case "${4##*/}" in
+      seo-main-enabled) printf '%s\n' "${FAKE_SEO_OWNER:-0}" ;;
+      *) printf '0\n' ;;
+    esac
+    ;;
   %a)
     case "${4##*/}" in
       public-gate-enabled) printf '644\n' ;;
+      seo-main-enabled) printf '%s\n' "${FAKE_SEO_MODE:-600}" ;;
       *) printf '600\n' ;;
     esac
     ;;
@@ -348,14 +355,41 @@ else
       ;;
     /__tencorp-auth/check) status=404 ;;
     /privacy) status=200 ;;
-    /sitemap.xml) status=404 ;;
+    /sitemap.xml)
+      status=404
+      if [[ "${FAKE_SEO_RESPONSE:-closed}" == main ]]; then
+        status=200; content_type='application/xml'
+        body='<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://form.tencorp.uz/</loc></url></urlset>'
+        case "${FAKE_SEO_VARIANT:-valid}" in
+          private_sitemap) body="${body/https:\/\/form.tencorp.uz\//https:\/\/form.tencorp.uz\/4u}" ;;
+          duplicate_sitemap) body='<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://form.tencorp.uz/</loc></url><url><loc>https://form.tencorp.uz/4u</loc></url></urlset>' ;;
+          sitemap_index) body='<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><sitemap><loc>https://form.tencorp.uz/</loc></sitemap></sitemapindex>' ;;
+          doctype_sitemap) body='<!DOCTYPE urlset [<!ENTITY homepage "https://form.tencorp.uz/">]><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>&homepage;</loc></url></urlset>' ;;
+          wrong_mime) content_type='text/html' ;;
+          missing_sitemap) status=404 ;;
+        esac
+      fi
+      ;;
     /api/amo-webhook) status=405; content_type='application/json' ;;
     /.well-known/acme-challenge/tencorp-auth-smoke-missing) status=404; content_type='text/plain' ;;
     /__residence-ticket-worker/internal/ticket-runner/health)
       status=401; content_type='application/json'
       ;;
     /__auth/telegram/bot-webhook) status=405; content_type='application/json' ;;
-    /robots.txt) content_type='text/plain'; body=$'User-agent: *\nDisallow: /\n' ;;
+    /robots.txt)
+      content_type='text/plain'; body=$'User-agent: *\nDisallow: /\n'
+      if [[ "${FAKE_SEO_RESPONSE:-closed}" == main ]]; then
+        body+=$'Allow: /$\nAllow: /tencorp/assets/\nDisallow: /tencorp/assets/projects-map.js\nAllow: /tencorp/images/\nAllow: /tencorp/fonts/\nAllow: /site-typography/\nAllow: /lead-security/client.js$\nAllow: /telegram-contact.js$\nAllow: /web-analytics.js$\nAllow: /robots.txt$\nAllow: /sitemap.xml$\nSitemap: https://form.tencorp.uz/sitemap.xml\n'
+      fi
+      case "${FAKE_SEO_VARIANT:-valid}" in
+        missing_disallow) body="${body/Disallow: \/$'\n'/}" ;;
+        unrestricted_robots) body+=$'Allow: /\n' ;;
+        private_allow) body+=$'Allow: /4u\n' ;;
+        missing_map_disallow) body="${body/Disallow: \/tencorp\/assets\/projects-map.js$'\n'/}" ;;
+        extra_agent) body+=$'User-agent: Googlebot\nAllow: /\n' ;;
+        oversized_robots) body+="$(printf '%17000s' x)" ;;
+      esac
+      ;;
     /market-map/|/analytics) status=401 ;;
     /*) body="<form method=\"post\" action=\"/__auth/telegram/start\"><input name=\"return_to\" value=\"${path}\"></form>" ;;
   esac
@@ -392,7 +426,13 @@ if [[ -n "$headers" ]]; then
 fi
 printf '%s' "$status"
 FAKE_DEPLOY_CURL
-chmod 0700 "$deploy_bin/stat" "$deploy_bin/curl"
+# The deterministic curl fixture never makes network calls; production pacing
+# remains unchanged while the harness does not sleep between fake requests.
+cat > "$deploy_bin/sleep" <<'FAKE_DEPLOY_SLEEP'
+#!/usr/bin/env bash
+exit 0
+FAKE_DEPLOY_SLEEP
+chmod 0700 "$deploy_bin/stat" "$deploy_bin/curl" "$deploy_bin/sleep"
 
 printf 'tencorp-auth-gate-v1\n' > "$deploy_etc/public-gate-enabled"
 printf 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n' > "$deploy_etc/deploy-smoke-session"
@@ -408,6 +448,8 @@ for project in "${DIRECT_PROJECTS[@]}"; do
 done
 FRAMEWORK_ASSET_PATH='/residence-assets/_next/static/css/fixture.css'
 configure_public_auth_smoke_mode
+configure_public_seo_smoke_mode
+[[ "$PUBLIC_MAIN_SEO_ENABLED" == 0 ]] || fail "deployer changed the legacy closed indexing default"
 [[ "$PUBLIC_AUTH_GATE_ENABLED" == 1 && -f "$AUTH_SMOKE_CURL_CONFIG" ]] \
   || fail "deployer did not enable the explicit fixture mode"
 fixture_config="$AUTH_SMOKE_CURL_CONFIG"
@@ -415,6 +457,47 @@ grep -Fqx 'noproxy = "*"' "$fixture_config" \
   || fail "authenticated deployment smoke can leak its cookie through a proxy"
 smoke_public_unauthenticated_contract
 smoke_public_authenticated_contract
+# An explicit root-only marker enables only the reviewed homepage contract.
+printf 'main-only-v1\n' > "$deploy_etc/seo-main-enabled"
+chmod 0600 "$deploy_etc/seo-main-enabled"
+configure_public_seo_smoke_mode
+[[ "$PUBLIC_MAIN_SEO_ENABLED" == 1 ]] || fail "homepage-only indexing marker was not selected"
+export FAKE_SEO_RESPONSE=main
+smoke_public_unauthenticated_contract
+smoke_public_authenticated_contract
+for variant in private_sitemap duplicate_sitemap sitemap_index doctype_sitemap wrong_mime missing_sitemap missing_disallow unrestricted_robots private_allow missing_map_disallow extra_agent oversized_robots; do
+  if ( export FAKE_SEO_VARIANT="$variant"; smoke_public_seo_contract ) >"$TEST_ROOT/seo-negative.log" 2>&1; then
+    fail "homepage-only SEO accepted invalid fixture: $variant"
+  fi
+done
+
+# The mode file is an operator-controlled boundary, never an environment switch.
+for invalid in value mode owner symlink auth_gate; do
+  printf 'main-only-v1\n' > "$deploy_etc/seo-main-enabled"
+  case "$invalid" in
+    value) printf 'all-sites-v1\n' > "$deploy_etc/seo-main-enabled" ;;
+    symlink) mv "$deploy_etc/seo-main-enabled" "$deploy_etc/seo-main-real"; ln -s "$deploy_etc/seo-main-real" "$deploy_etc/seo-main-enabled" ;;
+  esac
+  if (
+    case "$invalid" in
+      mode) export FAKE_SEO_MODE=644 ;;
+      owner) export FAKE_SEO_OWNER=501 ;;
+      auth_gate) PUBLIC_AUTH_GATE_ENABLED=0 ;;
+    esac
+    configure_public_seo_smoke_mode
+  ) >"$TEST_ROOT/seo-marker-negative.log" 2>&1; then
+    fail "homepage-only SEO accepted unsafe marker: $invalid"
+  fi
+  rm -f "$deploy_etc/seo-main-enabled" "$deploy_etc/seo-main-real"
+done
+configure_public_seo_smoke_mode
+[[ "$PUBLIC_MAIN_SEO_ENABLED" == 0 ]] || fail "removing the SEO marker did not restore the legacy contract"
+unset FAKE_SEO_RESPONSE
+smoke_public_seo_contract
+if ( export FAKE_SEO_VARIANT=unrestricted_robots; smoke_public_seo_contract ) >"$TEST_ROOT/seo-legacy-negative.log" 2>&1; then
+  fail "legacy robots accepted an unrestricted allow"
+fi
+
 cleanup_auth_smoke_config
 [[ ! -e "$fixture_config" ]] || fail "deployer did not remove its temporary cookie config"
 

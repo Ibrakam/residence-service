@@ -8,6 +8,7 @@ from pathlib import Path
 import hashlib
 import json
 import shutil
+import stat
 import subprocess
 import time
 
@@ -21,7 +22,33 @@ BACKUP = Path('/root/tencorp-typography-backups') / str(int(time.time()))
 PROJECTS = 'avalon|4u|bayterak|botanika-saroyi|c1|flagman|jomiy|maftun-makon|meros|mirador|ofiyat|regnum-plaza|saadiyat|sado|sarbon|soy-boyi|sun|voha|yangibaxt|zamon|pushkin|sanat|tencorp|tencrop|privacy|web-analytics-privacy'
 
 
+def public_font_auth(marker=Path('/etc/tencorp-geo-access/seo-main-enabled')):
+    """Keep verified-crawler checks on future font-only deployments."""
+    try:
+        metadata = marker.lstat()
+    except FileNotFoundError:
+        return 'tencorp-auth-exempt.conf'
+    if (not stat.S_ISREG(metadata.st_mode) or metadata.st_uid != 0
+            or stat.S_IMODE(metadata.st_mode) != 0o600
+            or marker.read_bytes() != b'main-only-v1\n'):
+        raise ValueError('Unsafe main-only SEO policy marker')
+    return 'tencorp-seo-public.conf'
+
+
+def font_location(version, directory, auth_include):
+    return f"""# Public, immutable font files contain no application data.
+location ^~ /site-typography/{version}/ {{
+    include /etc/nginx/snippets/{auth_include};
+    alias {directory}/;
+    add_header Cache-Control $tencorp_typography_cache_policy always;
+    add_header X-Content-Type-Options \"nosniff\" always;
+    add_header Strict-Transport-Security \"max-age=31536000\" always;
+}}
+"""
+
+
 def install():
+    auth_include = public_font_auth()
     asset_root = ROOT / 'releases' / VERSION / 'assets'
     manifest = json.loads((asset_root.parent / 'manifest.json').read_text())
     assert manifest['version'] == VERSION
@@ -60,15 +87,7 @@ map $request_uri $tencorp_typography_markup {
             f"    ~^/(?:{PROJECTS})(?:/|[?]|$) '{markup}';\n" + '}\n')
         locations = []
         for version, directory in [(LEGACY_VERSION, ROOT / 'assets'), (VERSION, asset_root)]:
-            locations.append(f"""# Public, immutable font files contain no application data.
-location ^~ /site-typography/{version}/ {{
-    include /etc/nginx/snippets/tencorp-auth-exempt.conf;
-    alias {directory}/;
-    add_header Cache-Control $tencorp_typography_cache_policy always;
-    add_header X-Content-Type-Options \"nosniff\" always;
-    add_header Strict-Transport-Security \"max-age=31536000\" always;
-}}
-""")
+            locations.append(font_location(version, directory, auth_include))
         LOCATIONS.write_text('\n'.join(locations))
         # Keep the single existing security replacement; two rules for <head>
         # would compete with each other in sub_filter.

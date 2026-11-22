@@ -1,0 +1,39 @@
+[Unit]
+Description=Verify search crawlers for the public TenCorp homepage
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=tencorp-crawler-verifier
+Group=tencorp-crawler-verifier
+ExecStart=/usr/bin/python3 -B /opt/tencorp-geo-access/crawler-verifier.py --serve
+Restart=on-failure
+RestartSec=3s
+UMask=0077
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+LockPersonality=yes
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+ReadOnlyPaths=/opt/tencorp-geo-access
+TasksMax=64
+MemoryMax=128M
+LimitNOFILE=128
+TimeoutStopSec=6s
+StandardOutput=null
+StandardError=null
+
+[Install]
+WantedBy=multi-user.target

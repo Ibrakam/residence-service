@@ -25,6 +25,8 @@ readonly MIN_FREE_KB=10485760
 readonly AUTH_GATE_MODE_FILE="/etc/tencorp-auth-gateway/public-gate-enabled"
 readonly AUTH_GATE_MODE_VALUE="tencorp-auth-gate-v1"
 readonly AUTH_SMOKE_SESSION_FILE="/etc/tencorp-auth-gateway/deploy-smoke-session"
+readonly MAIN_SEO_MODE_FILE="/etc/tencorp-geo-access/seo-main-enabled"
+readonly MAIN_SEO_MODE_VALUE="main-only-v1"
 
 WORKTREE=""
 COMMIT=""
@@ -37,6 +39,7 @@ CANDIDATE_STARTED=0
 CURRENT_SWITCHED=0
 DEPLOYMENT_CONFIRMED=0
 PUBLIC_AUTH_GATE_ENABLED=0
+PUBLIC_MAIN_SEO_ENABLED=0
 SERVICE_UNIT_CHANGED=0
 SERVICE_UNIT_HAD_PREVIOUS=0
 SERVICE_UNIT_BACKUP=""
@@ -293,6 +296,29 @@ configure_public_auth_smoke_mode() {
   rm -f -- "$identity_file"
   PUBLIC_AUTH_GATE_ENABLED=1
   log "Public smoke mode: ${AUTH_GATE_MODE_VALUE}"
+}
+
+
+configure_public_seo_smoke_mode() {
+  local owner_uid mode marker_value
+
+  PUBLIC_MAIN_SEO_ENABLED=0
+  if [[ ! -e "$MAIN_SEO_MODE_FILE" && ! -L "$MAIN_SEO_MODE_FILE" ]]; then
+    return 0
+  fi
+  [[ -f "$MAIN_SEO_MODE_FILE" && ! -L "$MAIN_SEO_MODE_FILE" ]] \
+    || die "homepage SEO mode marker must be a regular non-symlink file"
+  owner_uid="$(stat -c '%u' -- "$MAIN_SEO_MODE_FILE")"
+  mode="$(stat -c '%a' -- "$MAIN_SEO_MODE_FILE")"
+  [[ "$owner_uid" == 0 && "$mode" == 600 ]] \
+    || die "homepage SEO mode marker must be root-owned mode 0600"
+  marker_value="$(<"$MAIN_SEO_MODE_FILE")"
+  [[ "$marker_value" == "$MAIN_SEO_MODE_VALUE" ]] \
+    || die "homepage SEO mode marker has an unsupported value"
+  (( PUBLIC_AUTH_GATE_ENABLED == 1 )) \
+    || die "homepage-only SEO requires the existing protected-site auth gate"
+  PUBLIC_MAIN_SEO_ENABLED=1
+  log "Public indexing smoke mode: ${MAIN_SEO_MODE_VALUE}"
 }
 
 wait_for_http() {
@@ -896,6 +922,107 @@ smoke_public_immutable_auth_asset() {
   fi
 }
 
+
+smoke_public_seo_contract() {
+  local robots_file sitemap_file headers_file status content_type
+  local mode='closed'
+  (( PUBLIC_MAIN_SEO_ENABLED == 0 )) || mode='main-only'
+  robots_file="$(mktemp /run/residence-auth-robots.XXXXXX)"
+  sitemap_file="$(mktemp /run/residence-auth-sitemap.XXXXXX)"
+  headers_file="$(mktemp /run/residence-auth-seo-headers.XXXXXX)"
+  status="$(curl --disable --silent --show-error --noproxy '*' \
+    --output "$robots_file" --dump-header "$headers_file" --write-out '%{http_code}' \
+    --connect-timeout 3 --max-time 15 --max-filesize 16384 \
+    --header "Host: ${HOST_HEADER}" "${PUBLIC_ORIGIN}/robots.txt")" || {
+      rm -f -- "$robots_file" "$sitemap_file" "$headers_file"
+      die "could not query the bounded public robots policy"
+    }
+  content_type="$(awk 'BEGIN { IGNORECASE=1 } /^Content-Type:/ { value=$0 } END { sub(/^[^:]+:[[:space:]]*/, "", value); sub(/\r$/, "", value); print tolower(value) }' "$headers_file")"
+  if [[ "$status" != 200 || "$content_type" != text/plain* ]]; then
+    rm -f -- "$robots_file" "$sitemap_file" "$headers_file"
+    die "public robots policy has an unexpected status or content type"
+  fi
+  if (( PUBLIC_MAIN_SEO_ENABLED == 1 )); then
+    status="$(curl --disable --silent --show-error --noproxy '*' \
+      --output "$sitemap_file" --dump-header "$headers_file" --write-out '%{http_code}' \
+      --connect-timeout 3 --max-time 15 --max-filesize 16384 \
+      --header "Host: ${HOST_HEADER}" --header 'Accept: application/xml' \
+      "${PUBLIC_ORIGIN}/sitemap.xml")" || {
+        rm -f -- "$robots_file" "$sitemap_file" "$headers_file"
+        die "could not query the bounded homepage-only sitemap"
+      }
+    content_type="$(awk 'BEGIN { IGNORECASE=1 } /^Content-Type:/ { value=$0 } END { sub(/^[^:]+:[[:space:]]*/, "", value); sub(/\r$/, "", value); print tolower(value) }' "$headers_file")"
+    if [[ "$status" != 200 || "$content_type" != application/xml* ]]; then
+      rm -f -- "$robots_file" "$sitemap_file" "$headers_file"
+      die "homepage-only sitemap has an unexpected status or content type"
+    fi
+  else
+    smoke_public_exact_status '/sitemap.xml' 404 'application/xml'
+  fi
+
+  # This is a narrow indexability contract, not an auth exception. Keep one
+  # wildcard crawler group, a global deny, the exact root allow and only the
+  # reviewed public render assets. Protected map code must remain disallowed.
+  if ! python3 - "$mode" "$robots_file" "$sitemap_file" <<'VALIDATE_MAIN_SEO'
+import collections
+from pathlib import Path
+import re
+import sys
+import xml.etree.ElementTree as ET
+
+mode, robots_path, sitemap_path = sys.argv[1:]
+def bounded_utf8(path):
+    raw = Path(path).read_bytes()
+    if not 0 < len(raw) <= 16384:
+        raise ValueError('SEO response exceeds the bounded contract')
+    return raw.decode('utf-8-sig')
+
+robots = bounded_utf8(robots_path)
+entries = []
+for raw in robots.splitlines():
+    line = raw.strip()
+    if not line or line.startswith('#'):
+        continue
+    key, separator, value = line.partition(':')
+    if not separator:
+        raise ValueError('Malformed robots directive')
+    entries.append((key.strip().lower(), value.strip()))
+expected = [('user-agent', '*'), ('disallow', '/')]
+if mode == 'main-only':
+    expected += [('allow', '/$'), ('allow', '/tencorp/assets/'),
+                 ('disallow', '/tencorp/assets/projects-map.js'),
+                 ('allow', '/tencorp/images/'), ('allow', '/tencorp/fonts/'),
+                 ('allow', '/site-typography/'), ('allow', '/lead-security/client.js$'),
+                 ('allow', '/telegram-contact.js$'), ('allow', '/web-analytics.js$'),
+                 ('allow', '/robots.txt$'), ('allow', '/sitemap.xml$'),
+                 ('sitemap', 'https://form.tencorp.uz/sitemap.xml')]
+if not entries or entries[0] != ('user-agent', '*') or collections.Counter(entries) != collections.Counter(expected):
+    raise ValueError('Robots policy opens paths outside the reviewed homepage contract')
+if mode == 'main-only':
+    xml = bounded_utf8(sitemap_path)
+    if '\x00' in xml or re.search(r'<!\s*(?:DOCTYPE|ENTITY)', xml, re.I):
+        raise ValueError('Sitemap declarations are not permitted')
+    root = ET.fromstring(xml)
+    ns = '{http://www.sitemaps.org/schemas/sitemap/0.9}'
+    if root.tag != ns + 'urlset' or root.attrib or len(root) != 1:
+        raise ValueError('Sitemap must contain exactly one homepage URL')
+    url = root[0]
+    if url.tag != ns + 'url' or url.attrib or len(url) != 1:
+        raise ValueError('Unexpected sitemap URL structure')
+    loc = url[0]
+    if loc.tag != ns + 'loc' or loc.attrib or len(loc) or (loc.text or '').strip() != 'https://form.tencorp.uz/':
+        raise ValueError('Sitemap contains a non-homepage URL')
+    if any((value or '').strip() for value in (root.text, url.text, url.tail, loc.tail)):
+        raise ValueError('Unexpected sitemap text outside the homepage URL')
+VALIDATE_MAIN_SEO
+  then
+    rm -f -- "$robots_file" "$sitemap_file" "$headers_file"
+    die "public robots/sitemap policy exceeds the selected SEO contract"
+  fi
+  rm -f -- "$robots_file" "$sitemap_file" "$headers_file"
+  log "Public robots/sitemap contract passed (${mode})"
+}
+
 smoke_public_unauthenticated_contract() {
   local route status body_file headers_file ticket_headers_file
 
@@ -934,7 +1061,7 @@ smoke_public_unauthenticated_contract() {
 
   smoke_public_exact_status '/__tencorp-auth/check' 404
   smoke_public_exact_status '/privacy' 200 'text/html'
-  smoke_public_exact_status '/sitemap.xml' 404 'application/xml'
+  smoke_public_seo_contract
   # These read-only probes distinguish the two external integration
   # exemptions from the browser gate without sending a webhook secret,
   # request body, or a real ACME challenge.
@@ -956,27 +1083,6 @@ smoke_public_unauthenticated_contract() {
   # prove the auth prefix is public without sending an update or secret.
   smoke_public_exact_status '/__auth/telegram/bot-webhook' '404 405' 'application/json'
 
-  body_file="$(mktemp /run/residence-auth-robots.XXXXXX)"
-  status="$(curl \
-    --disable \
-    --silent \
-    --show-error \
-    --output "$body_file" \
-    --write-out '%{http_code}' \
-    --connect-timeout 3 \
-    --max-time 15 \
-    --header "Host: ${HOST_HEADER}" \
-    "${PUBLIC_ORIGIN}/robots.txt")" || {
-      rm -f -- "$body_file"
-      die "could not query public robots policy"
-    }
-  if [[ "$status" != 200 ]] \
-    || ! grep -Fqx 'User-agent: *' "$body_file" \
-    || ! grep -Fqx 'Disallow: /' "$body_file"; then
-    rm -f -- "$body_file"
-    die "public robots policy does not close indexing"
-  fi
-  rm -f -- "$body_file"
 
   headers_file="$(mktemp /run/residence-auth-operator-headers.XXXXXX)"
   : > "$headers_file"
@@ -1230,7 +1336,7 @@ main() {
   [[ "$2" =~ ^[0-9a-fA-F]{40}$ ]] || die "COMMIT must contain exactly 40 hexadecimal characters"
   COMMIT="${2,,}"
 
-  for command in awk basename chmod chown cmp curl date df du find flock getent git grep head id install ln mktemp mv readlink realpath rm rsync runuser sed sleep ss stat sync systemctl systemd-analyze systemd-run; do
+  for command in awk basename chmod chown cmp curl date df du find flock getent git grep head id install ln mktemp mv readlink realpath rm rsync runuser sed sleep ss stat sync python3 systemctl systemd-analyze systemd-run; do
     require_command "$command"
   done
   [[ -x "$NODE_BIN" ]] || die "Node runtime is unavailable at ${NODE_BIN}"
@@ -1242,6 +1348,7 @@ main() {
   # This explicit root-owned marker selects the public contract before any
   # release is created or switched. A malformed marker/session fails closed.
   configure_public_auth_smoke_mode
+  configure_public_seo_smoke_mode
 
   exec 9>"$DEPLOY_LOCK"
   flock -n 9 || die "another residence root deployment holds ${DEPLOY_LOCK}"

@@ -77,7 +77,7 @@ try {
         if(mode==='baseline') await page.evaluate(()=>Promise.race([document.fonts.ready,new Promise(resolve=>setTimeout(resolve,10000))]));
         await page.waitForTimeout(450);
         const metrics=await page.evaluate(()=>{
-          const visible=e=>{const r=e.getBoundingClientRect(); const s=getComputedStyle(e); return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden';};
+          const visible=e=>{const r=e.getBoundingClientRect(); const s=getComputedStyle(e); const screenReaderOnly=r.width<=2&&r.height<=2&&(s.clip!=='auto'||s.clipPath!=='none'); return !screenReaderOnly&&r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden';};
           const get=e=>{const s=getComputedStyle(e);const r=e.getBoundingClientRect();let clipped=false;for(let p=e.parentElement;p&&p!==document.body;p=p.parentElement){const cs=getComputedStyle(p);if(['hidden','clip','scroll','auto'].includes(cs.overflowX)){const pr=p.getBoundingClientRect();if(r.left<pr.left-3||r.right>pr.right+3){clipped=true;break;}}}return{text:e.textContent.trim().slice(0,90),tag:e.tagName,class:e.className,font:s.fontFamily,size:s.fontSize,weight:s.fontWeight,line:s.lineHeight,tracking:s.letterSpacing,x:Math.round(r.x),width:Math.round(r.width),height:Math.round(r.height),scroll:e.scrollWidth,client:e.clientWidth,clipped};};
           const headings=[...document.querySelectorAll('h1,h2,h3')].filter(visible).map(get);
           const paragraphs=[...document.querySelectorAll('p')].filter(visible).slice(0,8).map(get);

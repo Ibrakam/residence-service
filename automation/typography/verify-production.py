@@ -5,9 +5,10 @@ import hashlib
 import json
 import urllib.request
 import urllib.error
+import sys
 
 ORIGIN = 'https://form.tencorp.uz'
-VERSION = '20261119-1'
+VERSION = '20261122-1'
 COOKIE = Path('/etc/tencorp-auth-gateway/deploy-smoke-session').read_text().strip()
 PROJECTS = ['4u', 'bayterak', 'botanika-saroyi', 'c1', 'flagman', 'jomiy',
             'maftun-makon', 'meros', 'mirador', 'ofiyat', 'regnum-plaza',
@@ -21,6 +22,19 @@ def get(route, auth=True):
     with urllib.request.urlopen(req, timeout=30) as response:
         return response.status, response.read(), response.headers
 
+
+BEFORE = Path('/root/tencorp-typography-dormon-before-20261122.json')
+if '--capture-before' in sys.argv:
+    release = Path('/var/www/residence-service/root-current')
+    h = hashlib.sha256(); count = 0
+    for f in sorted((release / 'frontend/public/dormon-hills').rglob('*')):
+        if f.is_file():
+            h.update(str(f.relative_to(release)).encode()); h.update(hashlib.sha256(f.read_bytes()).digest()); count += 1
+    before = {'release': str(release.resolve()), 'dormonAssets': {'count': count, 'sha256': h.hexdigest()}}
+    for route in ['/dormon-hills', '/dormon-hills/apartments']:
+        before[route] = {'htmlSha256': hashlib.sha256(get(route)[1]).hexdigest()}
+    BEFORE.write_text(json.dumps(before)); BEFORE.chmod(0o600)
+    print(json.dumps({'baselineCaptured': True, 'release': before['release']})); raise SystemExit()
 
 checks = []
 paths = ['/', '/tencorp/', '/tencrop/', '/avalon', '/sanat/', '/sanat/flats', '/privacy']
@@ -41,7 +55,23 @@ for asset in ['site-fonts.css', 'montserrat.woff2', 'helvetica-neue-400.woff2',
         assert body[:4] == b'wOF2', (asset, 'font format')
     assert 'immutable' in headers.get('Cache-Control', ''), asset
 
-before = json.loads(Path('/root/tencorp-typography-dormon-before.json').read_text())
+manifest = json.loads(Path('/opt/tencorp-typography/releases/' + VERSION + '/manifest.json').read_text())
+for font in manifest['fonts']:
+    name = font.get('common')
+    if name:
+        code, body, headers = get('/site-typography/' + VERSION + '/' + name, auth=False)
+        assert body[:4] == b'wOF2' and hashlib.sha256(body).hexdigest() == font['commonSHA256']
+        assert 'immutable' in headers.get('Cache-Control', '')
+# Legacy immutable URLs must keep their original bytes for cached clients.
+for font in manifest['fonts']:
+    assert hashlib.sha256(get('/site-typography/20261119-1/' + font['original'], auth=False)[1]).hexdigest() == font['originalSHA256']
+try:
+    get('/site-typography/' + VERSION + '/missing-font-smoke.woff2', auth=False)
+    raise AssertionError('Missing font was served')
+except urllib.error.HTTPError as error:
+    assert error.code == 404 and error.headers.get('Cache-Control') == 'no-store'
+
+before = json.loads(BEFORE.read_text())
 release = Path('/var/www/residence-service/root-current')
 assert str(release.resolve()) == before['release'], 'Application release changed'
 h = hashlib.sha256()

@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "version": "20261122-1",
+  "unicodeRange": "U+0000-017F, U+02BB-02BC, U+0300-036F, U+0400-052F, U+2000-206F, U+20A0-20CF, U+2100-214F, U+2190-21FF, U+2212, U+25A0-25FF",
+  "legacyStylesheetSHA256": "4ec13cc1a8815853fc98e1c15ca423a5870c38fde34ccc5feb764c08138d0cde",
+  "fonts": [
+    {
+      "original": "montserrat.woff2",
+      "originalBytes": 215812,
+      "originalSHA256": "79a44d340d74a1c0f0cff523cda8e76da3f504a31c3e9a1baa4bb4a08086e7bd",
+      "common": "montserrat-common-ca5f679df419.woff2",
+      "commonBytes": 122436,
+      "commonSHA256": "ca5f679df4196b0bec2f05cb372d7aa2d2431267b5351f425ee720e9b3033f39",
+      "verifiedCharacters": 686
+    },
+    {
+      "original": "helvetica-neue-400.woff2",
+      "originalBytes": 203844,
+      "originalSHA256": "5c3fb5e436aa5eb2ddfbfbd907a1d8eb8c68466c2bfed292d095d295a6f8921f",
+      "common": "helvetica-neue-400-common-dd9050b41ffc.woff2",
+      "commonBytes": 68124,
+      "commonSHA256": "dd9050b41ffc7c42b95917c4894a0b728a5e3991852d5920df90bb2f7c85a0d5",
+      "verifiedCharacters": 821
+    },
+    {
+      "original": "helvetica-neue-500.woff2",
+      "originalBytes": 91520,
+      "originalSHA256": "e3b14961c7d70d74b250f7a6475f90d3cd3e9ddf44efa51ca5fdfa7d220e9312",
+      "common": "helvetica-neue-500-common-c78c5236460c.woff2",
+      "commonBytes": 43708,
+      "commonSHA256": "c78c5236460c0f1c753c3f88920f1063ae0ef06c515a9f0a40aa332c5861e8c7",
+      "verifiedCharacters": 571
+    },
+    {
+      "original": "helvetica-neue-700.woff2",
+      "originalBytes": 198668,
+      "originalSHA256": "c975d028e0c8b9532ee8d428e8056d8a226415fe1707c3db3a1209f2d10f62cc",
+      "common": "helvetica-neue-700-common-4847a10d8215.woff2",
+      "commonBytes": 63084,
+      "commonSHA256": "4847a10d8215bbd2b6065ffa237b8472c55efc44858c848c83f6ca3baf307692",
+      "verifiedCharacters": 822
+    },
+    {
+      "original": "helvetica-neue-italic.woff2",
+      "originalBytes": 88508,
+      "originalSHA256": "94e5e01042aac2c464b1151b9e8e75117b1e7b99d2dd8edd145bcdb6c63a1663",
+      "common": null,
+      "reason": "Preserve exact original italic outlines"
+    }
+  ],
+  "stylesheetSHA256": "705a68760a6ab14c87b5b81fbaf6922302026f5440ca6b32c2d8d10b0cc5eca6"
+}

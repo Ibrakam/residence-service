@@ -11,7 +11,8 @@ import shutil
 import subprocess
 import time
 
-VERSION = '20261119-1'
+VERSION = '20261122-1'
+LEGACY_VERSION = '20261119-1'
 ROOT = Path('/opt/tencorp-typography')
 SITE = Path('/etc/nginx/sites-enabled/tencorp').resolve()
 MAP = Path('/etc/nginx/conf.d/tencorp-typography.conf')
@@ -21,11 +22,19 @@ PROJECTS = 'avalon|4u|bayterak|botanika-saroyi|c1|flagman|jomiy|maftun-makon|mer
 
 
 def install():
-    assert (ROOT / 'site-fonts.css').is_file()
-    assert all((ROOT / 'assets' / name).is_file() for name in (
-        'montserrat.woff2', 'helvetica-neue-400.woff2',
-        'helvetica-neue-500.woff2', 'helvetica-neue-700.woff2',
-        'helvetica-neue-italic.woff2'))
+    asset_root = ROOT / 'releases' / VERSION / 'assets'
+    manifest = json.loads((asset_root.parent / 'manifest.json').read_text())
+    assert manifest['version'] == VERSION
+    assert hashlib.sha256((ROOT / 'assets/site-fonts.css').read_bytes()).hexdigest() == manifest['legacyStylesheetSHA256'], 'Legacy immutable CSS changed'
+    assert hashlib.sha256((asset_root / 'site-fonts.css').read_bytes()).hexdigest() == manifest['stylesheetSHA256']
+    for font in manifest['fonts']:
+        for name_key, digest_key in [('original', 'originalSHA256'), ('common', 'commonSHA256')]:
+            name = font.get(name_key)
+            if not name:
+                continue
+            assert Path(name).name == name and name.endswith('.woff2')
+            assert hashlib.sha256((asset_root / name).read_bytes()).hexdigest() == font[digest_key]
+        assert hashlib.sha256((ROOT / 'assets' / font['original']).read_bytes()).hexdigest() == font['originalSHA256'], 'Legacy immutable font changed'
     BACKUP.mkdir(parents=True, mode=0o700)
     paths = (SITE, MAP, LOCATIONS)
     originals = {path: path.read_bytes() if path.exists() else None for path in paths}
@@ -36,21 +45,31 @@ def install():
     try:
         # request_uri is deliberate: try_files rewrites $uri to /index.html.
         markup = f'<link rel="stylesheet" href="/site-typography/{VERSION}/site-fonts.css">'
-        MAP.write_text('''# Shared marketing typography; first matching regex wins.
+        MAP.write_text('''# Missing files must never become immutable cached errors.
+map $status $tencorp_typography_cache_policy {
+    default "no-store";
+    200 "public, max-age=31536000, immutable";
+    206 "public, max-age=31536000, immutable";
+    304 "public, max-age=31536000, immutable";
+}
+# Shared marketing typography; first matching regex wins.
 map $request_uri $tencorp_typography_markup {
     default "";
     ~^/(?:tencrop/)?dormon-hills(?:/|[?]|$) "";
 ''' + f"    ~^/(?:[?].*)?$ '{markup}';\n" +
             f"    ~^/(?:{PROJECTS})(?:/|[?]|$) '{markup}';\n" + '}\n')
-        LOCATIONS.write_text(f'''# Public, immutable font files contain no application data.
-location ^~ /site-typography/{VERSION}/ {{
+        locations = []
+        for version, directory in [(LEGACY_VERSION, ROOT / 'assets'), (VERSION, asset_root)]:
+            locations.append(f"""# Public, immutable font files contain no application data.
+location ^~ /site-typography/{version}/ {{
     include /etc/nginx/snippets/tencorp-auth-exempt.conf;
-    alias {ROOT}/assets/;
-    add_header Cache-Control "public, max-age=31536000, immutable" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header Strict-Transport-Security "max-age=31536000" always;
+    alias {directory}/;
+    add_header Cache-Control $tencorp_typography_cache_policy always;
+    add_header X-Content-Type-Options \"nosniff\" always;
+    add_header Strict-Transport-Security \"max-age=31536000\" always;
 }}
-''')
+""")
+        LOCATIONS.write_text('\n'.join(locations))
         # Keep the single existing security replacement; two rules for <head>
         # would compete with each other in sub_filter.
         text = originals[SITE].decode()
@@ -81,9 +100,10 @@ location ^~ /site-typography/{VERSION}/ {{
             else:
                 path.write_bytes(content)
         subprocess.run(['nginx', '-t'], check=True)
+        subprocess.run(['systemctl', 'reload', 'nginx'], check=True)
         raise
     print(json.dumps({'backup': str(BACKUP), 'version': VERSION,
-                      'stylesheetSha256': hashlib.sha256((ROOT / 'assets/site-fonts.css').read_bytes()).hexdigest()}))
+                      'stylesheetSha256': manifest['stylesheetSHA256']}))
 
 
 if __name__ == '__main__':

@@ -8,7 +8,9 @@ const require = createRequire(import.meta.url);
 const { chromium } = require('/Users/ibragimkadamzanov/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
 const root = path.dirname(fileURLToPath(import.meta.url));
 const mode = process.argv[2] ?? 'preview';
-const output = process.env.FONT_REPORT_DIR ?? '/tmp/tencorp-fonts-20261119/browser';
+const output = process.env.FONT_REPORT_DIR ?? '/tmp/tencorp-fonts-20261122/browser';
+const version = '20261122-1';
+const assetRoot = path.join(root,'releases',version,'assets');
 mkdirSync(output, { recursive: true });
 // Credential is held in memory only and never logged or saved to storageState.
 const session = execFileSync('/usr/bin/ssh', ['-F', '/dev/null', '-i',
@@ -21,9 +23,9 @@ const context = await browser.newContext({ reducedMotion:'reduce' });
 await context.addCookies([{name:'__Host-tencorp_session',value:session,
   url:'https://form.tencorp.uz',secure:true,httpOnly:true,sameSite:'Lax'}]);
 if (mode === 'preview') {
-  await context.route('**/site-typography/20261119-1/*', async route => {
+  await context.route(`**/site-typography/${version}/*`, async route => {
     const file = path.basename(new URL(route.request().url()).pathname);
-    await route.fulfill({body:readFileSync(file==='site-fonts.css'?path.join(root,file):path.join(root,'assets',file)),
+    await route.fulfill({body:readFileSync(path.join(assetRoot,file)),
       contentType:file.endsWith('woff2')?'font/woff2':'text/css'});
   });
 }
@@ -64,7 +66,7 @@ try {
         await page.waitForSelector('h1',{state:'attached',timeout:25000});
         await page.waitForFunction(()=>[...document.querySelectorAll('link[rel~="stylesheet"]')].every(link=>link.sheet),undefined,{timeout:25000});
         if (mode==='preview' && !url.includes('dormon-hills'))
-          await page.addStyleTag({url:'https://form.tencorp.uz/site-typography/20261119-1/site-fonts.css'});
+          await page.addStyleTag({url:`https://form.tencorp.uz/site-typography/${version}/site-fonts.css`});
         if(mode==='live'&&!url.includes('dormon-hills')) await page.waitForFunction(()=>[...document.fonts].some(f=>f.family.includes('TenCorp Montserrat')),undefined,{timeout:20000});
         if(mode!=='baseline'&&!url.includes('dormon-hills')) await page.evaluate(async()=>{
           await Promise.all([document.fonts.load('500 20px "TenCorp Montserrat"','Квартира'),

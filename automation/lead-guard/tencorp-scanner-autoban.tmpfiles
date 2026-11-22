@@ -1,0 +1,2 @@
+# UFW's real process lock; nf_tables does not need legacy xtables.lock.
+f /run/ufw.lock 0600 root root -

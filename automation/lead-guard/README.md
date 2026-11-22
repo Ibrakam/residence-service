@@ -44,6 +44,12 @@ It alerts on3guard rejections,5secretprobes/429s, or10confirmedleads per bounded
 window. Per-category15minute cooldown prevents alert floods. No message bodies
 or visitor PII are sent. `security-monitor.py --test` sends a labelled test.
 
+## Confirmed scanner auto-blocks
+
+See [SCANNER_AUTOBAN.md](SCANNER_AUTOBAN.md) for the separate least-privilege
+detector/helper, seven-day automatic leases, operator/proxy allowlists, bot
+confirmations, expiry and manual unblocking. Manual blocks remain permanent.
+
 ## Verification and operations
 
 ```

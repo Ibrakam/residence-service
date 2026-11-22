@@ -1,0 +1,8 @@
+[Unit]
+Description=Expire scanner bans and retry pending notifications
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=60s
+RandomizedDelaySec=5s
+[Install]
+WantedBy=timers.target

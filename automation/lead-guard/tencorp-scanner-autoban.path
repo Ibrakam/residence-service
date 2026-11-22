@@ -1,0 +1,7 @@
+[Unit]
+Description=Enforce newly detected TenCorp scanner incidents
+[Path]
+PathChanged=/var/lib/tencorp-security-monitor/scanner-candidates.json
+Unit=tencorp-scanner-autoban.service
+[Install]
+WantedBy=multi-user.target

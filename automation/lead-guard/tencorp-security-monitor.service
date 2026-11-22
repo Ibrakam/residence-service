@@ -4,6 +4,14 @@ After=network-online.target
 
 [Service]
 Type=oneshot
+Environment=LC_ALL=C.UTF-8
+User=tencorp-security-monitor
+Group=tencorp-security-monitor
+SupplementaryGroups=adm systemd-journal
+CapabilityBoundingSet=
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+InaccessiblePaths=/run/dbus/system_bus_socket /run/systemd/private
 EnvironmentFile=/etc/residence-catalog-alerts/monitor.env
 LoadCredential=telegram-token:/etc/residence-catalog-alerts/telegram-token
 StateDirectory=tencorp-security-monitor

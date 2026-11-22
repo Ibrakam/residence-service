@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "enabled": false,
+  "originHost": "form.tencorp.uz",
+  "originIps": ["46.62.227.229"],
+  "protectedCidrs": [],
+  "note": "Installer adds current operator address, trusted Nginx proxies and reviewed Cloudflare networks. Keep enabled=false until safety config is installed."
+}

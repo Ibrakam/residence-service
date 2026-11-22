@@ -195,6 +195,14 @@ class EnforcementTests(unittest.TestCase):
     def test_cdn_change_pauses_new_bans(self):
         with patch.object(helper,'origin_is_direct',return_value=False):self.run_enforce()
         self.assertEqual(self.kernel,set());self.assertEqual(self.messages,[])
+    def test_explicit_unban_is_prioritized_over_expired_batch_limit(self):
+        self.run_enforce();data=private_json(self.state)
+        expired={}
+        for i in range(4):
+            item=dict(data['bans'][IP]);item['ip']='8.9.10.'+str(i+1);item['until']=NOW-1;expired[item['ip']]=item
+        data['bans']={**expired,**data['bans']};atomic_json(self.state,data);self.logs=[]
+        self.run_enforce(NOW+20,unban=IP)
+        self.assertNotIn(IP,self.kernel);self.assertNotIn(IP,private_json(self.state)['bans'])
     def test_unban_only_managed_exact_address(self):
         self.run_enforce();self.logs=[];self.run_enforce(NOW+20,unban=IP);self.assertNotIn(IP,self.kernel);self.assertEqual(private_json(self.state)['bans'],{})
     def test_expiry_removes_our_ufw_rule_even_when_manual_nginx_deny_exists(self):

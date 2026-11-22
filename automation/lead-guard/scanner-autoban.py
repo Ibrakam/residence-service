@@ -205,7 +205,10 @@ def enforce(now=None, unban=None):
     owned = owned_rules(command(['/usr/sbin/ufw', 'show', 'added']).stdout)
     manual = manual_networks()
     removed = []
-    for address, item in list(bans.items()):
+    ordered = list(bans.items())
+    if unban:
+        ordered.sort(key=lambda row: row[0] != unban)
+    for address, item in ordered:
         if unban != address and item['until'] > now:
             continue
         if len(removed) >= MAX_NEW_BANS:

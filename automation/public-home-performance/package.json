@@ -1,0 +1,17 @@
+{
+  "name": "tencorp-public-home-performance",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0 <23"
+  },
+  "dependencies": {
+    "ssim.js": "3.5.0"
+  },
+  "scripts": {
+    "test": "node test-loader.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}

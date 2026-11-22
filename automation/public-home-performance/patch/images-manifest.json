@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "buildTool": {
+    "sharp": "0.35.4",
+    "ssim": "3.5.0"
+  },
+  "ssimThreshold": 0.97,
+  "sourceBytes": 2111119,
+  "outputBytes": 1633617,
+  "files": [
+    {
+      "path": "images/hero.jpeg",
+      "sourceSha256": "ced89e2067b75fb7f35bc9f4ac687e4eab1c6e53c56b25c1fd945be4d8564572",
+      "sourceBytes": 523384,
+      "width": 2048,
+      "height": 1111,
+      "format": "jpeg",
+      "changed": true,
+      "outputSha256": "d6fc85d66b617fedddbc00460bf228ac4bfe5898ee187d97ae1a91c6870e23dc",
+      "outputBytes": 401093,
+      "quality": 80,
+      "ssim": 0.9954454634892871
+    },
+    {
+      "path": "images/agent-artur-optimized.jpg",
+      "sourceSha256": "4d368a5e2fa8e187d56bdb306e47ecca675d85da7abb0717e98ae64d90a77c28",
+      "sourceBytes": 292782,
+      "width": 1707,
+      "height": 1954,
+      "format": "jpeg",
+      "changed": true,
+      "outputSha256": "f0582a5c0f3092ffef10615c6deacd26e12a04888d98bcb71f9d330e277c3efd",
+      "outputBytes": 173899,
+      "quality": 80,
+      "ssim": 0.9944784750287183
+    },
+    {
+      "path": "images/agent-artem-optimized.jpg",
+      "sourceSha256": "415790e14a23fd2f68f0d6ebf4f4c5d725b5c86e0fecb645069fa6351c0c3cd2",
+      "sourceBytes": 179083,
+      "width": 960,
+      "height": 1280,
+      "format": "jpeg",
+      "changed": true,
+      "outputSha256": "5528e0621f91bd70acab694fe794653131df33d36060bb6c7027f6d04b6881bd",
+      "outputBytes": 127458,
+      "quality": 80,
+      "ssim": 0.9943670196023991
+    },
+    {
+      "path": "images/bayterak.jpg",
+      "sourceSha256": "90fec277495122f3330e34311e4527aeedb64bcf86f155ef245aa1992c29f769",
+      "sourceBytes": 252104,
+      "width": 600,
+      "height": 1200,
+      "format": "jpeg",
+      "changed": true,
+      "outputSha256": "57068c2c39d14a828e78f03358ac5796d4820acd6fe97256246aa0014865c66d",
+      "outputBytes": 105268,
+      "quality": 82,
+      "ssim": 0.9715747564409144
+    },
+    {
+      "path": "images/team.jpg",
+      "sourceSha256": "59712b839cd212d8285ab83c8870202a48348efe7c75f6d4620779e1fb96d039",
+      "sourceBytes": 212674,
+      "width": 1707,
+      "height": 1954,
+      "format": "jpeg",
+      "changed": true,
+      "outputSha256": "4ade49261c21baa62984e9afe24d80bdb8eb408626274b88a572d89fc44cb893",
+      "outputBytes": 174807,
+      "quality": 80,
+      "ssim": 0.9945373455071452
+    },
+    {
+      "path": "images/boulevard.webp",
+      "sourceSha256": "505927669ef9af91102b6aac85eb9ca436f2aaf51dd83c72048f716bc95745ac",
+      "sourceBytes": 74692,
+      "width": 1024,
+      "height": 682,
+      "format": "webp",
+      "changed": false,
+      "outputSha256": "505927669ef9af91102b6aac85eb9ca436f2aaf51dd83c72048f716bc95745ac",
+      "outputBytes": 74692,
+      "quality": null,
+      "ssim": 1
+    },
+    {
+      "path": "images/mirabad.webp",
+      "sourceSha256": "5cf597a7606ca9a28fff471f5dbe7418be51778cace17fa74f3f5af95ad351da",
+      "sourceBytes": 104572,
+      "width": 1222,
+      "height": 687,
+      "format": "webp",
+      "changed": false,
+      "outputSha256": "5cf597a7606ca9a28fff471f5dbe7418be51778cace17fa74f3f5af95ad351da",
+      "outputBytes": 104572,
+      "quality": null,
+      "ssim": 1
+    },
+    {
+      "path": "images/nrg-oybek.webp",
+      "sourceSha256": "c945aa6e400865517711e7420fda1b5a79e24cae27105d52a3374648b19c9007",
+      "sourceBytes": 197708,
+      "width": 1434,
+      "height": 804,
+      "format": "webp",
+      "changed": false,
+      "outputSha256": "c945aa6e400865517711e7420fda1b5a79e24cae27105d52a3374648b19c9007",
+      "outputBytes": 197708,
+      "quality": null,
+      "ssim": 1
+    },
+    {
+      "path": "images/nrg.webp",
+      "sourceSha256": "adf39f694feda24ebe7d336d13084bdd0bbe74eeeabafc6801ddda92a4c13579",
+      "sourceBytes": 113466,
+      "width": 1536,
+      "height": 768,
+      "format": "webp",
+      "changed": false,
+      "outputSha256": "adf39f694feda24ebe7d336d13084bdd0bbe74eeeabafc6801ddda92a4c13579",
+      "outputBytes": 113466,
+      "quality": null,
+      "ssim": 1
+    },
+    {
+      "path": "images/project.webp",
+      "sourceSha256": "bf84deed7245f2bb9d1dc7301710cfe3028f44f12f6d0e658cb7a1c44d71f4af",
+      "sourceBytes": 160654,
+      "width": 1536,
+      "height": 864,
+      "format": "webp",
+      "changed": false,
+      "outputSha256": "bf84deed7245f2bb9d1dc7301710cfe3028f44f12f6d0e658cb7a1c44d71f4af",
+      "outputBytes": 160654,
+      "quality": null,
+      "ssim": 1
+    }
+  ]
+}

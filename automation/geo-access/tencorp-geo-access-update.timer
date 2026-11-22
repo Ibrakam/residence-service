@@ -1,0 +1,9 @@
+[Unit]
+Description=Check monthly DB-IP country feed daily
+[Timer]
+OnBootSec=10min
+OnCalendar=*-*-* 03:20:00 UTC
+RandomizedDelaySec=30min
+Persistent=yes
+[Install]
+WantedBy=timers.target

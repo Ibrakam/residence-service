@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { LeadModal } from '@/app/lead-modal';
 import { DormonBrand } from '../dormon-brand';
 import { DormonHeader } from '../dormon-header';
+import { dormonMediaSources } from '../dormon-media';
 import {
   basePath, catalogHref, catalogPath, copy, emptyFilters, projectPath,
   type CatalogLanguage, type PlanFilters, type PublishedPlan,
@@ -36,6 +37,16 @@ export function DormonPlanCatalog({ language, attribution, initialFilters, plans
   const t = copy[language];
   const dialogText = dialogCopy[language];
   const [filters, setFilters] = useState(initialFilters);
+  const [heroFailed, setHeroFailed] = useState(false);
+  const heroImage = useRef<HTMLImageElement>(null);
+  const heroSrc = `${basePath}${projectPath}/images/hero.webp`;
+  const hero = dormonMediaSources(heroSrc);
+  // The hero occupies the full mobile wrap, then the second desktop grid track.
+  const heroSizes = '(max-width: 630px) calc(100vw - clamp(2.25rem, 10vw, 10rem)), (max-width: 1458px) 42vw, 38rem';
+  useEffect(() => {
+    // The eager SSR request can fail before React attaches its error listener.
+    if (heroImage.current?.complete && !heroImage.current.naturalWidth) setHeroFailed(true);
+  }, []);
   const [detail, setDetail] = useState<PublishedPlan>();
   const [imageKind, setImageKind] = useState<'plan' | 'floorPlan'>('plan');
   const [zoomed, setZoomed] = useState(false);
@@ -107,7 +118,12 @@ export function DormonPlanCatalog({ language, attribution, initialFilters, plans
             <h1>{t.title}</h1>
             <p>{t.description}</p>
           </div>
-          <img src={`${basePath}${projectPath}/images/hero.webp`} alt={t.heroAlt} fetchPriority="high" />
+          <picture style={{ display: 'block', minWidth: 0 }}>
+            {hero && !heroFailed && <source type="image/avif" srcSet={hero.avif} sizes={heroSizes} />}
+            <img ref={heroImage} src={heroSrc} srcSet={hero && !heroFailed ? hero.webp : undefined} sizes={hero && !heroFailed ? heroSizes : undefined}
+              width={hero?.width ?? 1600} height={hero?.height ?? 1066} alt={t.heroAlt}
+              fetchPriority="high" loading="eager" decoding="async" onError={() => setHeroFailed(true)} />
+          </picture>
         </div>
       </section>
       <div className="dh-plan-wrap dh-plan-body">

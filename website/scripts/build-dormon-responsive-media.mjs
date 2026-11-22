@@ -8,6 +8,9 @@ const output = new URL('../public/dormon-hills/media/', import.meta.url);
 const manifestFile = new URL('../data/dormon-responsive-media.json', import.meta.url);
 const config = { widths: [640, 960, 1440, 1920], webp: { quality: 78, effort: 5 }, avif: { quality: 53, effort: 4, chromaSubsampling: '4:4:4' } };
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
+const args = process.argv.slice(2);
+if (args.length && (args.length !== 2 || args[0] !== '--only')) throw new Error('Usage: build-dormon-responsive-media.mjs [--only SOURCE_PATH]');
+const only = args[1];
 const sources = [];
 sharp.concurrency(2);
 await mkdir(output, { recursive: true });
@@ -17,12 +20,20 @@ for (const group of ['editorial', 'facades']) {
     sources.push({ group, file, path: `/dormon-hills/${group}/${file}` });
   }
 }
+// Photographs only. Technical apartment/floor-plan drawings are never resized.
+sources.push({ group: 'images', file: 'hero.webp', path: '/dormon-hills/images/hero.webp' });
+if (only && !sources.some(source => source.path === only)) throw new Error('Unknown reviewed photo source');
 
-const images = {};
+// A targeted addition retains the exact bytes and metadata of existing photos,
+// even when the installed encoder version has changed since the previous build.
+const previous = only ? JSON.parse(await readFile(manifestFile, 'utf8')) : undefined;
+if (previous && (previous.schemaVersion !== 1 || JSON.stringify(previous.config) !== JSON.stringify(config))) throw new Error('Targeted generation requires the same manifest configuration');
+const images = previous ? { ...previous.images } : {};
+const selected = sources.filter(source => !only || source.path === only);
 let cursor = 0;
 await Promise.all(Array.from({ length: 2 }, async () => {
-  while (cursor < sources.length) {
-    const source = sources[cursor++];
+  while (cursor < selected.length) {
+    const source = selected[cursor++];
     const original = await readFile(new URL(source.path.slice(1), publicRoot));
     const metadata = await sharp(original).metadata();
     if (!metadata.width || !metadata.height || metadata.format !== 'webp') throw new Error(`Invalid original ${source.path}`);
@@ -48,9 +59,9 @@ const sorted = Object.fromEntries(Object.entries(images).sort(([a], [b]) => a.lo
 const manifest = { schemaVersion: 1, config, images: sorted };
 const managed = new Set(Object.values(images).flatMap(image => image.variants.flatMap(variant => ['webp', 'avif'].map(format => variant[format].src.split('/').at(-1)))));
 for (const file of await readdir(output)) {
-  if (!managed.has(file) && /^(?:editorial|facades)-[a-z0-9-]+-\d+-[a-f0-9]{12}\.(?:webp|avif)$/.test(file)) await rm(new URL(file, output));
+  if (!managed.has(file) && /^(?:editorial|facades|images)-[a-z0-9-]+-\d+-[a-f0-9]{12}\.(?:webp|avif)$/.test(file)) await rm(new URL(file, output));
 }
 await writeFile(new URL(manifestFile.href + '.tmp'), JSON.stringify(manifest, null, 2) + '\n');
 await rename(new URL(manifestFile.href + '.tmp'), manifestFile);
 const first = images['/dormon-hills/facades/overview.webp'];
-console.log(JSON.stringify({ images: sources.length, derivatives: managed.size, originalBytes: Object.values(images).reduce((sum, image) => sum + image.originalBytes, 0), overview: { originalBytes: first.originalBytes, variants: first.variants.map(({ width, webp, avif }) => ({ width, webpBytes: webp.bytes, avifBytes: avif.bytes })) } }));
+console.log(JSON.stringify({ images: Object.keys(images).length, generatedImages: selected.length, derivatives: managed.size, originalBytes: Object.values(images).reduce((sum, image) => sum + image.originalBytes, 0), overview: { originalBytes: first.originalBytes, variants: first.variants.map(({ width, webp, avif }) => ({ width, webpBytes: webp.bytes, avifBytes: avif.bytes })) } }));

@@ -10,9 +10,9 @@ const files = new Set();
 let originalBytes = 0;
 let fullAvifBytes = 0;
 assert.equal(manifest.schemaVersion, 1);
-assert.equal(Object.keys(manifest.images).length, 30);
+assert.equal(Object.keys(manifest.images).length, 31);
 for (const [path, image] of Object.entries(manifest.images)) {
-  assert.match(path, /^\/dormon-hills\/(?:editorial|facades)\/[a-z0-9-]+\.webp$/);
+  assert.match(path, /^\/dormon-hills\/(?:(?:editorial|facades)\/[a-z0-9-]+|images\/hero)\.webp$/);
   const original = await readFile(new URL(path.slice(1), root));
   assert.equal(hash(original), image.sourceSha256, `${path}: regenerate variants after changing an original`);
   originalBytes += original.length;
@@ -44,4 +44,6 @@ assert.deepEqual(managed, files, 'Every generated file must be referenced, with 
 assert.ok(fullAvifBytes < originalBytes * .7, 'Full-size photos must save at least 30% of bytes');
 const overview = manifest.images['/dormon-hills/facades/overview.webp'];
 assert.ok(overview.variants.find(image => image.width === 960).avif.bytes < overview.originalBytes * .5, 'The mobile overview must be substantially lighter');
+const catalogHero = manifest.images['/dormon-hills/images/hero.webp'];
+assert.ok(catalogHero.variants.find(image => image.width === 960).avif.bytes < catalogHero.originalBytes * .35, 'The mobile catalogue hero must avoid the large original photograph');
 console.log(JSON.stringify({ verified: true, images: Object.keys(manifest.images).length, derivatives: files.size, originalBytes, fullAvifBytes }));

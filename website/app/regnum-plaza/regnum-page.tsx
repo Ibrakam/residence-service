@@ -284,7 +284,7 @@ export function RegnumPlazaPage({ initialLanguage, previewUnits }: { initialLang
       <nav className="rp-header__nav" aria-label={t.navLabel}>{t.nav.map(([id, label]) => <a key={id} href={`#${id}`}>{label}</a>)}</nav>
       <div className="rp-languages" aria-label={t.language}>{languages.map((item) => <button key={item} type="button" className={language === item ? 'is-active' : ''} onClick={() => setLanguage(item)} aria-pressed={language === item}>{item.toUpperCase()}</button>)}</div>
       <a className="rp-header__apartments" href={withLanguage('/regnum-plaza/apartments', language)}>{t.apartments}</a>
-      <button className="rp-header__lead" type="button" data-lead-trigger onClick={() => openLead('landing:header')}>{t.consult}</button>
+      <button data-tencorp-auto-lead className="rp-header__lead" type="button" data-lead-trigger onClick={() => openLead('landing:header')}>{t.consult}</button>
       <button ref={menuButtonRef} className="rp-menu-button" type="button" aria-expanded={menuOpen} aria-controls="rp-menu" onClick={() => setMenuOpen(true)}><span>{t.menu}</span><i /><i /></button>
     </header>
 
@@ -293,7 +293,7 @@ export function RegnumPlazaPage({ initialLanguage, previewUnits }: { initialLang
       <nav ref={menuRef} id="rp-menu" aria-label={t.navLabel}>
         <header><img src={asset('/regnum-plaza/logo.svg')} width="522" height="95" alt="Regnum Plaza" /><button type="button" onClick={() => setMenuOpen(false)} aria-label={t.close}>×</button></header>
         <div className="rp-menu__links">{t.nav.map(([id, label], index) => <a key={id} href={`#${id}`} onClick={() => setMenuOpen(false)}><span>0{index + 1}</span>{label}</a>)}</div>
-        <footer><div aria-label={t.language}>{languages.map((item) => <button key={item} type="button" className={language === item ? 'is-active' : ''} aria-pressed={language === item} onClick={(event) => selectMenuLanguage(item, event.currentTarget)}>{item.toUpperCase()}</button>)}</div><button type="button" data-lead-trigger onClick={(event) => openLead('landing:menu', null, event.currentTarget)}>{t.consult}<span>↗</span></button></footer>
+        <footer><div aria-label={t.language}>{languages.map((item) => <button key={item} type="button" className={language === item ? 'is-active' : ''} aria-pressed={language === item} onClick={(event) => selectMenuLanguage(item, event.currentTarget)}>{item.toUpperCase()}</button>)}</div><button data-tencorp-auto-lead type="button" data-lead-trigger onClick={(event) => openLead('landing:menu', null, event.currentTarget)}>{t.consult}<span>↗</span></button></footer>
       </nav>
     </div>
 
@@ -307,7 +307,7 @@ export function RegnumPlazaPage({ initialLanguage, previewUnits }: { initialLang
           <img src={asset('/regnum-plaza/logo.svg')} width="522" height="95" alt="Regnum Plaza" />
           <h1 id="rp-hero-title">{t.heroTitle}</h1>
           <p>{t.heroText}</p>
-          <div><a href={withLanguage('/regnum-plaza/apartments', language)}>{t.apartments}<b>↗</b></a><button type="button" data-lead-trigger onClick={() => openLead('landing:hero')}>{t.consult}</button></div>
+          <div><a href={withLanguage('/regnum-plaza/apartments', language)}>{t.apartments}<b>↗</b></a><button data-tencorp-auto-lead type="button" data-lead-trigger onClick={() => openLead('landing:hero')}>{t.consult}</button></div>
         </div>
         <ul className="rp-hero__facts">{t.heroFacts.map(([value, label]) => <li key={value}><strong>{value}</strong><span>{label}</span></li>)}</ul>
         <span className="rp-hero__media-label">{mediaLabels['real-first-phase'][language]}</span>
@@ -342,7 +342,7 @@ export function RegnumPlazaPage({ initialLanguage, previewUnits }: { initialLang
           <img src={asset(slide.src)} width={slide.width} height={slide.height} loading="lazy" alt={slide.caption[language]} />
           <span><small>{String(index + 1).padStart(2, '0')} · {mediaLabels[slide.type][language]}</small><strong>{slide.title[language]}</strong><i>↗</i></span>
         </button>)}</div>
-        <button className="rp-section__lead" type="button" data-lead-trigger onClick={() => openLead('landing:amenities')}>{t.amenitiesLead}<span>↗</span></button>
+        <button data-tencorp-auto-lead className="rp-section__lead" type="button" data-lead-trigger onClick={() => openLead('landing:amenities')}>{t.amenitiesLead}<span>↗</span></button>
       </section>
 
       <section className="rp-section rp-lobby">
@@ -366,13 +366,13 @@ export function RegnumPlazaPage({ initialLanguage, previewUnits }: { initialLang
           <div className="rp-preview-plan">{unit.planPublicPath ? <img src={asset(unit.planPublicPath)} width={unit.planWidth!} height={unit.planHeight!} loading="lazy" alt={`${mediaLabels['official-plan'][language]} · ${t.number}${unit.number}`} /> : <div><i /><span>{t.missingPlan}</span></div>}</div>
           <header><span>{t.number}{unit.number}</span><strong>{unit.rooms} {t.rooms}</strong></header>
           <dl><div><dt>{unit.area.toLocaleString(language === 'ru' ? 'ru-RU' : language === 'uz' ? 'uz-UZ' : 'en-US')} м²</dt><dd>{unit.floor} {t.floor}</dd></div><div><dt>{unit.completion}</dt><dd>{regnumQueueLabel(unit, language, queueOptions)} · {unit.section} {t.section}</dd></div></dl>
-          <p>{t.price}</p><button type="button" data-lead-trigger onClick={(event) => openLead('landing:catalog-preview', unit, event.currentTarget)}>{t.askUnit}<span>↗</span></button>
+          <p>{t.price}</p><button data-tencorp-auto-lead type="button" data-lead-trigger onClick={(event) => openLead('landing:catalog-preview', unit, event.currentTarget)}>{t.askUnit}<span>↗</span></button>
         </article>)}</div>
         <a className="rp-apartments-preview__cta" href={withLanguage('/regnum-plaza/apartments', language)}>{t.allApartments}<span>↗</span></a>
       </section>
 
       <section className="rp-contact">
-        <div data-reveal><span>{t.contactEyebrow}</span><h2>{t.contactTitle}</h2><p>{t.contactText}</p><button type="button" data-lead-trigger onClick={() => openLead('landing:footer')}>{t.consult}<b>↗</b></button></div>
+        <div data-reveal><span>{t.contactEyebrow}</span><h2>{t.contactTitle}</h2><p>{t.contactText}</p><button data-tencorp-auto-lead type="button" data-lead-trigger onClick={() => openLead('landing:footer')}>{t.consult}<b>↗</b></button></div>
         <a className="rp-contact__phone" href="tel:+998781137712">+998 78 113 77 12 <span>↗</span></a>
         <dl><div><dt>{t.office}</dt><dd>{t.salesAddress.replace(' · ', ' · ')}</dd></div><div><dt>{t.project}</dt><dd>{t.projectAddress.replace(' · ', ' · ')}</dd></div></dl>
         <footer><img src={asset('/regnum-plaza/logo.svg')} width="522" height="95" alt="Regnum Plaza" /><p>{t.disclaimer}</p><nav><a href={`${appBasePath}/privacy?project=regnum-plaza&lang=${language}&from=landing`}>{t.privacy}</a><a href="#top">{t.top}</a></nav></footer>

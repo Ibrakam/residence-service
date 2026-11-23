@@ -168,7 +168,7 @@ export function DormonPlanCatalog({ language, attribution, initialFilters, plans
                 <p>{t.block} {plan.block}{plan.floors && ` / ${t.floors(plan.floors)}`}</p>
                 <h2>{areaLabel(plan.area)}</h2>
                 <p>{t.roomsLabel(plan.rooms)}</p>
-                <button type="button" className="dh-plan-text-action" aria-haspopup="dialog" onClick={event => setLead({ plan, opener: event.currentTarget })}>{t.inquire}</button>
+                <button data-tencorp-auto-lead type="button" className="dh-plan-text-action" aria-haspopup="dialog" onClick={event => setLead({ plan, opener: event.currentTarget })}>{t.inquire}</button>
               </div>
             </li>)}
           </ul>
@@ -182,7 +182,7 @@ export function DormonPlanCatalog({ language, attribution, initialFilters, plans
       <div className="dh-plan-wrap dh-plan-footer-inner">
         <DormonBrand href={projectHref} />
         <a href="tel:+998781137712">+998 78 113 77 12</a>
-        <button className="dh-plan-action" type="button" onClick={event => setLead({ opener: event.currentTarget })}>{t.contact}</button>
+        <button data-tencorp-auto-lead className="dh-plan-action" type="button" onClick={event => setLead({ opener: event.currentTarget })}>{t.contact}</button>
       </div>
     </footer>
 

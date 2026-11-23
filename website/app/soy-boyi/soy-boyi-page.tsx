@@ -964,7 +964,7 @@ export function SoyBoyiPage({
                   {t.choose}
                   <span>→</span>
                 </a>
-                <button
+                <button data-tencorp-auto-lead
                   type="button"
                   onClick={(event) => openLead("hero", event.currentTarget)}
                 >
@@ -1173,7 +1173,7 @@ export function SoyBoyiPage({
                       </div>
                     </dl>
                     <strong>{t.request}</strong>
-                    <button
+                    <button data-tencorp-auto-lead
                       type="button"
                       onClick={(event) =>
                         openLead("landing-preview", event.currentTarget, unit)
@@ -1206,7 +1206,7 @@ export function SoyBoyiPage({
                   <li key={fact}>{fact}</li>
                 ))}
               </ul>
-              <button
+              <button data-tencorp-auto-lead
                 type="button"
                 onClick={(event) => openLead("final-form", event.currentTarget)}
               >

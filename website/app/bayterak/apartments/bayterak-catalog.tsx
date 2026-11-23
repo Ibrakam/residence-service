@@ -412,7 +412,7 @@ function UnitCard({ unit, language, onPlan, onLead }: { unit: Unit; language: La
           <div><dt>{t.finishing}</dt><dd>{unit.repairIncluded ? t.yes : t.no}</dd></div>
         </dl>
         <CampaignPrice unit={unit} language={language} />
-        <button className="bayterak-unit-card__cta" type="button" data-lead-trigger onClick={onLead}>{t.choose}<span aria-hidden="true">↗</span></button>
+        <button data-tencorp-auto-lead className="bayterak-unit-card__cta" type="button" data-lead-trigger onClick={onLead}>{t.choose}<span aria-hidden="true">↗</span></button>
       </div>
     </article>
   );
@@ -470,7 +470,7 @@ function UnitDetail({ unit, language, onClose, onPlan, onLead }: { unit: Unit; l
           <div><dt>{t.studioFlag}</dt><dd>{unit.studio ? t.yes : t.no}</dd></div>
         </dl>
         <CampaignPrice unit={unit} language={language} detailed />
-        <button className="bayterak-unit-detail__cta" type="button" data-lead-trigger onClick={onLead}>{t.choose}<span aria-hidden="true">↗</span></button>
+        <button data-tencorp-auto-lead className="bayterak-unit-detail__cta" type="button" data-lead-trigger onClick={onLead}>{t.choose}<span aria-hidden="true">↗</span></button>
       </aside>
     </>
   );
@@ -671,7 +671,7 @@ export function BayterakCatalog({ snapshot: embeddedSnapshot, initialLanguage }:
           <span>{t.eyebrow}</span>
           <h1 id="bayterak-catalog-title">{t.title}<em>{t.accent}</em></h1>
           <p>{t.leadBefore} <strong>{snapshot.officialTotalAtCapture}</strong> {t.leadAfter}</p>
-          <button type="button" data-lead-trigger onClick={() => openLead(null, 'hero-consultation')}>{t.consult}<span aria-hidden="true">↗</span></button>
+          <button data-tencorp-auto-lead type="button" data-lead-trigger onClick={() => openLead(null, 'hero-consultation')}>{t.consult}<span aria-hidden="true">↗</span></button>
         </div>
         <aside aria-label={t.snapshot}>
           <small>{t.snapshot}</small>

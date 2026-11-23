@@ -1063,7 +1063,7 @@ function UnitCard({
       <UnitFacts unit={unit} language={language} />
       <Price unit={unit} language={language} detailed />
       <div className="ybc-unit-card__actions">
-        <button type="button" data-lead-trigger onClick={() => onLead(unit)}>
+        <button data-tencorp-auto-lead type="button" data-lead-trigger onClick={() => onLead(unit)}>
           {t.choose}
           <span>↗</span>
         </button>
@@ -1178,7 +1178,7 @@ function UnitDetail({
         </strong>
         <UnitFacts unit={unit} language={language} compact />
         <Price unit={unit} language={language} detailed />
-        <button
+        <button data-tencorp-auto-lead
           className="ybc-detail-cta"
           type="button"
           data-lead-trigger
@@ -1797,7 +1797,7 @@ export function YangiBaxtCatalog({
             ))}
           </div>
           <a href="tel:+998781137712">{t.call}</a>
-          <button
+          <button data-tencorp-auto-lead
             type="button"
             data-lead-trigger
             onClick={() => openLead(null, "header")}
@@ -1819,7 +1819,7 @@ export function YangiBaxtCatalog({
               {t.leadBefore} <strong>{snapshot.officialTotalAtCapture}</strong>{" "}
               {t.leadAfter}
             </p>
-            <button
+            <button data-tencorp-auto-lead
               type="button"
               data-lead-trigger
               onClick={() => openLead(null, "hero")}

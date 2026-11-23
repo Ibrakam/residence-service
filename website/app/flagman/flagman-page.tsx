@@ -244,7 +244,7 @@ export function FlagmanPage({ initialLanguage = 'ru' }: { initialLanguage?: Lang
       <div className="flagman-hero__shade" />
       <div className="flagman-hero__content">
         <p>{t.heroOverline}</p><h1>{t.heroTitle}</h1><h2>{t.heroAccent}</h2><address>{t.heroAddress}</address>
-        <div><a href={withLanguage('/flagman/apartments', language)}>{t.choose}<span>↗</span></a><button type="button" onClick={() => setLeadOpen(true)}>{t.consult}</button></div>
+        <div><a href={withLanguage('/flagman/apartments', language)}>{t.choose}<span>↗</span></a><button data-tencorp-auto-lead type="button" onClick={() => setLeadOpen(true)}>{t.consult}</button></div>
       </div>
       <button className="flagman-hero__photo" type="button" onClick={() => openGallery(actualGallery, 0)}><span>01 / 06</span>{t.heroPhoto}<i>↗</i></button>
       <div className="flagman-hero__index"><span>TASHKENT</span><span>MIRZO-ULUGBEK</span></div>
@@ -302,7 +302,7 @@ export function FlagmanPage({ initialLanguage = 'ru' }: { initialLanguage?: Lang
       </section>
 
       <section className="flagman-contact" id="contact">
-        <div className="flagman-contact__copy" data-flagman-reveal><div className="flagman-section-label"><span>09</span><p>{t.contactOverline}</p></div><h2>{t.contactTitle}</h2><p>{t.contactText}</p><button type="button" onClick={() => setLeadOpen(true)}>{t.consult}<span>↗</span></button></div>
+        <div className="flagman-contact__copy" data-flagman-reveal><div className="flagman-section-label"><span>09</span><p>{t.contactOverline}</p></div><h2>{t.contactTitle}</h2><p>{t.contactText}</p><button data-tencorp-auto-lead type="button" onClick={() => setLeadOpen(true)}>{t.consult}<span>↗</span></button></div>
         <div className="flagman-contact__photo"><img src={asset('/flagman/images/building-close.webp')} alt={t.heroPhoto} loading="lazy" /><span>{t.actual}</span></div>
         <div className="flagman-contact__meta"><div><small>{t.phone}</small><a href="tel:+998781137712">+998 78 113 77 12</a></div><div><small>{t.partner}</small><span>NRG-BI × AL-BINA</span></div></div>
       </section>

@@ -8,6 +8,8 @@ const [layout, guard] = await Promise.all([
 
 assert.match(layout, /<SessionRevocationGuard\s*\/>/, 'the session guard must cover every Residence document route');
 assert.match(guard, /fetch\('\/__auth\/me'/, 'the guard must validate the server-side session');
+assert.match(guard, /if \(optionalConsumerBrowsing\(\)\) \{[\s\S]*?return;/, 'optional consumer pages must not redirect anonymous readers');
+assert.match(guard, /mode === 'optional' && optionalBrowsingRoots\.has\(root\)/, 'an optional marker must not affect unrelated account/operator routes');
 assert.match(guard, /credentials:\s*'same-origin'/, 'the guard must send only same-origin session credentials');
 assert.match(guard, /cache:\s*'no-store'/, 'session checks must never use a cached identity response');
 assert.match(guard, /response\.status !== 401/, 'only an authoritative unauthorized response may trigger sign-in');

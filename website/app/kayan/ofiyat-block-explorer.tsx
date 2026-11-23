@@ -440,7 +440,7 @@ export function OfiyatBlockExplorer({
           ><span><b>№ {unit.number}</b><small>{unit.rooms ? `${unit.rooms} ${t.rooms}` : t.noRooms} · {unit.area} {t.area}</small></span><i>{t.statuses[unit.status]}</i></button>)}</div> : <p className="ofiyat-explorer__unavailable">{t.unavailable}</p>}
           {selectedUnit && selection ? <div className="ofiyat-explorer__actions">
             <a href={catalogHrefFor(catalogHref, selection)}>{t.open}<span>↗</span></a>
-            <button type="button" onClick={() => onLead?.(selection)}>{t.consult}</button>
+            <button data-tencorp-auto-lead type="button" onClick={() => onLead?.(selection)}>{t.consult}</button>
           </div> : null}
           <button className="ofiyat-explorer__back" type="button" onClick={goBack}>← {t.back}</button>
         </div>}

@@ -1282,7 +1282,7 @@ function UnitCard({
         detailed
       />
       <div className="jmc-unit-card__actions">
-        <button type="button" data-lead-trigger onClick={() => onLead(unit)}>
+        <button data-tencorp-auto-lead type="button" data-lead-trigger onClick={() => onLead(unit)}>
           {t.choose}
           <span>↗</span>
         </button>
@@ -1406,7 +1406,7 @@ function UnitDetail({
           evaluationTime={evaluationTime}
           detailed
         />
-        <button
+        <button data-tencorp-auto-lead
           className="jmc-detail-cta"
           type="button"
           data-lead-trigger
@@ -2078,7 +2078,7 @@ export function JomiyCatalog({
             ))}
           </div>
           <a href="tel:+998781137712">{t.call}</a>
-          <button
+          <button data-tencorp-auto-lead
             type="button"
             data-lead-trigger
             onClick={() => openLead(null, "header")}
@@ -2100,7 +2100,7 @@ export function JomiyCatalog({
               {t.leadBefore} <strong>{snapshot.officialTotalAtCapture}</strong>{" "}
               {t.leadAfter}
             </p>
-            <button
+            <button data-tencorp-auto-lead
               type="button"
               data-lead-trigger
               onClick={() => openLead(null, "hero")}
@@ -2190,7 +2190,7 @@ export function JomiyCatalog({
                     <button type="button" onClick={resetFilters}>
                       {t.resetFilters}
                     </button>
-                    <button
+                    <button data-tencorp-auto-lead
                       type="button"
                       data-lead-trigger
                       onClick={() => openLead(null, "empty-state")}
@@ -2239,7 +2239,7 @@ export function JomiyCatalog({
                 {filtered.length === 0 ? (
                   <div className="jmc-matrix-empty-cta">
                     <p>{t.empty}</p>
-                    <button
+                    <button data-tencorp-auto-lead
                       type="button"
                       data-lead-trigger
                       onClick={() => openLead(null, "matrix-empty")}
@@ -2280,7 +2280,7 @@ export function JomiyCatalog({
                       <aside className="jmc-detail-empty">
                         <span>↖</span>
                         <p>{t.selectHint}</p>
-                        <button
+                        <button data-tencorp-auto-lead
                           type="button"
                           data-lead-trigger
                           onClick={() => openLead(null, "matrix-empty-detail")}

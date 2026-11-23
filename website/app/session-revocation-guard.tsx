@@ -5,6 +5,20 @@ import { useEffect, useRef } from 'react';
 const sessionCheckIntervalMs = 15_000;
 const sessionCheckJitter = 0.2;
 const maximumBackoffMultiplier = 4;
+const optionalBrowsingRoots = new Set([
+  'avalon', '4u', 'bayterak', 'botanika-saroyi', 'c1', 'dormon-hills', 'flagman',
+  'jomiy', 'maftun-makon', 'meros', 'mirador', 'ofiyat', 'pushkin', 'regnum-plaza',
+  'saadiyat', 'sarbon', 'sado', 'soy-boyi', 'sun', 'voha', 'yangibaxt', 'zamon',
+  'sanat', 'tencrop',
+]);
+
+function optionalConsumerBrowsing() {
+  // This controls presentation only. Nginx still authenticates account,
+  // operator and private-map requests, regardless of any editable DOM flag.
+  const mode = document.querySelector<HTMLMetaElement>('meta[name="tencorp-auth-mode"]')?.content;
+  const root = window.location.pathname.split('/').filter(Boolean)[0];
+  return mode === 'optional' && optionalBrowsingRoots.has(root);
+}
 
 function nextSessionCheckDelay(failures: number) {
   const backoff = Math.min(maximumBackoffMultiplier, 2 ** failures);
@@ -23,6 +37,13 @@ export default function SessionRevocationGuard() {
   const redirecting = useRef(false);
 
   useEffect(() => {
+    // Consumer content can now be read anonymously. A guest must not be sent
+    // back to a mandatory login screen by an older session-revocation check.
+    if (optionalConsumerBrowsing()) {
+      (window as Window & { __tencorpOptionalConsumerReady?: boolean }).__tencorpOptionalConsumerReady = true;
+      window.dispatchEvent(new Event('tencorp:consumer-ready'));
+      return;
+    }
     let timer: number | null = null;
     let consecutiveFailures = 0;
 

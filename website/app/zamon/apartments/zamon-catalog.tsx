@@ -437,7 +437,7 @@ function UnitCard({ unit, language, onPlan, onLead }: { unit: Unit; language: La
         </dl>
         <CampaignPrice unit={unit} language={language} detailed />
         <UnitProvenance unit={unit} language={language} />
-        <button className="zamon-unit-card__cta" type="button" data-lead-trigger onClick={onLead}>{t.choose}<span aria-hidden="true">↗</span></button>
+        <button data-tencorp-auto-lead className="zamon-unit-card__cta" type="button" data-lead-trigger onClick={onLead}>{t.choose}<span aria-hidden="true">↗</span></button>
       </div>
     </article>
   );
@@ -496,7 +496,7 @@ function UnitDetail({ unit, language, onClose, onPlan, onLead, obscured }: { uni
         </dl>
         <CampaignPrice unit={unit} language={language} detailed />
         <UnitProvenance unit={unit} language={language} />
-        <button className="zamon-unit-detail__cta" type="button" data-lead-trigger onClick={onLead}>{t.choose}<span aria-hidden="true">↗</span></button>
+        <button data-tencorp-auto-lead className="zamon-unit-detail__cta" type="button" data-lead-trigger onClick={onLead}>{t.choose}<span aria-hidden="true">↗</span></button>
       </aside>
     </>
   );
@@ -707,7 +707,7 @@ export function ZamonCatalog({ snapshot: embeddedSnapshot, initialLanguage }: { 
           <span>{t.eyebrow}</span>
           <h1 id="zamon-catalog-title">{t.title}<em>{t.accent}</em></h1>
           <p>{t.leadBefore} <strong>{snapshot.officialTotalAtCapture}</strong> {t.leadAfter}</p>
-          <button type="button" data-lead-trigger onClick={() => openLead(null, 'hero-consultation')}>{t.consult}<span aria-hidden="true">↗</span></button>
+          <button data-tencorp-auto-lead type="button" data-lead-trigger onClick={() => openLead(null, 'hero-consultation')}>{t.consult}<span aria-hidden="true">↗</span></button>
         </div>
         <figure className="zamon-catalog-hero__photo"><img src={asset('/zamon/images/hero-phase-one.webp')} alt={t.actualPhoto} fetchPriority="high" decoding="async" /><figcaption><span>01</span>{t.actualPhoto}</figcaption></figure>
         <aside aria-label={t.snapshot}>

@@ -257,7 +257,7 @@ function UnitCard({ unit, language, onPlan, onLead }: { unit: Unit; language: La
         <h2>{unit.rooms} {t.apartment} · {area(unit.area, language)} м²</h2>
         <dl><div><dt>{t.floor}</dt><dd>{unit.floor}/{unit.totalFloors}</dd></div><div><dt>{t.entrance}</dt><dd>{unit.entrance}</dd></div><div><dt>{t.completion}</dt><dd>{completionLabel(unit, language)}</dd></div></dl>
         <div className="maftun-unit-card__price"><small>{t.price}</small><strong>{money(unit.price, language)}</strong><span>{money(unit.pricePerM2, language)} {t.perM2}</span>{unit.oldPrice ? <del>{t.oldPrice}: {money(unit.oldPrice, language)}</del> : null}{unit.promotion ? <b>{t.promotion} −{unit.promotion.percent}%</b> : null}</div>
-        <button type="button" data-lead-trigger onClick={onLead}>{t.consult}<span>↗</span></button>
+        <button data-tencorp-auto-lead type="button" data-lead-trigger onClick={onLead}>{t.consult}<span>↗</span></button>
       </div>
     </article>
   );
@@ -322,7 +322,7 @@ function UnitDetail({ unit, language, onClose, onPlan, onLead }: { unit: Unit; l
         <div><dt>{t.finishing}</dt><dd>{unit.repairIncluded ? t.yes : t.no}</dd></div>
       </dl>
       <div className="maftun-unit-detail__price"><small>{t.price}</small><strong>{money(unit.price, language)}</strong><span>{money(unit.pricePerM2, language)} {t.perM2}</span>{unit.oldPrice ? <del>{money(unit.oldPrice, language)}</del> : null}{unit.promotion ? <b>{t.promotion} −{unit.promotion.percent}%</b> : null}</div>
-      <button className="maftun-unit-detail__cta" type="button" data-lead-trigger onClick={onLead}>{t.consult}<span>↗</span></button>
+      <button data-tencorp-auto-lead className="maftun-unit-detail__cta" type="button" data-lead-trigger onClick={onLead}>{t.consult}<span>↗</span></button>
       </aside>
     </>
   );

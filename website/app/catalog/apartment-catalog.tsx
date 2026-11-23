@@ -272,7 +272,7 @@ function UnitDetail({ unit, language, phaseLabel, buildingLabel, onPlan, onLead 
       <div><dt>{t.status}</dt><dd>{t.statuses[unit.status]}</dd></div>
     </dl>
     <div className="apartment-catalog-detail__price"><span>{t.price}</span><strong>{money(unit.price, unit.currency, language, t.priceOnRequest)}</strong>{unit.pricePerM2 ? <small>{money(unit.pricePerM2, unit.currency, language, t.priceOnRequest)} {t.perM2}</small> : null}{unit.regularPrice && unit.price && unit.regularPrice > unit.price ? <del>{money(unit.regularPrice, unit.currency, language, t.priceOnRequest)}</del> : null}</div>
-    <button className="apartment-catalog__primary" type="button" onClick={onLead}>{t.selectedCta}<span aria-hidden="true">↗</span></button>
+    <button data-tencorp-auto-lead className="apartment-catalog__primary" type="button" onClick={onLead}>{t.selectedCta}<span aria-hidden="true">↗</span></button>
   </aside>;
 }
 
@@ -517,7 +517,7 @@ export function ApartmentCatalog({ project, units: sourceUnits, capabilities, pr
       <div className="apartment-catalog-header__actions">
         {presentation.phone ? <a href="tel:+998781137712">{presentation.phone}</a> : null}
         <div role="group" aria-label={t.language}>{languages.map((item) => <button type="button" key={item} aria-pressed={language === item} className={language === item ? 'is-active' : ''} onClick={() => setLanguage(item)}>{item.toUpperCase()}</button>)}</div>
-        <button type="button" onClick={() => setLeadUnit(null)}>{t.request}</button>
+        <button data-tencorp-auto-lead type="button" onClick={() => setLeadUnit(null)}>{t.request}</button>
       </div>
     </header>
 
@@ -562,7 +562,7 @@ export function ApartmentCatalog({ project, units: sourceUnits, capabilities, pr
                 <span className="apartment-catalog-card__title"><strong>{unit.rooms ? `${unit.rooms} · ` : ''}{number(unit.area, language)} м²</strong><small>{unit.floor}{unit.maxFloor ? ` / ${unit.maxFloor}` : ''} {t.floorShort}{capabilities.buildings && unit.building ? ` · ${buildingLabel} ${unit.building}` : ''}{unit.entrance ? ` · ${t.entrance} ${unit.entrance}` : ''}</small></span>
                 <span className="apartment-catalog-card__price"><small>{t.price}</small><strong>{money(unit.price, unit.currency, language, t.priceOnRequest)}</strong></span>
               </button>
-              <div className="apartment-catalog-card__actions">{unit.plans.length ? <button type="button" onClick={() => openPlan(unit)}>{t.enlarge}<span aria-hidden="true">↗</span></button> : <span /> }<button type="button" onClick={() => { chooseUnit(unit); setLeadUnit(unit); }}>{t.choose}<span aria-hidden="true">↗</span></button></div>
+              <div className="apartment-catalog-card__actions">{unit.plans.length ? <button type="button" onClick={() => openPlan(unit)}>{t.enlarge}<span aria-hidden="true">↗</span></button> : <span /> }<button data-tencorp-auto-lead type="button" onClick={() => { chooseUnit(unit); setLeadUnit(unit); }}>{t.choose}<span aria-hidden="true">↗</span></button></div>
             </article>;
           })}</div>{visibleUnits.length < filtered.length ? <button className="apartment-catalog-load-more" type="button" onClick={() => setVisibleCount((current) => Math.min(filtered.length, current + pageSize))}>{t.showMore}<span>{t.showing} {visibleUnits.length} / {filtered.length}</span></button> : null}</> : <div className="apartment-catalog-chess">{chessGroups.map(([label, groupUnits]) => <ChessGroup key={label} label={label} units={groupUnits} language={language} selectedId={selected?.id} detailId={detailId} onSelect={(unit) => chooseUnit(unit, true)} />)}</div>}
         </div>

@@ -547,7 +547,7 @@ function ProjectMenu({ open, slug, language, onClose, onLead, routeContext }: { 
       <a href={`${routeTo(slug, '', language, routeContext)}#about`} onClick={onClose}>{t.about}</a>
       <a href={`${routeTo(slug, '', language, routeContext)}#details`} onClick={onClose}>{t.details}</a>
       <a href={routeTo(slug, '/apartments', language, routeContext)} onClick={onClose}>{t.choose}</a>
-      <button type="button" onClick={onLead}>{t.contact}</button>
+      <button data-tencorp-auto-lead type="button" onClick={onLead}>{t.contact}</button>
     </nav>
     <a className="kayan-menu__phone" href="tel:+998781137712">+998 78 113 77 12</a>
   </div>;
@@ -561,7 +561,7 @@ function ProjectHeader({ slug, language, onLanguage, onMenu, onLead, selector = 
     {!selector ? <nav aria-label={t.menu}><a href="#about">{t.about}</a><a href="#details">{t.details}</a><a href={routeTo(slug, '/apartments', language)}>{t.choose}</a></nav> : <a className="kayan-selector-back" href={routeTo(slug, '', language, routeContext)}>← {t.selectorBack}</a>}
     <div className="kayan-header__actions">
       <LanguageSwitcher language={language} onChange={onLanguage} />
-      <button className="kayan-header__lead" type="button" onClick={onLead}>{t.request} ↗</button>
+      <button data-tencorp-auto-lead className="kayan-header__lead" type="button" onClick={onLead}>{t.request} ↗</button>
       <button className="kayan-menu-button" type="button" onClick={onMenu} aria-label={t.menu}><i /><i /><span>{t.menu}</span></button>
     </div>
   </header>;
@@ -806,7 +806,7 @@ function OfiyatProjectPage({ initialProject, initialLanguage }: { initialProject
 
     <section id="contact" className="ofiyat-contact" data-reveal>
       <p>{t.consultationKicker}</p><h2>{copy.consultationTitle}<br /><em>{copy.consultationAccent}</em></h2><span>{copy.consultationCopy}</span>
-      <div><button type="button" onClick={() => setLeadOpen(true)}>{t.request}<b>↗</b></button><a href="tel:+998781137712">{t.phone}<b>+998 78 113 77 12</b></a></div>
+      <div><button data-tencorp-auto-lead type="button" onClick={() => setLeadOpen(true)}>{t.request}<b>↗</b></button><a href="tel:+998781137712">{t.phone}<b>+998 78 113 77 12</b></a></div>
     </section>
 
     <ProjectFooter slug={slug} language={language} />
@@ -970,7 +970,7 @@ function DefaultKayanProjectPage({
 
     <section id="contact" className="kayan-contact" data-reveal>
       <p>{t.consultationKicker}</p><h2>{copy.consultationTitle}<br /><em>{copy.consultationAccent}</em></h2><span>{copy.consultationCopy}</span>
-      <div><button type="button" onClick={() => setLeadOpen(true)}>{t.request}<b>↗</b></button><a href="tel:+998781137712">{t.phone}<b>+998 78 113 77 12</b></a></div>
+      <div><button data-tencorp-auto-lead type="button" onClick={() => setLeadOpen(true)}>{t.request}<b>↗</b></button><a href="tel:+998781137712">{t.phone}<b>+998 78 113 77 12</b></a></div>
     </section>
 
     <ProjectFooter slug={slug} language={language} />
@@ -1298,7 +1298,7 @@ export function KayanCatalogPage({ slug, initialBundle, snapshotGeneratedAt, ini
               <div className="kayan-card-catalog__price"><small>{t.cost}</small><strong>{money(unit.price, language)}</strong>{unit.pricePerM2 ? <span>{money(Math.round(unit.pricePerM2), language)} / {areaUnit(language)}</span> : null}</div>
             </button>
             {planImage ? <button type="button" className="kayan-card-catalog__expand" onClick={() => { chooseUnit(unit, false); setExpandedCardUnitID(unit.id); }} aria-label={`${t.expandPlan}: ${unit.propertyType === 'parking' ? t.parking : `${t.apartment} №${unit.number}`}`}><span>{t.expandPlan}</span>↗</button> : null}
-            <button type="button" className="kayan-card-catalog__lead" onClick={() => { chooseUnit(unit, false); setLeadOpen(true); }}>{unit.status === 'available' || unit.status === 'reserved' ? t.askTerms : t.pickSimilar}<span>↗</span></button>
+            <button data-tencorp-auto-lead type="button" className="kayan-card-catalog__lead" onClick={() => { chooseUnit(unit, false); setLeadOpen(true); }}>{unit.status === 'available' || unit.status === 'reserved' ? t.askTerms : t.pickSimilar}<span>↗</span></button>
           </article>;
         }) : <div className="kayan-empty">{t.empty}</div>}
       </div>{cardUnits.length ? <div className={`kayan-card-pagination${isMirador ? ' mirador-card-pagination' : ''}`} aria-live="polite"><p>{t.showing} {visibleCardUnits.length} {t.ofObjects} {cardUnits.length}</p>{visibleCardUnits.length < cardUnits.length ? <button type="button" onClick={() => setVisibleCardCount((count) => Math.min(cardUnits.length, count + CATALOG_CARD_PAGE_SIZE))}>{t.showMore}<span>+{Math.min(CATALOG_CARD_PAGE_SIZE, cardUnits.length - visibleCardUnits.length)}</span></button> : null}</div> : null}</> : <div className="kayan-chess">
@@ -1396,7 +1396,7 @@ function UnitDetail({ unit, layout, language, onLead, compact = false }: { unit?
       <h3>{unitTitle}</h3>
       <dl><div><dt>{t.area}</dt><dd>{unit.area} {areaUnit(language)}</dd></div><div><dt>{t.floor}</dt><dd>{floorLabel(unit.floor)}</dd></div><div><dt>{t.entrance}</dt><dd>{unit.entrance || '—'}</dd></div><div><dt>{t.status}</dt><dd>{t.statusLabels[unit.status]}</dd></div></dl>
       <div className="kayan-unit-detail__price"><span>{t.cost}</span><strong>{money(unit.price, language)}</strong>{unit.pricePerM2 ? <small>{money(Math.round(unit.pricePerM2), language)} / {areaUnit(language)}</small> : null}</div>
-      <button type="button" onClick={onLead}>{unit.status === 'available' || unit.status === 'reserved' ? t.askTerms : t.pickSimilar}<span>↗</span></button>
+      <button data-tencorp-auto-lead type="button" onClick={onLead}>{unit.status === 'available' || unit.status === 'reserved' ? t.askTerms : t.pickSimilar}<span>↗</span></button>
     </aside>
     {planOpen && planImage ? <div ref={dialogRef} className="kayan-plan-lightbox" role="dialog" aria-modal="true" aria-label={hasExactPlan ? `${t.plan} №${unit.number}` : t.layoutExample} onClick={(event) => { if (event.target === event.currentTarget) setPlanOpen(false); }}><button ref={closeRef} type="button" onClick={() => setPlanOpen(false)} aria-label={t.closePlan}>×</button><img src={mediaURL(planImage)} alt={hasExactPlan ? `${t.plan} №${unit.number}` : t.layoutDisclaimer} /><p>{hasExactPlan ? `${t.apartment} №${unit.number}` : t.layoutExample}<span>{hasExactPlan ? `${unit.rooms ? `${unit.rooms} · ` : ''}${unit.area} ${areaUnit(language)}` : t.layoutDisclaimer}</span></p></div> : null}
   </>;

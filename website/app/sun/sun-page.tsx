@@ -235,7 +235,7 @@ function MediaLightbox({ state, language, covered, onClose, onChange, onLead }: 
         <img src={sunAsset(slide.src)} width={slide.width} height={slide.height} alt={slide.caption[language]} draggable={false} />
         <span>{mediaLabels[slide.kind][language]}</span>
       </div>
-      <footer><div><small>{slide.date || 'HUMAN2HUMAN · SUN'}</small><h2>{slide.title[language]}</h2><p>{slide.caption[language]}</p></div><nav aria-label={`${t.imageOf} ${state.slides.length}`}><button type="button" onClick={() => go(-1)} aria-label={t.previous}>←</button><button type="button" onClick={() => go(1)} aria-label={t.next}>→</button><button type="button" data-lead-trigger onClick={(event) => onLead(event.currentTarget)}>{t.consult} ↗</button></nav></footer>
+      <footer><div><small>{slide.date || 'HUMAN2HUMAN · SUN'}</small><h2>{slide.title[language]}</h2><p>{slide.caption[language]}</p></div><nav aria-label={`${t.imageOf} ${state.slides.length}`}><button type="button" onClick={() => go(-1)} aria-label={t.previous}>←</button><button type="button" onClick={() => go(1)} aria-label={t.next}>→</button><button data-tencorp-auto-lead type="button" data-lead-trigger onClick={(event) => onLead(event.currentTarget)}>{t.consult} ↗</button></nav></footer>
     </div>
   </div>;
 }
@@ -322,7 +322,7 @@ export function SunPage({ initialLanguage }: { initialLanguage: Language }) {
       <nav aria-label={t.navLabel}>{t.nav.slice(0, 3).map(([id, label]) => <a key={id} href={`#${id}`}>{label}</a>)}</nav>
       <div className="sun-languages" aria-label={t.language}>{sunLanguages.map((item) => <button type="button" key={item} className={language === item ? 'is-active' : ''} aria-pressed={language === item} onClick={() => setLanguage(item)}>{item.toUpperCase()}</button>)}</div>
       <a className="sun-header__catalog" href={sunPath('/sun/apartments', language)}>{t.apartments}</a>
-      <button className="sun-header__lead" type="button" data-lead-trigger onClick={(event) => openLead('landing:header', null, event.currentTarget)}>{t.consult}</button>
+      <button data-tencorp-auto-lead className="sun-header__lead" type="button" data-lead-trigger onClick={(event) => openLead('landing:header', null, event.currentTarget)}>{t.consult}</button>
       <button ref={menuButtonRef} className="sun-menu-button" type="button" aria-expanded={menuOpen} aria-controls="sun-menu" onClick={() => setMenuOpen(true)}><span>{t.menu}</span><i /><i /></button>
     </header>
 
@@ -331,7 +331,7 @@ export function SunPage({ initialLanguage }: { initialLanguage: Language }) {
       <nav ref={menuRef} id="sun-menu">
         <header><img src={sunAsset('/sun/logo.svg')} width="380" height="64" alt="SUN" /><button type="button" onClick={() => setMenuOpen(false)} aria-label={t.close}>×</button></header>
         <div className="sun-menu__links">{t.nav.map(([id, label], index) => <a key={id} href={`#${id}`} onClick={() => setMenuOpen(false)}><span>{String(index + 1).padStart(2, '0')}</span>{label}</a>)}</div>
-        <footer><div aria-label={t.language}>{sunLanguages.map((item) => <button type="button" key={item} className={language === item ? 'is-active' : ''} aria-pressed={language === item} onClick={() => setLanguage(item)}>{item.toUpperCase()}</button>)}</div><button type="button" data-lead-trigger onClick={(event) => openLead('landing:menu', null, event.currentTarget)}>{t.consult}<span>↗</span></button></footer>
+        <footer><div aria-label={t.language}>{sunLanguages.map((item) => <button type="button" key={item} className={language === item ? 'is-active' : ''} aria-pressed={language === item} onClick={() => setLanguage(item)}>{item.toUpperCase()}</button>)}</div><button data-tencorp-auto-lead type="button" data-lead-trigger onClick={(event) => openLead('landing:menu', null, event.currentTarget)}>{t.consult}<span>↗</span></button></footer>
       </nav>
     </div>
 
@@ -343,7 +343,7 @@ export function SunPage({ initialLanguage }: { initialLanguage: Language }) {
           <source src={sunAsset('/sun/video/hero-desktop.mp4')} type="video/mp4" />
         </video>
         <div className="sun-hero__shade" />
-        <div className="sun-hero__copy"><span>{t.heroEyebrow}</span><h1 id="sun-hero-title">{t.heroTitle}</h1><p>{t.heroText}</p><div><a href={sunPath('/sun/apartments', language)}>{t.apartments}<b>↗</b></a><button type="button" data-lead-trigger onClick={(event) => openLead('landing:hero', null, event.currentTarget)}>{t.consult}</button></div></div>
+        <div className="sun-hero__copy"><span>{t.heroEyebrow}</span><h1 id="sun-hero-title">{t.heroTitle}</h1><p>{t.heroText}</p><div><a href={sunPath('/sun/apartments', language)}>{t.apartments}<b>↗</b></a><button data-tencorp-auto-lead type="button" data-lead-trigger onClick={(event) => openLead('landing:hero', null, event.currentTarget)}>{t.consult}</button></div></div>
         <div className="sun-hero__dayline" aria-hidden="true"><span>06:00</span><i /><b>12:00</b><i /><span>18:00</span></div>
         <dl className="sun-hero__facts">{t.heroFacts.map(([value, label]) => <div key={label}><dt>{value}</dt><dd>{label}</dd></div>)}</dl>
         <div className="sun-hero__media"><span>{mediaLabels['mixed-video'][language]}</span><button type="button" onClick={toggleVideo} aria-label={videoPlaying ? t.pause : t.play}>{videoPlaying ? 'Ⅱ' : '▶'}</button></div>
@@ -356,7 +356,7 @@ export function SunPage({ initialLanguage }: { initialLanguage: Language }) {
           <article data-reveal><button type="button" onClick={(event) => openLightbox(cgiSlides, 0, event.currentTarget)} aria-label={`${t.openImage}: ${cgiSlides[0].title[language]}`}><img src={sunAsset(cgiSlides[0].src)} width={cgiSlides[0].width} height={cgiSlides[0].height} loading="lazy" alt={cgiSlides[0].caption[language]} /><span>{mediaLabels.cgi[language]}</span></button><div><small>01 · {t.future}</small><h3>{cgiSlides[0].title[language]}</h3><p>{cgiSlides[0].caption[language]}</p></div></article>
           <article data-reveal><button type="button" onClick={(event) => openLightbox(constructionSlides, 0, event.currentTarget)} aria-label={`${t.openImage}: ${constructionSlides[0].title[language]}`}><img src={sunAsset(constructionSlides[0].src)} width={constructionSlides[0].width} height={constructionSlides[0].height} loading="lazy" alt={constructionSlides[0].caption[language]} /><span>{mediaLabels.construction[language]}</span></button><div><small>02 · {t.now}</small><h3>15.08.2026</h3><p>{constructionSlides[0].caption[language]}</p></div></article>
         </div>
-        <aside className="sun-update" data-reveal><div><span>15 · 08 · 2026</span><h3>{t.updateTitle}</h3></div><ol>{t.updateItems.map((item) => <li key={item}>{item}</li>)}</ol><button type="button" data-lead-trigger onClick={(event) => openLead('landing:evidence', null, event.currentTarget)}>{t.evidenceLead}<b>↗</b></button></aside>
+        <aside className="sun-update" data-reveal><div><span>15 · 08 · 2026</span><h3>{t.updateTitle}</h3></div><ol>{t.updateItems.map((item) => <li key={item}>{item}</li>)}</ol><button data-tencorp-auto-lead type="button" data-lead-trigger onClick={(event) => openLead('landing:evidence', null, event.currentTarget)}>{t.evidenceLead}<b>↗</b></button></aside>
       </section>
 
       <section id="dayline" className="sun-section sun-dayline">
@@ -365,13 +365,13 @@ export function SunPage({ initialLanguage }: { initialLanguage: Language }) {
         <div className="sun-dayline__blocks">{t.blocks.map(([block, schedule, latest], index) => <article key={block} className={index >= 3 ? 'has-conflict' : ''} data-reveal>
           <header><span>{String(index + 1).padStart(2, '0')}</span><strong>{block}</strong></header><dl><div><dt>{t.schedule}</dt><dd>{schedule}</dd></div><div><dt>{t.latest}</dt><dd>{latest}</dd></div></dl><p>{block === 'Б' || block === 'B' ? t.noCatalog : t.catalogPresent}</p>
         </article>)}</div>
-        <button className="sun-dayline__lead" type="button" data-lead-trigger onClick={(event) => openLead('landing:dayline', null, event.currentTarget)}>{t.dayLead}<span>↗</span></button>
+        <button data-tencorp-auto-lead className="sun-dayline__lead" type="button" data-lead-trigger onClick={(event) => openLead('landing:dayline', null, event.currentTarget)}>{t.dayLead}<span>↗</span></button>
       </section>
 
       <section id="amenities" className="sun-section sun-amenities">
         <header className="sun-section__header" data-reveal><span>{t.amenityEyebrow}</span><h2>{t.amenityTitle}</h2><p>{t.amenityText}</p></header>
         <div className="sun-gallery" aria-label={t.gallery}>{cgiSlides.slice(1).map((slide, index) => <button type="button" key={slide.src} data-reveal onClick={(event) => openLightbox(cgiSlides.slice(1), index, event.currentTarget)} aria-label={`${t.openImage}: ${slide.title[language]}`}><img src={sunAsset(slide.src)} width={slide.width} height={slide.height} loading="lazy" alt={slide.caption[language]} /><span><small>{String(index + 1).padStart(2, '0')} · {mediaLabels.cgi[language]}</small><strong>{slide.title[language]}</strong><i>↗</i></span></button>)}</div>
-        <button className="sun-section__lead" type="button" data-lead-trigger onClick={(event) => openLead('landing:amenities', null, event.currentTarget)}>{t.amenityLead}<span>↗</span></button>
+        <button data-tencorp-auto-lead className="sun-section__lead" type="button" data-lead-trigger onClick={(event) => openLead('landing:amenities', null, event.currentTarget)}>{t.amenityLead}<span>↗</span></button>
       </section>
 
       <section id="apartments" className="sun-section sun-inventory">
@@ -383,7 +383,7 @@ export function SunPage({ initialLanguage }: { initialLanguage: Language }) {
           <header><span>{t.block} {unit.block ?? unit.blockName}</span><strong>{t.unit}{unit.number}</strong><em>{t.free}</em></header>
           <dl><div><dt>{t.rooms}</dt><dd>{unit.rooms}</dd></div><div><dt>{t.area}</dt><dd>{formatSunNumber(unit.area, language)} м²</dd></div><div><dt>{t.floor}</dt><dd>{unit.floor} / {unit.maxFloor}</dd></div></dl>
           <p><span>{t.price}</span><strong>{formatSunPrice(Number(unit.effectivePrice ?? unit.price), language)}</strong></p>
-          <button type="button" data-lead-trigger onClick={(event) => openLead('landing:catalog-preview', unit, event.currentTarget)}>{t.askUnit}<span>↗</span></button>
+          <button data-tencorp-auto-lead type="button" data-lead-trigger onClick={(event) => openLead('landing:catalog-preview', unit, event.currentTarget)}>{t.askUnit}<span>↗</span></button>
         </article>)}</div>
         <p className="sun-inventory__note">{t.catalogNote}</p><a className="sun-inventory__cta" href={sunPath('/sun/apartments', language)}>{t.allApartments}<span>↗</span></a>
       </section>
@@ -391,11 +391,11 @@ export function SunPage({ initialLanguage }: { initialLanguage: Language }) {
       <section id="location" className="sun-section sun-location">
         <header className="sun-section__header" data-reveal><span>{t.locationEyebrow}</span><h2>{t.locationTitle}</h2></header>
         <div className="sun-location__grid"><article data-reveal><span>01 · {t.addressLabel}</span><h3>{t.address}</h3><p>{t.mapNote}</p><a href="https://yandex.uz/maps/?ll=69.301919%2C41.282957&z=16" target="_blank" rel="noopener noreferrer">{t.map}<b>↗</b></a></article><article data-reveal><span>02 · {t.contacts}</span><a className="sun-location__phone" href="tel:+998781137712">+998 78 113 77 12</a><a href="mailto:info@h2h.uz">info@h2h.uz</a><p>{t.hours}</p></article></div>
-        <button className="sun-section__lead" type="button" data-lead-trigger onClick={(event) => openLead('landing:location', null, event.currentTarget)}>{t.locationLead}<span>↗</span></button>
+        <button data-tencorp-auto-lead className="sun-section__lead" type="button" data-lead-trigger onClick={(event) => openLead('landing:location', null, event.currentTarget)}>{t.locationLead}<span>↗</span></button>
       </section>
 
       <section className="sun-contact">
-        <div data-reveal><span>{t.contactEyebrow}</span><h2>{t.contactTitle}</h2><p>{t.contactText}</p><button type="button" data-lead-trigger onClick={(event) => openLead('landing:footer', null, event.currentTarget)}>{t.consult}<b>↗</b></button></div>
+        <div data-reveal><span>{t.contactEyebrow}</span><h2>{t.contactTitle}</h2><p>{t.contactText}</p><button data-tencorp-auto-lead type="button" data-lead-trigger onClick={(event) => openLead('landing:footer', null, event.currentTarget)}>{t.consult}<b>↗</b></button></div>
         <a className="sun-contact__phone" href="tel:+998781137712">+998 78 113 77 12 <span>↗</span></a>
         <footer><div><img src={sunAsset('/sun/logo.svg')} width="380" height="64" alt="SUN" /><img src={sunAsset('/sun/h2h-logo.svg')} width="217" height="42" alt="Human2Human" /></div><p>{t.disclaimer}</p><nav><a href={`${sunAsset('/privacy')}?project=sun&lang=${language}&from=landing`}>{t.privacy}</a><a href="#top">{t.top}</a></nav></footer>
       </section>

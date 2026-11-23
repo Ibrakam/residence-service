@@ -234,7 +234,7 @@ export function SadoPage({ initialAvailable, snapshotGeneratedAt }: { initialAva
 
     <section className="sado-hero" aria-labelledby="sado-title">
       <picture><source media="(max-width: 640px)" srcSet={asset('/sado/hero-mobile.webp')} /><img src={asset('/sado/hero.webp')} alt="Sad'O" fetchPriority="high" /></picture><div className="sado-hero__veil" />
-      <div className="sado-hero__content"><p className="sado-kicker">{t.heroEyebrow}</p><h1 id="sado-title">{t.heroTitle}<em>{t.heroAccent}</em></h1><p className="sado-hero__copy">{t.heroCopy}</p><div className="sado-hero__buttons"><a className="sado-button is-light" href={withLanguage('/sado/apartments', language)}>{t.choose}<span>↗</span></a><button className="sado-button is-ghost" type="button" onClick={() => setLeadOpen(true)}>{t.consult}</button></div></div>
+      <div className="sado-hero__content"><p className="sado-kicker">{t.heroEyebrow}</p><h1 id="sado-title">{t.heroTitle}<em>{t.heroAccent}</em></h1><p className="sado-hero__copy">{t.heroCopy}</p><div className="sado-hero__buttons"><a className="sado-button is-light" href={withLanguage('/sado/apartments', language)}>{t.choose}<span>↗</span></a><button data-tencorp-auto-lead className="sado-button is-ghost" type="button" onClick={() => setLeadOpen(true)}>{t.consult}</button></div></div>
       <div className="sado-hero__meta">{t.heroMeta.map((item) => <span key={item}>{item}</span>)}</div><a className="sado-hero__scroll" href="#about"><i>↓</i>{t.explore}</a>
     </section>
 

@@ -195,7 +195,7 @@ export function DormonPage({ language, query, publishedPlans }: { language: Dorm
           <div className="dormon-contact-actions">
             <h2>{e.contact}</h2>
             <p>{e.contactBody}</p>
-            <button type="button" className="dormon-action is-gold" onClick={event => setLead({ opener: event.currentTarget })}>{t.enquire}</button>
+            <button data-tencorp-auto-lead type="button" className="dormon-action is-gold" onClick={event => setLead({ opener: event.currentTarget })}>{t.enquire}</button>
             <a className="dormon-contact-phone" href="tel:+998781137712">+998 78 113 77 12</a>
           </div>
         </div>

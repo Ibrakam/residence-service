@@ -258,6 +258,7 @@ transformed_deployer="${TEST_ROOT}/deploy-residence-root"
 sed \
   -e "s|readonly AUTH_GATE_MODE_FILE=.*|readonly AUTH_GATE_MODE_FILE=\"${deploy_etc}/public-gate-enabled\"|" \
   -e "s|readonly AUTH_SMOKE_SESSION_FILE=.*|readonly AUTH_SMOKE_SESSION_FILE=\"${deploy_etc}/deploy-smoke-session\"|" \
+  -e "s|readonly OPTIONAL_CONSUMER_MODE_FILE=.*|readonly OPTIONAL_CONSUMER_MODE_FILE=\"${deploy_etc}/optional-consumer-enabled\"|" \
   -e "s|readonly MAIN_SEO_MODE_FILE=.*|readonly MAIN_SEO_MODE_FILE=\"${deploy_etc}/seo-main-enabled\"|" \
   -e "s|/run/|${deploy_run}/|g" \
   -e 's|chmod 0600 --|chmod 0600|g' \
@@ -271,6 +272,7 @@ case "$2" in
   %u)
     case "${4##*/}" in
       seo-main-enabled) printf '%s\n' "${FAKE_SEO_OWNER:-0}" ;;
+      optional-consumer-enabled) printf '%s\n' "${FAKE_OPTIONAL_OWNER:-0}" ;;
       *) printf '0\n' ;;
     esac
     ;;
@@ -278,6 +280,7 @@ case "$2" in
     case "${4##*/}" in
       public-gate-enabled) printf '644\n' ;;
       seo-main-enabled) printf '%s\n' "${FAKE_SEO_MODE:-600}" ;;
+      optional-consumer-enabled) printf '%s\n' "${FAKE_OPTIONAL_MODE:-600}" ;;
       *) printf '600\n' ;;
     esac
     ;;
@@ -332,7 +335,10 @@ if [[ "$authenticated" == true ]]; then
     /residence-assets/_next/static/*) content_type='text/css' ;;
     /tencorp/assets/projects-map.js) content_type='application/javascript'; body='map module' ;;
     /residence-api/catalog/) content_type='application/json'; body='{}' ;;
-    /__auth/me) content_type='application/json'; body='{"telegramId":42,"phoneNumberVerified":true}' ;;
+    /__auth/me)
+      content_type='application/json'; body='{"telegramId":42,"phoneNumberVerified":true}'
+      if [[ "${FAKE_SESSION_EXPIRED:-0}" == 1 ]]; then status=401;body='{"error":"unauthorized"}';fi
+      ;;
     /__auth/account) body='<form action="/__auth/logout"></form><form action="/__auth/logout-all"></form>' ;;
   esac
 else
@@ -395,6 +401,46 @@ else
   esac
 fi
 
+if [[ "$authenticated" == false && "${FAKE_OPTIONAL_RESPONSE:-closed}" == enabled ]]; then
+  case "$path" in
+    /4u|/4u/*|/bayterak|/bayterak/*|/botanika-saroyi|/botanika-saroyi/*|/c1|/c1/*|/dormon-hills|/dormon-hills/*|/flagman|/flagman/*|/jomiy|/jomiy/*|/maftun-makon|/maftun-makon/*|/meros|/meros/*|/mirador|/mirador/*|/ofiyat|/ofiyat/*|/pushkin|/pushkin/*|/regnum-plaza|/regnum-plaza/*|/saadiyat|/saadiyat/*|/sarbon|/sarbon/*|/sado|/sado/*|/soy-boyi|/soy-boyi/*|/sun|/sun/*|/voha|/voha/*|/yangibaxt|/yangibaxt/*|/zamon|/zamon/*|/sanat/|/sanat/flats|/avalon|/tencrop/)
+      body='<html><head><meta name="tencorp-auth-mode" content="optional"><script defer src="/optional-auth/client.js?v=fixture"></script></head><body>Consumer page</body></html>'
+      case "${FAKE_OPTIONAL_VARIANT:-valid}" in
+        login_wall) body='<form method="post" action="/__auth/telegram/start"></form>' ;;
+        missing_meta) body="${body/<meta name=\"tencorp-auth-mode\" content=\"optional\">/}" ;;
+        missing_bootstrap) body='<html><meta name="tencorp-auth-mode" content="optional"></html>' ;;
+      esac
+      ;;
+    /tencorp/) body='<html>Agency alias</html>' ;;
+    /residence-assets/_next/static/*)
+      status=200;content_type='text/css';body='body{}'
+      if [[ "$method" == POST && "${FAKE_OPTIONAL_VARIANT:-valid}" != writable_asset ]];then status=405;fi
+      ;;
+    /optional-auth/client.js) content_type='application/javascript';body='/* optional forms */' ;;
+    /residence-api/catalog/v1/projects/4u|/api/kayan/ofiyat-explorer)
+      status=200;content_type='application/json';body='{}'
+      if [[ "${FAKE_OPTIONAL_VARIANT:-valid}" == catalog_closed ]];then status=401;fi
+      ;;
+    /residence-api/catalog/v1/*)
+      status=401;content_type='application/json';body='{"error":"authentication_required"}'
+      if [[ "${FAKE_OPTIONAL_VARIANT:-valid}" == private_catalog_open ]];then status=200;fi
+      ;;
+    /v1/leads|/tencrop/v1/leads|/api/submit)
+      status=403;content_type='application/json';body='{"error":"verification_required"}'
+      case "${FAKE_OPTIONAL_VARIANT:-valid}" in
+        unguarded_lead) status=200;body='{"success":true}' ;;
+        wrong_lead_error) body='{"error":"invalid_origin"}' ;;
+      esac
+      ;;
+    /tencorp/assets/projects-map.js|/__auth/me)
+      if [[ "${FAKE_OPTIONAL_VARIANT:-valid}" == private_identity_open ]];then status=200;fi
+      ;;
+    /market-map/|/analytics|/__residence-ticket-worker/internal/ticket-runner/health)
+      if [[ "${FAKE_OPTIONAL_VARIANT:-valid}" == operator_machine_open ]];then status=200;fi
+      ;;
+  esac
+fi
+
 if [[ "$output" != /dev/null ]]; then
   printf '%s' "$body" > "$output"
 fi
@@ -408,7 +454,7 @@ if [[ -n "$headers" ]]; then
       printf 'Cache-Control: public, max-age=86400\r\n'
     elif [[ "$authenticated" == false && "$path" == / ]]; then
       printf 'Cache-Control: public, max-age=0, must-revalidate\r\n'
-    elif [[ "$status" == 401 || "$authenticated" == false && "$content_type" == text/html* ]]; then
+    elif [[ "$status" == 401 || "$status" == 403 || "$authenticated" == false && "$content_type" == text/html* ]]; then
       printf 'Cache-Control: private, no-store\r\n'
     fi
     printf 'Strict-Transport-Security: max-age=31536000\r\n'
@@ -497,6 +543,72 @@ smoke_public_seo_contract
 if ( export FAKE_SEO_VARIANT=unrestricted_robots; smoke_public_seo_contract ) >"$TEST_ROOT/seo-legacy-negative.log" 2>&1; then
   fail "legacy robots accepted an unrestricted allow"
 fi
+
+# Optional browsing is an explicit, exact-byte operator mode. The same real
+# authentication fixture, private map/identity, Basic/Bearer and SEO probes run.
+[[ "$PUBLIC_OPTIONAL_CONSUMER_ENABLED" == 0 ]] || fail "optional browsing changed the mandatory default"
+printf 'optional-consumer-v1\n' > "$deploy_etc/optional-consumer-enabled"
+chmod 0600 "$deploy_etc/optional-consumer-enabled"
+cleanup_auth_smoke_config
+configure_public_auth_smoke_mode
+fixture_config="$AUTH_SMOKE_CURL_CONFIG"
+[[ "$PUBLIC_OPTIONAL_CONSUMER_ENABLED" == 1 ]] || fail "optional consumer marker was not selected"
+export FAKE_OPTIONAL_RESPONSE=enabled
+smoke_public_unauthenticated_contract
+smoke_public_authenticated_contract
+for variant in login_wall missing_meta missing_bootstrap writable_asset catalog_closed private_catalog_open unguarded_lead wrong_lead_error private_identity_open operator_machine_open; do
+  if ( export FAKE_OPTIONAL_VARIANT="$variant"; smoke_public_unauthenticated_contract ) >"$TEST_ROOT/optional-negative.log" 2>&1; then
+    fail "optional browsing accepted an unsafe response: $variant"
+  fi
+done
+# An open consumer portfolio must not broaden the homepage-only SEO contract.
+printf 'main-only-v1\n' > "$deploy_etc/seo-main-enabled"
+configure_public_seo_smoke_mode
+export FAKE_SEO_RESPONSE=main
+smoke_public_unauthenticated_contract
+smoke_public_authenticated_contract
+if ( export FAKE_SEO_VARIANT=private_allow; smoke_public_seo_contract ) >"$TEST_ROOT/optional-seo-negative.log" 2>&1; then
+  fail "optional consumer mode broadened homepage-only indexing"
+fi
+if ( export FAKE_SESSION_EXPIRED=1; configure_public_auth_smoke_mode ) >"$TEST_ROOT/optional-session-negative.log" 2>&1; then
+  fail "optional consumer mode bypassed the genuine authentication fixture"
+fi
+
+for invalid in value missing_newline extra_newline nul mode owner symlink directory auth_gate; do
+  printf 'optional-consumer-v1\n' > "$deploy_etc/optional-consumer-enabled"
+  case "$invalid" in
+    value) printf 'all-sites-v1\n' > "$deploy_etc/optional-consumer-enabled" ;;
+    missing_newline) printf 'optional-consumer-v1' > "$deploy_etc/optional-consumer-enabled" ;;
+    extra_newline) printf 'optional-consumer-v1\n\n' > "$deploy_etc/optional-consumer-enabled" ;;
+    nul) printf 'optional-consumer-v1\0' > "$deploy_etc/optional-consumer-enabled" ;;
+    symlink) mv "$deploy_etc/optional-consumer-enabled" "$deploy_etc/optional-consumer-real"; ln -s "$deploy_etc/optional-consumer-real" "$deploy_etc/optional-consumer-enabled" ;;
+    directory) rm "$deploy_etc/optional-consumer-enabled"; mkdir "$deploy_etc/optional-consumer-enabled" ;;
+  esac
+  if (
+    case "$invalid" in
+      mode) export FAKE_OPTIONAL_MODE=644 ;;
+      owner) export FAKE_OPTIONAL_OWNER=501 ;;
+      auth_gate) PUBLIC_AUTH_GATE_ENABLED=0 ;;
+    esac
+    configure_public_optional_consumer_smoke_mode
+  ) >"$TEST_ROOT/optional-marker-negative.log" 2>&1; then
+    fail "optional browsing accepted an unsafe marker: $invalid"
+  fi
+  if [[ -d "$deploy_etc/optional-consumer-enabled" ]];then rmdir "$deploy_etc/optional-consumer-enabled";fi
+  rm -f "$deploy_etc/optional-consumer-enabled" "$deploy_etc/optional-consumer-real"
+done
+printf 'optional-consumer-v1\n' > "$deploy_etc/optional-consumer-enabled"
+mv "$deploy_etc/public-gate-enabled" "$deploy_etc/public-gate-real"
+if ( configure_public_auth_smoke_mode ) >"$TEST_ROOT/optional-without-gate-negative.log" 2>&1; then
+  fail "optional consumer marker accepted a missing private auth gate"
+fi
+mv "$deploy_etc/public-gate-real" "$deploy_etc/public-gate-enabled"
+rm "$deploy_etc/optional-consumer-enabled"
+configure_public_optional_consumer_smoke_mode
+[[ "$PUBLIC_OPTIONAL_CONSUMER_ENABLED" == 0 ]] || fail "removing the optional marker did not restore mandatory browsing"
+unset FAKE_OPTIONAL_RESPONSE FAKE_SEO_RESPONSE
+rm -f "$deploy_etc/seo-main-enabled"
+configure_public_seo_smoke_mode
 
 cleanup_auth_smoke_config
 [[ ! -e "$fixture_config" ]] || fail "deployer did not remove its temporary cookie config"

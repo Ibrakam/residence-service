@@ -480,7 +480,7 @@ function Modal({
               ) : (
                 <p>{t.planMissing}</p>
               )}
-              <button
+              <button data-tencorp-auto-lead
                 type="button"
                 onClick={(event) =>
                   onLead(unit, state.opener ?? event.currentTarget)
@@ -1240,7 +1240,7 @@ export function SoyBoyiCatalog({
                           >
                             {unit.plan ? t.openPlan : t.openDetails}
                           </button>
-                          <button
+                          <button data-tencorp-auto-lead
                             type="button"
                             onClick={(event) =>
                               openLead(unit, "card", event.currentTarget)
@@ -1324,7 +1324,7 @@ export function SoyBoyiCatalog({
                                 {t.openPlan}
                               </button>
                             ) : null}
-                            <button
+                            <button data-tencorp-auto-lead
                               type="button"
                               onClick={(event) =>
                                 openLead(

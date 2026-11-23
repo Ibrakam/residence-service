@@ -489,7 +489,7 @@ export function MaftunMakonPage({ initialLanguage }: { initialLanguage: Language
 
         <section className="maftun-contact">
           <div className="maftun-contact__copy" data-maftun-reveal data-maftun-stagger><p className="maftun-overline">{t.contactTop}</p><h2>{t.contactTitle}</h2><p>{t.contactText}</p><CatalogSourceStatus language={language} dataSource={dataSource} {...catalogState} hasData={dataSource !== 'embedded'} onRetry={catalogState.retry} /><div><a className="maftun-button maftun-button--gold" href={withLanguage('/maftun-makon/apartments', language)}>{t.catalog}<b>↗</b></a><a className="maftun-text-link" href="tel:+998781137712">{t.phone}</a></div></div>
-          <div className="maftun-contact__form" data-maftun-reveal data-maftun-stagger><small>MAFTUN MAKON · NRG-BI × AL-BINA</small><h3>{t.formTitle}</h3><p>{t.formText}</p><button className="maftun-contact__lead-button" type="button" data-lead-trigger onClick={() => setLeadContext('maftun-makon:landing:contact-panel:consultation-cta')}>{t.consultation}<span>↗</span></button></div>
+          <div className="maftun-contact__form" data-maftun-reveal data-maftun-stagger><small>MAFTUN MAKON · NRG-BI × AL-BINA</small><h3>{t.formTitle}</h3><p>{t.formText}</p><button data-tencorp-auto-lead className="maftun-contact__lead-button" type="button" data-lead-trigger onClick={() => setLeadContext('maftun-makon:landing:contact-panel:consultation-cta')}>{t.consultation}<span>↗</span></button></div>
         </section>
       </div>
 

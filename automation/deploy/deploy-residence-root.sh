@@ -25,6 +25,8 @@ readonly MIN_FREE_KB=10485760
 readonly AUTH_GATE_MODE_FILE="/etc/tencorp-auth-gateway/public-gate-enabled"
 readonly AUTH_GATE_MODE_VALUE="tencorp-auth-gate-v1"
 readonly AUTH_SMOKE_SESSION_FILE="/etc/tencorp-auth-gateway/deploy-smoke-session"
+readonly OPTIONAL_CONSUMER_MODE_FILE="/etc/tencorp-auth-gateway/optional-consumer-enabled"
+readonly OPTIONAL_CONSUMER_MODE_VALUE="optional-consumer-v1"
 readonly MAIN_SEO_MODE_FILE="/etc/tencorp-geo-access/seo-main-enabled"
 readonly MAIN_SEO_MODE_VALUE="main-only-v1"
 
@@ -39,6 +41,7 @@ CANDIDATE_STARTED=0
 CURRENT_SWITCHED=0
 DEPLOYMENT_CONFIRMED=0
 PUBLIC_AUTH_GATE_ENABLED=0
+PUBLIC_OPTIONAL_CONSUMER_ENABLED=0
 PUBLIC_MAIN_SEO_ENABLED=0
 SERVICE_UNIT_CHANGED=0
 SERVICE_UNIT_HAD_PREVIOUS=0
@@ -246,8 +249,11 @@ status_is_healthy() {
 configure_public_auth_smoke_mode() {
   local owner_uid mode marker_value session_token
 
+  PUBLIC_AUTH_GATE_ENABLED=0
+  PUBLIC_OPTIONAL_CONSUMER_ENABLED=0
   if [[ ! -e "$AUTH_GATE_MODE_FILE" && ! -L "$AUTH_GATE_MODE_FILE" ]]; then
-    PUBLIC_AUTH_GATE_ENABLED=0
+    [[ ! -e "$OPTIONAL_CONSUMER_MODE_FILE" && ! -L "$OPTIONAL_CONSUMER_MODE_FILE" ]] \
+      || die "optional consumer mode requires the existing protected-site auth gate"
     log "Public smoke mode: open-site-v1"
     return 0
   fi
@@ -295,7 +301,31 @@ configure_public_auth_smoke_mode() {
   fi
   rm -f -- "$identity_file"
   PUBLIC_AUTH_GATE_ENABLED=1
+  configure_public_optional_consumer_smoke_mode
   log "Public smoke mode: ${AUTH_GATE_MODE_VALUE}"
+}
+
+configure_public_optional_consumer_smoke_mode() {
+  local owner_uid mode
+
+  PUBLIC_OPTIONAL_CONSUMER_ENABLED=0
+  if [[ ! -e "$OPTIONAL_CONSUMER_MODE_FILE" && ! -L "$OPTIONAL_CONSUMER_MODE_FILE" ]]; then
+    return 0
+  fi
+  (( PUBLIC_AUTH_GATE_ENABLED == 1 )) \
+    || die "optional consumer mode requires the existing protected-site auth gate"
+  [[ -f "$OPTIONAL_CONSUMER_MODE_FILE" && ! -L "$OPTIONAL_CONSUMER_MODE_FILE" ]] \
+    || die "optional consumer mode marker must be a regular non-symlink file"
+  owner_uid="$(stat -c '%u' -- "$OPTIONAL_CONSUMER_MODE_FILE")"
+  mode="$(stat -c '%a' -- "$OPTIONAL_CONSUMER_MODE_FILE")"
+  [[ "$owner_uid" == 0 && "$mode" == 600 ]] \
+    || die "optional consumer mode marker must be root-owned mode 0600"
+  # Compare bytes: command substitution alone would silently accept extra
+  # trailing newlines. The marker is an operator-owned mode, never an env flag.
+  cmp -s -- "$OPTIONAL_CONSUMER_MODE_FILE" <(printf '%s\n' "$OPTIONAL_CONSUMER_MODE_VALUE") \
+    || die "optional consumer mode marker has unsupported contents"
+  PUBLIC_OPTIONAL_CONSUMER_ENABLED=1
+  log "Public consumer smoke mode: ${OPTIONAL_CONSUMER_MODE_VALUE}"
 }
 
 
@@ -1023,6 +1053,70 @@ VALIDATE_MAIN_SEO
   log "Public robots/sitemap contract passed (${mode})"
 }
 
+smoke_optional_consumer_page() {
+  local path="$1" status body_file headers_file
+  body_file="$(mktemp /run/residence-optional-page.XXXXXX)"
+  headers_file="$(mktemp /run/residence-optional-page-headers.XXXXXX)"
+  status="$(curl --disable --silent --show-error --noproxy '*' \
+    --output "$body_file" --dump-header "$headers_file" --write-out '%{http_code}' \
+    --connect-timeout 3 --max-time 20 --max-filesize 5242880 \
+    --header "Host: ${HOST_HEADER}" --header 'Accept: text/html' \
+    "${PUBLIC_ORIGIN}${path}")" || {
+      rm -f -- "$body_file" "$headers_file"
+      die "optional consumer page request failed: ${path}"
+    }
+  if [[ "$status" != 200 ]] \
+    || ! grep -Eiq '^Content-Type:[[:space:]]*text/html' "$headers_file" \
+    || ! grep -Fq '<meta name="tencorp-auth-mode" content="optional">' "$body_file" \
+    || ! grep -Fq 'src="/optional-auth/client.js?v=' "$body_file" \
+    || grep -Fq 'method="post" action="/__auth/telegram/start"' "$body_file" \
+    || grep -Eiq '^Location:|^Set-Cookie:[[:space:]]*__Host-tencorp_session=' "$headers_file"; then
+    rm -f -- "$body_file" "$headers_file"
+    die "optional consumer page contract failed: ${path} (${status})"
+  fi
+  rm -f -- "$body_file" "$headers_file"
+  log "Optional consumer page smoke passed: ${path}"
+}
+
+smoke_optional_consumer_resource() {
+  local path="$1" expected="$2" expected_type="${3:-}" method="${4:-GET}"
+  local status body_file headers_file
+  local -a method_args=(--request GET)
+  if [[ "$method" == POST ]]; then
+    # Missing proof and no personal data: this must fail in the guard before
+    # any CRM integration. Never mint a proof or send a genuine lead here.
+    method_args=(--request POST --data '{}' --header 'Content-Type: application/json'
+      --header "Origin: ${PUBLIC_ORIGIN}" --header "Referer: ${PUBLIC_ORIGIN}/4u")
+  elif [[ "$method" != GET ]]; then
+    die "unsupported optional consumer smoke method: ${method}"
+  fi
+  body_file="$(mktemp /run/residence-optional-resource.XXXXXX)"
+  headers_file="$(mktemp /run/residence-optional-resource-headers.XXXXXX)"
+  status="$(curl --disable --silent --show-error --noproxy '*' \
+    --output "$body_file" --dump-header "$headers_file" --write-out '%{http_code}' \
+    --connect-timeout 3 --max-time 20 --max-filesize 5242880 \
+    "${method_args[@]}" --header "Host: ${HOST_HEADER}" \
+    "${PUBLIC_ORIGIN}${path}")" || {
+      rm -f -- "$body_file" "$headers_file"
+      die "optional consumer resource request failed: ${method} ${path}"
+    }
+  if [[ "$status" != "$expected" ]] \
+    || { [[ -n "$expected_type" ]] && ! grep -Eiq "^Content-Type:[[:space:]]*${expected_type}" "$headers_file"; } \
+    || grep -Eiq '^Location:|^Set-Cookie:[[:space:]]*__Host-tencorp_session=' "$headers_file"; then
+    rm -f -- "$body_file" "$headers_file"
+    die "optional consumer resource contract failed: ${method} ${path} (${status})"
+  fi
+  if [[ "$expected" == 403 ]] && {
+    ! grep -Fq '"error":"verification_required"' "$body_file" \
+    || ! grep -Eiq '^Cache-Control:.*no-store' "$headers_file";
+  }; then
+    rm -f -- "$body_file" "$headers_file"
+    die "anonymous lead submission bypassed its verification guard: ${path}"
+  fi
+  rm -f -- "$body_file" "$headers_file"
+  log "Optional consumer resource smoke passed: ${method} ${path} (${status})"
+}
+
 smoke_public_unauthenticated_contract() {
   local route status body_file headers_file ticket_headers_file
 
@@ -1031,10 +1125,22 @@ smoke_public_unauthenticated_contract() {
   smoke_public_homepage
   for route in "${SMOKE_ROUTES[@]}"; do
     [[ "$route" == / ]] && continue
-    smoke_public_login_page "$route" 5
+    if (( PUBLIC_OPTIONAL_CONSUMER_ENABLED == 1 )); then
+      smoke_optional_consumer_page "$route"
+    else
+      smoke_public_login_page "$route" 5
+    fi
   done
   for route in /sanat/ /sanat/flats /avalon /tencorp/ /tencrop/; do
-    smoke_public_login_page "$route" 5
+    if (( PUBLIC_OPTIONAL_CONSUMER_ENABLED == 1 )); then
+      if [[ "$route" == /tencorp/ ]]; then
+        smoke_optional_consumer_resource "$route" 200 'text/html'
+      else
+        smoke_optional_consumer_page "$route"
+      fi
+    else
+      smoke_public_login_page "$route" 5
+    fi
   done
 
   smoke_public_immutable_auth_asset '/__auth/assets/brand-city-v1.webp' 'image/webp'
@@ -1050,12 +1156,31 @@ smoke_public_unauthenticated_contract() {
   smoke_public_home_asset '/tencorp/assets/projects-map.css' 'text/css'
   smoke_public_map_loader
 
-  smoke_public_unauthorized_resource "$FRAMEWORK_ASSET_PATH" 'text/css,*/*;q=0.1'
-  # POSTing an empty body to a static framework asset cannot create a lead or
-  # invoke a business webhook, but proves non-GET failures stay a plain 401.
-  smoke_public_unauthorized_resource "$FRAMEWORK_ASSET_PATH" 'application/json' POST
+  if (( PUBLIC_OPTIONAL_CONSUMER_ENABLED == 1 )); then
+    case "$FRAMEWORK_ASSET_PATH" in
+      *.css) smoke_optional_consumer_resource "$FRAMEWORK_ASSET_PATH" 200 'text/css' ;;
+      *.js) smoke_optional_consumer_resource "$FRAMEWORK_ASSET_PATH" 200 '(application|text)/javascript' ;;
+      *) die "unknown framework asset type in optional consumer smoke" ;;
+    esac
+    smoke_optional_consumer_resource "$FRAMEWORK_ASSET_PATH" 405 '' POST
+    smoke_optional_consumer_resource '/optional-auth/client.js' 200 '(application|text)/javascript'
+    smoke_optional_consumer_resource '/residence-api/catalog/v1/projects/4u' 200 'application/json'
+    smoke_optional_consumer_resource '/api/kayan/ofiyat-explorer' 200 'application/json'
+    for route in /v1/leads /tencrop/v1/leads /api/submit; do
+      smoke_optional_consumer_resource "$route" 403 'application/json' POST
+    done
+    for route in /residence-api/catalog/v1/analytics/monthly-sales \
+      /residence-api/catalog/v1/project-registry /residence-api/catalog/v1/sync/status \
+      /residence-api/catalog/v1/projects/unpublished-smoke-project; do
+      smoke_public_unauthorized_resource "$route" 'application/json'
+    done
+  else
+    smoke_public_unauthorized_resource "$FRAMEWORK_ASSET_PATH" 'text/css,*/*;q=0.1'
+    # A static-asset POST cannot create a lead or invoke a business webhook.
+    smoke_public_unauthorized_resource "$FRAMEWORK_ASSET_PATH" 'application/json' POST
+    smoke_public_unauthorized_resource '/api/kayan/ofiyat-explorer' 'application/json'
+  fi
   smoke_public_unauthorized_resource '/residence-api/catalog/' 'application/json'
-  smoke_public_unauthorized_resource '/api/kayan/ofiyat-explorer' 'application/json'
   smoke_public_unauthorized_resource '/tencorp/assets/projects-map.js' 'application/javascript'
   smoke_public_unauthorized_resource '/__auth/me' 'application/json' GET unauthorized
 

@@ -899,7 +899,7 @@ export function MiradorBlockExplorer({
 
                   <div className="mirador-block-card__actions">
                     {onLead ? (
-                      <button
+                      <button data-tencorp-auto-lead
                         type="button"
                         onClick={() => onLead({
                           block: selectedDefinition.number,
@@ -920,7 +920,7 @@ export function MiradorBlockExplorer({
                   {availableFloors.length ? <div id={floorPlanPanelId} className="mirador-block-explorer__sr-only" role="status">{t.floorTitle}</div> : null}
                   <div className="mirador-block-card__actions">
                     <a href={catalogHref}>{t.catalogue}<b aria-hidden="true">↗</b></a>
-                    {onLead ? <button type="button" onClick={() => onLead({ block: selectedDefinition.number })}>{t.request}<b aria-hidden="true">↗</b></button> : null}
+                    {onLead ? <button data-tencorp-auto-lead type="button" onClick={() => onLead({ block: selectedDefinition.number })}>{t.request}<b aria-hidden="true">↗</b></button> : null}
                     <button className="mirador-block-card__clear" type="button" onClick={returnToBlocks}>{t.backToBlocks}</button>
                   </div>
                 </>

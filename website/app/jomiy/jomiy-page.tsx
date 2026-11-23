@@ -370,16 +370,16 @@ export function JomiyPage({ initialLanguage }: { initialLanguage: Language }) {
         {mobile && menuOpen ? <button className="jm-menu-backdrop" type="button" tabIndex={-1} aria-label={t.closeMenu} onClick={() => setMenuOpen(false)} /> : null}
         <nav ref={menuRef} id="jm-navigation" className={menuOpen ? 'is-open' : ''} role={mobileMenuOpen && !leadSurface ? 'dialog' : undefined} aria-modal={mobileMenuOpen && !leadSurface ? true : undefined} aria-label={t.navLabel} aria-hidden={!menuOpen || Boolean(leadSurface) || undefined} inert={!menuOpen || Boolean(leadSurface) ? true : undefined}>
           <div><small>{t.menuNote}</small>{t.nav.map(([id, label], index) => <a href={`#${id}`} key={id} onClick={() => selectNavigationTarget(id)}><span>0{index + 1}</span>{label}</a>)}<div className="jm-menu-languages" aria-label={t.language}>{languages.map((item) => <button type="button" key={item} aria-current={item === language ? 'true' : undefined} onClick={() => selectMenuLanguage(item)}>{item.toUpperCase()}</button>)}</div></div>
-          <button type="button" data-lead-trigger onClick={() => setLeadSurface('menu')}>{t.consult}<span>↗</span></button>
+          <button data-tencorp-auto-lead type="button" data-lead-trigger onClick={() => setLeadSurface('menu')}>{t.consult}<span>↗</span></button>
         </nav>
-        <div className="jm-header__actions" aria-hidden={mobileMenuOpen || undefined} inert={mobileMenuOpen ? true : undefined}><div className="jm-languages" aria-label={t.language}>{languages.map((item) => <button type="button" key={item} aria-current={item === language ? 'true' : undefined} onClick={() => setLanguage(item)}>{item.toUpperCase()}</button>)}</div><a href={withLanguage('/jomiy/apartments', language)}>{t.catalog}</a><button type="button" data-lead-trigger onClick={() => setLeadSurface('header')}>{t.consult}</button></div>
+        <div className="jm-header__actions" aria-hidden={mobileMenuOpen || undefined} inert={mobileMenuOpen ? true : undefined}><div className="jm-languages" aria-label={t.language}>{languages.map((item) => <button type="button" key={item} aria-current={item === language ? 'true' : undefined} onClick={() => setLanguage(item)}>{item.toUpperCase()}</button>)}</div><a href={withLanguage('/jomiy/apartments', language)}>{t.catalog}</a><button data-tencorp-auto-lead type="button" data-lead-trigger onClick={() => setLeadSurface('header')}>{t.consult}</button></div>
       </header>
 
       <main id="main" aria-hidden={mobileMenuOpen || undefined} inert={mobileMenuOpen ? true : undefined}>
         <section className="jm-hero" id="top" data-chapter="0" aria-labelledby="jm-title">
           <div className="jm-hero__folio"><span>{t.heroOverline}</span><span>01 / 09</span></div>
           <div className="jm-hero__image"><img src={asset('/jomiy/images/hero-real.webp')} alt={t.heroImage} fetchPriority="high" draggable={false} /><span>{t.media.real}</span></div>
-          <div className="jm-hero__title"><h1 id="jm-title">{t.heroTitle}</h1><p><strong>{t.heroLead}</strong>{t.heroSublead}</p><button type="button" data-lead-trigger onClick={() => setLeadSurface('hero')}>{t.consult}<span>↗</span></button></div>
+          <div className="jm-hero__title"><h1 id="jm-title">{t.heroTitle}</h1><p><strong>{t.heroLead}</strong>{t.heroSublead}</p><button data-tencorp-auto-lead type="button" data-lead-trigger onClick={() => setLeadSurface('hero')}>{t.consult}<span>↗</span></button></div>
           <dl>{t.heroFacts.map(([value, label]) => <div key={label}><dt>{value}</dt><dd>{label}</dd></div>)}</dl>
         </section>
 
@@ -415,7 +415,7 @@ export function JomiyPage({ initialLanguage }: { initialLanguage: Language }) {
 
         <section className="jm-chapter jm-catalog" id="catalog" data-chapter="7" data-reveal>
           <header><span>{t.catalogIndex}</span><h2>{catalogTitle}</h2><p>{t.catalogText}</p><CatalogSourceStatus language={language} dataSource={dataSource} {...catalogState} hasData={dataSource !== 'embedded'} onRetry={catalogState.retry} /></header>
-          <div className="jm-catalog__panel"><dl>{catalogStats.map(([value, label]) => <div key={label}><dt>{value}</dt><dd>{label}</dd></div>)}</dl><ul>{t.catalogGroups.map((group) => <li key={group}>{group}</li>)}</ul><div><p>{t.catalogNote}</p><a href={withLanguage('/jomiy/apartments', language)}>{t.openCatalog}<span>↗</span></a><button type="button" data-lead-trigger onClick={() => setLeadSurface('catalog-preview')}>{t.consult}</button></div></div>
+          <div className="jm-catalog__panel"><dl>{catalogStats.map(([value, label]) => <div key={label}><dt>{value}</dt><dd>{label}</dd></div>)}</dl><ul>{t.catalogGroups.map((group) => <li key={group}>{group}</li>)}</ul><div><p>{t.catalogNote}</p><a href={withLanguage('/jomiy/apartments', language)}>{t.openCatalog}<span>↗</span></a><button data-tencorp-auto-lead type="button" data-lead-trigger onClick={() => setLeadSurface('catalog-preview')}>{t.consult}</button></div></div>
         </section>
 
         <section className="jm-chapter jm-location" id="location" data-chapter="8" data-reveal>
@@ -424,7 +424,7 @@ export function JomiyPage({ initialLanguage }: { initialLanguage: Language }) {
         </section>
 
         <section className="jm-contact" id="contacts" data-reveal>
-          <span>{t.contactIndex}</span><h2>{t.contactTitle}</h2><p>{t.contactText}</p><div><button type="button" data-lead-trigger onClick={() => setLeadSurface('final')}>{t.consult}<span>↗</span></button><a href="tel:+998781137712">{t.call}</a></div>
+          <span>{t.contactIndex}</span><h2>{t.contactTitle}</h2><p>{t.contactText}</p><div><button data-tencorp-auto-lead type="button" data-lead-trigger onClick={() => setLeadSurface('final')}>{t.consult}<span>↗</span></button><a href="tel:+998781137712">{t.call}</a></div>
         </section>
       </main>
 

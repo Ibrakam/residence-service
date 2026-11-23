@@ -384,7 +384,7 @@ export function YangiBaxtPage({ initialLanguage }: { initialLanguage: Language }
         <div className="yb-header__actions" aria-hidden={mobileMenuOpen || undefined} inert={mobileMenuOpen ? true : undefined}>
           <div className="yb-languages" aria-label={t.language}>{languages.map((item) => <button type="button" key={item} aria-current={item === language ? 'true' : undefined} onClick={() => setLanguage(item)}>{item.toUpperCase()}</button>)}</div>
           <a className="yb-header__catalog" href={withLanguage('/yangibaxt/apartments', language)}>{t.catalog}</a>
-          <button className="yb-header__lead" type="button" data-lead-trigger onClick={() => setLeadSurface('header')}>{t.consult}</button>
+          <button data-tencorp-auto-lead className="yb-header__lead" type="button" data-lead-trigger onClick={() => setLeadSurface('header')}>{t.consult}</button>
         </div>
       </header>
 
@@ -396,7 +396,7 @@ export function YangiBaxtPage({ initialLanguage }: { initialLanguage: Language }
             <img src={asset('/yangibaxt/images/hero-real.webp')} alt={t.heroImage} fetchPriority="high" />
             <span className="yb-media-label">{t.media.real}</span>
             <div className="yb-hero__loop" aria-hidden="true"><i /><b /></div>
-            <button type="button" data-lead-trigger onClick={() => setLeadSurface('hero')}>{t.consult}<span>↗</span></button>
+            <button data-tencorp-auto-lead type="button" data-lead-trigger onClick={() => setLeadSurface('hero')}>{t.consult}<span>↗</span></button>
           </div>
           <div className="yb-hero__bottom">
             <p>{t.heroLead}</p>
@@ -449,13 +449,13 @@ export function YangiBaxtPage({ initialLanguage }: { initialLanguage: Language }
           <div className="yb-catalog-preview__panel">
             <dl>{catalogStats.map(([value, label]) => <div key={label}><dt>{value}</dt><dd>{label}</dd></div>)}</dl>
             <ul>{t.catalogGroups.map((group) => <li key={group}>{group}</li>)}</ul>
-            <div><p>{t.catalogNote}</p><a href={withLanguage('/yangibaxt/apartments', language)}>{t.openCatalog}<span>↗</span></a><button type="button" data-lead-trigger onClick={() => setLeadSurface('catalog-preview')}>{t.consult}</button></div>
+            <div><p>{t.catalogNote}</p><a href={withLanguage('/yangibaxt/apartments', language)}>{t.openCatalog}<span>↗</span></a><button data-tencorp-auto-lead type="button" data-lead-trigger onClick={() => setLeadSurface('catalog-preview')}>{t.consult}</button></div>
           </div>
         </section>
 
         <section className="yb-contact" id="contacts" data-reveal>
           <span>{t.contactIndex}</span><h2>{t.contactTitle}</h2><p>{t.contactText}</p>
-          <div><button type="button" data-lead-trigger onClick={() => setLeadSurface('final')}>{t.consult}<span>↗</span></button><a href="tel:+998781137712">{t.call}</a></div>
+          <div><button data-tencorp-auto-lead type="button" data-lead-trigger onClick={() => setLeadSurface('final')}>{t.consult}<span>↗</span></button><a href="tel:+998781137712">{t.call}</a></div>
           <address>{t.address}</address>
         </section>
       </main>

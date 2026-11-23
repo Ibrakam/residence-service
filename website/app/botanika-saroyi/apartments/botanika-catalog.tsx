@@ -347,7 +347,7 @@ function UnitCard({ unit, language, onPlan, onLead }: { unit: Unit; language: La
           {unit.oldPrice > unit.price ? <del>{t.originalPrice}: {money(unit.oldPrice, language)}</del> : null}
           {unit.promotion ? <b>{t.promotion} −{unit.promotion.percent}% · {money(unit.promotion.discountSum, language)}</b> : null}
         </div>
-        <button type="button" data-lead-trigger onClick={onLead}>{t.choose}<span aria-hidden="true">↗</span></button>
+        <button data-tencorp-auto-lead type="button" data-lead-trigger onClick={onLead}>{t.choose}<span aria-hidden="true">↗</span></button>
       </div>
     </article>
   );
@@ -411,7 +411,7 @@ function UnitDetail({ unit, language, onClose, onPlan, onLead }: { unit: Unit; l
           {unit.oldPrice > unit.price ? <del>{t.originalPrice}: {money(unit.oldPrice, language)}</del> : null}
           {unit.promotion ? <b>{t.promotion} −{unit.promotion.percent}%<span>{t.discount}: {money(unit.promotion.discountSum, language)}</span></b> : null}
         </div>
-        <button className="botanika-unit-detail__cta" type="button" data-lead-trigger onClick={onLead}>{t.choose}<span aria-hidden="true">↗</span></button>
+        <button data-tencorp-auto-lead className="botanika-unit-detail__cta" type="button" data-lead-trigger onClick={onLead}>{t.choose}<span aria-hidden="true">↗</span></button>
       </aside>
     </>
   );
@@ -589,7 +589,7 @@ export function BotanikaCatalog({ snapshot: embeddedSnapshot, initialLanguage }:
           <span>{t.eyebrow}</span>
           <h1 id="botanika-catalog-title">{t.title}<em>{t.accent}</em></h1>
           <p>{t.lead}</p>
-          <button type="button" data-lead-trigger onClick={() => openLead(null, 'hero-consultation')}>{t.generalConsult}<span aria-hidden="true">↗</span></button>
+          <button data-tencorp-auto-lead type="button" data-lead-trigger onClick={() => openLead(null, 'hero-consultation')}>{t.generalConsult}<span aria-hidden="true">↗</span></button>
         </div>
         <aside aria-label={t.snapshot}>
           <small>{t.plate} · 00</small>

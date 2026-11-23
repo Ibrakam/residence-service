@@ -64,6 +64,29 @@ location = /private {
         self.assertIn('if ($uri ~ "/\\.") { return 404; }', new)
         with self.assertRaises(ValueError): config.patch_locations(text, {'= /unknown'})
 
+    def test_analytics_bundles_open_without_opening_generic_framework_or_data(self):
+        private = '''location ^~ /_next/ {
+    include /etc/nginx/snippets/tencorp-auth-protect-api.conf;
+    proxy_pass http://127.0.0.1:3000;
+}
+location = /analytics {
+    proxy_pass http://127.0.0.1:3000;
+}
+'''
+        static = '''location ^~ /_next/static/ {
+    include /etc/nginx/snippets/tencorp-auth-protect-api.conf;
+    proxy_pass http://127.0.0.1:3000;
+}
+'''
+        result = config.patch_analytics_assets(static + private)
+        self.assertTrue(result.endswith(private))
+        self.assertIn('GET|HEAD)$', result)
+        self.assertIn('proxy_set_header Authorization "";', result)
+        self.assertIn('proxy_set_header Cookie "";', result)
+        self.assertIn('proxy_hide_header Set-Cookie;', result)
+        self.assertNotIn('GET|HEAD|OPTIONS', result)
+        with self.assertRaises(ValueError): config.patch_analytics_assets(result)
+
     def test_edge_verification_checks_public_and_private_without_credentials(self):
         seen = []
         def probe(path):

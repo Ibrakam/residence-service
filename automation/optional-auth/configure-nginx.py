@@ -163,6 +163,19 @@ def public_catalog_health():
     return '\n'.join(result)
 
 
+def patch_analytics_assets(text):
+    # Immutable client JS/CSS must load for a Basic-only analytics operator.
+    # Keep the separate generic /_next/ location and all HTML/data gates.
+    selector = '^~ /_next/static/'
+    match, end = next((m, e) for m, e in locations(text) if m['selector'].strip() == selector)
+    body = text[match.end():end]
+    protection = 'include /etc/nginx/snippets/tencorp-auth-protect-api.conf;'
+    if body.count(protection) != 1 or body.count('proxy_pass http://127.0.0.1:3000;') != 1:
+        raise ValueError('Unexpected analytics immutable asset boundary')
+    policy = '# Immutable browser bundles only; analytics HTML/data remain private.\n' + read_snippet().replace('GET|HEAD|OPTIONS', 'GET|HEAD')
+    return text[:match.end()] + body.replace(protection, policy) + text[end:]
+
+
 def patch_site(text):
     if 'tencorp_optional_auth_markup' in text:
         raise ValueError('Optional consumer browsing is already installed')
@@ -174,6 +187,7 @@ def patch_site(text):
         '^~ /tencorp/', '^~ /assets/', '~* ^/(?:images|fonts)/', '= /favicon.svg',
     }
     text = patch_locations(text, read)
+    text = patch_analytics_assets(text)
     text = patch_locations(text, {'= /v1/leads', '= /tencrop/v1/leads', '= /api/submit'}, write=True)
     # NRG's external placement-list POST is read-only. It never creates leads.
     text = patch_locations(text, {'= /api/nrg-apartments'}, write=True, inherited=True)
@@ -306,10 +320,34 @@ def restore(backup):
     subprocess.run(['systemctl', 'reload', 'nginx'], check=True)
 
 
+def fix_analytics_assets():
+    metadata = MARKER.lstat()
+    if not stat.S_ISREG(metadata.st_mode) or metadata.st_uid != 0 or stat.S_IMODE(metadata.st_mode) != 0o600 or MARKER.read_bytes() != b'optional-consumer-v1\n':
+        raise ValueError('Validated optional browsing mode required')
+    site = Path('/etc/nginx/sites-enabled/tencorp').resolve(strict=True)
+    original = site.read_bytes()
+    updated = patch_analytics_assets(original.decode()).encode()
+    backup = Path('/root/tencorp-optional-auth-backups') / (dt.datetime.now(dt.timezone.utc).strftime('%Y%m%dT%H%M%SZ') + '-analytics-assets')
+    backup.mkdir(parents=True, mode=0o700)
+    (backup / '0').write_bytes(original)
+    (backup / 'paths.json').write_text(json.dumps([{'path': str(site), 'file': '0', 'mode': stat.S_IMODE(site.stat().st_mode)}]))
+    try:
+        atomic(site, updated, stat.S_IMODE(site.stat().st_mode))
+        subprocess.run(['nginx', '-t'], check=True)
+        subprocess.run(['systemctl', 'reload', 'nginx'], check=True)
+        for path in ['/analytics', '/api/analytics/report', '/_next/data/private-probe.json', '/tencorp/assets/projects-map.js', '/__auth/me']:
+            if edge_status(path) != 401: raise ValueError('Private boundary changed: ' + path)
+    except BaseException:
+        restore(backup)
+        raise
+    print(json.dumps({'immutableAnalyticsAssets': 'public-read-only', 'backup': str(backup)}))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     action = parser.add_mutually_exclusive_group(required=True)
     action.add_argument('--apply', action='store_true')
+    action.add_argument('--fix-analytics-assets', action='store_true')
     action.add_argument('--rollback', type=Path)
     args = parser.parse_args()
     if os.geteuid() != 0: raise PermissionError('Root required')
@@ -321,6 +359,7 @@ def main():
     with os.fdopen(fd, 'a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         if args.apply: install()
+        elif args.fix_analytics_assets: fix_analytics_assets()
         else: restore(args.rollback)
 
 

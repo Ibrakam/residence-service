@@ -7,6 +7,13 @@ per tab. It waits for another dialog or intro to close and does not repeat after
 a manual application. Existing validation, consent and amoCRM handlers are used.
 The main TenCorp homepage has no automatic application prompt.
 
+Immutable `/_next/static/` browser bundles permit anonymous GET/HEAD so an
+analytics operator using Basic authentication can load styles and scripts.
+Analytics HTML/data and the separate generic `/_next/` location remain private.
+For a server already running the first optional-browsing release, install the
+current script and run `--fix-analytics-assets`; it makes a separate root-only
+backup and retains the normal rollback command below.
+
 The Uzbekistan geo rule and main-only SEO rule remain unchanged. The main map,
 account, identity, registry, global sync, monthly sales, analytics/operator and
 machine/webhook boundaries remain protected. Anonymous applications still pass

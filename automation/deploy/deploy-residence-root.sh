@@ -1083,8 +1083,8 @@ smoke_optional_consumer_resource() {
   local status body_file headers_file
   local -a method_args=(--request GET)
   if [[ "$method" == POST ]]; then
-    # Missing proof and no personal data: this must fail in the guard before
-    # any CRM integration. Never mint a proof or send a genuine lead here.
+    # Empty JSON has no personal data and fails schema validation before the
+    # nonce check. Never mint a proof or send a genuine lead here.
     method_args=(--request POST --data '{}' --header 'Content-Type: application/json'
       --header "Origin: ${PUBLIC_ORIGIN}" --header "Referer: ${PUBLIC_ORIGIN}/4u")
   elif [[ "$method" != GET ]]; then
@@ -1106,12 +1106,13 @@ smoke_optional_consumer_resource() {
     rm -f -- "$body_file" "$headers_file"
     die "optional consumer resource contract failed: ${method} ${path} (${status})"
   fi
-  if [[ "$expected" == 403 ]] && {
-    ! grep -Fq '"error":"verification_required"' "$body_file" \
+  if [[ "$expected" == 400 ]] && {
+    ! grep -Fq '"error":"invalid_name"' "$body_file" \
+    || ! grep -Fq '"success":false' "$body_file" \
     || ! grep -Eiq '^Cache-Control:.*no-store' "$headers_file";
   }; then
     rm -f -- "$body_file" "$headers_file"
-    die "anonymous lead submission bypassed its verification guard: ${path}"
+    die "empty anonymous lead did not return its validation rejection: ${path}"
   fi
   rm -f -- "$body_file" "$headers_file"
   log "Optional consumer resource smoke passed: ${method} ${path} (${status})"
@@ -1167,7 +1168,7 @@ smoke_public_unauthenticated_contract() {
     smoke_optional_consumer_resource '/residence-api/catalog/v1/projects/4u' 200 'application/json'
     smoke_optional_consumer_resource '/api/kayan/ofiyat-explorer' 200 'application/json'
     for route in /v1/leads /tencrop/v1/leads /api/submit; do
-      smoke_optional_consumer_resource "$route" 403 'application/json' POST
+      smoke_optional_consumer_resource "$route" 400 'application/json' POST
     done
     for route in /residence-api/catalog/v1/analytics/monthly-sales \
       /residence-api/catalog/v1/project-registry /residence-api/catalog/v1/sync/status \

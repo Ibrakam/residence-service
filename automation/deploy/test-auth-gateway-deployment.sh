@@ -33,6 +33,32 @@ trap cleanup EXIT HUP INT TERM
 
 bash -n "$BOT_SCRIPT"
 bash -n "$DEPLOYER"
+# Exercise the actual local guard/server contract rather than inventing a
+# response in curl fixtures. Only empty JSON is sent to an ephemeral loopback
+# listener; the injected upstream refuses every call and must remain unused.
+node --no-warnings --input-type=module - "$TEST_DIR/../lead-guard/server.mjs" <<'EMPTY_LEAD_GUARD_TEST'
+import assert from 'node:assert/strict';
+import { pathToFileURL } from 'node:url';
+const { createServer } = await import(pathToFileURL(process.argv[2]).href);
+const origin = 'https://form.tencorp.uz';
+let upstreamCalls = 0;
+const server = createServer({ secret: 'test-only-empty-lead-fixture-secret-123456789',
+  database: ':memory:', origins: [origin], turnstileRequired: false,
+  fetchImpl: async () => { upstreamCalls++; throw Error('No upstream is allowed in this fixture'); } });
+await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+try {
+  for (const route of ['/v1/leads', '/tencrop/v1/leads', '/api/submit']) {
+    const response = await fetch(`http://127.0.0.1:${server.address().port}${route}`, {
+      method: 'POST', body: '{}', headers: { 'Content-Type': 'application/json',
+        Origin: origin, Referer: `${origin}/4u` }, signal: AbortSignal.timeout(3000) });
+    assert.equal(response.status, 400, route);
+    assert.deepEqual(await response.json(), { success: false, error: 'invalid_name' }, route);
+    assert.match(response.headers.get('cache-control'), /no-store/);
+  }
+  assert.equal(upstreamCalls, 0);
+} finally { await new Promise(resolve => server.close(resolve)); }
+console.log('Empty lead schema rejection before nonce validation: PASS (no upstream calls)');
+EMPTY_LEAD_GUARD_TEST
 [[ -f "$NGINX_TEST_CONFIG" ]] || fail "Nginx syntax-test fixture is missing"
 [[ -f "$NGINX_BOOTSTRAP_TEST_CONFIG" ]] || fail "Nginx bootstrap syntax-test fixture is missing"
 
@@ -426,10 +452,11 @@ if [[ "$authenticated" == false && "${FAKE_OPTIONAL_RESPONSE:-closed}" == enable
       if [[ "${FAKE_OPTIONAL_VARIANT:-valid}" == private_catalog_open ]];then status=200;fi
       ;;
     /v1/leads|/tencrop/v1/leads|/api/submit)
-      status=403;content_type='application/json';body='{"error":"verification_required"}'
+      status=400;content_type='application/json';body='{"success":false,"error":"invalid_name"}'
       case "${FAKE_OPTIONAL_VARIANT:-valid}" in
         unguarded_lead) status=200;body='{"success":true}' ;;
-        wrong_lead_error) body='{"error":"invalid_origin"}' ;;
+        wrong_lead_error) body='{"success":false,"error":"invalid_origin"}' ;;
+        wrong_lead_status) status=403;body='{"success":false,"error":"verification_required"}' ;;
       esac
       ;;
     /tencorp/assets/projects-map.js|/__auth/me)
@@ -454,7 +481,9 @@ if [[ -n "$headers" ]]; then
       printf 'Cache-Control: public, max-age=86400\r\n'
     elif [[ "$authenticated" == false && "$path" == / ]]; then
       printf 'Cache-Control: public, max-age=0, must-revalidate\r\n'
-    elif [[ "$status" == 401 || "$status" == 403 || "$authenticated" == false && "$content_type" == text/html* ]]; then
+    elif [[ "$status" == 400 && "${FAKE_OPTIONAL_VARIANT:-valid}" == cacheable_lead ]]; then
+      printf 'Cache-Control: public, max-age=3600\r\n'
+    elif [[ "$status" == 400 || "$status" == 401 || "$status" == 403 || "$authenticated" == false && "$content_type" == text/html* ]]; then
       printf 'Cache-Control: private, no-store\r\n'
     fi
     printf 'Strict-Transport-Security: max-age=31536000\r\n'
@@ -556,7 +585,7 @@ fixture_config="$AUTH_SMOKE_CURL_CONFIG"
 export FAKE_OPTIONAL_RESPONSE=enabled
 smoke_public_unauthenticated_contract
 smoke_public_authenticated_contract
-for variant in login_wall missing_meta missing_bootstrap writable_asset catalog_closed private_catalog_open unguarded_lead wrong_lead_error private_identity_open operator_machine_open; do
+for variant in login_wall missing_meta missing_bootstrap writable_asset catalog_closed private_catalog_open unguarded_lead wrong_lead_error wrong_lead_status cacheable_lead private_identity_open operator_machine_open; do
   if ( export FAKE_OPTIONAL_VARIANT="$variant"; smoke_public_unauthenticated_contract ) >"$TEST_ROOT/optional-negative.log" 2>&1; then
     fail "optional browsing accepted an unsafe response: $variant"
   fi

@@ -41,6 +41,7 @@ test('Avalon marketing website cannot replace unit inventory or make stale price
   const evidence = { records: [{ method: 'DERIVED', url: { origin: 'https://avalonresidence.uz', path: '/' },
     scope: { endpoint: 'marketingProject' }, value: { projectSlug: 'avalon-residence', marketingTotal: 268, unitListingAvailable: false } }] };
   const result = normalizeAvalonWebsite(evidence, at);
+  assert.equal(result.artifact.project.developerSlug, 'tencorp'); assert.equal(result.artifact.project.sourceId, '1074');
   assert.deepEqual(result.artifact.units, []); assert.equal(result.artifact.sourceCount, 0);
   assert.equal(result.artifact.catalogScope, 'published-offers'); assert.equal(result.audit.sourceCoverage, 'marketing-only');
   evidence.records[0].value.unitListingAvailable = true;

@@ -116,16 +116,25 @@ func TestProductionExampleOwnsAllLiveProjects(t *testing.T) {
 		"uysot":       {"avalon-residence"},
 	}
 	got := make(map[string][]string, len(config.Providers))
-	mbcFloors := map[string]int{
-		"c1": 220, "regnum-plaza": 700, "saadiyat": 460, "soy-boyi": 950, "sarbon": 175,
+	overlayProviders := map[string]bool{"kayan": true, "mbc": true, "mbc-sarbon": true, "uysot": true}
+	fullCatalogFloors := map[string]int{
+		"sun": 250, "4u": 150, "bayterak": 100, "botanika-saroyi": 150,
+		"flagman": 5, "jomiy": 80, "maftun-makon": 150, "meros": 180,
+		"voha": 70, "yangibaxt": 180, "zamon": 70, "sado": 250,
 	}
 	for _, provider := range config.Providers {
 		got[provider.Name] = provider.ProjectSlugs()
-		if provider.Name == "mbc" || provider.Name == "mbc-sarbon" {
-			for slug, project := range provider.Projects {
-				if project.MinimumRecords != mbcFloors[slug] {
-					t.Errorf("MBC %s full-lifecycle floor=%d, want %d", slug, project.MinimumRecords, mbcFloors[slug])
+		wantOverlay := overlayProviders[provider.Name]
+		if provider.IsOverlay() != wantOverlay {
+			t.Errorf("provider %q overlay=%v, want %v", provider.Name, provider.IsOverlay(), wantOverlay)
+		}
+		for slug, project := range provider.Projects {
+			if wantOverlay {
+				if project.MinimumRecords != 0 {
+					t.Errorf("public overlay %s floor=%d, want declared zero", slug, project.MinimumRecords)
 				}
+			} else if wantFloor, ok := fullCatalogFloors[slug]; !ok || wantFloor <= 0 || project.MinimumRecords != wantFloor {
+				t.Errorf("complete catalog %s floor=%d, want unchanged positive floor %d", slug, project.MinimumRecords, wantFloor)
 			}
 		}
 		if provider.WorkingDirectory != "/opt/residence-live-sync" {

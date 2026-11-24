@@ -160,6 +160,6 @@ export function normalizeAvalonWebsite(capture, capturedAt) {
     && row.value.marketingTotal === 268 && row.value.unitListingAvailable === false, 'Avalon website evidence is invalid');
   const audit = { complete: true, inventoryComplete: false, expectedRecords: 0, observedRecords: 0, uniqueIdentities: 0, sourceCoverage: 'marketing-only' };
   return { artifact: { capturedAt, catalogScope: 'published-offers', sourceCount: 0,
-    project: { slug: 'avalon-residence', name: 'Avalon Residence', developerSlug: 'avalon', updatedAt: capturedAt },
+    project: { slug: 'avalon-residence', name: 'Avalon Residence', developerSlug: 'tencorp', sourceId: '1074', updatedAt: capturedAt },
     completeness: audit, units: [], source: { url: 'https://avalonresidence.uz/', coverage: 'marketing-only', marketingTotal: 268 } }, audit };
 }

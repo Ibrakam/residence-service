@@ -17,6 +17,9 @@ import (
 
 const CatalogSource = "versioned-website-catalog"
 
+// PublishedOffersScope declares a verified public listing, not the full CRM inventory.
+const PublishedOffersScope = "published-offers"
+
 type CatalogBundle struct {
 	Path       string
 	Checksum   string
@@ -36,6 +39,7 @@ type CatalogProject struct {
 	SourceURL            string
 	SourcePayload        json.RawMessage
 	CapturedAt           time.Time
+	CatalogScope         string
 	Complete             bool
 	OfficialCount        *int
 	QueueMetadataPresent bool
@@ -110,6 +114,7 @@ func CatalogProjectContentChecksum(project CatalogProject) (string, error) {
 		SourceID             string
 		SourceURL            string
 		SourcePayload        json.RawMessage
+		CatalogScope         string
 		Complete             bool
 		OfficialCount        *int
 		QueueMetadataPresent bool
@@ -127,6 +132,7 @@ func CatalogProjectContentChecksum(project CatalogProject) (string, error) {
 		SourceID:             project.SourceID,
 		SourceURL:            project.SourceURL,
 		SourcePayload:        project.SourcePayload,
+		CatalogScope:         project.CatalogScope,
 		Complete:             project.Complete,
 		OfficialCount:        project.OfficialCount,
 		QueueMetadataPresent: project.QueueMetadataPresent,
@@ -308,6 +314,18 @@ func normalizeCatalogProject(filename string, root, node map[string]json.RawMess
 		SourcePayload: catalogMetadata(node),
 		Complete:      filename == "avalon-units.json" || !strings.HasSuffix(filename, "-client.json"),
 	}
+	project.CatalogScope = firstString(node, "catalogScope")
+	if project.CatalogScope == "" {
+		project.CatalogScope = firstString(root, "catalogScope")
+	}
+	if project.CatalogScope != "" && project.CatalogScope != PublishedOffersScope {
+		return CatalogProject{}, fmt.Errorf("unknown catalog scope %q", project.CatalogScope)
+	}
+	if project.CatalogScope == PublishedOffersScope {
+		metadata := rawObject(project.SourcePayload)
+		metadata["catalogScope"], _ = json.Marshal(project.CatalogScope)
+		project.SourcePayload, _ = json.Marshal(metadata)
+	}
 	project.MatrixBlockIDs, err = catalogMatrixBlockIDs(node)
 	if err != nil {
 		return CatalogProject{}, err
@@ -329,12 +347,16 @@ func normalizeCatalogProject(filename string, root, node map[string]json.RawMess
 	if err := json.Unmarshal(node["units"], &unitRows); err != nil {
 		return CatalogProject{}, fmt.Errorf("decode units: %w", err)
 	}
-	if len(unitRows) == 0 {
-		return CatalogProject{}, errors.New("project has no units")
-	}
 	project.OfficialCount = officialCount(node, projectMeta)
+	if len(unitRows) == 0 && (project.CatalogScope != PublishedOffersScope || project.OfficialCount == nil || *project.OfficialCount != 0) {
+		return CatalogProject{}, errors.New("project has no units without an explicitly empty public listing")
+	}
 	if project.OfficialCount != nil {
 		project.Complete = *project.OfficialCount == len(unitRows)
+	}
+
+	if project.CatalogScope == PublishedOffersScope {
+		project.Complete = false
 	}
 
 	phaseDefinitions := phaseDefinitions(projectMeta)
@@ -345,6 +367,9 @@ func normalizeCatalogProject(filename string, root, node map[string]json.RawMess
 		var values map[string]json.RawMessage
 		if err := json.Unmarshal(rawUnit, &values); err != nil {
 			return CatalogProject{}, fmt.Errorf("unit %d: %w", index+1, err)
+		}
+		if project.CatalogScope == PublishedOffersScope && firstString(values, "phaseSlug", "buildingId", "blockId", "houseId") == "" {
+			return CatalogProject{}, fmt.Errorf("unit %d has no explicit physical phase identity", index+1)
 		}
 		phase := catalogPhase(values, phaseDefinitions, source)
 		if phase.QueueKey != "" {
@@ -369,6 +394,10 @@ func normalizeCatalogProject(filename string, root, node map[string]json.RawMess
 		unit, err := normalizeCatalogUnit(project.Slug, storedPhase.Slug, rawUnit, values)
 		if err != nil {
 			return CatalogProject{}, fmt.Errorf("unit %d: %w", index+1, err)
+		}
+		if project.CatalogScope == PublishedOffersScope && !catalogUnitHasStatus(values) {
+			unit.PreserveStatus = true
+			unit.Status, unit.RawStatus = "unknown", ""
 		}
 		if unit.QueueKey != storedPhase.QueueKey {
 			return CatalogProject{}, fmt.Errorf("unit %d queue %q does not match phase %s queue %q", index+1, unit.QueueKey, storedPhase.Slug, storedPhase.QueueKey)
@@ -480,9 +509,6 @@ func normalizeCatalogUnit(projectSlug, phaseSlug string, raw json.RawMessage, va
 	}
 	if unit.RawPropertyType == "" {
 		unit.RawPropertyType = "Квартира"
-	}
-	if unit.Currency == "" {
-		unit.Currency = "UZS"
 	}
 	if hasRooms {
 		unit.Rooms = &rooms
@@ -698,7 +724,7 @@ func catalogProjectCapturedAt(project map[string]json.RawMessage, fallback time.
 }
 
 func officialCount(node, project map[string]json.RawMessage) *int {
-	for _, key := range []string{"officialTotalAtCapture", "sourceCount", "totalUnits"} {
+	for _, key := range []string{"officialTotalAtCapture", "sourceCount", "totalUnits", "officialCount"} {
 		if value, ok := optionalInt(node, key); ok {
 			return &value
 		}
@@ -1021,4 +1047,14 @@ func optionalRepairIncluded(values map[string]json.RawMessage) (bool, bool) {
 	default:
 		return false, false
 	}
+}
+
+// A public offer card does not itself prove availability. Only explicit
+// upstream lifecycle evidence may replace an existing unit's status.
+func catalogUnitHasStatus(values map[string]json.RawMessage) bool {
+	if firstString(values, "status", "rawStatus", "sourceStatus", "statusOriginal") != "" {
+		return true
+	}
+	var isSale *bool
+	return json.Unmarshal(values["isSale"], &isSale) == nil && isSale != nil
 }

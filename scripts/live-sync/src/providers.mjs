@@ -113,6 +113,18 @@ export const mbcProjects = Object.freeze([
     id: 18, slug: 'saadiyat', name: 'SAADIYAT', sourceLanding: 'https://mbc.uz/ru/project/saadiyat', templateFile: 'saadiyat-catalog.json',
     profitbaseProjectId: 51441, profitbaseProjectTitle: 'Saadiyat',
     minimumResidentialUnits: 460,
+    // Exact CRM identity and physical binding verified against production DB on 2026-11-24.
+    // The public card omits queue; this is never a section-wide inference.
+    reviewedWebsiteBindings: Object.freeze([Object.freeze({
+      sourceId: '18198166', sourceKey: 'mbc:saadiyat:919f80d22bbf7d1c117becd3',
+      number: '1', rooms: 3, area: 84.47, floor: 1, queue: '2', section: 'A6', phaseSlug: 'q2-sa6',
+    }), Object.freeze({
+      sourceId: '17194580', sourceKey: 'catalog:saadiyat:2:68722dedde84631c45b4',
+      number: '50', rooms: 0, area: 124.66, floor: 14, queue: '2', section: 'A4', phaseSlug: 'q2-sa4',
+    }), Object.freeze({
+      sourceId: '17194582', sourceKey: 'catalog:saadiyat:2:605e9e90d5370dfd14f2',
+      number: '52', rooms: 0, area: 98.63, floor: 14, queue: '2', section: 'A4', phaseSlug: 'q2-sa4',
+    })]),
     profitbaseHouses: Object.freeze([
       Object.freeze({ id: 132970, title: 'I очередь', queueSourceValue: '1', minimumResidentialUnits: 240 }),
       Object.freeze({ id: 149400, title: 'II очередь', queueSourceValue: '2', minimumResidentialUnits: 225 }),
@@ -160,10 +172,10 @@ const mbcProfitbaseTargetHouseIds = Object.freeze(
 export const providers = Object.freeze({
   uysot: Object.freeze({
     id: 'uysot',
-    label: 'Uysot Showroom',
+    label: 'Avalon official website (retained apartment data)',
     projects: Object.freeze(['avalon-residence']),
     maturity: 'normalize-ready',
-    captureMode: 'authorized-browser-read-post',
+    captureMode: 'public-website',
     profileHint: '/home/residence-crm-browser/uysot-profile',
     pageHosts: Object.freeze(['app.uysot.uz']),
     startUrl: 'https://app.uysot.uz/showroom/',
@@ -202,10 +214,10 @@ export const providers = Object.freeze({
 
   kayan: Object.freeze({
     id: 'kayan',
-    label: 'KAYAN Agent Office',
+    label: 'KAYAN public catalogue',
     projects: Object.freeze(['mirador', 'ofiyat']),
     maturity: 'normalize-ready',
-    captureMode: 'authorized-browser-get',
+    captureMode: 'public-website',
     profileHint: '/home/residence-crm-browser/crm-profile',
     pageHosts: Object.freeze(['smart-catalog.profitbase.ru']),
     startUrl: 'https://agent.kayan.uz/',
@@ -237,11 +249,11 @@ export const providers = Object.freeze({
 
   mbc: Object.freeze({
     id: 'mbc',
-    label: 'MBC Partners',
+    label: 'MBC public catalogue',
     projects: Object.freeze(mbcProjects.map((project) => project.slug)),
     projectDefinitions: mbcProjects,
     maturity: 'normalize-ready',
-    captureMode: 'authorized-browser-get',
+    captureMode: 'public-website',
     profileHint: '/home/residence-crm-browser/crm-profile',
     pageHosts: Object.freeze(['smart-catalog.profitbase.ru']),
     startUrl: 'https://partners.mbc.uz/cabinet/applications',
@@ -273,11 +285,11 @@ export const providers = Object.freeze({
 
   'mbc-sarbon': Object.freeze({
     id: 'mbc-sarbon',
-    label: 'MBC Partners / SARBON',
+    label: 'MBC public catalogue / SARBON',
     projects: Object.freeze(mbcSarbonProjects.map((project) => project.slug)),
     projectDefinitions: mbcSarbonProjects,
     maturity: 'normalize-ready',
-    captureMode: 'authorized-browser-get',
+    captureMode: 'public-website',
     profileHint: '/home/residence-crm-browser/crm-profile',
     pageHosts: Object.freeze(['smart-catalog.profitbase.ru']),
     startUrl: 'https://partners.mbc.uz/cabinet/applications',

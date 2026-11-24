@@ -121,7 +121,7 @@ const ui = {
     printOffer: 'Печатное предложение',
     contactTencorp: 'Связаться с Tencorp',
     disclaimer: 'Расчёт носит ознакомительный характер. Финальные условия подтверждаются менеджером Tencorp.',
-    statusSource: 'Дата данных и состояние синхронизации указаны над каталогом. Условия подтверждает менеджер.',
+    statusSource: 'Наличие, стоимость и условия подтверждает менеджер.',
     landscaping: 'Благоустройство',
     returnTerritory: 'Вернуться к территории',
     comfort: 'Комфорт+',
@@ -196,7 +196,7 @@ const ui = {
     printOffer: 'Taklifni chop etish',
     contactTencorp: 'Tencorp bilan bog‘lanish',
     disclaimer: 'Hisob-kitob tanishish uchun. Yakuniy shartlarni Tencorp menejeri tasdiqlaydi.',
-    statusSource: 'Ma’lumot sanasi va yangilanish holati katalog ustida ko‘rsatilgan. Shartlarni menejer tasdiqlaydi.',
+    statusSource: 'Mavjudlik, narx va shartlarni menejer tasdiqlaydi.',
     landscaping: 'Obodonlashtirish',
     returnTerritory: 'Hududga qaytish',
     comfort: 'Komfort+',
@@ -462,7 +462,7 @@ export default function Home() {
         <section className="facade-screen view-stage" aria-labelledby="facade-title">
           <SiteHeader light language={language} onLanguageChange={changeLanguage} onHome={() => setView('city')} onApartments={() => setView('facade')} />
           <div className="facade-toolbar"><button className="screen-back screen-back--static" type="button" onClick={() => setView('complex')}>← <span>{t.buildingChoice}</span></button><div><p className="eyebrow eyebrow--dark">{t.visualChoice}</p><h1 id="facade-title">{t.building} {selectedBuilding}</h1></div></div>
-          <CatalogSourceStatus language={language} dataSource={dataSource} refreshedAt={refreshedAt} isLoading={isLoading} loadError={loadError} hasData={dataSource !== 'embedded'} onRetry={retry} />
+          <CatalogSourceStatus language={language} dataSource={dataSource} refreshedAt={refreshedAt} isLoading={isLoading} loadError={loadError} hasData={units.length > 0} onRetry={retry} />
           <div className="facade-workspace">
             <aside className="facade-copy"><span className="facade-copy__index">03</span><p>{t.visualChoice}</p><h2>{t.chooseFloor}</h2><small>{t.facadeLead}</small><nav className="facade-floor-list" aria-label={t.floor}><span>{t.floor}</span>{floors.map((floor) => { const available = buildingUnits.filter((unit) => unit.floor === floor && unit.status === 'free').length; return <button key={floor} type="button" onClick={() => chooseFloor(floor)}><strong>{floor}</strong><i style={{ '--availability': Math.max(18, available * 14) } as React.CSSProperties} /><small>{available}</small></button>; })}</nav></aside>
             <div className="facade-visual"><div className="facade-image-frame"><picture><source media="(max-width: 850px)" srcSet={assetPath(facadeImagesMobile[selectedBuilding])} /><img src={assetPath(facadeImages[selectedBuilding])} alt={`AVALON RESIDENCE · ${t.building} ${selectedBuilding}`} decoding="async" /></picture><div className="facade-building-tag"><span>{selectedBuilding}</span><small>{t.building.toLowerCase()}</small></div><svg className="facade-floor-overlay" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid meet" aria-label={t.chooseFloor}>{floors.map((floor) => { const available = buildingUnits.filter((unit) => unit.floor === floor && unit.status === 'free').length; const zone = facadeFloorZone(selectedBuilding, floor); return <g key={floor} className="facade-floor-zone" role="button" tabIndex={0} aria-label={`${floor} ${t.floor.toLowerCase()}, ${available} ${t.available.toLowerCase()}`} onClick={() => chooseFloor(floor)} onKeyDown={(event) => event.key === 'Enter' && chooseFloor(floor)}><rect x={zone.x} y={zone.y} width={zone.width} height={zone.height} /><text x={zone.x + zone.width / 2} y={zone.y + zone.height / 2 + 3}>{floor} {t.floor.toLowerCase()} · {available} {t.available.toLowerCase()}</text></g>; })}</svg></div></div>
@@ -476,7 +476,7 @@ export default function Home() {
           <SiteHeader light language={language} onLanguageChange={changeLanguage} onHome={() => setView('city')} onApartments={() => setView('facade')} />
           <div className="showroom-shell showroom-shell--visual">
             <div className="showroom-topbar"><button className="screen-back screen-back--static" type="button" onClick={() => setView('facade')}>← <span>{t.facade}</span></button><div className="showroom-title"><p className="eyebrow eyebrow--dark">AVALON RESIDENCE · {t.building.toLowerCase()} {selectedBuilding}</p><h1 id="apartments-title">{selectedFloor} {t.floor.toLowerCase()}</h1></div></div>
-            <CatalogSourceStatus language={language} dataSource={dataSource} refreshedAt={refreshedAt} isLoading={isLoading} loadError={loadError} hasData={dataSource !== 'embedded'} onRetry={retry} />
+            <CatalogSourceStatus language={language} dataSource={dataSource} refreshedAt={refreshedAt} isLoading={isLoading} loadError={loadError} hasData={units.length > 0} onRetry={retry} />
             <div className="visual-modebar">
               <div className="catalog-tabs"><button type="button" className={catalogMode === 'plan' ? 'is-active' : ''} onClick={() => setCatalogMode('plan')}>◆ {t.floorPlan}</button><button type="button" className={catalogMode === 'chess' ? 'is-active' : ''} onClick={() => setCatalogMode('chess')}>▦ {t.chess}</button><button type="button" className={catalogMode === 'list' ? 'is-active' : ''} onClick={() => setCatalogMode('list')}>☷ {t.list}</button></div>
               {catalogMode !== 'plan' ? <div className="filter-pills"><span>{t.rooms}</span>{(['all', 2, 3] as RoomFilter[]).map((room) => <button key={room} type="button" className={roomFilter === room ? 'is-active' : ''} onClick={() => setRoomFilter(room)}>{room === 'all' ? t.all : room}</button>)}{hasRepairData ? <><span>{t.finishing}</span>{(['all', 'without', 'with'] as RepairFilter[]).map((repair) => <button key={repair} type="button" className={repairFilter === repair ? 'is-active' : ''} onClick={() => setRepairFilter(repair)}>{repair === 'all' ? t.all : repair === 'with' ? t.withRepair : t.withoutRepair}</button>)}</> : null}</div> : <div className="plan-hint"><i /> {t.clickApartment}</div>}

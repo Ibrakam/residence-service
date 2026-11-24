@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -103,6 +104,7 @@ type NormalizedUnit struct {
 	RawPropertyType  string
 	Status           string
 	RawStatus        string
+	PreserveStatus   bool
 	Number           string
 	Entrance         string
 	Floor            int
@@ -368,6 +370,9 @@ func ImportDirectory(ctx context.Context, pool *pgxpool.Pool, dir string) (Impor
 		return failRun(ctx, pool, result, fmt.Errorf("begin import: %w", err))
 	}
 	defer func() { _ = tx.Rollback(context.Background()) }()
+	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('catalog_import',0))`); err != nil {
+		return failRun(ctx, pool, result, fmt.Errorf("lock catalog import: %w", err))
+	}
 
 	var developerID int64
 	if err := tx.QueryRow(ctx, `
@@ -497,17 +502,28 @@ const upsertUnitSQL = `
         ON CONFLICT(phase_id,source_key) DO UPDATE SET
           source_id=COALESCE(EXCLUDED.source_id,units.source_id),
           property_type=EXCLUDED.property_type, raw_property_type=EXCLUDED.raw_property_type,
-          status=EXCLUDED.status, raw_status=EXCLUDED.raw_status, number=EXCLUDED.number,
+          status=CASE WHEN $21 THEN units.status ELSE EXCLUDED.status END,
+          raw_status=CASE WHEN $21 THEN units.raw_status ELSE EXCLUDED.raw_status END, number=EXCLUDED.number,
           entrance=EXCLUDED.entrance, floor=EXCLUDED.floor, house_name=EXCLUDED.house_name,
-          area=EXCLUDED.area, rooms=EXCLUDED.rooms, price=EXCLUDED.price,
-          price_per_m2=EXCLUDED.price_per_m2, currency=EXCLUDED.currency,
+          area=EXCLUDED.area, rooms=EXCLUDED.rooms, price=COALESCE(EXCLUDED.price,units.price),
+          price_per_m2=COALESCE(EXCLUDED.price_per_m2,units.price_per_m2),
+          currency=CASE WHEN EXCLUDED.price IS NOT NULL OR EXCLUDED.price_per_m2 IS NOT NULL THEN COALESCE(NULLIF($22,''),units.currency) ELSE units.currency END,
           plan_image_url=COALESCE(NULLIF(EXCLUDED.plan_image_url,''),units.plan_image_url), repair_included=EXCLUDED.repair_included, is_active=true,
           source_payload=EXCLUDED.source_payload, source_updated_at=EXCLUDED.source_updated_at,
           updated_at=now()`
 
 func upsertUnit(ctx context.Context, tx pgx.Tx, phaseID int64, observedAt time.Time, unit NormalizedUnit) error {
+	return upsertUnitWithMode(ctx, tx, phaseID, observedAt, unit, false)
+}
+
+func upsertUnitWithMode(ctx context.Context, tx pgx.Tx, phaseID int64, observedAt time.Time, unit NormalizedUnit, overlay bool) error {
+	unit = normalizedUnitPrices(unit)
+	unit.Currency = strings.TrimSpace(unit.Currency)
+	incomingCurrency := unit.Currency
+	incomingPrice := unit.Price != nil || unit.PricePerM2 != nil
+	preserveStatus := overlay && (unit.PreserveStatus || !catalogUnitHasStatus(rawObject(unit.SourcePayload)))
 	rows, err := tx.Query(ctx, `
-		SELECT id,status,price
+		SELECT id,status,price,price_per_m2,currency,raw_status,entrance,floor,house_name,rooms,repair_included
 		FROM units
 		WHERE phase_id=$1
 		  AND (source_key=$2 OR (NULLIF($3,'') IS NOT NULL AND source_id=$3))
@@ -517,14 +533,20 @@ func upsertUnit(ctx context.Context, tx pgx.Tx, phaseID int64, observedAt time.T
 		return err
 	}
 	type existingUnit struct {
-		id     int64
-		status string
-		price  sql.NullInt64
+		id                             int64
+		status                         string
+		price                          sql.NullInt64
+		pricePerM2                     *float64
+		currency                       string
+		rawStatus, entrance, houseName string
+		floor                          int
+		rooms                          *int
+		repairIncluded                 *bool
 	}
 	existing := make([]existingUnit, 0, 2)
 	for rows.Next() {
 		var item existingUnit
-		if err := rows.Scan(&item.id, &item.status, &item.price); err != nil {
+		if err := rows.Scan(&item.id, &item.status, &item.price, &item.pricePerM2, &item.currency, &item.rawStatus, &item.entrance, &item.floor, &item.houseName, &item.rooms, &item.repairIncluded); err != nil {
 			rows.Close()
 			return err
 		}
@@ -541,12 +563,41 @@ func upsertUnit(ctx context.Context, tx pgx.Tx, phaseID int64, observedAt time.T
 
 	if len(existing) == 1 {
 		item := existing[0]
+		if !incomingPrice {
+			if item.price.Valid {
+				unit.Price = &item.price.Int64
+			}
+			unit.PricePerM2, unit.Currency = item.pricePerM2, item.currency
+		} else if strings.TrimSpace(unit.Currency) == "" {
+			unit.Currency = item.currency
+		}
+		if overlay {
+			if unit.Rooms == nil {
+				unit.Rooms = item.rooms
+			}
+			if unit.RepairIncluded == nil {
+				unit.RepairIncluded = item.repairIncluded
+			}
+			if unit.Entrance == "" {
+				unit.Entrance = item.entrance
+			}
+			if unit.HouseName == "" {
+				unit.HouseName = item.houseName
+			}
+			values := rawObject(unit.SourcePayload)
+			if _, present := values["floor"]; !present {
+				unit.Floor = item.floor
+			}
+			if preserveStatus {
+				unit.Status, unit.RawStatus = item.status, item.rawStatus
+			}
+		}
 		if item.status != unit.Status {
 			if _, err := tx.Exec(ctx, `INSERT INTO unit_status_history(unit_id,old_status,new_status,observed_at) VALUES($1,$2,$3,$4)`, item.id, item.status, unit.Status, observedAt); err != nil {
 				return err
 			}
 		}
-		priceChanged := item.price.Valid != (unit.Price != nil) || (item.price.Valid && unit.Price != nil && item.price.Int64 != *unit.Price)
+		priceChanged := incomingPrice && (item.price.Valid != (unit.Price != nil) || (item.price.Valid && unit.Price != nil && (item.price.Int64 != *unit.Price || item.currency != unit.Currency)))
 		if priceChanged {
 			var old any
 			if item.price.Valid {
@@ -573,13 +624,49 @@ func upsertUnit(ctx context.Context, tx pgx.Tx, phaseID int64, observedAt time.T
 		return err
 	}
 
+	if preserveStatus {
+		unit.Status, unit.RawStatus = "unknown", ""
+	}
+	if strings.TrimSpace(unit.Currency) == "" {
+		unit.Currency = "UZS"
+	}
 	_, err = tx.Exec(ctx, upsertUnitSQL,
 		phaseID, unit.SourceKey, unit.SourceID, unit.PropertyType, unit.RawPropertyType, unit.Status,
 		unit.RawStatus, unit.Number, unit.Entrance, unit.Floor, unit.HouseName, unit.Area,
 		unit.Rooms, unit.Price, unit.PricePerM2, unit.Currency, unit.PlanImageURL, unit.RepairIncluded,
-		string(unit.SourcePayload), observedAt,
+		string(unit.SourcePayload), observedAt, preserveStatus, incomingCurrency,
 	)
 	return err
+}
+
+// normalizedUnitPrices treats missing/invalid prices as absent evidence. Derive
+// the other price only from a positive price in this observation, never mix a
+// new total with an old per-square-metre value (or the reverse).
+func normalizedUnitPrices(unit NormalizedUnit) NormalizedUnit {
+	if unit.Price != nil && *unit.Price <= 0 {
+		unit.Price = nil
+	}
+	if unit.PricePerM2 != nil && (*unit.PricePerM2 <= 0 || *unit.PricePerM2 >= 1e16 || math.IsNaN(*unit.PricePerM2) || math.IsInf(*unit.PricePerM2, 0)) {
+		unit.PricePerM2 = nil
+	}
+	if unit.Area > 0 && !math.IsNaN(unit.Area) && !math.IsInf(unit.Area, 0) {
+		if unit.Price == nil && unit.PricePerM2 != nil {
+			value := math.Round(*unit.PricePerM2 * unit.Area)
+			if value > 0 && value < float64(math.MaxInt64) {
+				price := int64(value)
+				unit.Price = &price
+			} else {
+				unit.PricePerM2 = nil
+			}
+		}
+		if unit.PricePerM2 == nil && unit.Price != nil {
+			value := float64(*unit.Price) / unit.Area
+			if value > 0 && !math.IsInf(value, 0) {
+				unit.PricePerM2 = &value
+			}
+		}
+	}
+	return unit
 }
 
 func failRun(ctx context.Context, pool *pgxpool.Pool, result ImportResult, cause error) (ImportResult, error) {

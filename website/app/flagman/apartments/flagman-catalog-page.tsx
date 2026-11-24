@@ -154,7 +154,6 @@ export function FlagmanCatalogPage({ snapshot: embeddedSnapshot, initialLanguage
   const reset = () => { setPropertyType('all'); setRooms('all'); setAreaFrom(''); setAreaTo(''); setStatus('all'); setFloor('all'); setSort('priceAsc'); setVisibleCount(6); };
   const scrollMatrix = (direction: number) => scrollRef.current?.scrollBy({ left: direction * Math.min(scrollRef.current.clientWidth * .8, 560), behavior: 'smooth' });
   const onMatrixKey = (event: ReactKeyboardEvent<HTMLDivElement>) => { if (event.key === 'ArrowLeft') scrollMatrix(-1); if (event.key === 'ArrowRight') scrollMatrix(1); };
-  const captured = new Intl.DateTimeFormat(language === 'ru' ? 'ru-RU' : language === 'uz' ? 'uz-UZ' : 'en-GB', { dateStyle: 'long', timeStyle: 'short', timeZone: 'Asia/Tashkent' }).format(new Date(snapshot.capturedAt));
 
   return <main className="flagman-catalog" lang={language}>
     <header className="flagman-catalog-header">
@@ -163,7 +162,7 @@ export function FlagmanCatalogPage({ snapshot: embeddedSnapshot, initialLanguage
       <div className="flagman-catalog-language" aria-label={t.language}>{languages.map((item) => <button type="button" key={item} className={item === language ? 'is-active' : ''} onClick={() => setLanguage(item)} aria-pressed={item === language}>{item.toUpperCase()}</button>)}</div>
     </header>
 
-    <section className="flagman-catalog-hero"><div><p>{t.project}</p><h1>{t.title}<em>{t.accent}</em></h1><span>{t.lead}</span></div><aside><small>{t.snapshot}</small><strong>{captured}</strong><span>{snapshot.units.length} / {snapshot.source.visibleListingCount}</span></aside></section>
+    <section className="flagman-catalog-hero"><div><p>{t.project}</p><h1>{t.title}<em>{t.accent}</em></h1><span>{t.lead}</span></div><aside><strong>{snapshot.units.length} / {snapshot.source.visibleListingCount}</strong><span>{t.offers}</span></aside></section>
 
     <section className="flagman-catalog-toolbar" aria-label={t.filters}>
       <div className="flagman-mode-switch" role="radiogroup" aria-label={t.modeLabel}>{(['cards', 'chess'] as Mode[]).map((item) => <button data-testid={`flagman-mode-${item}`} type="button" role="radio" aria-checked={mode === item} className={mode === item ? 'is-active' : ''} key={item} onClick={() => setMode(item)}>{t.modes[item]}</button>)}</div>

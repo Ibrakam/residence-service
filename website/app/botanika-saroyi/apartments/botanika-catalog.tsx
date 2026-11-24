@@ -202,11 +202,6 @@ function dateLabel(value: string, language: Language) {
   if (!date) return language === 'ru' ? 'Уточняется' : language === 'uz' ? 'Aniqlanmoqda' : 'To be confirmed';
   return new Intl.DateTimeFormat(locale(language), { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(date);
 }
-function capturedLabel(value: string, language: Language) {
-  const date = parseCatalogDate(value);
-  if (!date) return language === 'ru' ? 'Последние доступные данные' : language === 'uz' ? 'So‘nggi mavjud ma’lumotlar' : 'Latest available data';
-  return new Intl.DateTimeFormat(locale(language), { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(date);
-}
 function blockLabel(value: string, language: Language) {
   const suffix = value.match(/2\s*-\s*([12])$/)?.[1];
   if (!suffix) return value;
@@ -591,11 +586,10 @@ export function BotanikaCatalog({ snapshot: embeddedSnapshot, initialLanguage }:
           <p>{t.lead}</p>
           <button data-tencorp-auto-lead type="button" data-lead-trigger onClick={() => openLead(null, 'hero-consultation')}>{t.generalConsult}<span aria-hidden="true">↗</span></button>
         </div>
-        <aside aria-label={t.snapshot}>
+        <aside aria-label={t.title}>
           <small>{t.plate} · 00</small>
           <strong>{snapshot.units.length}</strong><span>{t.proposals}</span>
           <dl>
-            <div><dt>{t.snapshot}</dt><dd>{capturedLabel(snapshot.capturedAt, language)}</dd></div>
             <div><dt>{t.saleRows}</dt><dd>{saleRows}/{snapshot.units.length}</dd></div>
             <div><dt>{t.plans}</dt><dd>{planRows}/{snapshot.units.length}</dd></div>
             <div><dt>{t.range}</dt><dd>{rangeValue}</dd></div>

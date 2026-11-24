@@ -32,6 +32,7 @@ type Config struct {
 
 type ProviderConfig struct {
 	Name                     string                   `json:"name"`
+	ImportMode               string                   `json:"importMode,omitempty"`
 	BaselineProvider         string                   `json:"baselineProvider,omitempty"`
 	Command                  []string                 `json:"command"`
 	WorkingDirectory         string                   `json:"workingDirectory,omitempty"`
@@ -103,6 +104,9 @@ func (config *Config) Validate() error {
 		if provider.BaselineProvider != "" && (!safeNamePattern.MatchString(provider.BaselineProvider) || provider.BaselineProvider == provider.Name) {
 			return fmt.Errorf("provider %q baselineProvider is invalid", provider.Name)
 		}
+		if provider.ImportMode != "" && provider.ImportMode != "complete" && provider.ImportMode != "overlay" {
+			return fmt.Errorf("provider %q importMode must be complete or overlay", provider.Name)
+		}
 		if len(provider.Command) == 0 || !filepath.IsAbs(provider.Command[0]) {
 			return fmt.Errorf("provider %q command must start with an absolute executable path", provider.Name)
 		}
@@ -149,7 +153,7 @@ func (config *Config) Validate() error {
 			if !safeNamePattern.MatchString(slug) {
 				return fmt.Errorf("provider %q has an invalid project slug", provider.Name)
 			}
-			if policy.MinimumRecords <= 0 {
+			if policy.MinimumRecords < 0 || (policy.MinimumRecords == 0 && !provider.IsOverlay()) {
 				return fmt.Errorf("provider %q project %q minimumRecords must be positive", provider.Name, slug)
 			}
 			if owner, duplicate := projectOwners[slug]; duplicate {
@@ -188,3 +192,6 @@ func (provider ProviderConfig) ProjectSlugs() []string {
 	sort.Strings(result)
 	return result
 }
+
+// IsOverlay marks a public offer listing that cannot describe unseen inventory.
+func (provider ProviderConfig) IsOverlay() bool { return provider.ImportMode == "overlay" }

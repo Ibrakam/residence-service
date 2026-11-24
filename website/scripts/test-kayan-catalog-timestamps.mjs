@@ -17,7 +17,8 @@ for (const [slug, source] of [['mirador', miradorPage], ['ofiyat', ofiyatPage]])
   assert(source.includes('getCatalogBundleTimestamp(bundle)'), `${slug} apartments page must pass its project-scoped timestamp`);
   assert(!source.includes('snapshotGeneratedAt={catalogGeneratedAt}'), `${slug} apartments page leaks the aggregate timestamp`);
 }
-assert(catalogUI.includes('selectCatalogTimestamp(bundle.project.updatedAt, snapshotGeneratedAt)'), 'Catalogue UI must prefer project.updatedAt and keep only a validated fallback');
+assert(!catalogUI.includes('updateTimestamp('), 'Public catalogue UI must not display provider capture timestamps');
+assert(!catalogUI.includes('catalogStatusMessage('), 'Public catalogue UI must not display provider health or stale notices');
 assert(
   ofiyatExplorerRoute.includes('selectCatalogTimestamp(ofiyat.project.updatedAt, catalogSnapshot.generatedAt)'),
   'Ofiyat explorer API must prefer Ofiyat project.updatedAt and use the aggregate timestamp only as a validated fallback',

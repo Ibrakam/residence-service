@@ -237,16 +237,22 @@ function mbcQueueDefinitions(project) {
   };
 }
 
-function mbcRowsFromPages(pages, slug, propertyType, allowEmpty = false) {
+function mbcWebsiteInteger(value) {
+  if (typeof value !== 'number' && !(typeof value === 'string' && /^\d+$/.test(value.trim()))) return null;
+  return integer(value);
+}
+
+function mbcRowsFromPages(pages, slug, propertyType, allowEmpty = false, strictNumbers = false) {
   assert(Array.isArray(pages) && pages.length > 0, `MBC ${slug} ${propertyType} capture has no pages`);
   const rows = [];
   let declaredTotal = null;
   let declaredLastPage = null;
   for (const [index, root] of pages.entries()) {
     assert(record(root?.plans) && Array.isArray(root.plans.data), `MBC ${slug} ${propertyType} page ${index + 1} is invalid`);
-    const total = integer(root.plans.total);
-    const currentPage = integer(root.plans.current_page);
-    const lastPage = integer(root.plans.last_page);
+    const parseInteger = strictNumbers ? mbcWebsiteInteger : integer;
+    const total = parseInteger(root.plans.total);
+    const currentPage = parseInteger(root.plans.current_page);
+    const lastPage = parseInteger(root.plans.last_page);
     assert(total !== null && (allowEmpty ? total >= 0 : total > 0), `MBC ${slug} ${propertyType} page ${index + 1} total is invalid`);
     assert(currentPage === index + 1, `MBC ${slug} ${propertyType} page ${index + 1} current_page mismatch`);
     assert(lastPage !== null && lastPage > 0, `MBC ${slug} ${propertyType} page ${index + 1} last_page is invalid`);
@@ -307,15 +313,75 @@ function mbcProfitbaseLifecycle(value, label) {
   return { rawStatus, normalizedStatus: 'unavailable' };
 }
 
-function normalizeMbcProject(group, capturedAt, template, { fullLifecycle = false } = {}) {
+function mbcWebsitePrice(row, label) {
+  // The public API also returns internal amounts when the website hides prices.
+  // Its is_price flag is authoritative; a hidden amount is never fresh pricing.
+  assert(['number', 'string', 'boolean'].includes(typeof row.is_price)
+    && [0, 1].includes(Number(row.is_price)) && String(row.is_price).trim() !== '', `${label}.is_price is invalid`);
+  if (Number(row.is_price) !== 1) return {};
+  const amount = row.price;
+  if (!['number', 'string'].includes(typeof amount) || !/^\d+(?:\.\d+)?$/.test(String(amount).trim())) return {};
+  const price = positive(amount);
+  if (price === null) return {};
+  const suppliedCurrency = row.currency ?? row.currency_code;
+  const currency = suppliedCurrency === undefined || suppliedCurrency === null
+    // mbc.uz's public plans template labels this API's price as «сум».
+    ? 'UZS'
+    : String(record(suppliedCurrency) ? suppliedCurrency.ccy ?? suppliedCurrency.code ?? '' : suppliedCurrency).trim().toUpperCase();
+  if (!/^[A-Z]{3}$/.test(currency)) return {};
+  return { price, currency };
+}
+
+function mbcWebsitePhaseRow(row, crmId, template, queueDefinitions, label, reviewedBindings) {
+  const needsBinding = !String(row.queue ?? '').trim() || !String(row.section ?? '').trim();
+  // A public offer may omit its queue. Only the exact previously reviewed CRM
+  // identity can supply missing physical metadata, never a guessed section map.
+  const exact = (units) => units.filter((unit) => String(unit.crmId ?? unit.sourceId ?? '').trim() === crmId);
+  const templateMatches = exact(template?.units ?? []);
+  const reviewedMatches = exact(reviewedBindings);
+  assert(reviewedMatches.length <= 1 && (reviewedMatches.length === 1 || templateMatches.length <= 1), `${label} has no unique retained CRM identity`);
+  // A vetted current DB binding can replace a stale historical template. In
+  // that case none of the old template's plans or identity metadata is reused.
+  const matches = reviewedMatches.length === 1 ? reviewedMatches : templateMatches;
+  if (matches.length === 0) {
+    assert(!needsBinding, `${label} has incomplete physical binding and no unique retained CRM identity`);
+    return { row, retainedBinding: null };
+  }
+  let physical = null;
+  for (const retained of matches) {
+    assert(String(retained.number ?? '').trim() === String(row.number ?? '').trim()
+      && integer(retained.rooms) === integer(row.rooms)
+      && integer(retained.floor) === integer(row.floor)
+      && positive(retained.area ?? retained.square) !== null
+      && positive(row.square) !== null
+      && Number(retained.area ?? retained.square).toFixed(4) === Number(row.square).toFixed(4), `${label} retained physical binding has conflicting dimensions`);
+    const retainedQueue = String(retained.queue ?? retained.phase
+      ?? queueDefinitions.queues.find((queue) => queue.queueKey === retained.queueKey)?.sourceId ?? '').trim();
+    const retainedSection = String(retained.section ?? '').trim();
+    assert(retainedQueue && retainedSection, `${label} retained physical binding is incomplete`);
+    assert((!String(row.queue ?? '').trim() || String(row.queue).trim() === retainedQueue)
+      && (!String(row.section ?? '').trim() || String(row.section).trim() === retainedSection), `${label} retained physical binding conflicts with the website`);
+    assert(!physical || (physical.queue === retainedQueue && physical.section === retainedSection), `${label} retained physical bindings conflict`);
+    physical = { queue: retainedQueue, section: retainedSection };
+  }
+  const retainedBinding = reviewedMatches[0] ?? templateMatches[0];
+  const queue = queueDefinitions.bySourceValue.get(physical.queue);
+  if (reviewedMatches[0]?.phaseSlug && queue) assert(reviewedMatches[0].phaseSlug === `${queue.queueKey}-s${mbcPhasePart(physical.section, `${label}.section`).slug}`, `${label} reviewed physical phase conflicts`);
+  return { row: needsBinding ? { ...row, ...physical } : row, retainedBinding, reviewed: reviewedMatches.length === 1 };
+}
+
+function normalizeMbcProject(group, capturedAt, template, { fullLifecycle = false, websiteOverlay = false } = {}) {
+  assert(!(fullLifecycle && websiteOverlay), 'MBC full inventory and website overlay modes cannot be combined');
   const project = group?.project;
   assert(record(project), 'MBC project metadata is missing');
   assert(Number.isSafeInteger(project.id) && project.id > 0, 'MBC project id is invalid');
   const slug = numberText(project.slug, 'MBC project slug');
   const queueDefinitions = mbcQueueDefinitions(project);
+  const reviewedBindings = websiteOverlay ? project.reviewedWebsiteBindings ?? [] : [];
+  assert(Array.isArray(reviewedBindings), `MBC ${slug} reviewed website bindings are invalid`);
   const pages = group?.residentialPages ?? group?.pages;
-  const rows = Array.isArray(group?.residentialRows) ? group.residentialRows : mbcRowsFromPages(pages, slug, 'residential');
-  const commercialRows = group?.commercialPages ? mbcRowsFromPages(group.commercialPages, slug, 'commercial', true) : [];
+  const rows = Array.isArray(group?.residentialRows) ? group.residentialRows : mbcRowsFromPages(pages, slug, 'residential', websiteOverlay, websiteOverlay);
+  const commercialRows = group?.commercialPages ? mbcRowsFromPages(group.commercialPages, slug, 'commercial', true, websiteOverlay) : [];
   for (const [index, row] of commercialRows.entries()) {
     assert(record(row), `MBC ${slug} commercial row ${index + 1} is invalid`);
     assert(String(row.type) === 'commercial', `MBC ${slug} excluded row ${row.id ?? index + 1} is not commercial`);
@@ -327,8 +393,18 @@ function normalizeMbcProject(group, capturedAt, template, { fullLifecycle = fals
   const publicIdentities = new Set();
   const crmIdentities = new Set();
   const sourceKeyIdentities = new Set();
+  let retainedPhaseBindings = 0;
+  let reviewedIdentityBindings = 0;
   const units = rows.map((row, index) => {
     assert(record(row), `MBC ${slug} row ${index + 1} is invalid`);
+    if (websiteOverlay) {
+      assert(mbcWebsiteInteger(row.crm_id) !== null && mbcWebsiteInteger(row.crm_id) > 0, `MBC ${slug} row ${index + 1} has no stable CRM identity`);
+      if (row.project_id !== undefined) assert(mbcWebsiteInteger(row.project_id) === project.id, `MBC ${slug} row ${index + 1} has unexpected project id`);
+      assert(mbcWebsiteInteger(row.floor) !== null && mbcWebsiteInteger(row.floor) >= 0
+        && mbcWebsiteInteger(row.rooms) !== null && mbcWebsiteInteger(row.rooms) >= 0
+        && ['number', 'string'].includes(typeof row.square)
+        && /^\d+(?:\.\d+)?$/.test(String(row.square).trim()), `MBC ${slug} row ${index + 1} website dimensions are invalid`);
+    }
     const crmId = numberText(row.crm_id ?? row.id, `MBC ${slug} row ${index + 1}.crm_id`);
     const publicId = row.public_id === null || row.crm_id === undefined
       ? null
@@ -347,13 +423,20 @@ function normalizeMbcProject(group, capturedAt, template, { fullLifecycle = fals
       ? mbcProfitbaseLifecycle(row.status, `MBC ${slug} row ${crmId}.status`)
       : { rawStatus: numberText(row.status, `MBC ${slug} row ${crmId}.status`).toUpperCase(), normalizedStatus: status(row.status) };
     if (!fullLifecycle) assert(lifecycle.rawStatus === 'AVAILABLE' && lifecycle.normalizedStatus === 'available', `MBC ${slug} row ${crmId} is not available`);
-    assert(Number(row.is_price) === 0, `MBC ${slug} row ${crmId} public-price policy changed`);
-    const queueSource = mbcPhasePart(row.queue, `MBC ${slug} row ${crmId}.queue`);
+    const websitePrice = websiteOverlay ? mbcWebsitePrice(row, `MBC ${slug} row ${crmId}`) : {};
+    if (!websiteOverlay) assert(Number(row.is_price) === 0, `MBC ${slug} row ${crmId} public-price policy changed`);
+    const phaseResolution = websiteOverlay ? mbcWebsitePhaseRow(row, crmId, template, queueDefinitions, `MBC ${slug} row ${crmId}`, reviewedBindings) : { row, retainedBinding: null };
+    const physicalRow = phaseResolution.row;
+    if (physicalRow !== row) retainedPhaseBindings += 1;
+    if (phaseResolution.reviewed) reviewedIdentityBindings += 1;
+    const queueSource = mbcPhasePart(physicalRow.queue, `MBC ${slug} row ${crmId}.queue`);
     const queue = queueDefinitions.bySourceValue.get(queueSource.text);
     assert(queue, `MBC ${slug} row ${crmId} references unknown CRM queue ${queueSource.text}`);
-    const section = mbcPhasePart(row.section, `MBC ${slug} row ${crmId}.section`);
+    const section = mbcPhasePart(physicalRow.section, `MBC ${slug} row ${crmId}.section`);
     const sectionName = integer(section.text) === null ? section.text : `S${section.text}`;
-    const retained = retainedUnit(row, crmId);
+    const retained = phaseResolution.reviewed
+      ? phaseResolution.retainedBinding
+      : { ...phaseResolution.retainedBinding, ...retainedUnit(row, crmId) };
     const planImageUrl = localPlanPath(retained, slug);
     const sourceKey = numberText(
       templateMbcSourceKey(slug, retained) || opaqueMbcSourceKey(slug, crmId),
@@ -383,22 +466,22 @@ function normalizeMbcProject(group, capturedAt, template, { fullLifecycle = fals
       queue: queueSource.value,
       section: section.value,
       entrance: section.text,
-      completion: String(retained.completion ?? row.end ?? ''),
+      completion: String(websiteOverlay ? row.end ?? retained.completion ?? '' : retained.completion ?? row.end ?? ''),
       status: lifecycle.normalizedStatus,
       rawStatus: lifecycle.rawStatus,
       propertyType: 'apartment',
       rawPropertyType: String(row.raw_property_type ?? 'residential'),
       isSale: lifecycle.normalizedStatus === 'available',
-      publicPrice: false,
-      displayPriceKey: 'priceOnRequest',
-      priceVisibility: 'request-only',
+      publicPrice: Boolean(websitePrice.price),
+      ...websitePrice,
+      ...(websitePrice.price ? { priceVisibility: 'public' } : { displayPriceKey: 'priceOnRequest', priceVisibility: 'request-only' }),
       ...(planImageUrl ? { planImageUrl } : {}),
       ...(positive(retained.planWidth) && positive(retained.planHeight) ? { planWidth: Number(retained.planWidth), planHeight: Number(retained.planHeight) } : {}),
     };
   });
   const retainedPlanCount = units.filter((unit) => unit.planImageUrl).length;
   const availableUnits = units.filter((unit) => unit.status === 'available');
-  if (template && availableUnits.length > 0) assert(availableUnits.some((unit) => unit.planImageUrl), `MBC ${slug} could not match any current available unit to its local plan template`);
+  if (!websiteOverlay && template && availableUnits.length > 0) assert(availableUnits.some((unit) => unit.planImageUrl), `MBC ${slug} could not match any current available unit to its local plan template`);
   const audit = completeness({
     expected: rows.length,
     units,
@@ -415,6 +498,14 @@ function normalizeMbcProject(group, capturedAt, template, { fullLifecycle = fals
       availabilityPolicy: fullLifecycle
         ? 'authenticated Profitbase property inventory; customStatusId/baseStatus is authoritative and disappearance is never a sale'
         : 'public MBC plans feed publishes AVAILABLE residential inventory only',
+      ...(websiteOverlay ? {
+        catalogScope: 'published-offers',
+        inventoryComplete: false,
+        retainedPhaseBindings,
+        reviewedIdentityBindings,
+        missingUnitPolicy: 'preserve prior inventory; an absent published offer is not a sale or deletion',
+        pricePolicy: 'only positive visible website amounts; hidden or missing website prices preserve the database value',
+      } : {}),
       saleDatePolicy: fullLifecycle ? 'Profitbase exposes no sale timestamp; baseline SOLD contributes only to all-time known-sold totals' : null,
     },
   });
@@ -427,6 +518,7 @@ function normalizeMbcProject(group, capturedAt, template, { fullLifecycle = fals
       projectId: project.id,
       developerSlug: 'murad-buildings',
       capturedAt,
+      ...(websiteOverlay ? { catalogScope: 'published-offers', officialCount: rows.length, complete: false } : {}),
       officialTotalAtCapture: rows.length,
       sourceCount: rows.length,
       availableResidentialTotal: availableUnits.length,
@@ -434,7 +526,7 @@ function normalizeMbcProject(group, capturedAt, template, { fullLifecycle = fals
       soldResidentialTotal: units.filter((unit) => unit.status === 'sold').length,
       unavailableResidentialTotal: units.filter((unit) => unit.status === 'unavailable').length,
       excludedCommercial: commercialRows.length,
-      publicPrice: false,
+      publicPrice: units.some((unit) => unit.publicPrice),
       source: fullLifecycle ? 'https://pb12218.profitbase.ru/api/v4/json/property' : 'https://mbc.uz/api/plans',
       sourceLanding: project.sourceLanding,
       queues: queueDefinitions.queues,
@@ -591,7 +683,7 @@ export function normalizeMbcProfitbaseCapture(input, capturedAt = new Date().toI
   return { artifacts, audit };
 }
 
-export function normalizeMbcProjects(groups, capturedAt = new Date().toISOString(), templates = {}, projectDefinitions = mbcProjects) {
+export function normalizeMbcProjects(groups, capturedAt = new Date().toISOString(), templates = {}, projectDefinitions = mbcProjects, { websiteOverlay = false } = {}) {
   assert(Array.isArray(projectDefinitions) && projectDefinitions.length > 0, 'MBC provider has no project definitions');
   assert(Array.isArray(groups) && groups.length === projectDefinitions.length, `MBC capture requires ${projectDefinitions.length} project groups, received ${groups?.length ?? 0}`);
   const expected = new Map(projectDefinitions.map((project) => [project.slug, project]));
@@ -610,7 +702,7 @@ export function normalizeMbcProjects(groups, capturedAt = new Date().toISOString
       pages: group.pages,
       residentialPages: group.residentialPages,
       commercialPages: group.commercialPages,
-    }, capturedAt, templates?.[slug] ?? null);
+    }, capturedAt, templates?.[slug] ?? null, { websiteOverlay });
     artifacts.push({ filename: `${slug}-catalog.json`, artifact: result.artifact });
     audits[slug] = result.audit;
   }

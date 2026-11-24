@@ -156,11 +156,11 @@ test('CLI executes when the installed package is reached through a release symli
   assert.ok(Array.isArray(rows) && rows.some((row) => row.id === 'mbc'));
 });
 
-test('MBC wrappers always share the capture-root browser lock', async () => {
-  for (const name of ['capture-mbc', 'capture-mbc-sarbon']) {
+test('public website wrappers never depend on authenticated browser sessions', async () => {
+  for (const name of ['capture-mbc', 'capture-mbc-sarbon', 'capture-kayan', 'capture-uysot']) {
     const wrapper = await readFile(fileURLToPath(new URL(`../bin/${name}`, import.meta.url)), 'utf8');
-    assert.match(wrapper, /^LOCK_FILE=\$CAPTURE_DIR\/\.mbc-browser\.lock$/m);
-    assert.doesNotMatch(wrapper, /LIVE_SYNC_MBC_LOCK_FILE/);
+    assert.match(wrapper, /exec node .*collect --provider/);
+    assert.doesNotMatch(wrapper, /--cdp|CDP_URL|browser.lock|flock/);
   }
 });
 

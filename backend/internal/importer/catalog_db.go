@@ -27,6 +27,7 @@ type PreparedCatalogImport struct {
 // Existing callers can continue to use ImportCatalogDirectory, which creates a
 // versioned-website-catalog run automatically.
 type CatalogImportOptions struct {
+	Overlay   bool
 	Source    string
 	SyncRunID int64
 	Finalize  func(context.Context, pgx.Tx, CatalogImportResult) error
@@ -83,6 +84,12 @@ func ImportPreparedCatalog(ctx context.Context, pool *pgxpool.Pool, prepared Pre
 	for _, bundle := range bundles {
 		result.Projects += len(bundle.Projects)
 		for _, project := range bundle.Projects {
+			if options.Overlay && (project.CatalogScope != PublishedOffersScope || project.Complete || project.OfficialCount == nil || *project.OfficialCount != len(project.Units)+project.DuplicateUnits) {
+				return CatalogImportResult{}, fmt.Errorf("project %s is not a validated public listing", project.Slug)
+			}
+			if project.CatalogScope == PublishedOffersScope && project.Complete {
+				return CatalogImportResult{}, fmt.Errorf("project %s public listing cannot be complete inventory", project.Slug)
+			}
 			result.RecordsRead += len(project.Units) + project.DuplicateUnits
 			result.DuplicatesSkipped += project.DuplicateUnits
 			if !project.Complete {
@@ -190,13 +197,13 @@ func ImportPreparedCatalog(ctx context.Context, pool *pgxpool.Pool, prepared Pre
 					}
 					queueID = &value
 				}
-				phaseID, err := upsertCatalogPhase(ctx, tx, projectID, phase, project.CapturedAt, queueID, project.QueueMetadataPresent)
+				phaseID, err := upsertCatalogPhaseWithMode(ctx, tx, projectID, phase, project.CapturedAt, queueID, project.QueueMetadataPresent, project.CatalogScope == PublishedOffersScope)
 				if err != nil {
 					return failCatalogRun(ctx, pool, result, fmt.Errorf("upsert phase %s/%s: %w", project.Slug, phase.Slug, err))
 				}
 				phaseIDs[phase.Slug] = phaseID
 			}
-			if project.QueueMetadataPresent {
+			if project.QueueMetadataPresent && project.CatalogScope != PublishedOffersScope {
 				queueKeys := make([]string, 0, len(project.Queues))
 				for _, queue := range project.Queues {
 					queueKeys = append(queueKeys, queue.Key)
@@ -211,7 +218,7 @@ func ImportPreparedCatalog(ctx context.Context, pool *pgxpool.Pool, prepared Pre
 				if !ok {
 					return failCatalogRun(ctx, pool, result, fmt.Errorf("unit %s references unknown phase %s", unit.SourceKey, unit.PhaseSlug))
 				}
-				if err := upsertUnit(ctx, tx, phaseID, project.CapturedAt, unit); err != nil {
+				if err := upsertUnitWithMode(ctx, tx, phaseID, project.CapturedAt, unit, project.CatalogScope == PublishedOffersScope); err != nil {
 					return failCatalogRun(ctx, pool, result, fmt.Errorf("upsert unit %s/%s: %w", project.Slug, unit.SourceKey, err))
 				}
 				result.RecordsSaved++
@@ -241,7 +248,7 @@ func ImportPreparedCatalog(ctx context.Context, pool *pgxpool.Pool, prepared Pre
 						VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
 						ON CONFLICT(phase_id,source_id) DO UPDATE SET
 							rooms=EXCLUDED.rooms,available_count=EXCLUDED.available_count,title=EXCLUDED.title,
-							address=EXCLUDED.address,price_text=EXCLUDED.price_text,image_url=EXCLUDED.image_url,
+							address=EXCLUDED.address,price_text=COALESCE(NULLIF(EXCLUDED.price_text,''),layouts.price_text),image_url=EXCLUDED.image_url,
 							thumbnail_url=EXCLUDED.thumbnail_url,source_updated_at=EXCLUDED.source_updated_at,updated_at=now()`,
 						phaseID, layout.SourceID, layout.Rooms, layout.AvailableCount, layout.Title,
 						layout.Address, layout.PriceText, layout.ImageURL, layout.ThumbnailURL, project.CapturedAt); err != nil {
@@ -348,6 +355,10 @@ func upsertCatalogQueue(ctx context.Context, tx pgx.Tx, projectID int64, queue C
 }
 
 func upsertCatalogPhase(ctx context.Context, tx pgx.Tx, projectID int64, phase CatalogPhase, capturedAt time.Time, queueID *int64, queueMetadataPresent bool) (int64, error) {
+	return upsertCatalogPhaseWithMode(ctx, tx, projectID, phase, capturedAt, queueID, queueMetadataPresent, false)
+}
+
+func upsertCatalogPhaseWithMode(ctx context.Context, tx pgx.Tx, projectID int64, phase CatalogPhase, capturedAt time.Time, queueID *int64, queueMetadataPresent, overlay bool) (int64, error) {
 	rows, err := tx.Query(ctx, `
 		SELECT id
 		FROM phases
@@ -378,13 +389,15 @@ func upsertCatalogPhase(ctx context.Context, tx pgx.Tx, projectID int64, phase C
 		var phaseID int64
 		if err := tx.QueryRow(ctx, `
 			UPDATE phases SET
-				source_id=$2,slug=$3,name=$4,property_type=$5,sort_order=$6,address=$7,image_url=$8,
-				floors_total=$9,source_updated_at=$10,source_url=$11,source_payload=$12::jsonb,
-				queue_id=CASE WHEN $13 THEN $14 ELSE queue_id END,updated_at=now()
+				source_id=$2,slug=$3,name=$4,property_type=$5,sort_order=$6,
+				address=CASE WHEN $15 THEN COALESCE(NULLIF($7,''),address) ELSE $7 END,
+				image_url=CASE WHEN $15 THEN COALESCE(NULLIF($8,''),image_url) ELSE $8 END,
+				floors_total=CASE WHEN $15 THEN GREATEST($9,floors_total) ELSE $9 END,source_updated_at=$10,source_url=$11,source_payload=$12::jsonb,
+				queue_id=CASE WHEN $13 THEN CASE WHEN $15 THEN COALESCE($14,queue_id) ELSE $14 END ELSE queue_id END,updated_at=now()
 			WHERE id=$1
 			RETURNING id`, phaseIDs[0], phase.SourceID, phase.Slug, phase.Name, phase.PropertyType,
 			phase.SortOrder, phase.Address, phase.ImageURL, phase.FloorsTotal, capturedAt,
-			phase.SourceURL, jsonText(phase.SourcePayload), queueMetadataPresent, queueID).Scan(&phaseID); err != nil {
+			phase.SourceURL, jsonText(phase.SourcePayload), queueMetadataPresent, queueID, overlay).Scan(&phaseID); err != nil {
 			return 0, err
 		}
 		return phaseID, nil

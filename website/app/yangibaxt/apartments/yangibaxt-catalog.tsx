@@ -585,15 +585,6 @@ function date(value: string, language: Language) {
     timeZone: "UTC",
   }).format(parsed);
 }
-function captured(value: string, language: Language) {
-  const parsed = parseCatalogDate(value);
-  if (!parsed) return language === "ru" ? "Последние доступные данные" : language === "uz" ? "So‘nggi mavjud ma’lumotlar" : "Latest available data";
-  return new Intl.DateTimeFormat(locale(language), {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "Asia/Tashkent",
-  }).format(parsed);
-}
 function status(unit: Unit, language: Language) {
   return (
     (copy[language].statuses as Record<string, string>)[unit.statusOriginal] ??
@@ -1836,14 +1827,6 @@ export function YangiBaxtCatalog({
             <figcaption>{t.allApartments}</figcaption>
           </figure>
           <dl>
-            <div>
-              <dt>LIVE</dt>
-              <dd>{t.snapshot}</dd>
-            </div>
-            <div>
-              <dt>{captured(snapshot.capturedAt, language)}</dt>
-              <dd>{t.captured}</dd>
-            </div>
             <div>
               <dt>{snapshot.officialTotalAtCapture}</dt>
               <dd>{recordLabel(snapshot.officialTotalAtCapture, language)}</dd>

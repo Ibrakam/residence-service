@@ -81,8 +81,8 @@ function MatrixGroup({ units, language, selectedId, onSelect, onPlan, onLead, in
   </section>;
 }
 
-export function SadoCatalogPage({ initialUnits, snapshotGeneratedAt, sourceCount }: { initialUnits: Unit[]; snapshotGeneratedAt: string; sourceCount: number }) {
-  const { data: units, refreshedAt, project } = useLiveCatalogUnits('sado', initialUnits);
+export function SadoCatalogPage({ initialUnits, sourceCount }: { initialUnits: Unit[]; snapshotGeneratedAt: string; sourceCount: number }) {
+  const { data: units, project } = useLiveCatalogUnits('sado', initialUnits);
   const [language, setLanguageState] = useState<Language>('ru');
   const [mode, setMode] = useState<Mode>('cards');
   const [block, setBlock] = useState('all');
@@ -118,11 +118,10 @@ export function SadoCatalogPage({ initialUnits, snapshotGeneratedAt, sourceCount
   const groups = useMemo(() => blocks.map((block) => filtered.filter((unit) => unit.block === block)).filter((units) => units.length), [blocks, filtered]);
   const reset = () => { setBlock('all'); setPropertyClass('all'); setRooms([]); setAreaMin(''); setAreaMax(''); setStatus('available'); setVisibleCount(24); };
   const setLanguage = (next: Language) => { setLanguageState(next); window.localStorage.setItem('sado-language', next); const url = new URL(window.location.href); url.searchParams.set('lang', next); window.history.replaceState({}, '', url); };
-  const updatedLabel = new Intl.DateTimeFormat(language === 'ru' ? 'ru-RU' : language === 'uz' ? 'uz-UZ' : 'en-GB', { dateStyle: 'long', timeZone: 'Asia/Tashkent' }).format(new Date(refreshedAt ?? snapshotGeneratedAt));
 
   return <main className="sado-catalog">
     <header className="sado-catalog-header"><a className="sado-logo" href={withLanguage('/sado', language)}><span>SAD</span><i>’</i><span>O</span></a><a href={withLanguage('/sado', language)}>← {t.back}</a><div className="sado-catalog-language" aria-label={t.language}>{languages.map((item) => <button key={item} type="button" className={item === language ? 'is-active' : ''} onClick={() => setLanguage(item)}>{item.toUpperCase()}</button>)}</div></header>
-    <section className="sado-catalog-hero"><div><p>{t.project}</p><h1>{t.title}<em>{t.accent}</em></h1><span>{t.lead}</span></div><div className="sado-catalog-snapshot"><small>{t.snapshot}</small><strong>{updatedLabel}</strong><span>{units.length} / {project?.totalUnits ?? sourceCount}</span></div></section>
+    <section className="sado-catalog-hero"><div><p>{t.project}</p><h1>{t.title}<em>{t.accent}</em></h1><span>{t.lead}</span></div><div className="sado-catalog-snapshot"><strong>{units.length}</strong><span>/ {project?.totalUnits ?? sourceCount}</span></div></section>
 
     <section className="sado-catalog-toolbar" aria-label={t.filters}>
       <div className="sado-mode-switch" role="radiogroup" aria-label={t.modeLabel}>{(['cards', 'chess'] as Mode[]).map((item) => <button key={item} data-testid={`mode-${item}`} type="button" role="radio" aria-checked={mode === item} className={mode === item ? 'is-active' : ''} onClick={() => setMode(item)}>{t.modes[item]}</button>)}</div>

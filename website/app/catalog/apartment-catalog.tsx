@@ -5,7 +5,7 @@
 import type { KeyboardEvent as ReactKeyboardEvent, RefObject } from 'react';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { LeadModal, rememberLiveCatalogUnit } from '@/app/lead-modal';
-import { CatalogSourceStatus, catalogStatusMessage } from '@/app/catalog-source-status';
+import { CatalogSourceStatus } from '@/app/catalog-source-status';
 import type {
   ApartmentCatalogProps,
   CatalogLanguage,
@@ -104,13 +104,6 @@ function money(value: number | undefined, currency: string | undefined, language
   } catch {
     return `${number(value, language, 0)} ${code}`;
   }
-}
-
-function dateLabel(value: string | undefined, language: CatalogLanguage) {
-  if (!value) return undefined;
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return undefined;
-  return new Intl.DateTimeFormat(localeFor(language), { dateStyle: 'medium', timeZone: 'Asia/Tashkent' }).format(date);
 }
 
 function propertyLabel(unit: CatalogUnit, language: CatalogLanguage) {
@@ -505,9 +498,7 @@ export function ApartmentCatalog({ project, units: sourceUnits, capabilities, pr
       })
       : visualFlow
     : null;
-  const sourceLabel = catalogStatusMessage(language, dataSource);
   const availability = dataSource === 'embedded' ? '—' : String(project.availableCount);
-  const refreshedLabel = dataSource === 'embedded' ? '' : dateLabel(refreshedAt, language);
 
   return <main className="apartment-catalog" data-project={project.slug} lang={language} style={presentation.theme}>
     <a className="apartment-catalog__skip" href="#catalog">{t.skip}</a>
@@ -523,10 +514,10 @@ export function ApartmentCatalog({ project, units: sourceUnits, capabilities, pr
 
     <section className="apartment-catalog-hero">
       <div><p>{localized(presentation.eyebrow, language, project.className ?? project.name)}</p><h1>{title}{accent ? <> <em>{accent}</em></> : null}</h1><span>{localized(presentation.lead, language, project.address ?? '')}</span></div>
-      <aside><strong>{availability}</strong><span>{t.available}</span><small>{sourceLabel}{refreshedLabel ? <time dateTime={refreshedAt}>{refreshedLabel}</time> : null}</small></aside>
+      <aside><strong>{availability}</strong><span>{t.available}</span></aside>
     </section>
 
-    <CatalogSourceStatus language={language} dataSource={dataSource} refreshedAt={refreshedAt} isLoading={isLoading} loadError={loadError} hasData={dataSource !== 'embedded'} onRetry={retry} />
+    <CatalogSourceStatus language={language} dataSource={dataSource} refreshedAt={refreshedAt} isLoading={isLoading} loadError={loadError} hasData={units.length > 0} onRetry={retry} />
 
     {capabilities.visualFlow && visualFlowAvailable && renderedVisualFlow ? <section className="apartment-catalog__visual" aria-label={t.visual}><header><p>{t.visual}</p><span>{t.visualHint}</span></header>{renderedVisualFlow}</section> : null}
 

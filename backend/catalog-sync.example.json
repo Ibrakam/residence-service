@@ -13,12 +13,13 @@
       "maximumRecordDropPercent": 25,
       "projects": {
         "mirador": {
-          "minimumRecords": 199
+          "minimumRecords": 0
         },
         "ofiyat": {
-          "minimumRecords": 550
+          "minimumRecords": 0
         }
-      }
+      },
+      "importMode": "overlay"
     },
     {
       "name": "mbc",
@@ -31,18 +32,19 @@
       "maximumRecordDropPercent": 25,
       "projects": {
         "c1": {
-          "minimumRecords": 220
+          "minimumRecords": 0
         },
         "regnum-plaza": {
-          "minimumRecords": 700
+          "minimumRecords": 0
         },
         "saadiyat": {
-          "minimumRecords": 460
+          "minimumRecords": 0
         },
         "soy-boyi": {
-          "minimumRecords": 950
+          "minimumRecords": 0
         }
-      }
+      },
+      "importMode": "overlay"
     },
     {
       "name": "mbc-sarbon",
@@ -55,9 +57,10 @@
       "maximumRecordDropPercent": 25,
       "projects": {
         "sarbon": {
-          "minimumRecords": 175
+          "minimumRecords": 0
         }
-      }
+      },
+      "importMode": "overlay"
     },
     {
       "name": "uysot",
@@ -70,9 +73,10 @@
       "maximumRecordDropPercent": 25,
       "projects": {
         "avalon-residence": {
-          "minimumRecords": 250
+          "minimumRecords": 0
         }
-      }
+      },
+      "importMode": "overlay"
     },
     {
       "name": "human2human",

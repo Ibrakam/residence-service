@@ -198,11 +198,6 @@ function dateLabel(value: string, language: Language) {
   if (!date) return language === 'ru' ? 'Уточняется' : language === 'uz' ? 'Aniqlanmoqda' : 'To be confirmed';
   return new Intl.DateTimeFormat(locale(language), { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(date);
 }
-function capturedLabel(value: string, language: Language) {
-  const date = parseCatalogDate(value);
-  if (!date) return language === 'ru' ? 'Последние доступные данные' : language === 'uz' ? 'So‘nggi mavjud ma’lumotlar' : 'Latest available data';
-  return new Intl.DateTimeFormat(locale(language), { dateStyle: 'long', timeStyle: 'short', timeZone: 'Asia/Tashkent' }).format(date);
-}
 function classLabel(value: string, language: Language) {
   if (/комфорт|comfort/i.test(value)) return 'Comfort';
   return language === 'ru' ? 'Класс проекта' : language === 'uz' ? 'Loyiha toifasi' : 'Project class';
@@ -710,11 +705,9 @@ export function ZamonCatalog({ snapshot: embeddedSnapshot, initialLanguage }: { 
           <button data-tencorp-auto-lead type="button" data-lead-trigger onClick={() => openLead(null, 'hero-consultation')}>{t.consult}<span aria-hidden="true">↗</span></button>
         </div>
         <figure className="zamon-catalog-hero__photo"><img src={asset('/zamon/images/hero-phase-one.webp')} alt={t.actualPhoto} fetchPriority="high" decoding="async" /><figcaption><span>01</span>{t.actualPhoto}</figcaption></figure>
-        <aside aria-label={t.snapshot}>
-          <small>{t.snapshot}</small>
+        <aside aria-label={t.title}>
           <strong>{snapshot.officialTotalAtCapture}</strong><span>{t.proposals}</span>
           <dl>
-            <div><dt>{t.captured}</dt><dd>{capturedLabel(snapshot.capturedAt, language)}</dd></div>
             <div><dt>{t.blocksLabel}</dt><dd>{snapshot.blocks.map((block) => block.displayName).join(' · ')}</dd></div>
             <div><dt>{t.saleRows}</dt><dd>{snapshot.statusSummary.find((item) => item.status === 'Свободно')?.count ?? 0}/{snapshot.officialTotalAtCapture}</dd></div>
             <div><dt>{t.localPlans}</dt><dd>{snapshot.units.length}/{snapshot.units.length}</dd></div>
@@ -777,7 +770,7 @@ export function ZamonCatalog({ snapshot: embeddedSnapshot, initialLanguage }: { 
       <footer className="zamon-catalog-footer"><a className="zamon-catalog-wordmark" href={withLanguage('/zamon', language)}><strong>Zamon</strong><span>NRG-BI</span></a><p>{t.disclaimer}</p><a href={privacyUrl(language)}>{t.privacy}</a><a href="#zamon-catalog-title" aria-label={t.up}>↑</a></footer>
 
       {planUnit ? <PlanLightbox unit={planUnit} language={language} onClose={closePlan} /> : null}
-      {leadRequest ? <div className="zamon-catalog-lead-host" data-project-slug="zamon" data-context={leadRequest.context} data-unit-uuid={leadRequest.unit?.id}><LeadModal open language={language} context={leadRequest.context} brandName="NRG-BI" projectName="ZAMON" tagline={leadRequest.unit ? `${roomPhrase(leadRequest.unit.rooms, language)} · ${areaWithUnit(leadRequest.unit.area, language)} · № ${leadRequest.unit.number}` : `${snapshot.officialTotalAtCapture} · ${t.proposals}`} facts={leadRequest.unit ? [classLabel(leadRequest.unit.propertyClass, language), `${leadRequest.unit.floor}/${leadRequest.unit.totalFloors} · ${t.floorOf}`, money(leadRequest.unit.price, language)] : [t.classesSummary, `${areaWithUnit(snapshot.filters.area.min, language)}—${areaWithUnit(snapshot.filters.area.max, language)}`, capturedLabel(snapshot.capturedAt, language)]} submitUrl={zamonLeadSubmitUrl()} projectSlug="zamon" {...catalogLeadIdentity(leadRequest.unit)} privacyUrl={privacyUrl(language)} requireConsent onClose={() => setLeadRequest(null)} /></div> : null}
+      {leadRequest ? <div className="zamon-catalog-lead-host" data-project-slug="zamon" data-context={leadRequest.context} data-unit-uuid={leadRequest.unit?.id}><LeadModal open language={language} context={leadRequest.context} brandName="NRG-BI" projectName="ZAMON" tagline={leadRequest.unit ? `${roomPhrase(leadRequest.unit.rooms, language)} · ${areaWithUnit(leadRequest.unit.area, language)} · № ${leadRequest.unit.number}` : `${snapshot.officialTotalAtCapture} · ${t.proposals}`} facts={leadRequest.unit ? [classLabel(leadRequest.unit.propertyClass, language), `${leadRequest.unit.floor}/${leadRequest.unit.totalFloors} · ${t.floorOf}`, money(leadRequest.unit.price, language)] : [t.classesSummary, `${areaWithUnit(snapshot.filters.area.min, language)}—${areaWithUnit(snapshot.filters.area.max, language)}`]} submitUrl={zamonLeadSubmitUrl()} projectSlug="zamon" {...catalogLeadIdentity(leadRequest.unit)} privacyUrl={privacyUrl(language)} requireConsent onClose={() => setLeadRequest(null)} /></div> : null}
     </main>
   );
 }

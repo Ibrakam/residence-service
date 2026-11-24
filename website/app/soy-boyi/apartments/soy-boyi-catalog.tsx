@@ -936,14 +936,6 @@ export function SoyBoyiCatalog({
                 {t.commercial}
               </span>
             </div>
-            <p className="sbc-updated">
-              {t.updated}:{" "}
-              {new Intl.DateTimeFormat(locale(language), {
-                dateStyle: "medium",
-                timeStyle: "short",
-                timeZone: "Asia/Tashkent",
-              }).format(new Date(snapshot.serverDate))}
-            </p>
           </section>
           <section className="sbc-queues" aria-labelledby="sbc-queue-title">
             <header>

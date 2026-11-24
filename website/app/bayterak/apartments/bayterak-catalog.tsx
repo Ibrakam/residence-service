@@ -199,11 +199,6 @@ function dateLabel(value: string, language: Language) {
   if (!date) return language === 'ru' ? 'Уточняется' : language === 'uz' ? 'Aniqlanmoqda' : 'To be confirmed';
   return new Intl.DateTimeFormat(locale(language), { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(date);
 }
-function capturedLabel(value: string, language: Language) {
-  const date = parseCatalogDate(value);
-  if (!date) return language === 'ru' ? 'Последние доступные данные' : language === 'uz' ? 'So‘nggi mavjud ma’lumotlar' : 'Latest available data';
-  return new Intl.DateTimeFormat(locale(language), { dateStyle: 'long', timeStyle: 'short', timeZone: 'Asia/Tashkent' }).format(date);
-}
 function classLabel(value: string, language: Language) {
   const normalized = value.toLocaleLowerCase('ru').replace(/\s/g, '');
   if (normalized.includes('бизнес') || normalized.includes('business')) return 'Business';
@@ -673,11 +668,9 @@ export function BayterakCatalog({ snapshot: embeddedSnapshot, initialLanguage }:
           <p>{t.leadBefore} <strong>{snapshot.officialTotalAtCapture}</strong> {t.leadAfter}</p>
           <button data-tencorp-auto-lead type="button" data-lead-trigger onClick={() => openLead(null, 'hero-consultation')}>{t.consult}<span aria-hidden="true">↗</span></button>
         </div>
-        <aside aria-label={t.snapshot}>
-          <small>{t.snapshot}</small>
+        <aside aria-label={t.title}>
           <strong>{snapshot.officialTotalAtCapture}</strong><span>{t.proposals}</span>
           <dl>
-            <div><dt>{t.captured}</dt><dd>{capturedLabel(snapshot.capturedAt, language)} · UZT</dd></div>
             <div><dt>{t.saleRows}</dt><dd>{snapshot.integrity.allIsSale ? snapshot.officialTotalAtCapture : snapshot.units.filter((unit) => unit.isSale).length}/{snapshot.officialTotalAtCapture}</dd></div>
             <div><dt>{t.localPlans}</dt><dd>{snapshot.integrity.uniquePrimaryPlanUrls}/{snapshot.integrity.uniqueUnitIds}</dd></div>
             <div><dt>{t.propertyClass}</dt><dd>{t.classesSummary}</dd></div>
@@ -736,7 +729,7 @@ export function BayterakCatalog({ snapshot: embeddedSnapshot, initialLanguage }:
       <footer className="bayterak-catalog-footer"><a className="bayterak-catalog-wordmark" href={withLanguage('/bayterak', language)}><strong>BAY</strong><span>TERAK</span></a><p>{t.disclaimer}</p><a href={privacyUrl(language)}>{t.privacy}</a><a href="#bayterak-catalog-title" aria-label={t.up}>↑</a></footer>
 
       {planUnit ? <PlanLightbox unit={planUnit} language={language} onClose={() => setPlanUnit(null)} /> : null}
-      {leadRequest ? <div className="bayterak-catalog-lead-host" data-project-slug="bayterak" data-context={leadRequest.context} data-unit-uuid={leadRequest.unit?.id}><LeadModal open language={language} context={leadRequest.context} brandName="NRG-BI" projectName="BAYTERAK" tagline={leadRequest.unit ? `${roomPhrase(leadRequest.unit.rooms, language)} · ${areaWithUnit(leadRequest.unit.area, language)} · № ${leadRequest.unit.number}` : `${snapshot.officialTotalAtCapture} · ${t.proposals}`} facts={leadRequest.unit ? [classLabel(leadRequest.unit.propertyClass, language), `${leadRequest.unit.floor}/${leadRequest.unit.totalFloors} · ${t.floorOf}`, money(leadRequest.unit.price, language)] : [t.classesSummary, `${areaWithUnit(snapshot.filterSummary.ranges.area.min, language)}—${areaWithUnit(snapshot.filterSummary.ranges.area.max, language)}`, capturedLabel(snapshot.capturedAt, language)]} submitUrl={leadSubmitUrl()} projectSlug="bayterak" {...catalogLeadIdentity(leadRequest.unit)} privacyUrl={privacyUrl(language)} requireConsent onClose={() => setLeadRequest(null)} /></div> : null}
+      {leadRequest ? <div className="bayterak-catalog-lead-host" data-project-slug="bayterak" data-context={leadRequest.context} data-unit-uuid={leadRequest.unit?.id}><LeadModal open language={language} context={leadRequest.context} brandName="NRG-BI" projectName="BAYTERAK" tagline={leadRequest.unit ? `${roomPhrase(leadRequest.unit.rooms, language)} · ${areaWithUnit(leadRequest.unit.area, language)} · № ${leadRequest.unit.number}` : `${snapshot.officialTotalAtCapture} · ${t.proposals}`} facts={leadRequest.unit ? [classLabel(leadRequest.unit.propertyClass, language), `${leadRequest.unit.floor}/${leadRequest.unit.totalFloors} · ${t.floorOf}`, money(leadRequest.unit.price, language)] : [t.classesSummary, `${areaWithUnit(snapshot.filterSummary.ranges.area.min, language)}—${areaWithUnit(snapshot.filterSummary.ranges.area.max, language)}`]} submitUrl={leadSubmitUrl()} projectSlug="bayterak" {...catalogLeadIdentity(leadRequest.unit)} privacyUrl={privacyUrl(language)} requireConsent onClose={() => setLeadRequest(null)} /></div> : null}
     </main>
   );
 }

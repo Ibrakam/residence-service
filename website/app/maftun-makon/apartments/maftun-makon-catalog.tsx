@@ -470,7 +470,6 @@ export function MaftunMakonCatalog({ snapshot: embeddedSnapshot, initialLanguage
     selectMode(next);
     window.requestAnimationFrame(() => document.getElementById(`maftun-tab-${next}`)?.focus());
   };
-  const captured = new Intl.DateTimeFormat(locale(language), { dateStyle: 'long', timeStyle: 'short', timeZone: 'Asia/Tashkent' }).format(new Date(snapshot.capturedAt));
   const plansAvailable = snapshot.units.filter((unit) => unit.planAvailable && unit.plan).length;
 
   return (
@@ -485,7 +484,7 @@ export function MaftunMakonCatalog({ snapshot: embeddedSnapshot, initialLanguage
 
       <section className="maftun-catalog-hero">
         <div><p>{t.project}</p><h1>{t.title}<em>{t.accent}</em></h1><span>{t.lead}</span></div>
-        <aside><small>{t.snapshot}</small><strong>{snapshot.units.length}</strong><span>{t.offers}</span><dl><div><dt>{t.captured}</dt><dd>{captured} · UZT</dd></div><div><dt>{t.firstRender}</dt><dd>{snapshot.units.length}</dd></div><div><dt>{t.plans}</dt><dd>{plansAvailable} / {snapshot.units.length}</dd></div></dl></aside>
+        <aside><strong>{snapshot.units.length}</strong><span>{t.offers}</span><dl><div><dt>{t.firstRender}</dt><dd>{snapshot.units.length}</dd></div><div><dt>{t.plans}</dt><dd>{plansAvailable} / {snapshot.units.length}</dd></div></dl></aside>
       </section>
 
       <section className="maftun-catalog-controls" aria-label={t.filters}>

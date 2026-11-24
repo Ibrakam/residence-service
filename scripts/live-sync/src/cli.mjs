@@ -5,6 +5,7 @@ import { basename, dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { atomicRunDirectory, atomicWriteFile, jsonBody } from './atomic.mjs';
 import { captureFiles, captureFromAuthorizedTab } from './capture.mjs';
+import { kayanWebsiteInput, normalizeKayanWebsite, normalizeAvalonWebsite } from './developer-websites.mjs';
 import { captureFromDirectSource } from './direct.mjs';
 import { mergeNrgBlockRegistries, nrgBiSeedBlockRegistry, normalizeNrgBlockRegistry } from './nrg-block-registry.mjs';
 import {
@@ -150,8 +151,9 @@ export async function loadTemplate(providerId, explicitPath) {
 }
 
 function normalize(providerId, input, capturedAt, template, legacy = false, projectDefinitions = undefined) {
-  if (providerId === 'uysot') return normalizeUysotTable(input, capturedAt);
+  if (providerId === 'uysot') return input?.websiteCapture ? normalizeAvalonWebsite(input.websiteCapture, capturedAt) : normalizeUysotTable(input, capturedAt);
   if (isMbcProvider(providerId)) {
+    if (input?.websiteGroups) return normalizeMbcProjects(input.websiteGroups, capturedAt, template, getProvider(providerId).projectDefinitions, { websiteOverlay: true });
     if (legacy) {
       if (providerId !== 'mbc') throw new Error(`${providerId}: legacy MBC captures are not supported`);
       const result = normalizeRegnumPages(input, capturedAt, template?.['regnum-plaza'] ?? null);
@@ -160,12 +162,29 @@ function normalize(providerId, input, capturedAt, template, legacy = false, proj
     return normalizeMbcProfitbaseCapture(input, capturedAt, template, getProvider(providerId).projectDefinitions);
   }
   if (providerId === 'sun') return normalizeSunPages(input, capturedAt, template);
+  if (providerId === 'kayan' && input?.websiteGroups) return normalizeKayanWebsite(input.websiteGroups, capturedAt, template);
   if (providerId === 'kayan') return legacy ? normalizeKayanSnapshots(input, capturedAt, template) : normalizeKayanPropertyResponses(input, capturedAt, template);
   if (providerId === 'nrg-bi') return normalizeNrgBiCapture(input, capturedAt, projectDefinitions);
   throw new Error(`${providerId}: capture-only discovery adapter; no publishable normalizer exists`);
 }
 
 function inputFromCapture(providerId, capture, scopedProvider = null) {
+  if (providerId === 'uysot' && capture.records.some(row => row.scope?.endpoint === 'marketingProject')) return { websiteCapture: capture };
+  if (providerId === 'kayan' && capture.records.some(row => row.scope?.endpoint === 'websitePlans')) return { websiteGroups: kayanWebsiteInput(capture) };
+  if (isMbcProvider(providerId) && capture.records.some(row => row.url?.origin === 'https://mbc.uz')) {
+    const provider = scopedProvider ?? getProvider(providerId);
+    const groups = provider.projectDefinitions.map(project => {
+      const pages = type => capture.records.filter(row => row.scope?.projectSlug === project.slug && row.scope?.propertyType === type)
+        .sort((a, b) => a.scope.page - b.scope.page).map((row, index) => {
+          if (row.method !== 'POST' || row.url?.origin !== 'https://mbc.uz' || row.url.path !== '/api/plans'
+            || row.scope.endpoint !== 'plans' || row.scope.projectId !== project.id || row.scope.page !== index + 1) throw new Error('MBC public response is outside exact project/page scope');
+          return row.value;
+        });
+      return { project, residentialPages: pages('residential'), commercialPages: pages('commercial') };
+    });
+    if (groups.reduce((sum, group) => sum + group.residentialPages.length + group.commercialPages.length, 0) !== capture.records.length) throw new Error('MBC public capture has unexpected response records');
+    return { websiteGroups: groups };
+  }
   if (providerId === 'uysot') {
     const record = capture.records.find((item) => item.method === 'POST' && item.url?.origin === 'https://service.app.uysot.uz' && item.url?.path === '/v1/smart-catalog/table');
     if (!record) throw new Error('Uysot capture does not contain the guarded table response');
@@ -345,7 +364,7 @@ function artifactEntries(providerId, result) {
 }
 
 function isDirectProvider(provider) {
-  return ['public-read-post', 'signed-public-read-post'].includes(provider.captureMode);
+  return ['public-read-post', 'signed-public-read-post', 'public-website'].includes(provider.captureMode);
 }
 
 function nrgPlanCachePath(root) {

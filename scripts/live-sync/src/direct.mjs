@@ -1,3 +1,4 @@
+import { captureKayanWebsite, captureAvalonWebsite } from './developer-websites.mjs';
 import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import { makeBodyRecord } from './capture.mjs';
@@ -568,7 +569,9 @@ export async function captureFromDirectSource(provider, options = {}) {
   const records = [];
   const errors = [];
   try {
-    if (provider.id === 'mbc' || provider.id === 'mbc-sarbon') await captureMbc(provider, records);
+    if (provider.id === 'kayan') await captureKayanWebsite(records);
+    else if (provider.id === 'uysot') await captureAvalonWebsite(records);
+    else if (provider.id === 'mbc' || provider.id === 'mbc-sarbon') await captureMbc(provider, records);
     else if (provider.id === 'nrg-bi') await captureNrgBi(provider, records, options);
     else if (provider.id === 'sun') await captureSun(records);
     else throw new Error(`${provider.id}: no direct-source adapter`);
@@ -582,6 +585,7 @@ export async function captureFromDirectSource(provider, options = {}) {
     target: null,
     safety: {
       publicReadOnlyTransport: true,
+      anonymousWebsiteSessionInMemory: provider.id === 'kayan',
       requestHeadersRead: false,
       browserStorageRead: false,
       cookiesRead: false,

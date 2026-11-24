@@ -274,7 +274,7 @@ function Matrix({ rows, units, sorted, matchedIds, language, selection, onSelect
 }
 
 export function SunCatalog({ initialLanguage }: { initialLanguage: Language }) {
-  const { data: snapshot, dataSource } = useLiveCatalogSnapshot('sun', embeddedSnapshot);
+  const { data: snapshot } = useLiveCatalogSnapshot('sun', embeddedSnapshot);
   const [language, setLanguage] = useSunLanguage(initialLanguage); const mobile = useSunMobile(); const t = copy[language];
   const [mode, setMode] = useState<Mode>('cards'); const [sort, setSort] = useState<Sort>('recommended'); const [filters, setFilters] = useState<Filters>(defaultFilters); const [visible, setVisible] = useState(9);
   const [selection, setSelection] = useState<Selection | null>(null); const [plan, setPlan] = useState<PlanSelection | null>(null); const [lead, setLead] = useState<LeadRequest | null>(null); const [menuOpen, setMenuOpen] = useState(false);
@@ -290,7 +290,6 @@ export function SunCatalog({ initialLanguage }: { initialLanguage: Language }) {
     `${formatSunNumber(limits.areaMin, language)}–${formatSunNumber(limits.areaMax, language)} м²`,
     `${formatSunPrice(limits.priceMin, language)}–${formatSunPrice(limits.priceMax, language)}`,
   ], [language, limits, units]);
-  const freshnessLabel = dataSource === 'live' ? t.snapshot : language === 'ru' ? 'Последние доступные данные' : language === 'uz' ? 'So‘nggi mavjud ma’lumotlar' : 'Latest available data';
   const closeLead = useCallback(() => setLead(null), []); const closePlan = useCallback(() => setPlan(null), []); const closeSelection = useCallback(() => setSelection(null), []);
 
   useEffect(() => {
@@ -345,7 +344,7 @@ export function SunCatalog({ initialLanguage }: { initialLanguage: Language }) {
     <div className={`sunc-menu ${menuOpen ? 'is-open' : ''}`} role="dialog" aria-modal={menuOpen && !lead ? true : undefined} aria-label={t.nav} aria-hidden={!menuOpen || Boolean(lead)} inert={!menuOpen || Boolean(lead) ? true : undefined}><button className="sunc-menu__backdrop" type="button" tabIndex={-1} onClick={() => setMenuOpen(false)} aria-label={t.close} /><nav ref={menuRef} id="sunc-menu"><header><img src={sunAsset('/sun/logo.svg')} width="380" height="64" alt="SUN" /><button type="button" onClick={() => setMenuOpen(false)} aria-label={t.close}>×</button></header><a href={sunPath('/sun', language)} onClick={() => setMenuOpen(false)}>← {t.back}</a><a href="#sunc-results" onClick={() => setMenuOpen(false)}>{t.modes.cards}</a><a href="tel:+998781137712">+998 78 113 77 12</a><div aria-label={t.language}>{sunLanguages.map((item) => <button type="button" key={item} className={language === item ? 'is-active' : ''} aria-pressed={language === item} onClick={() => setLanguage(item)}>{item.toUpperCase()}</button>)}</div><button data-tencorp-auto-lead type="button" data-lead-trigger onClick={(event) => openLead('catalog:header', null, event.currentTarget)}>{t.consult}<span>↗</span></button></nav></div>
 
     <main aria-hidden={rootCovered || undefined} inert={rootCovered ? true : undefined}>
-      <section className="sunc-hero"><div className="sunc-hero__sun" aria-hidden="true" /><div className="sunc-hero__line" aria-hidden="true"><span>06:00</span><i /><span>12:00</span><i /><span>18:00</span></div><div className="sunc-hero__copy"><span>{t.eyebrow}</span><h1>{t.title}</h1><p>{t.lead}</p><button data-tencorp-auto-lead type="button" data-lead-trigger onClick={(event) => openLead('catalog:hero', null, event.currentTarget)}>{t.heroLead}<b>↗</b></button></div><dl>{t.facts.map(([, label], index) => <div key={label}><dt>{liveFacts[index]}</dt><dd>{label}</dd></div>)}</dl><p className="sunc-hero__snapshot"><span>{freshnessLabel}</span>{snapshot.capturedAt}<b>{t.liveWarning}</b></p></section>
+      <section className="sunc-hero"><div className="sunc-hero__sun" aria-hidden="true" /><div className="sunc-hero__line" aria-hidden="true"><span>06:00</span><i /><span>12:00</span><i /><span>18:00</span></div><div className="sunc-hero__copy"><span>{t.eyebrow}</span><h1>{t.title}</h1><p>{t.lead}</p><button data-tencorp-auto-lead type="button" data-lead-trigger onClick={(event) => openLead('catalog:hero', null, event.currentTarget)}>{t.heroLead}<b>↗</b></button></div><dl>{t.facts.map(([, label], index) => <div key={label}><dt>{liveFacts[index]}</dt><dd>{label}</dd></div>)}</dl><p className="sunc-hero__snapshot"><b>{t.liveWarning}</b></p></section>
 
       <section className="sunc-catalog" aria-labelledby="sunc-catalog-title">
         <div className="sunc-toolbar"><div className="sunc-modes" role="tablist" aria-label={t.modeLabel}>{modes.map((item, index) => <button key={item} ref={(node) => { modeRefs.current[index] = node; }} id={`sunc-tab-${item}`} type="button" role="tab" aria-selected={mode === item} aria-controls="sunc-results" tabIndex={mode === item ? 0 : -1} className={mode === item ? 'is-active' : ''} onClick={() => selectMode(item)} onKeyDown={(event) => modeKey(event, index)}>{t.modes[item]}</button>)}</div><div className="sunc-result-count" aria-live="polite"><strong>{stableSorted.length}</strong> {t.results}</div></div>

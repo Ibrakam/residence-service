@@ -67,7 +67,11 @@ func ValidatePreparedCatalog(provider ProviderConfig, prepared importer.Prepared
 		if project.OfficialCount != nil && count+project.DuplicateUnits != *project.OfficialCount {
 			return guardFailure("official_count_mismatch", slug, "project %q record count does not match its official count", slug)
 		}
-		if !project.Complete {
+		if provider.IsOverlay() {
+			if project.CatalogScope != importer.PublishedOffersScope || project.Complete || project.OfficialCount == nil {
+				return guardFailure("invalid_overlay_scope", slug, "project %q must declare a counted published-offers listing", slug)
+			}
+		} else if !project.Complete || project.CatalogScope != "" {
 			return guardFailure("incomplete_capture", slug, "project %q is not marked complete", slug)
 		}
 		if count < provider.Projects[slug].MinimumRecords {
@@ -84,7 +88,7 @@ func ValidatePreparedCatalog(provider ProviderConfig, prepared importer.Prepared
 		if !hasBaseline {
 			continue
 		}
-		if len(baseline.MatrixBlockIDs) > 0 {
+		if !provider.IsOverlay() && len(baseline.MatrixBlockIDs) > 0 {
 			if len(project.MatrixBlockIDs) == 0 {
 				return guardFailure("block_universe_missing", slug, "project %q dropped its trusted matrix block universe", slug)
 			}
@@ -99,7 +103,7 @@ func ValidatePreparedCatalog(provider ProviderConfig, prepared importer.Prepared
 			}
 		}
 		minimumRetained := float64(baseline.Records) * (100 - provider.MaximumDropPercent()) / 100
-		if float64(count) < minimumRetained {
+		if !provider.IsOverlay() && float64(count) < minimumRetained {
 			return guardFailure("excessive_record_drop", slug, "project %q record count dropped beyond the configured limit", slug)
 		}
 		if project.CapturedAt.Before(baseline.CapturedAt) {

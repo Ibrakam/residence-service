@@ -3,8 +3,8 @@
 `cmd/sync-catalogs` coordinates provider-specific capture wrappers and the
 existing PostgreSQL catalog importer. It is a one-shot command designed for a
 systemd timer. The coordinator never reads login forms itself: each wrapper
-uses its own already enrolled server-browser profile and writes a complete
-catalog into the directory supplied in `CATALOG_OUTPUT_DIR`.
+uses its source-specific website transport or an already enrolled server-browser
+profile and writes a complete catalog or explicitly declared public overlay into the directory supplied in `CATALOG_OUTPUT_DIR`.
 
 ## Safety contract
 
@@ -23,7 +23,8 @@ catalog into the directory supplied in `CATALOG_OUTPUT_DIR`.
 - Symbolic links, special files, more than 1,024 output files, and more than
   512 MiB of output are rejected before parsing.
 - The candidate must contain exactly the configured projects. Every project
-  must be a complete catalog, meet its explicit first-run record floor, not be
+  must follow its configured import mode (complete by default), meet its explicit
+  first-run record floor, not be
   older than its freshness window or its last accepted capture, and not lose
   more rows than the configured percentage. An official source count, when
   present, is also enforced.
@@ -49,6 +50,39 @@ while a partial house snapshot cannot pass. The browser normalizer additionally
 enforces a positive reviewed floor for each of the ten residential houses,
 preventing one missing queue from being masked by the rest of its project.
 
+## Public website overlays
+
+A public website often lists only currently published offers, not every unit
+and lifecycle state held in the CRM. Configure only those providers with
+`"importMode":"overlay"` (the omitted/default mode remains `complete`). The
+normalizer must explicitly emit `"catalogScope":"published-offers"` and an
+`officialTotalAtCapture` (or `officialCount`) equal to the fully paginated public
+listing, not the whole residential complex. The parser always marks that scope
+incomplete, even when the public count matches. Exact project ownership, listing
+counts, capture freshness, monotonic observation timestamps and content conflicts
+are still enforced. Full-catalog providers cannot import this partial scope.
+
+An overlay never deactivates unseen units or deletes absent queues/layouts. New
+offers need an actual stable upstream unit ID, a physical phase identity, unit
+number and valid area; typical floor plans must not be invented as apartments.
+Existing source-key/source-ID and phase identity conflicts fail the transaction.
+A verified website with no unit-level catalog may explicitly emit an empty
+listing with official count zero and configured `minimumRecords:0`; network,
+parse, authentication, identity or pagination failure must still fail capture.
+Zero floors are rejected in full-catalog mode. Full-universe record-drop and
+matrix-universe checks are deliberately inapplicable only to declared overlays.
+
+For either importer, absent, zero, negative or invalid monetary values preserve
+the last accepted unit price, price per square metre and currency. A valid new
+price derives its missing counterpart from area; a missing currency retains the
+existing currency (new unpriced records default to UZS). Missing price evidence
+never appends a price-history transition to NULL. Retries do not duplicate an
+unchanged price. A public card without explicit status or `isSale` evidence
+preserves the existing lifecycle state; a verified new card starts as `unknown`,
+never as an inferred sale or available apartment. Sparse overlay fields preserve known plans, room counts, repair
+flags and phase details. Source snapshots retain scope/completeness and observation
+times for operational audit; they do not claim the unseen stock was refreshed.
+
 ## Capture wrapper contract
 
 The configured command is executed directly, without a shell. Its executable
@@ -70,8 +104,9 @@ network failure, or parsing uncertainty. On success it writes one or more files
 accepted by the existing importer (`*-catalog.json` or `avalon-units.json`) to
 `CATALOG_OUTPUT_DIR`. A provider must not copy browser profiles, cookies,
 responses containing credentials, or debugging traces into that directory.
-Files ending in `*-client.json` are intentionally treated as partial and are
-rejected by live synchronization.
+Files ending in `*-client.json` without an official complete universe are
+intentionally partial and rejected by default complete-mode synchronization.
+The explicit public-overlay contract above is required for a published subset.
 
 For Kayan, one invocation must output both `mirador` and `ofiyat`; they commit
 together. MBC attaches to the already-authorized smart-catalog OOPIF on the same
@@ -266,3 +301,35 @@ attempt. An overlapping scope exits `skipped/overlap_prevented` without changing
 health. The shared wrapper also takes one capture-root flock before starting
 Node, serializing the complete cache read/capture/merge/write cycle even for
 manual wrapper invocations; its capture directory is created privately first.
+
+### Active developer website sources (2026-11-24)
+
+- `kayan`: anonymous public `kayan.uz/ru/project/{mirador,ofiyat}` and
+  read-only `/api/filter`. All four public property filters are paginated to
+  their terminal page, with a repeat first-page consistency check. The endpoint
+  declares no total: sourceCount is the counted, validated public listing, not
+  the complex universe. It displays neither an explicit price nor availability
+  state; retain prior unit price and status, new unproven status is `unknown`.
+  Anonymous website CSRF/session cookies exist only in process memory; browser
+  profiles, login credentials and session headers are never persisted.
+- `mbc` / `mbc-sarbon`: public `mbc.uz/api/plans`, exact project IDs and both
+  residential/commercial pagination validated. Only residential unit offers are
+  imported. Raw API price is usable only when the public `is_price` flag exposes
+  it; hidden amounts are omitted. Three reviewed Saadiyat bindings document
+  exact production unit IDs whose website/static template physical metadata is
+  incomplete or outdated. They never assign stale template plans.
+- `uysot` is retained as the provider key for compatibility but now checks the
+  official `avalonresidence.uz` project document. That site has marketing facts
+  and typical plans, **no unit-level stock or price listing**. Its explicit
+  `marketing-only` zero-unit overlay preserves all existing268 units, prices,
+  plans and per-unit observation timestamps. Provider check time does not mean
+  Avalon stock or prices have been refreshed.
+- Existing public BI Sales Picker, Human2Human/Macro, Taqsim/Pushkin and official
+  Millennium House/Dormon plan collectors keep their existing transports.
+  amoCRM lead intake and team analytics are unrelated and remain unchanged.
+
+Overlay examples intentionally have minimumRecords0: an empty official listing
+is valid only after source identity and complete pagination validation. Transport
+or schema failure never emits successful empty inventory. Full-mode minimums
+and universe/drop protections remain unchanged; the old browser adapters remain
+available for reviewing historical captures, not active scheduled collection.

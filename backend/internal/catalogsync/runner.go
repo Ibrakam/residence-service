@@ -184,6 +184,7 @@ func (runner *Runner) runProvider(ctx context.Context, workDirectory string, pro
 	}
 
 	importResult, err := importer.ImportPreparedCatalog(ctx, runner.pool, prepared, importer.CatalogImportOptions{
+		Overlay:   provider.IsOverlay(),
 		Source:    ProviderSource(provider.Name),
 		SyncRunID: result.SyncRunID,
 		Finalize: func(ctx context.Context, tx pgx.Tx, _ importer.CatalogImportResult) error {

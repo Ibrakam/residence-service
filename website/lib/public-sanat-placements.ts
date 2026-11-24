@@ -30,6 +30,9 @@ export function publicSanatPlacements(value: unknown) {
       else if (typeof field === 'string' && field.length <= 180) item[key] = field;
       else if (typeof field === 'number' && Number.isFinite(field)) item[key] = field;
     }
+    // The public catalogue filters on this exact availability boolean.
+    // Do not coerce malformed values or expose any other boolean metadata.
+    if (typeof source.isSale === 'boolean') item.isSale = source.isSale;
     for (const key of imageFields) {
       const field = source[key];
       if (field === null) { item[key] = null; continue; }

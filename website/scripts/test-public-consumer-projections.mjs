@@ -48,7 +48,7 @@ const companyIds = ['5cba02b4-8abd-11ee-ab79-001dd8b7289a'];
 const realEstateUUIDs = ['f318fc96-8c05-40df-a695-6de9b9a695c0'];
 const propertyTypes = ['5990a172-812a-4fee-b4f5-c860cca824d7'];
 const input = { companyIds, realEstateUUIDs, propertyTypes, pageNo: 1, pageSize: 200 };
-const upstreamData = { placements: [{ uuid: 'public-unit', realEstateUUID: realEstateUUIDs[0], roomCount: 2, totalPrice: 100,
+const upstreamData = { placements: [{ uuid: 'public-unit', realEstateUUID: realEstateUUIDs[0], roomCount: 2, square: 53.57, totalPrice: 100, isSale: true,
   photoURL200: 'https://cdn.example/plan.png', photoURL400: 'javascript:alert(1)', photoURL1600: 'https://user:secret@cdn.example/plan.png',
   individualBooking: { customer: { phone: 'PRIVATE' } }, isFavorite: true, liquidityId: 'PRIVATE', discount: {stock: 'PRIVATE'},
   propertyType: { uuid: propertyTypes[0], name: 'Квартира', customer: 'PRIVATE' }, layoutType: {name:'2 комнаты'} }], parkingSchemes: {token:'PRIVATE'} };
@@ -62,8 +62,23 @@ assert.deepEqual(plain(nrg.sanatPlacementInput(input)), input);
 for (const invalid of [{...input,pageNo:0},{...input,pageSize:201},{...input,pageNo:1.1},{...input,companyIds:['OTHER']},{...input,extra:'field'}]) assert.throws(() => nrg.sanatPlacementInput(invalid), error => error.status === 400);
 const projected = plain(nrg.publicSanatPlacements(upstreamData));
 assert.equal(projected.placements[0].photoURL200, 'https://cdn.example/plan.png');
+assert.equal(projected.placements[0].isSale, true, 'the public availability boolean is required by the actual catalogue client');
+assert.ok(!('isFavorite' in projected.placements[0]), 'availability must not expose unrelated boolean metadata');
 assert.ok(!('photoURL400' in projected.placements[0]));assert.ok(!('photoURL1600' in projected.placements[0]));
 assert.equal(projected.parkingSchemes,null);assert.ok(!JSON.stringify(projected).includes('PRIVATE'));
+const availabilityFixtures = plain(nrg.publicSanatPlacements({ placements: [
+  upstreamData.placements[0],
+  { ...upstreamData.placements[0], uuid: 'sold-unit', isSale: false },
+  ...['true', 1, null, { available: true }, undefined].map((isSale, index) => ({
+    ...upstreamData.placements[0], uuid: `malformed-${index}`, isSale,
+  })),
+] })).placements;
+assert.equal(availabilityFixtures[1].isSale, false, 'a sold unit must retain false rather than become available');
+for (const unit of availabilityFixtures.slice(2)) assert.ok(!Object.hasOwn(unit, 'isSale'), 'malformed availability values must be omitted');
+// Match the production SANAT client's post-pagination availability predicate.
+const visibleUnits = availabilityFixtures.filter(unit => unit && unit.isSale === true
+  && typeof unit.uuid === 'string' && Number.isFinite(unit.square) && Number.isFinite(unit.totalPrice));
+assert.deepEqual(visibleUnits.map(unit => unit.uuid), ['public-unit'], 'the real client filter must retain the available priced unit and exclude sold/malformed availability');
 assert.throws(() => nrg.publicSanatPlacements({placements:[{realEstateUUID:'OTHER'}]}));
 const request = (body = JSON.stringify(input), headers={}) => new Request('https://form.tencorp.uz/api/nrg-apartments', {method:'POST',headers:{'Content-Type':'application/json', Origin:'https://form.tencorp.uz',...headers},body});
 await nrg.requestSanatPlacements(request());assert.equal(posts,1);
